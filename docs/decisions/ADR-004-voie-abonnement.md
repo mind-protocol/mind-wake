@@ -33,6 +33,21 @@ Exclu : extraction de jetons ou cookies de session, rotation de comptes, endpoin
 - `doctor` et `status` affichent « abonnement : expérimental » ou « bloqué : <motif> ».
 - ADR-002 reste valable pour la voie clé API.
 
+## Complément : borne par jauge de quota (29 octobre 2026)
+
+Le plafond de tokens n'étant pas imposable avec une connexion ChatGPT, la voie abonnement se borne par la jauge officielle de quota exposée par `codex app-server` : `account/rateLimits/read` et `account/rateLimits/updated` (`usedPercent`, `windowDurationMins`, `resetsAt`, voir `docs/feasibility/codex.md`). Lire l'interface de l'application ou un endpoint interne reste exclu (principe 4).
+
+Contrats ajoutés dans `src/contracts/` :
+
+- unité `provider_quota_bp` (points de base d'une fenêtre fournisseur, 10 000 = 100 %), jamais convertie en tokens ou en monnaie ;
+- `ProviderQuotaSnapshot` : lecture horodatée d'une fenêtre, `measured` seulement si officielle ;
+- `SubscriptionQuotaGuard` (`BudgetGroup.subscriptionQuota`, absent = désactivé) : seuil de lancement, seuil d'arrêt, réserve humaine, dépassement maximal mesuré, âge maximal de la lecture ;
+- capacité d'adapter `tokenCapEnforcement: "provider_quota_guard"` et `providerQuotaReading`.
+
+Règle de borne : `seuil d'arrêt + dépassement mesuré ≤ 10 000 − réserve humaine`. Le dépassement (retard de la jauge, réponse en cours, tour qui continue après la limite) n'est documenté nulle part : tant qu'il n'est pas mesuré par des essais réels autorisés (vague 3), `overshootBoundBasisPoints` vaut `null` et le lancement reste bloqué.
+
+Réserves : `app-server` est déclaré expérimental ; la jauge inclut l'usage de l'humain et s'exprime en pourcentage, sans tokens ; l'achat automatique de crédits du forfait doit être désactivé par l'utilisateur, ce que `doctor` doit rappeler ou vérifier.
+
 ## Critères de révision
 
 - Texte officiel OpenAI autorisant explicitement cet usage (la voie devient standard) ou l'interdisant (la voie est supprimée).
