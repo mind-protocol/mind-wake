@@ -4,6 +4,7 @@
  */
 
 import { parseArgs } from "node:util";
+import { daemonRun } from "./commands/daemon.js";
 import { doctor } from "./commands/doctor.js";
 import { enable } from "./commands/enable.js";
 import { exportCommand } from "./commands/export.js";
@@ -31,7 +32,8 @@ import { resolveDataDir } from "./paths.js";
 export const USAGE = `Usage : mind-wake <commande> [options]
 
 Interface locale de MIND Wake pour votre propre agent. Aucune commande de paiement,
-de transaction ou de session guest ; aucune commande ne lance de session.
+de transaction ou de session guest. Seul \`daemon run\` lance des sessions, au premier
+plan, et seulement avec l'adapter factice (--simulated).
 
 Commandes :
   doctor        Diagnostic local, sans appel modèle ni accès réseau
@@ -51,6 +53,11 @@ Commandes :
   purge         Plan de purge du journal expiré (--older-than-days N) ; --apply l'applique
   uninstall     --dry-run liste les effets ; --keep-data ou --delete-data, sinon
                 question dans le terminal
+  daemon run --simulated
+                Daemon au premier plan (Ctrl+C pour l'arrêter) avec l'adapter factice :
+                tout est marqué SIMULÉ, aucun appel modèle. Sans --simulated : refus,
+                aucun adapter réel n'existe dans ce build. Options : --recheck-ms N,
+                --exit-after-sessions N
 
 Réservés à l'humain : --confirm et la saisie du code de \`enable\`, le choix de
 \`uninstall\`. Ni la skill ni l'espace d'exploration ne doivent les utiliser.
@@ -101,11 +108,15 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "dry-run": { type: "boolean" },
         "keep-data": { type: "boolean" },
         "delete-data": { type: "boolean" },
+        simulated: { type: "boolean" },
+        "recheck-ms": { type: "string" },
+        "exit-after-sessions": { type: "string" },
       },
     });
     const [first, second, ...rest] = positionals;
-    command = first === "policy" && second !== undefined ? `policy ${second}` : (first ?? "help");
-    const args = first === "policy" ? rest : positionals.slice(1);
+    const grouped = (first === "policy" || first === "daemon") && second !== undefined;
+    command = grouped ? `${first} ${second}` : (first ?? "help");
+    const args = grouped ? rest : positionals.slice(1);
     // Seuls `export` et `policy configure` prennent un argument positionnel.
     const takesArgument = command === "export" || command === "policy configure";
     const argument = takesArgument ? args[0] : undefined;
@@ -192,6 +203,19 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
           interactive: !json,
         })) as CommandResult<unknown>;
         break;
+      case "daemon run":
+        result = (await daemonRun(ctx, dataDir, {
+          simulated: values.simulated === true,
+          recheckMs: parseIntegerOption("recheck-ms", values["recheck-ms"], 1_000, 3_600_000),
+          exitAfterSessions: parseIntegerOption(
+            "exit-after-sessions",
+            values["exit-after-sessions"],
+            1,
+            1_000,
+          ),
+          quiet: json,
+        })) as CommandResult<unknown>;
+        break;
       default:
         throw new UsageError(`commande inconnue : ${command}`);
     }
@@ -218,6 +242,9 @@ const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   "dry-run": ["uninstall"],
   "keep-data": ["uninstall"],
   "delete-data": ["uninstall"],
+  simulated: ["daemon run"],
+  "recheck-ms": ["daemon run"],
+  "exit-after-sessions": ["daemon run"],
 };
 
 function rejectOptions(command: string, values: Readonly<Record<string, unknown>>): void {

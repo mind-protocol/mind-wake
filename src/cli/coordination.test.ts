@@ -157,7 +157,7 @@ function byId(caps: readonly Capability[]): Record<string, string> {
 }
 
 describe("disponibilité des composants", () => {
-  it("doctor et status distinguent présent et non implémenté, sans rien d'opérationnel par défaut", async () => {
+  it("doctor et status distinguent présent, simulé et non implémenté, sans rien de réel par défaut", async () => {
     const uow = new MemoryUnitOfWork();
     const out: string[] = [];
     const ctx = context(uow, out);
@@ -172,7 +172,9 @@ describe("disponibilité des composants", () => {
         ledger: "not_implemented",
         policy_engine: "not_implemented",
         scheduler: "not_implemented",
+        daemon: "not_implemented",
         isolation: "not_implemented",
+        simulated_adapter: "simulated",
         runtime_adapter: "not_implemented",
         api_key_path: "not_implemented",
         subscription_path: "blocked",

@@ -39,6 +39,13 @@ export interface CliContext {
    * option explicite.
    */
   readonly prompt?: (question: string) => Promise<string | null>;
+  /**
+   * Interruption au clavier (Ctrl+C) pour `daemon run` ; renvoie de quoi se désabonner.
+   * Absente dans les tests : le daemon s'arrête alors par ses propres conditions.
+   */
+  readonly onInterrupt?: (handler: () => void) => () => void;
+  /** Fin immédiate du processus (second Ctrl+C de `daemon run`). */
+  readonly exit?: (code: number) => void;
 }
 
 async function promptTerminal(question: string): Promise<string | null> {
@@ -66,5 +73,14 @@ export function processContext(): CliContext {
     storeBackend: STORE_BACKEND,
     probeSqlite: probeSqliteDriver,
     ...(process.stdin.isTTY && process.stdout.isTTY ? { prompt: promptTerminal } : {}),
+    onInterrupt: (handler) => {
+      process.on("SIGINT", handler);
+      process.on("SIGTERM", handler);
+      return () => {
+        process.off("SIGINT", handler);
+        process.off("SIGTERM", handler);
+      };
+    },
+    exit: (code) => process.exit(code),
   };
 }

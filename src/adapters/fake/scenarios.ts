@@ -3,7 +3,7 @@
  * exécuté par un vrai processus enfant (`agent-process.ts`) ; aucun appel modèle.
  */
 
-import type { JsonObject } from "../../contracts/index.js";
+import type { JsonObject, Observation } from "../../contracts/index.js";
 
 export type FakeStep =
   | { readonly do: "activity"; readonly summary: string }
@@ -13,7 +13,35 @@ export type FakeStep =
   | { readonly do: "sleep"; readonly ms: number }
   /** Lance `count` enfants détachés qui lancent chacun un petit-enfant détaché. */
   | { readonly do: "spawn_descendants"; readonly count: number }
-  | { readonly do: "checkpoint"; readonly summary: string }
+  /**
+   * Checkpoint candidat. Les champs absents prennent une valeur simulée par défaut ;
+   * `withArtifacts` joint les artefacts écrits jusque-là par `write_artifact`.
+   */
+  | {
+      readonly do: "checkpoint";
+      readonly summary: string;
+      readonly observations?: readonly Observation[];
+      readonly failures?: readonly string[];
+      readonly incompleteWork?: readonly string[];
+      readonly nextAction?: string;
+      readonly hibernationReason?: string;
+      readonly withArtifacts?: boolean;
+    }
+  /** Proposition d'expérience (SPEC §3.2), transmise telle quelle au daemon, non fiable. */
+  | { readonly do: "propose"; readonly proposal: JsonObject }
+  /**
+   * Écrit un artefact sous `root` (racine d'artefacts) après accord de l'action
+   * `file_write` sur `actionPath` (chemin relatif à l'espace d'exploration), puis en
+   * calcule l'empreinte. Refus : rien n'est écrit.
+   */
+  | {
+      readonly do: "write_artifact";
+      readonly id: string;
+      readonly root: string;
+      readonly path: string;
+      readonly actionPath: string;
+      readonly content: string;
+    }
   | { readonly do: "rate_limited"; readonly retryAfterMs: number | null }
   | {
       readonly do: "error";

@@ -17,6 +17,8 @@ Chaque session lance un vrai processus enfant (`agent-process.ts`, modules `node
 
 `pidFile` reçoit les PID de l'agent et de toute sa descendance (tests de terminaison).
 
+Étapes ajoutées par S-D : `propose` (proposition d'expérience transmise au daemon par `onProposal`, hors du contrat `RuntimeAdapter`), `write_artifact` (écriture après accord de `file_write`, empreinte SHA-256), `checkpoint` avec champs complets et `withArtifacts`. `emergence.ts` est l'agent factice de la démo (AGENTS §7) utilisé par `mind-wake daemon run --simulated`.
+
 ## Capacités déclarées
 
 `tokenCounting: "exact"` et `tokenCapEnforcement: "native"` valent pour la simulation seulement (consommation scriptée, borne imposée par le runner) ; `cancellation: "forced_only"` ; `residualUsageBound` 0 token ; `providerQuotaReading: "none"`. `reconcile` ne confirme l'usage que d'une session menée par la même instance et terminée ; après un redémarrage, il répond `uncertain`.
