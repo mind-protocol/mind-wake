@@ -120,6 +120,8 @@ export interface LaunchGrant {
    * relue pendant la session et la réservation peut n'avoir aucune borne de tokens.
    */
   readonly onSubscription?: boolean;
+  /** Réveil demandé par l'humain : son activité n'interrompt pas la session (`SessionChecks`). */
+  readonly humanRequested?: boolean;
 }
 
 export interface SessionResult {
@@ -576,7 +578,10 @@ export class SessionRunner {
   /** Conditions vivantes de la session : celles du daemon, plus la jauge sur abonnement. */
   #sessionChecks(session: ActiveSession): SessionChecks {
     // Signaux lus avant l'horloge : un signal ne peut pas sembler postérieur à `now`.
-    const live = this.#liveChecks();
+    const live = {
+      ...this.#liveChecks(),
+      ...(session.grant.humanRequested === true ? { humanRequested: true } : {}),
+    };
     const now = utc(this.#nowMs());
     if (!session.onSubscription) return { ...live, onSubscription: false, now };
     return { ...live, onSubscription: true, quotaSnapshots: session.quota ?? [], now };

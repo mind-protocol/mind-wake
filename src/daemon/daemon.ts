@@ -657,6 +657,8 @@ export class WakeDaemon implements SessionLauncher {
             lastCheckpoint: memory?.checkpoint?.sequence ?? null,
           }));
     const billing: BillingFacts = this.#registration.billing();
+    // Lu avant `#composeWake`, qui consomme la demande.
+    const humanRequested = pendingHumanWake(this.#o.dataDir, Date.now()) !== null;
     const wake = await this.#composeWake(ticket, memory, billing);
     this.#sessions.set(ticket.sessionId, {
       revisionId: ticket.policyRevisionId,
@@ -686,6 +688,7 @@ export class WakeDaemon implements SessionLauncher {
         maxInputTokens,
         sessionPrepared: true,
         onSubscription: billing.kind === "subscription_quota",
+        ...(humanRequested ? { humanRequested: true } : {}),
       });
       result = await running.done;
     } catch (error) {

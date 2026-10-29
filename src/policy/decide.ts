@@ -532,6 +532,11 @@ export interface SessionChecks {
   /** `true` si la session consomme un quota d'abonnement (voie ADR-004). */
   readonly onSubscription?: boolean;
   readonly quotaSnapshots?: readonly ProviderQuotaSnapshot[];
+  /**
+   * Session lancée par un réveil demandé par l'humain (`wake`) : son activité au clavier
+   * ne l'interrompt pas. Pause, arrêt d'urgence, plafonds et garde de quota restent.
+   */
+  readonly humanRequested?: boolean;
 }
 
 export type SessionAssessment =
@@ -627,7 +632,10 @@ function sessionChecksDenial(
   if (checks === undefined || !isUtcTimestamp(checks.now)) {
     return deny(id, "unknown_condition", "clock.unknown");
   }
-  const priority = priorityDenial(id, revision.groups, checks.now, checks.userPriority);
+  const priority =
+    checks.humanRequested === true
+      ? null
+      : priorityDenial(id, revision.groups, checks.now, checks.userPriority);
   if (priority !== null) return priority;
   if (!hostUnsandboxedConsented(revision.groups)) {
     const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");

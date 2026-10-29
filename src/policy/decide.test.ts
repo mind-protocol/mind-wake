@@ -798,6 +798,40 @@ describe("signal de priorité humaine et contrôles revérifiés à chaque actio
   });
 });
 
+describe("session demandée par l'humain (wake)", () => {
+  it("son activité au clavier ne l'interrompt pas ; pause et arrêt d'urgence, si", () => {
+    const store = memoryStore();
+    const launched = activate(store, validDraft());
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
+    const active = { ...CHECKS, userPriority: { favorable: false, observedAt: NOW } };
+
+    expect(assessActiveSession(store.policies, RUNNING, session, active)).toMatchObject({
+      interruptSession: true,
+      reason: "user_priority",
+    });
+    const requested = { ...active, humanRequested: true };
+    expect(assessActiveSession(store.policies, RUNNING, session, requested)).toMatchObject({
+      interruptSession: false,
+    });
+    expect(
+      assessActiveSession(
+        store.policies,
+        { state: "paused", emergencyStopLocked: false },
+        session,
+        requested,
+      ),
+    ).toMatchObject({ interruptSession: true, reason: "paused" });
+    expect(
+      assessActiveSession(
+        store.policies,
+        { state: "stopped", emergencyStopLocked: true },
+        session,
+        requested,
+      ),
+    ).toMatchObject({ interruptSession: true, reason: "stopped" });
+  });
+});
+
 describe("élargissements partiels ou mixtes et révisions non consenties", () => {
   const wide = withFields(validDraft(), {
     "network.explorationDestinations": [{ host: "example.org", ports: [443], purpose: "docs" }],
