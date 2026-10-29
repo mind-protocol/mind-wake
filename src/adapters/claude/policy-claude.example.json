@@ -44,7 +44,9 @@
       "userReserveBasisPoints": 1000,
       "overshootBoundBasisPoints": 500,
       "maxSnapshotAgeMs": 120000,
-      "launchWhenResetWithinMs": 10800000
+      "targetUsageBasisPoints": 8000,
+      "initialRateBasisPointsPerHour": 2000,
+      "pacingMarginRatio": 0.25
     }
   },
   "filesAndTools": {

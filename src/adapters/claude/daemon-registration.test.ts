@@ -37,6 +37,12 @@ const FAKE_CLAUDE = fileURLToPath(
   new URL("../../../test/fixtures/claude/fake-claude.ts", import.meta.url),
 );
 
+/** Poste inactif depuis une heure : le signal réel (GetLastInputInfo) n'est pas lu en test. */
+const IDLE = {
+  latest: () => ({ idleMs: 3_600_000, observedAtMs: Date.now() }),
+  close: () => undefined,
+};
+
 /** Garde de quota : la fenêtre hebdomadaire du faux CLI se remet à zéro dans 3 jours. */
 const GUARD: SubscriptionQuotaGuard = {
   enabled: true,
@@ -46,7 +52,9 @@ const GUARD: SubscriptionQuotaGuard = {
   userReserveBasisPoints: 1_000,
   overshootBoundBasisPoints: 500,
   maxSnapshotAgeMs: 120_000,
-  launchWhenResetWithinMs: 4 * 24 * 3_600_000,
+  targetUsageBasisPoints: 8_000,
+  initialRateBasisPointsPerHour: 2_000,
+  pacingMarginRatio: 0.25,
 };
 
 const RUNTIME = { provider: CLAUDE_PROVIDER, model: "opus", authMode: CLAUDE_AUTH_MODE };
@@ -162,6 +170,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
         simulated: false,
         registry: registry(),
         runtimeDir: SHARED_RUNTIME_DIR,
+        idleWatcher: IDLE,
         recheckIntervalMs: 1_000,
         exitAfterSessions: 1,
         log: (line) => lines.push(line),
@@ -218,6 +227,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
         simulated: false,
         registry: registry("none"),
         runtimeDir: SHARED_RUNTIME_DIR,
+        idleWatcher: IDLE,
         recheckIntervalMs: 1_000,
       });
       const seen = await runUntil(daemon, /quota_unknown/);
@@ -254,6 +264,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
         registry: registry(),
         isolation: { sandbox, selfTest: () => Promise.resolve(failed) },
         runtimeDir: SHARED_RUNTIME_DIR,
+        idleWatcher: IDLE,
         recheckIntervalMs: 1_000,
       });
       const seen = await runUntil(daemon, /"state":"blocked"/);
@@ -273,6 +284,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
       simulated: false,
       registry: registry("fresh", path.join(state, "absent", "claude.exe")),
       runtimeDir: SHARED_RUNTIME_DIR,
+      idleWatcher: IDLE,
     }).catch((error: unknown) => error);
     expect(refused).toBeInstanceOf(DaemonError);
     expect(refused).toMatchObject({ code: "adapter_unavailable" });

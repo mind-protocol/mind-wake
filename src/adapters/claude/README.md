@@ -151,7 +151,9 @@ Fichier `policy-claude.example.json`, validé par `policy-example.test.ts`. Le c
       "userReserveBasisPoints": 1000,
       "overshootBoundBasisPoints": 500,
       "maxSnapshotAgeMs": 120000,
-      "launchWhenResetWithinMs": 10800000
+      "targetUsageBasisPoints": 8000,
+      "initialRateBasisPointsPerHour": 2000,
+      "pacingMarginRatio": 0.25
     }
   },
   "filesAndTools": {
@@ -176,7 +178,7 @@ Fichier `policy-claude.example.json`, validé par `policy-example.test.ts`. Le c
 }
 ```
 
-**Limite de la garde à connaître.** `decideLaunch` exige que **chaque** fenêtre lue se remette à zéro dans `launchWhenResetWithinMs`. Claude expose une fenêtre de 5 h (`session`) et des fenêtres hebdomadaires (`weekly_all`, `weekly_scoped`) : avec 3 h, le lancement n'est possible que si la remise hebdomadaire tombe aussi dans les 3 h, soit environ une fois par semaine ; les autres jours, refus `outside_window` sur `claude:weekly_all`. Le test de bout en bout règle 4 jours pour cette raison. Décision à prendre côté policy (garde sur la fenêtre la plus courte, ou sur toute fenêtre proche de sa remise à zéro, les seuils s'appliquant à toutes).
+**Garde pilotée.** Le délai fixe `launchWhenResetWithinMs` a été remplacé par le pilotage vers `targetUsageBasisPoints` (ADR-005, fusion de `claude/cablage-runtimes-43e636`) : les fenêtres de 5 h (`session`) et hebdomadaires (`weekly_all`, `weekly_scoped`) de Claude sont lues comme les autres, sans exiger que chacune se remette à zéro dans un délai fixe.
 
 ## À brancher
 
