@@ -1,0 +1,34 @@
+{
+  "extends": "common.json",
+  "on": {
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "turn_1",
+          "status": "inProgress",
+          "items": [],
+          "error": null
+        }
+      },
+      "then": [
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "inProgress",
+              "items": []
+            }
+          }
+        },
+        {
+          "hang": true
+        }
+      ]
+    },
+    "turn/interrupt": {
+      "noReply": true
+    }
+  }
+}

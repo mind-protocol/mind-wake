@@ -1,0 +1,60 @@
+{
+  "version": "codex-cli 0.165.0",
+  "on": {
+    "initialize": {
+      "result": {
+        "userAgent": "codex_cli_rs/0.165.0 (fake)"
+      }
+    },
+    "account/read": {
+      "result": {
+        "account": {
+          "type": "chatgpt",
+          "email": null,
+          "planType": "plus"
+        },
+        "requiresOpenaiAuth": true
+      }
+    },
+    "thread/start": {
+      "result": {
+        "thread": {
+          "id": "thr_1",
+          "ephemeral": false,
+          "modelProvider": "openai"
+        },
+        "approvalPolicy": "never",
+        "approvalsReviewer": "user",
+        "cwd": "",
+        "model": "gpt-test",
+        "modelProvider": "openai",
+        "sandbox": "danger-full-access"
+      }
+    },
+    "thread/resume": {
+      "result": {
+        "thread": {
+          "id": "thr_1"
+        }
+      }
+    },
+    "account/rateLimits/read": {
+      "result": {
+        "rateLimits": {
+          "limitId": "codex",
+          "primary": {
+            "usedPercent": 42,
+            "windowDurationMins": 300,
+            "resetsAt": 1793300000
+          },
+          "secondary": {
+            "usedPercent": 7,
+            "windowDurationMins": 10080,
+            "resetsAt": null
+          },
+          "rateLimitReachedType": null
+        }
+      }
+    }
+  }
+}

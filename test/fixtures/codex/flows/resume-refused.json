@@ -1,0 +1,11 @@
+{
+  "extends": "success.json",
+  "on": {
+    "thread/resume": {
+      "error": {
+        "code": -32600,
+        "message": "no rollout found for thread id thr_old"
+      }
+    }
+  }
+}

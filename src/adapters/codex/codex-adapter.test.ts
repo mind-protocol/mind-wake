@@ -1,0 +1,627 @@
+/**
+ * Adapter Codex contre un faux exécutable `codex` (test/fixtures/codex/fake-codex.ts) qui
+ * rejoue des flux app-server enregistrés. Aucun appel modèle, aucun réseau, aucun
+ * credential : ces tests ne prouvent pas l'intégration réelle (AGENTS §5).
+ */
+
+import { spawn, type ChildProcess } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type {
+  AdapterEvent,
+  PolicyRevision,
+  ProfileId,
+  ReservationId,
+  SessionId,
+  StartRequest,
+  UtcTimestamp,
+} from "../../contracts/index.js";
+import type { Sandbox } from "../../sandbox/sandbox.js";
+import {
+  appContainerLauncher,
+  buildAppServerCommand,
+  classifyCodexError,
+  CODEX_ADAPTER_ID,
+  CODEX_SUPPORTED_VERSION,
+  CodexAdapter,
+  CodexAdapterError,
+  CodexConfigError,
+  FileThreadStore,
+  MemoryThreadStore,
+  parseCodexVersion,
+  quotaFromRateLimitsResponse,
+  type CodexAdapterOptions,
+  type CodexCommand,
+  type CodexLauncher,
+  type CodexProcess,
+  type IsolationAttestation,
+  type ProviderTransport,
+  type SandboxLike,
+} from "./index.js";
+
+const FAKE = fileURLToPath(new URL("../../../test/fixtures/codex/fake-codex.ts", import.meta.url));
+const FLOWS = fileURLToPath(new URL("../../../test/fixtures/codex/flows/", import.meta.url));
+
+/** Processus enfant ordinaire, sans Job Object ni AppContainer : tests seulement. */
+class TestProcess implements CodexProcess {
+  readonly exited: Promise<number | null>;
+  #child: ChildProcess;
+  #lines: string[] = [];
+  #waiters: ((line: string | null) => void)[] = [];
+  #closed = false;
+  #done = false;
+
+  constructor(command: CodexCommand, extraEnv: Record<string, string>) {
+    const env: Record<string, string> = { ...command.env, ...extraEnv };
+    const systemRoot = process.env["SystemRoot"];
+    if (systemRoot !== undefined) env["SystemRoot"] = systemRoot;
+    this.#child = spawn(command.executable, [...command.args], {
+      cwd: command.cwd,
+      env,
+      stdio: ["pipe", "pipe", "ignore"],
+      windowsHide: true,
+    });
+    this.#child.stdin?.on("error", () => undefined);
+    createInterface({ input: this.#child.stdout as NodeJS.ReadableStream }).on("line", (line) => {
+      const waiter = this.#waiters.shift();
+      if (waiter === undefined) this.#lines.push(line);
+      else waiter(line);
+    });
+    this.#child.stdout?.on("close", () => {
+      this.#closed = true;
+      for (const waiter of this.#waiters.splice(0)) waiter(null);
+    });
+    this.exited = new Promise((resolve) => {
+      this.#child.on("close", (code) => {
+        this.#done = true;
+        resolve(code);
+      });
+    });
+  }
+
+  started(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      if (this.#child.pid !== undefined) resolve(this.#child.pid);
+      else this.#child.once("error", reject);
+    });
+  }
+
+  get hasExited(): boolean {
+    return this.#done;
+  }
+
+  readLine(): Promise<string | null> {
+    const line = this.#lines.shift();
+    if (line !== undefined) return Promise.resolve(line);
+    if (this.#closed) return Promise.resolve(null);
+    return new Promise((resolve) => this.#waiters.push(resolve));
+  }
+
+  send(line: string): void {
+    if (!this.#done) this.#child.stdin?.write(`${line}\n`);
+  }
+
+  async terminateTree(): Promise<{ confirmed: boolean; elapsedMs: number }> {
+    const begin = performance.now();
+    if (!this.#done) this.#child.kill();
+    await this.exited;
+    return { confirmed: true, elapsedMs: performance.now() - begin };
+  }
+}
+
+interface Harness {
+  readonly dir: string;
+  readonly logPath: string;
+  readonly launches: CodexCommand[];
+  flow: string;
+  attestation: IsolationAttestation;
+  launcher: CodexLauncher;
+  log(): Record<string, unknown>[];
+  requests(method: string): Record<string, unknown>[];
+}
+
+const CONFINED: IsolationAttestation = {
+  confined: true,
+  selfTestPassed: true,
+  detail: "AppContainer de test",
+};
+
+let h: Harness;
+
+beforeEach(() => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mindwake-codex-test-"));
+  const logPath = path.join(dir, "fake-codex.log");
+  const launches: CodexCommand[] = [];
+  const harness: Harness = {
+    dir,
+    logPath,
+    launches,
+    flow: "success.json",
+    attestation: CONFINED,
+    launcher: {
+      isolation: () => harness.attestation,
+      launch: (_sessionId, command) => {
+        launches.push(command);
+        return new TestProcess(command, {
+          FAKE_CODEX_FLOW: path.join(FLOWS, harness.flow),
+          FAKE_CODEX_LOG: logPath,
+        });
+      },
+    },
+    log: () =>
+      fs.existsSync(logPath)
+        ? fs
+            .readFileSync(logPath, "utf8")
+            .split("\n")
+            .filter((l) => l !== "")
+            .map((l) => JSON.parse(l) as Record<string, unknown>)
+        : [],
+    requests: (method) => harness.log().filter((e) => e["method"] === method),
+  };
+  fs.mkdirSync(path.join(dir, "codex-home"));
+  fs.mkdirSync(path.join(dir, "workspace"));
+  h = harness;
+});
+
+afterEach(() => {
+  fs.rmSync(h.dir, { recursive: true, force: true });
+});
+
+const closed: ProviderTransport = {
+  open: () =>
+    Promise.resolve({
+      configOverrides: { model_provider: '"wake_relay"' },
+      env: { WAKE_RELAY_PIPE: "mindwake-broker-test" },
+      close: () => Promise.resolve(),
+    }),
+};
+
+/** Surcharges ; `undefined` retire l'option (par exemple le transport). */
+type Overrides = { [K in keyof CodexAdapterOptions]?: CodexAdapterOptions[K] | undefined };
+
+function adapter(overrides: Overrides = {}): CodexAdapter {
+  const options: Record<string, unknown> = {
+    executable: { path: process.execPath, prefixArgs: [FAKE] },
+    codexHome: path.join(h.dir, "codex-home"),
+    workspaceDir: path.join(h.dir, "workspace"),
+    launcher: h.launcher,
+    transport: closed,
+    threads: new MemoryThreadStore(),
+    systemPrompt: "Tu es l'agent Wake.",
+    model: "gpt-test",
+    effort: "medium",
+    requestTimeoutMs: 5_000,
+    versionCheck: () =>
+      Promise.resolve(`codex-cli ${CODEX_SUPPORTED_VERSION}
+`),
+  };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === undefined) Reflect.deleteProperty(options, key);
+    else options[key] = value;
+  }
+  return new CodexAdapter(options as unknown as CodexAdapterOptions);
+}
+
+let counter = 0;
+function request(profile = "profil-1"): StartRequest {
+  counter += 1;
+  return {
+    sessionId: `session-${String(counter)}` as SessionId,
+    reservationId: `res-${String(counter)}` as ReservationId,
+    policy: { profileId: profile as ProfileId } as PolicyRevision,
+    context: "Reprends l'expérience des automates.",
+    maxInputTokens: 10_000,
+    deadline: "2030-01-01T00:00:00.000Z" as UtcTimestamp,
+  };
+}
+
+async function collect(a: CodexAdapter, req: StartRequest): Promise<AdapterEvent[]> {
+  const handle = await a.start(req);
+  const events: AdapterEvent[] = [];
+  for await (const event of a.events(handle)) events.push(event);
+  return events;
+}
+
+describe("protocole app-server", () => {
+  it("lit la version de `codex --version`", () => {
+    expect(parseCodexVersion("codex-cli 0.165.0\n")).toBe("0.165.0");
+    expect(parseCodexVersion("rien")).toBeNull();
+  });
+
+  it("classe les codes d'erreur officiels", () => {
+    expect(classifyCodexError("unauthorized").kind).toBe("auth_failed");
+    expect(classifyCodexError({ httpConnectionFailed: { httpStatusCode: 401 } }).kind).toBe(
+      "auth_failed",
+    );
+    expect(classifyCodexError("usageLimitExceeded").kind).toBe("rate_limited");
+    expect(classifyCodexError({ responseStreamDisconnected: { httpStatusCode: 429 } }).kind).toBe(
+      "rate_limited",
+    );
+    expect(classifyCodexError("serverOverloaded").kind).toBe("transient");
+    expect(classifyCodexError("modelNotFound").kind).toBe("incompatible");
+    expect(classifyCodexError("cyberPolicy").kind).toBe("fatal");
+    expect(classifyCodexError(null).kind).toBe("fatal");
+  });
+
+  it("convertit la jauge sans deviner une fenêtre incomplète", () => {
+    const reading = quotaFromRateLimitsResponse(
+      {
+        rateLimits: {},
+        rateLimitsByLimitId: {
+          codex: {
+            primary: { usedPercent: 42, windowDurationMins: 300, resetsAt: 1_793_300_000 },
+            secondary: { usedPercent: 7, windowDurationMins: null, resetsAt: 1_793_900_000 },
+          },
+        },
+      },
+      "2026-10-29T12:00:00.000Z" as UtcTimestamp,
+    );
+    expect(reading.snapshots).toEqual([
+      {
+        windowKey: "codex:primary",
+        windowDurationMs: 18_000_000,
+        usedBasisPoints: 4_200,
+        resetsAt: new Date(1_793_300_000_000).toISOString(),
+        observedAt: "2026-10-29T12:00:00.000Z",
+        provenance: "measured",
+      },
+    ]);
+    expect(reading.incomplete.map((w) => w.windowKey)).toEqual(["codex:secondary"]);
+  });
+});
+
+describe("commande", () => {
+  it("CODEX_HOME dédié, aucune variable au nom de secret, réglages Wake prioritaires", () => {
+    const base = {
+      executable: { path: "C:\\codex\\codex.exe" },
+      codexHome: path.join(h.dir, "codex-home"),
+      workspaceDir: path.join(h.dir, "workspace"),
+    };
+    const command = buildAppServerCommand({
+      ...base,
+      channel: {
+        configOverrides: { request_max_retries: "9", model_provider: '"wake_relay"' },
+        env: {},
+        close: () => Promise.resolve(),
+      },
+    });
+    expect(command.env).toEqual({ CODEX_HOME: base.codexHome });
+    expect(command.args.slice(-3)).toEqual(["app-server", "--listen", "stdio://"]);
+    expect(command.args).toContain("request_max_retries=1");
+    expect(command.args).not.toContain("request_max_retries=9");
+    expect(command.args).toContain('shell_environment_policy.inherit="none"');
+    expect(() =>
+      buildAppServerCommand({
+        ...base,
+        channel: {
+          configOverrides: {},
+          env: { OPENAI_API_KEY: "x" },
+          close: () => Promise.resolve(),
+        },
+      }),
+    ).toThrow(CodexConfigError);
+    expect(() =>
+      buildAppServerCommand({
+        ...base,
+        codexHome: path.join(os.homedir(), ".codex"),
+        channel: null,
+      }),
+    ).toThrow(/dossier Codex de l'utilisateur/);
+  });
+});
+
+describe("sonde et capacités", () => {
+  it("version figée disponible, capacités honnêtes", async () => {
+    const a = adapter({ versionCheck: undefined });
+    const probe = await a.probe();
+    expect(probe).toMatchObject({
+      adapterId: CODEX_ADAPTER_ID,
+      version: CODEX_SUPPORTED_VERSION,
+      available: true,
+      simulated: false,
+    });
+    const caps = await a.capabilities();
+    expect(caps).toMatchObject({
+      tokenCapEnforcement: "provider_quota_guard",
+      providerQuotaReading: "official",
+      cancellation: "graceful",
+      residualUsageBound: null,
+    });
+  });
+
+  it("une autre version est indisponible et refusée au lancement", async () => {
+    const a = adapter({ versionCheck: () => Promise.resolve("codex-cli 0.147.0") });
+    expect(await a.probe()).toMatchObject({ available: false, version: "0.147.0" });
+    await expect(a.start(request())).rejects.toMatchObject({ code: "version_unsupported" });
+    expect(h.launches).toHaveLength(0);
+  });
+
+  it("binaire absent : indisponible", async () => {
+    const a = adapter({ versionCheck: () => Promise.reject(new Error("ENOENT")) });
+    expect(await a.probe()).toMatchObject({ available: false });
+  });
+});
+
+describe("lancement et isolation", () => {
+  it("refuse le mode autonome hors sandbox vérifiée", async () => {
+    h.attestation = { confined: true, selfTestPassed: false, detail: "autotest absent" };
+    await expect(adapter().start(request())).rejects.toBeInstanceOf(CodexAdapterError);
+    h.attestation = { confined: false, selfTestPassed: false, detail: "hôte" };
+    await expect(adapter().start(request())).rejects.toMatchObject({ code: "isolation_required" });
+    expect(h.launches).toHaveLength(0);
+  });
+
+  it("refuse un conteneur sans transport fournisseur", async () => {
+    await expect(adapter({ transport: undefined }).start(request())).rejects.toMatchObject({
+      code: "transport_required",
+    });
+  });
+
+  it("sous AppContainer vérifié : sans approbation, sans sandbox Codex", async () => {
+    await collect(adapter(), request());
+    const [thread] = h.requests("thread/start");
+    expect(thread?.["params"]).toMatchObject({
+      approvalPolicy: "never",
+      sandbox: "danger-full-access",
+      developerInstructions: "Tu es l'agent Wake.",
+      model: "gpt-test",
+    });
+    // Environnement demandé par l'adapter : rien d'hérité, seulement CODEX_HOME et le relais.
+    // (Le lanceur de test, un `spawn` ordinaire, laisse libuv ajouter PATH, USERPROFILE…
+    // les lanceurs de production construisent un bloc d'environnement explicite.)
+    expect(Object.keys(h.launches[0]?.env ?? {}).sort()).toEqual(["CODEX_HOME", "WAKE_RELAY_PIPE"]);
+    const launch = h.log().find((e) => e["kind"] === "launch");
+    expect(launch?.["envKeys"]).toEqual(expect.arrayContaining(["CODEX_HOME", "WAKE_RELAY_PIPE"]));
+    expect(h.launches[0]?.args).toContain('model_provider="wake_relay"');
+  });
+
+  it("mode manuel hors conteneur : approbations coupées mais sandbox Codex conservée", async () => {
+    h.attestation = { confined: false, selfTestPassed: false, detail: "hôte" };
+    await collect(adapter({ mode: "manual", transport: undefined }), request());
+    const [thread] = h.requests("thread/start");
+    expect(thread?.["params"]).toMatchObject({
+      approvalPolicy: "never",
+      sandbox: "workspace-write",
+    });
+  });
+});
+
+describe("flux d'événements", () => {
+  it("tour réussi : début, activité, usage par catégorie, fin ; rapprochement mesuré", async () => {
+    const quota: unknown[] = [];
+    const a = adapter({ onQuota: (r) => quota.push(r) });
+    const req = request();
+    const events = await collect(a, req);
+    const types = events.map((e) => e.type);
+    expect(types[0]).toBe("started");
+    expect(types.at(-1)).toBe("ended");
+    const usage = events.filter((e) => e.type === "usage");
+    // Le relevé d'un autre tour (turn_0) sert de point de départ, sans compter.
+    expect(usage.map((u) => u.quantity)).toEqual([
+      { unit: "tokens", amount: 150 },
+      { unit: "tokens", amount: 60 },
+    ]);
+    expect(usage[0]).toMatchObject({
+      provenance: "measured",
+      tokenBreakdown: { input: 80, cached_input: 20, output: 40, reasoning: 10 },
+    });
+    const summaries = events.flatMap((e) => (e.type === "activity" ? [e.summary] : []));
+    expect(summaries).toContain("commande : python sim.py");
+    expect(summaries).toContain("message : J'ai lancé la simulation.");
+    expect(summaries.join(" ")).not.toContain("pensée privée");
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+    expect(quota).toHaveLength(1);
+    expect(await a.reconcile(req.sessionId)).toEqual({
+      status: "confirmed",
+      ended: true,
+      usage: [{ unit: "tokens", amount: 210 }],
+      provenance: "measured",
+    });
+    expect(h.requests("turn/start")[0]?.["params"]).toMatchObject({
+      threadId: "thr_1",
+      effort: "medium",
+      input: [{ type: "text", text: "Reprends l'expérience des automates." }],
+    });
+  });
+
+  it("limitation fournisseur : rate_limited avec le délai officiel de remise à zéro", async () => {
+    h.flow = "rate-limited.json";
+    const now = new Date(1_793_299_000_000);
+    const a = adapter({ clock: () => now });
+    const req = request();
+    const events = await collect(a, req);
+    const limited = events.find((e) => e.type === "rate_limited");
+    expect(limited).toMatchObject({ retryAfterMs: 1_000_000 });
+    expect(events.some((e) => e.type === "error")).toBe(false);
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "failed" });
+    expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+
+  it("aucun compte connecté : auth_failed avant tout fil ni tour", async () => {
+    h.flow = "auth-missing.json";
+    const events = await collect(adapter(), request());
+    expect(events.find((e) => e.type === "error")).toMatchObject({ code: "auth_failed" });
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "auth_required" });
+    expect(h.requests("thread/start")).toHaveLength(0);
+    expect(h.requests("turn/start")).toHaveLength(0);
+  });
+
+  it("401 en cours de tour : auth_failed ; une erreur retentée reste une activité", async () => {
+    h.flow = "auth-unauthorized.json";
+    const events = await collect(adapter(), request());
+    expect(events.filter((e) => e.type === "error")).toEqual([
+      expect.objectContaining({ code: "auth_failed", message: "401 Unauthorized" }),
+    ]);
+    expect(
+      events.some((e) => e.type === "activity" && e.summary.includes("nouvelle tentative")),
+    ).toBe(true);
+  });
+
+  it("flux coupé : erreur transitoire, fin, usage incertain", async () => {
+    h.flow = "stream-cut.json";
+    const a = adapter();
+    const req = request();
+    const events = await collect(a, req);
+    expect(events.find((e) => e.type === "error")).toMatchObject({ code: "transient" });
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "stream_cut" });
+    const reconcile = await a.reconcile(req.sessionId);
+    expect(reconcile).toMatchObject({ status: "uncertain" });
+    expect(reconcile.status === "uncertain" && reconcile.detail).toContain("150 tokens mesurés");
+  });
+
+  it("refuse les requêtes du serveur (approbations)", async () => {
+    h.flow = "approval-request.json";
+    await collect(adapter(), request());
+    const replies = h.log().filter((e) => e["kind"] === "reply");
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.["message"]).toMatchObject({ error: { code: -32601 } });
+  });
+});
+
+describe("annulation", () => {
+  it("tour interrompu : turn/interrupt coopératif, puis arrêt du serveur", async () => {
+    h.flow = "interrupted.json";
+    const a = adapter();
+    const req = request();
+    const handle = await a.start(req);
+    const events: AdapterEvent[] = [];
+    for await (const event of a.events(handle)) {
+      events.push(event);
+      if (event.type === "usage") {
+        expect(await a.cancel(handle, 2_000)).toMatchObject({ status: "cancelled" });
+      }
+    }
+    expect(h.requests("turn/interrupt")[0]?.["params"]).toEqual({
+      threadId: "thr_1",
+      turnId: "turn_1",
+    });
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "interrupted" });
+    expect(events.some((e) => e.type === "error")).toBe(false);
+    expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+
+  it("serveur qui ignore l'interruption : terminaison forcée dans le délai", async () => {
+    h.flow = "stubborn.json";
+    const a = adapter();
+    const handle = await a.start(request());
+    const events: AdapterEvent[] = [];
+    for await (const event of a.events(handle)) {
+      events.push(event);
+      if (event.type === "started") {
+        const result = await a.cancel(handle, 400);
+        expect(result.status).toBe("forced");
+        expect(result.status === "forced" && result.within).toBeLessThan(1_000);
+      }
+    }
+    expect(events.at(-1)).toMatchObject({ type: "ended" });
+    expect(events.some((e) => e.type === "error")).toBe(false);
+  });
+
+  it("session inconnue : annulation et rapprochement non confirmés", async () => {
+    const a = adapter();
+    const handle = {
+      adapterId: CODEX_ADAPTER_ID,
+      sessionId: "x" as SessionId,
+      startedAt: "2026-10-29T00:00:00.000Z" as UtcTimestamp,
+    };
+    expect(await a.cancel(handle, 100)).toMatchObject({ status: "unconfirmed" });
+    expect(await a.reconcile("x" as SessionId)).toMatchObject({ status: "uncertain" });
+  });
+});
+
+describe("continuité", () => {
+  it("fil persisté et repris ; prompt système réinjecté seulement s'il change", async () => {
+    const threads = new FileThreadStore(path.join(h.dir, "threads"));
+    await collect(adapter({ threads }), request());
+    expect(h.requests("thread/start")).toHaveLength(1);
+
+    await collect(adapter({ threads }), request());
+    const resumes = h.requests("thread/resume");
+    expect(resumes).toHaveLength(1);
+    expect(resumes[0]?.["params"]).toMatchObject({ threadId: "thr_1" });
+    expect(resumes[0]?.["params"]).not.toHaveProperty("developerInstructions");
+
+    await collect(adapter({ threads, systemPrompt: "Prompt révisé." }), request());
+    expect(h.requests("thread/resume")[1]?.["params"]).toMatchObject({
+      developerInstructions: "Prompt révisé.",
+    });
+    await collect(adapter({ threads, systemPrompt: "Prompt révisé." }), request());
+    expect(h.requests("thread/resume")[2]?.["params"]).not.toHaveProperty("developerInstructions");
+    expect(h.requests("thread/start")).toHaveLength(1);
+  });
+
+  it("fil refusé : nouveau fil avec le prompt système", async () => {
+    const threads = new MemoryThreadStore();
+    threads.save("profil-1", {
+      threadId: "thr_old",
+      promptFingerprint: "0".repeat(64),
+      updatedAt: "2026-10-28T00:00:00.000Z" as UtcTimestamp,
+    });
+    h.flow = "resume-refused.json";
+    const events = await collect(adapter({ threads }), request());
+    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
+      developerInstructions: "Tu es l'agent Wake.",
+    });
+    expect(threads.load("profil-1")?.threadId).toBe("thr_1");
+    expect(events.at(-1)).toMatchObject({ exitReason: "completed" });
+  });
+
+  it("un fichier de fil altéré est ignoré", () => {
+    const store = new FileThreadStore(path.join(h.dir, "threads"));
+    store.save("k", {
+      threadId: "thr_9",
+      promptFingerprint: "a".repeat(64),
+      updatedAt: "2026-10-29T00:00:00.000Z" as UtcTimestamp,
+    });
+    expect(store.load("k")?.threadId).toBe("thr_9");
+    const file = fs.readdirSync(path.join(h.dir, "threads"))[0] ?? "";
+    fs.writeFileSync(path.join(h.dir, "threads", file), '{"threadId":"../../x"}');
+    expect(store.load("k")).toBeNull();
+  });
+});
+
+describe("jauge de quota", () => {
+  it("lecture officielle sans fil ni tour", async () => {
+    const reading = await adapter().readProviderQuota();
+    expect(reading.snapshots.map((s) => [s.windowKey, s.usedBasisPoints])).toEqual([
+      ["codex:primary", 4_200],
+    ]);
+    expect(reading.incomplete.map((w) => w.windowKey)).toEqual(["codex:secondary"]);
+    expect(h.requests("account/rateLimits/read")).toHaveLength(1);
+    expect(h.requests("thread/start")).toHaveLength(0);
+    expect(h.requests("turn/start")).toHaveLength(0);
+  });
+});
+
+describe("lanceur AppContainer", () => {
+  it("n'atteste l'autotest que pour le lanceur testé", () => {
+    const sandbox: SandboxLike = {
+      health: () => ({ operational: true, detail: "ok" }),
+      launch: () => {
+        throw new Error("non lancé");
+      },
+    };
+    const make = (digest: string | null) =>
+      appContainerLauncher({
+        sandbox,
+        launcherDigest: "abc",
+        selfTest: digest === null ? null : { passed: true, launcherDigest: digest },
+        jobName: (s) => `job-${s}`,
+        readWriteRoots: [],
+        readOnlyRoots: [],
+        protectedPaths: [],
+      }).isolation();
+    expect(make("abc")).toMatchObject({ confined: true, selfTestPassed: true });
+    expect(make("old")).toMatchObject({ confined: true, selfTestPassed: false });
+    expect(make(null)).toMatchObject({ selfTestPassed: false });
+  });
+
+  it("la Sandbox de production satisfait le port", () => {
+    const check = (sandbox: Sandbox): SandboxLike => sandbox;
+    expect(typeof check).toBe("function");
+  });
+});
