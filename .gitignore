@@ -13,3 +13,6 @@ coverage/
 *.db
 *.db-wal
 *.db-shm
+
+# Worktrees des sessions Claude Code
+.claude/

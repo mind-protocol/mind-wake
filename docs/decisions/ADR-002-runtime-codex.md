@@ -56,19 +56,20 @@ Une condition manquante bloque la voie concernée.
    - traduit `429` et `Retry-After` en hibernation ou en backoff borné.
 
    `rollout_budget` n'est au mieux qu'un garde-fou secondaire.
+
 4. **Annulation :** AbortSignal d'abord, puis terminaison forcée de l'arborescence par la couche d'isolation (S2/S10). La passerelle coupe en même temps les requêtes en cours et refuse les suivantes.
 5. **Isolation :** la sandbox Codex sert de défense en profondeur. La frontière exigée par §3.6 reste celle retenue par S2.
 
 ### Conditions du « go » (toutes requises avant toute session réelle autonome)
 
-| ID | Condition | Preuve attendue | Session |
-| --- | --- | --- | --- |
-| C1 | Consentement utilisateur explicite : fournisseur OpenAI API, modèle, plafond monétaire et budget de test | Révision de policy validée | G1 |
-| C2 | Passerelle compatible avec Codex 0.165.0 : requêtes, compaction, retries et flux fonctionnent ; aucune requête hors enveloppe ne part | Spike avec budget de test, journal des requêtes admises et refusées | S11 (spike avant intégration) |
-| C3 | Outils hébergés facturés hors tokens désactivés ou couverts par la borne | Configuration et requêtes observées | S11 |
-| C4 | Délai `abort` → fin des processus mesuré sous Windows ; terminaison forcée sans coopération | Mesures répétées | S2 / S10 |
-| C5 | Isolation externe : lecture des secrets, écriture hors périmètre et réseau non autorisé refusés ; la configuration Codex ne contient aucun secret réel | Tests de refus réels (A09) | S2 / S10 |
-| C6 | Version figée et revérification des sources à chaque montée de version | Sonde `probe` qui refuse une version non validée | S11 |
+| ID  | Condition                                                                                                                                              | Preuve attendue                                                     | Session                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ----------------------------- |
+| C1  | Consentement utilisateur explicite : fournisseur OpenAI API, modèle, plafond monétaire et budget de test                                               | Révision de policy validée                                          | G1                            |
+| C2  | Passerelle compatible avec Codex 0.165.0 : requêtes, compaction, retries et flux fonctionnent ; aucune requête hors enveloppe ne part                  | Spike avec budget de test, journal des requêtes admises et refusées | S11 (spike avant intégration) |
+| C3  | Outils hébergés facturés hors tokens désactivés ou couverts par la borne                                                                               | Configuration et requêtes observées                                 | S11                           |
+| C4  | Délai `abort` → fin des processus mesuré sous Windows ; terminaison forcée sans coopération                                                            | Mesures répétées                                                    | S2 / S10                      |
+| C5  | Isolation externe : lecture des secrets, écriture hors périmètre et réseau non autorisé refusés ; la configuration Codex ne contient aucun secret réel | Tests de refus réels (A09)                                          | S2 / S10                      |
+| C6  | Version figée et revérification des sources à chaque montée de version                                                                                 | Sonde `probe` qui refuse une version non validée                    | S11                           |
 
 Si C2 échoue (passerelle incompatible ou borne non démontrable), le verdict devient **blocage** de l'intégration Codex autonome, conformément à AGENTS.md §5.
 
