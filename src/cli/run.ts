@@ -5,10 +5,15 @@
 
 import { parseArgs } from "node:util";
 import { doctor } from "./commands/doctor.js";
+import { enable } from "./commands/enable.js";
+import { exportCommand } from "./commands/export.js";
 import { init } from "./commands/init.js";
 import { DEFAULT_JOURNAL_LIMIT, journal, MAX_JOURNAL_LIMIT } from "./commands/journal.js";
+import { policyConfigure } from "./commands/policy-configure.js";
 import { policyShow } from "./commands/policy.js";
+import { purge } from "./commands/purge.js";
 import { status } from "./commands/status.js";
+import { uninstall } from "./commands/uninstall.js";
 import type { CliContext } from "./context.js";
 import {
   EXIT_FAILURE,
@@ -23,7 +28,7 @@ import { resolveDataDir } from "./paths.js";
 export const USAGE = `Usage : mind-wake <commande> [options]
 
 Interface locale de MIND Wake pour votre propre agent. Aucune commande de paiement,
-de transaction ou de session guest ; aucune commande n'active l'exploration.
+de transaction ou de session guest ; aucune commande ne lance de session.
 
 Commandes :
   doctor        Diagnostic local, sans appel modèle ni accès réseau
@@ -31,6 +36,18 @@ Commandes :
   status        État, expérience active, budget, prochain réveil
   journal       Derniers événements (--limit N, --after SÉQUENCE)
   policy show   Révision de policy active, consentement et révocations
+  policy configure FICHIER.json
+                Propose une révision validée, sans effet avant \`enable\`
+  enable        Active la révision proposée après confirmation humaine : code saisi
+                dans le terminal, ou --confirm CODE (--revision ID). Refusé tant que
+                l'isolation et l'adapter ne sont pas livrés
+  export CHEMIN Copie cohérente et expurgée de l'état et des artefacts, avec manifeste
+  purge         Plan de purge du journal expiré (--older-than-days N) ; --apply l'applique
+  uninstall     --dry-run liste les effets ; --keep-data ou --delete-data, sinon
+                question dans le terminal
+
+Réservés à l'humain : --confirm et la saisie du code de \`enable\`, le choix de
+\`uninstall\`. Ni la skill ni l'espace d'exploration ne doivent les utiliser.
 
 Options :
   --json             Sortie JSON versionnée (schema mind-wake.cli, schemaVersion 1)
@@ -71,20 +88,35 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "data-dir": { type: "string" },
         limit: { type: "string" },
         after: { type: "string" },
+        confirm: { type: "string" },
+        revision: { type: "string" },
+        "older-than-days": { type: "string" },
+        apply: { type: "boolean" },
+        "dry-run": { type: "boolean" },
+        "keep-data": { type: "boolean" },
+        "delete-data": { type: "boolean" },
       },
     });
     const [first, second, ...rest] = positionals;
     command = first === "policy" && second !== undefined ? `policy ${second}` : (first ?? "help");
-    const extra = first === "policy" ? rest : positionals.slice(1);
+    const args = first === "policy" ? rest : positionals.slice(1);
+    // Seuls `export` et `policy configure` prennent un argument positionnel.
+    const takesArgument = command === "export" || command === "policy configure";
+    const argument = takesArgument ? args[0] : undefined;
+    const extra = takesArgument ? args.slice(1) : args;
 
     if (values.help === true || command === "help") {
       ctx.stdout(USAGE);
       return first === undefined && values.help !== true ? EXIT_USAGE : EXIT_OK;
     }
     if (extra.length > 0) throw new UsageError(`argument inattendu : ${extra.join(" ")}`);
+    if (takesArgument && argument === undefined) {
+      throw new UsageError(`\`${command}\` attend un chemin`);
+    }
     if (command !== "journal" && (values.limit !== undefined || values.after !== undefined)) {
       throw new UsageError("--limit et --after ne s'appliquent qu'à `journal`");
     }
+    rejectOptions(command, values);
 
     const dataDir = resolveDataDir(ctx, values["data-dir"]);
     let result: CommandResult<unknown>;
@@ -109,6 +141,42 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "policy show":
         result = policyShow(ctx, dataDir) as CommandResult<unknown>;
         break;
+      case "policy configure":
+        result = policyConfigure(ctx, dataDir, argument ?? "") as CommandResult<unknown>;
+        break;
+      case "enable":
+        result = (await enable(ctx, dataDir, {
+          revisionId: values.revision ?? null,
+          confirm: values.confirm ?? null,
+          interactive: !json,
+        })) as CommandResult<unknown>;
+        break;
+      case "export":
+        result = exportCommand(ctx, dataDir, argument ?? "") as CommandResult<unknown>;
+        break;
+      case "purge":
+        result = purge(ctx, dataDir, {
+          olderThanDays: parseIntegerOption(
+            "older-than-days",
+            values["older-than-days"],
+            1,
+            MAX_RETENTION_DAYS,
+          ),
+          apply: values.apply === true,
+        }) as CommandResult<unknown>;
+        break;
+      case "uninstall":
+        result = (await uninstall(ctx, dataDir, {
+          dryRun: values["dry-run"] === true,
+          choice:
+            values["keep-data"] === true
+              ? "keep"
+              : values["delete-data"] === true
+                ? "delete"
+                : null,
+          interactive: !json,
+        })) as CommandResult<unknown>;
+        break;
       default:
         throw new UsageError(`commande inconnue : ${command}`);
     }
@@ -121,6 +189,32 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     if (json) ctx.stdout(rendered);
     else ctx.stderr(usage ? `${rendered}\n${USAGE}` : rendered);
     return usage ? EXIT_USAGE : EXIT_FAILURE;
+  }
+}
+
+const MAX_RETENTION_DAYS = 36_500;
+
+/** Options propres à certaines commandes : ailleurs, refusées plutôt qu'ignorées. */
+const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
+  confirm: ["enable"],
+  revision: ["enable"],
+  "older-than-days": ["purge"],
+  apply: ["purge"],
+  "dry-run": ["uninstall"],
+  "keep-data": ["uninstall"],
+  "delete-data": ["uninstall"],
+};
+
+function rejectOptions(command: string, values: Readonly<Record<string, unknown>>): void {
+  for (const [option, commands] of Object.entries(COMMAND_OPTIONS)) {
+    if (values[option] !== undefined && !commands.includes(command)) {
+      throw new UsageError(
+        `--${option} ne s'applique qu'à ${commands.map((c) => `\`${c}\``).join(", ")}`,
+      );
+    }
+  }
+  if (values["keep-data"] === true && values["delete-data"] === true) {
+    throw new UsageError("choisir --keep-data ou --delete-data, pas les deux");
   }
 }
 

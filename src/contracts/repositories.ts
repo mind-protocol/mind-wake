@@ -38,6 +38,11 @@ export interface ProfileRepository {
   /** Applique une transition autorisée ; refuse toute transition hors table. */
   transition(id: ProfileId, transition: ProfileTransition): ProfileRecord;
   setNextWake(id: ProfileId, at: UtcTimestamp | null): void;
+  /**
+   * Désigne la révision de policy activée par l'humain (`enable`). N'accorde rien :
+   * le policy engine décide toujours depuis `resolvePolicy`.
+   */
+  setActivePolicyRevision(id: ProfileId, revisionId: PolicyRevisionId | null): void;
 }
 
 export interface PolicyRepository {

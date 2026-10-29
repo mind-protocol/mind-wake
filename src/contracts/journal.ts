@@ -38,6 +38,8 @@ export const JOURNAL_EVENT_TYPES = [
   "pause_requested",
   "kill_switch_triggered",
   "orphan_reconciled",
+  "data_exported",
+  "data_purged",
   "error",
 ] as const;
 

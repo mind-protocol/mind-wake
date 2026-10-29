@@ -4,6 +4,7 @@
  */
 
 import os from "node:os";
+import readline from "node:readline/promises";
 import type { AgentId, ProfileId } from "../contracts/index.js";
 import {
   openStore,
@@ -32,6 +33,23 @@ export interface CliContext {
   /** Stockage que `openStore` ouvrirait, connu sans l'ouvrir. */
   readonly storeBackend: Persistence;
   readonly probeSqlite: () => Promise<SqliteProbe>;
+  /**
+   * Saisie interactive dans le terminal de l'humain (canal de confiance de `enable` et
+   * `uninstall`). Absente hors terminal interactif : les commandes exigent alors une
+   * option explicite.
+   */
+  readonly prompt?: (question: string) => Promise<string | null>;
+}
+
+async function promptTerminal(question: string): Promise<string | null> {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return await rl.question(question);
+  } catch {
+    return null;
+  } finally {
+    rl.close();
+  }
 }
 
 export function processContext(): CliContext {
@@ -47,5 +65,6 @@ export function processContext(): CliContext {
     openStore,
     storeBackend: STORE_BACKEND,
     probeSqlite: probeSqliteDriver,
+    ...(process.stdin.isTTY && process.stdout.isTTY ? { prompt: promptTerminal } : {}),
   };
 }
