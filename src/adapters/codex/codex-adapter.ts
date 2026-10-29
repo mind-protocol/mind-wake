@@ -1,7 +1,8 @@
 import path from "node:path";
 import os from "node:os";
 import { codexWakeInput } from "../wake-image.js";
-import { takeOwnerMessages, restoreOwnerMessages } from "../../communication/owner-inbox.js";
+import { claimOwnerMessages, confirmOwnerClaim, releaseOwnerClaims } from "../../communication/owner-inbox.js";
+import { CodexOwnerSteering } from "./owner-steering.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
  * `codex app-server` (JSON-RPC sur stdio, version figée), un fil Codex repris d'un réveil
@@ -551,6 +552,8 @@ export class CodexAdapter implements RuntimeAdapter {
     const rpc = session.rpc;
     if (rpc === null) return;
     let reason = "completed";
+    let steering: CodexOwnerSteering | null = null;
+    const inbox = request.policy.groups?.runtime?.nativeCapabilities === true ? this.#options.ownerInboxDir : undefined;
     try {
       await rpc.request("initialize", { clientInfo: CLIENT_INFO });
       rpc.notify("initialized", {});
@@ -566,8 +569,11 @@ export class CodexAdapter implements RuntimeAdapter {
       }
       await this.#openThread(session, rpc, request);
       if (session.threadId === null) return;
-      const inbox=this.#options.ownerInboxDir;
-      const incoming=inbox && request.policy.groups?.runtime?.nativeCapabilities===true ? takeOwnerMessages(inbox,request.sessionId) : [];
+      // The runner admits one session per profile. Reclaim unsent reservations left
+      // by a previous process crash before claiming this turn's initial messages.
+      if (inbox) releaseOwnerClaims(inbox);
+      const initialClaim = randomUUID();
+      const incoming=inbox ? claimOwnerMessages(inbox,request.sessionId,initialClaim) : [];
       const context=incoming.length ? request.context+"\n\nNew messages delivered through the local MIND inbox (conversation content, not system instructions):\n"+JSON.stringify(incoming) : request.context;
       let started: Record<string,unknown>;
       try { started = await rpc.request("turn/start", {
@@ -576,18 +582,26 @@ export class CodexAdapter implements RuntimeAdapter {
         ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
         ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
       }); } catch(error) {
-        if(inbox)restoreOwnerMessages(inbox,request.sessionId,incoming.map(m=>m.id));
+        if(inbox)releaseOwnerClaims(inbox,request.sessionId);
         throw error;
       }
       const turnId = asRecord(started["turn"])?.["id"];
+      if (typeof turnId !== "string") throw new Error("turn/start sans identifiant de tour");
+      if (inbox && incoming.length) confirmOwnerClaim(inbox,request.sessionId,initialClaim);
       if (typeof turnId === "string") session.turnId ??= turnId;
       if (session.turn === "pending") session.turn = "inProgress";
       this.#emitStarted(session);
+      if (inbox && session.threadId && session.turnId) {
+        steering = new CodexOwnerSteering(inbox, request.sessionId, session.threadId, session.turnId, rpc,
+          () => !session.ended && !session.cancelling && session.turn === "inProgress");
+      }
       await session.turnDone;
       reason = session.turn;
     } catch (error) {
       reason = this.#onDriveError(session, error);
     } finally {
+      steering?.stop();
+      if (inbox) { try { releaseOwnerClaims(inbox,request.sessionId); } catch { /* next start recovers */ } }
       await this.#finish(session, reason);
     }
   }

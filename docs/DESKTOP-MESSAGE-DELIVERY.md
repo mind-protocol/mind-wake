@@ -37,3 +37,22 @@ Référence : https://code.claude.com/docs/en/hooks (PostToolUse, SessionStart, 
 Sur le profil local `mind-wake-essai`, le message technique `hook-live-check-20261029-1759` a été émis par SessionStart à 17:59:41 UTC ; l'agent a répondu « Injection desktop reçue ». Le message `hook-live-active-20261029-1800`, envoyé à 17:59:56 pendant cette même session, figure à 18:00:06 dans la requête modèle comme `PostToolUse:Bash hook additional context`. L'agent a confirmé via `message_owner` à 18:00:10 : « Injection PostToolUse reçue ». Aucun redémarrage n'a séparé les deux réceptions. Les envois d'essai utilisaient la même commande `reply` que le bridge desktop ; le clic natif du formulaire n'a pas été rejoué pour cette vérification.
 
 Build TypeScript, UI et exécutable Tauri réussis. 41 tests ciblés passent (file/hook, messages CLI, adapter Claude et enregistrement dans le daemon).
+## Codex : réception pendant le tour actif
+
+Le runtime Codex natif surveille aussi la boîte locale pendant un tour. Il réserve
+les messages puis appelle `turn/steer` avec le `threadId` et l’`expectedTurnId`
+courants, selon le schéma fourni par Codex CLI 0.165.0. Il ne lance pas de second
+tour et n’interrompt aucun outil. Le double check n’apparaît qu’après une réponse
+de `turn/steer` confirmant le même `turnId` : c’est une réception par le runtime,
+pas une preuve de lecture par le modèle. Un outil non interruptible peut encore
+retarder la réponse de l’agent.
+
+Si le tour vient de finir, si la méthode est refusée ou si l’accusé manque, le
+message reste disponible pour le prochain réveil. Les réservations sans accusé
+sont récupérées après un crash. Pause et Force-off gardent priorité.
+
+Preuve réelle du 29 octobre 2026 : message envoyé à 22:22:14.782 UTC pendant une
+commande d’attente de 20 secondes, réception à 22:22:15.548 UTC, réponse
+`STEER_RECEIVED` à 22:22:36.664 UTC. Un seul processus Codex, aucun arrêt/recréation
+du tour pour délivrer le message. Ce test prouve le transport pendant un outil ;
+il ne prétend pas que tous les outils, notamment `sleep`, s’interrompent aussitôt.
