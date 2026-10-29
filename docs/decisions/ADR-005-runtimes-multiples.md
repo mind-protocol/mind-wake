@@ -1,6 +1,6 @@
 # ADR-005 — Runtimes multiples, mode sans approbation sous sandbox et déclenchement avant remise à zéro
 
-- Statut : accepté
+- Statut : accepté ; condition « seulement sous sandbox » remplacée par ADR-006
 - Date : 2026-10-29
 - Session / auteur : session principale, à la demande de l'utilisateur
 - Validation humaine : décision de l'utilisateur dans le chat (« codex claude gemini », « on dangerously skip permissions », « pas de budget for now », « on déclenche quand il reste du budget et que le reset est dans quelques heures », puis « okay lance en // »)
