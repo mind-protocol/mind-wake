@@ -8,6 +8,7 @@ import type {
   PolicyRevisionId,
   ProbeResult,
   ProfileState,
+  ProviderQuotaSnapshot,
   ScheduleGroup,
   UnitOfWork,
   UtcTimestamp,
@@ -141,6 +142,8 @@ export class FakeEnvironment implements LaunchEnvironment {
   };
   sandbox: boolean | undefined = true;
   billingFacts: BillingFacts | undefined = { kind: "no_charge" };
+  /** Lectures de jauge rendues par `quotaSnapshots` ; `undefined` = aucune lecture. */
+  quota: (() => readonly ProviderQuotaSnapshot[] | undefined) | undefined;
   calls = 0;
 
   adapter(): Promise<LaunchFacts["adapter"]> {
@@ -156,6 +159,10 @@ export class FakeEnvironment implements LaunchEnvironment {
 
   billing(): Promise<BillingFacts | undefined> {
     return Promise.resolve(this.billingFacts);
+  }
+
+  quotaSnapshots(): Promise<readonly ProviderQuotaSnapshot[] | undefined> {
+    return Promise.resolve(this.quota?.());
   }
 }
 

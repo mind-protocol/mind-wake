@@ -11,6 +11,12 @@
  *   de l'une ou l'autre, demande un checkpoint dans l'enveloppe restante.
  * - Rapproche l'usage (`simulated` pour un adapter simulé) ou laisse la réservation
  *   incertaine à sa borne maximale si la fin ou la consommation ne sont pas confirmées.
+ * - Confinement : un adapter réel ne lance son runtime que dans la sandbox
+ *   (AppContainer + Job Object, autotest de refus réussi) ; l'adapter simulé garde le
+ *   Job Object seul. Un mode sans approbation hors sandbox est refusé (ADR-005).
+ * - Voie abonnement : la jauge officielle de quota est relue pendant la session ; la
+ *   session s'interrompt au seuil d'arrêt, ou si la lecture manque ou se périme. Aucun
+ *   plafond de tokens propre à Wake n'est alors exigé (ADR-005).
  * - Kill switch : persiste d'abord `stopped` verrouillé, bloque toute nouvelle action,
  *   puis termine l'arborescence du job sans attendre le modèle.
  * - Au démarrage, toute session ouverte sans processus confirmé devient `orphaned` ;
@@ -26,6 +32,7 @@ import type {
   PolicyRevision,
   ProbeResult,
   ProfileId,
+  ProviderQuotaSnapshot,
   ProfileRecord,
   ProfileState,
   Reservation,
@@ -60,16 +67,23 @@ import {
   type ResumeResult,
   type StopFlag,
 } from "./controls.js";
-import { canRequestCheckpoint, type AdapterHost, type AuthorizationVerdict } from "./host.js";
+import {
+  canReadQuota,
+  canRequestCheckpoint,
+  type AdapterHost,
+  type AuthorizationVerdict,
+  type SessionIsolationMode,
+} from "./host.js";
 import {
   DEFAULT_TERMINATION_TIMEOUT_MS,
   type ContainedCommand,
   type ContainedExit,
-  type ContainedProcess,
   type NamedTermination,
   type ProcessTreeSupervisor,
+  type SessionProcess,
   type TreeTermination,
 } from "./process-tree.js";
+import { sandboxSpecFor, type RunnerSandbox } from "./sandboxing.js";
 
 export class RunnerError extends Error {
   override readonly name = "RunnerError";
@@ -99,6 +113,11 @@ export interface LaunchGrant {
    * session au lieu de la créer ; sinon il exige un profil `ready` et la crée.
    */
   readonly sessionPrepared?: boolean;
+  /**
+   * La session consomme un quota d'abonnement (voie ADR-004/ADR-005) : la jauge est
+   * relue pendant la session et la réservation peut n'avoir aucune borne de tokens.
+   */
+  readonly onSubscription?: boolean;
 }
 
 export interface SessionResult {
@@ -112,6 +131,8 @@ export interface SessionResult {
   readonly provenance: UsageProvenance;
   readonly termination: TreeTermination | null;
   readonly checkpointCandidates: number;
+  /** Confinement effectif de la session. */
+  readonly isolation: Exclude<SessionIsolationMode, "none">;
   /** Échec de persistance en fin de session : la réconciliation au démarrage reprendra. */
   readonly persistenceError?: string;
 }
@@ -152,18 +173,26 @@ export interface RunnerOptions {
   readonly terminationTimeoutMs: number;
   /** Délai maximal accordé à un checkpoint demandé avant terminaison. */
   readonly checkpointGraceMs: number;
+  /** Période de relecture de la jauge de quota pendant une session sur abonnement. */
+  readonly quotaPollIntervalMs: number;
 }
 
 export const DEFAULT_RUNNER_OPTIONS: RunnerOptions = {
   watchdogIntervalMs: 50,
   terminationTimeoutMs: DEFAULT_TERMINATION_TIMEOUT_MS,
   checkpointGraceMs: 2_000,
+  quotaPollIntervalMs: 15_000,
 };
 
 export interface RunnerDeps {
   readonly uow: UnitOfWork;
   readonly profileId: ProfileId;
   readonly supervisor: ProcessTreeSupervisor;
+  /**
+   * Couche d'isolation (S10). Obligatoire pour un adapter réel : sans elle, ou tant que
+   * l'autotest de refus n'a pas réussi, `launch` refuse. L'adapter simulé s'en passe.
+   */
+  readonly sandbox?: RunnerSandbox;
   /** Construit l'adapter avec les services du runner. */
   readonly adapter: (host: AdapterHost) => RuntimeAdapter;
   readonly stopFlag: StopFlag;
@@ -191,12 +220,17 @@ interface ActiveSession {
   readonly ref: ActiveSessionRef;
   readonly revision: PolicyRevision;
   readonly reservation: Reservation;
-  readonly maxTokens: number;
+  /** Borne de tokens réservée ; `null` sur la voie abonnement (garde de quota). */
+  readonly maxTokens: number | null;
+  readonly isolation: Exclude<SessionIsolationMode, "none">;
+  readonly onSubscription: boolean;
+  /** Dernière lecture de la jauge ; absente = inconnue, donc interruption. */
+  quota: readonly ProviderQuotaSnapshot[] | undefined;
   readonly startSequence: number;
   readonly startedAtMs: number;
   readonly deadlineMs: number;
   handle: SessionHandle | null;
-  process: ContainedProcess | null;
+  process: SessionProcess | null;
   tokens: number;
   lastUsageMs: number;
   ended: string | null;
@@ -228,6 +262,7 @@ export class SessionRunner {
   readonly #uow: UnitOfWork;
   readonly #profileId: ProfileId;
   readonly #supervisor: ProcessTreeSupervisor;
+  readonly #sandbox: RunnerSandbox | undefined;
   readonly #stopFlag: StopFlag;
   readonly #liveChecks: RunnerDeps["liveChecks"];
   readonly #now: () => Date;
@@ -241,6 +276,7 @@ export class SessionRunner {
     this.#uow = deps.uow;
     this.#profileId = deps.profileId;
     this.#supervisor = deps.supervisor;
+    this.#sandbox = deps.sandbox;
     this.#stopFlag = deps.stopFlag;
     this.#liveChecks = deps.liveChecks;
     this.#now = deps.now ?? (() => new Date());
@@ -250,6 +286,11 @@ export class SessionRunner {
     this.host = {
       spawnContained: (sessionId, command) => this.#spawnContained(sessionId, command),
       authorize: (sessionId, action) => this.#authorize(sessionId, action),
+      isolation: (sessionId) => {
+        const session = this.#active;
+        if (session?.grant.sessionId !== sessionId) return "none";
+        return session.isolation;
+      },
     };
     this.adapter = deps.adapter(this.host);
   }
@@ -289,6 +330,37 @@ export class SessionRunner {
     if (!probe.available || probe.adapterId !== this.adapter.id) {
       throw new RunnerError("adapter_unavailable", "adapter indisponible ou non conforme");
     }
+    // Un adapter réel tourne confiné, autotest de refus réussi (AGENTS §3.6), sauf
+    // consentement distinct au mode non isolé (ADR-006) : sur l'hôte, Job Object seul.
+    const hostConsent =
+      this.#uow.policies.getRevision(decision.revisionId)?.groups.runtime
+        .hostUnsandboxedAcknowledged === true;
+    const isolation: ActiveSession["isolation"] = probe.simulated
+      ? "job_only"
+      : hostConsent
+        ? "host_unsandboxed"
+        : "sandbox";
+    if (isolation === "sandbox") {
+      if (this.#sandbox === undefined) {
+        throw new RunnerError("sandbox_unavailable", "isolation requise pour un adapter réel");
+      }
+      const readiness = this.#sandbox.ready();
+      if (!readiness.ok) throw new RunnerError("sandbox_unavailable", readiness.detail);
+    }
+    const onSubscription = grant.onSubscription === true;
+    if (onSubscription) {
+      const caps = await this.adapter.capabilities();
+      if (
+        !canReadQuota(this.adapter) ||
+        caps.providerQuotaReading !== "official" ||
+        caps.tokenCapEnforcement !== "provider_quota_guard"
+      ) {
+        throw new RunnerError(
+          "quota_unreadable",
+          "voie abonnement sans lecture officielle de la jauge de quota",
+        );
+      }
+    }
 
     const nowMs = this.#nowMs();
     const at = utc(nowMs);
@@ -325,12 +397,16 @@ export class SessionRunner {
         );
       }
       const tokens = reservation.maxima.find((q) => q.unit === "tokens");
-      if (tokens === undefined) {
-        throw new RunnerError("reservation_unbounded", "réservation sans borne de tokens");
-      }
       const revision = tx.policies.getRevision(decision.revisionId);
       if (revision === null || tx.policies.listRevocations(revision.id).length > 0) {
         throw new RunnerError("policy_not_effective", "révision de policy inconnue ou révoquée");
+      }
+      // Sans borne de tokens, seule la garde de quota consentie borne la session.
+      if (
+        tokens === undefined &&
+        !(onSubscription && revision.groups.budget.subscriptionQuota?.enabled === true)
+      ) {
+        throw new RunnerError("reservation_unbounded", "réservation sans borne de tokens");
       }
       if (!prepared) {
         tx.sessions.create({
@@ -361,15 +437,26 @@ export class SessionRunner {
         sessionId: grant.sessionId,
         ...(grant.experimentId === null ? {} : { experimentId: grant.experimentId }),
         policyRevisionId: revision.id,
-        reason: probe.simulated ? "session SIMULÉE lancée" : "session lancée",
+        reason: probe.simulated
+          ? "session SIMULÉE lancée"
+          : isolation === "host_unsandboxed"
+            ? "session lancée NON ISOLÉE sur le poste hôte (ADR-006)"
+            : "session lancée dans la sandbox",
         metadata: {
           adapterId: this.adapter.id,
           simulated: probe.simulated,
           reservationId: reservation.id,
-          maxTokens: tokens.amount,
+          maxTokens: tokens?.amount ?? null,
+          isolation,
+          onSubscription,
         },
       });
-      return { revision, reservation, maxTokens: tokens.amount, startSequence: started.sequence };
+      return {
+        revision,
+        reservation,
+        maxTokens: tokens?.amount ?? null,
+        startSequence: started.sequence,
+      };
     });
 
     const session: ActiveSession = {
@@ -382,6 +469,9 @@ export class SessionRunner {
       revision: ready.revision,
       reservation: ready.reservation,
       maxTokens: ready.maxTokens,
+      isolation,
+      onSubscription,
+      quota: undefined,
       startSequence: ready.startSequence,
       startedAtMs: nowMs,
       deadlineMs: nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
@@ -407,7 +497,13 @@ export class SessionRunner {
     const watchdog = setInterval(() => {
       this.#tick(session);
     }, this.#options.watchdogIntervalMs);
+    const quotaPoll = session.onSubscription
+      ? setInterval(() => {
+          void this.#readQuota(session);
+        }, this.#options.quotaPollIntervalMs)
+      : null;
     try {
+      if (session.onSubscription) await this.#readQuota(session);
       try {
         session.handle = await this.adapter.start({
           sessionId: session.grant.sessionId,
@@ -440,26 +536,92 @@ export class SessionRunner {
           });
         }
       }
-      const exit: ContainedExit | null =
-        session.process === null ? null : await session.process.exited;
+      const exit = session.process === null ? null : await session.process.exited;
       if (session.terminating !== null) session.termination = await session.terminating;
       return await this.#finish(session, exit);
     } finally {
       clearInterval(watchdog);
+      if (quotaPoll !== null) clearInterval(quotaPoll);
       if (this.#active === session) this.#active = null;
     }
   }
 
+  /**
+   * Relit la jauge officielle. Un échec garde la lecture précédente, qui finit par se
+   * périmer (`maxSnapshotAgeMs`) : la session s'interrompt alors, jamais en aveugle.
+   */
+  async #readQuota(session: ActiveSession): Promise<void> {
+    if (!canReadQuota(this.adapter) || session.finishing) return;
+    try {
+      session.quota = await this.adapter.readQuota();
+    } catch {
+      return;
+    }
+    this.#tick(session);
+  }
+
+  /** Conditions vivantes de la session : celles du daemon, plus la jauge sur abonnement. */
+  #sessionChecks(session: ActiveSession): SessionChecks {
+    // Signaux lus avant l'horloge : un signal ne peut pas sembler postérieur à `now`.
+    const live = this.#liveChecks();
+    const now = utc(this.#nowMs());
+    if (!session.onSubscription) return { ...live, onSubscription: false, now };
+    return { ...live, onSubscription: true, quotaSnapshots: session.quota ?? [], now };
+  }
+
   // ── Services offerts à l'adapter ───────────────────────────────────────────────
 
-  #spawnContained(sessionId: SessionId, command: ContainedCommand): ContainedProcess {
+  #spawnContained(sessionId: SessionId, command: ContainedCommand): SessionProcess {
     const session = this.#active;
     if (session?.grant.sessionId !== sessionId || session.halted || session.process !== null) {
       throw new RunnerError("spawn_refused", "lancement de processus hors de la session active");
     }
+    // Mode sans approbation : dans la sandbox, ou sur l'hôte avec consentement (ADR-006).
+    if (command.unattended === true && session.isolation === "job_only") {
+      this.#journal.record({
+        type: "action_denied",
+        at: utc(this.#nowMs()),
+        profileId: session.ref.profileId,
+        sessionId,
+        policyRevisionId: session.ref.policyRevisionId,
+        reason: "sandbox_unavailable",
+        metadata: {
+          verdict: "deny",
+          detail: "runner.unattended_outside_sandbox",
+          executable: command.executable.slice(0, 512),
+        },
+      });
+      throw new RunnerError(
+        "unattended_outside_sandbox",
+        "mode sans approbation refusé hors de la sandbox sans consentement au mode non isolé (ADR-005, ADR-006)",
+      );
+    }
+    if (session.isolation === "sandbox") {
+      const sandbox = this.#sandbox;
+      const readiness = sandbox?.ready();
+      if (sandbox === undefined || readiness?.ok !== true) {
+        throw new RunnerError("sandbox_unavailable", readiness?.detail ?? "isolation absente");
+      }
+      session.process = sandbox.launch(
+        sandboxSpecFor(sandbox, {
+          profileId: session.grant.profileId,
+          sessionId,
+          revision: session.revision,
+          command,
+          maxWallMs:
+            session.revision.groups.schedule.maxSessionDurationMs +
+            this.#options.checkpointGraceMs +
+            2 * this.#options.terminationTimeoutMs,
+        }),
+      );
+      return session.process;
+    }
     const maxProcesses = session.revision.groups.filesAndTools.maxProcesses;
     session.process = this.#supervisor.spawn(session.grant.profileId, sessionId, {
-      ...command,
+      executable: command.executable,
+      args: command.args,
+      ...(command.env === undefined ? {} : { env: command.env }),
+      ...(command.cwd === undefined ? {} : { cwd: command.cwd }),
       maxProcesses: Math.min(command.maxProcesses ?? maxProcesses, maxProcesses),
     });
     return session.process;
@@ -467,12 +629,11 @@ export class SessionRunner {
 
   #authorize(sessionId: SessionId, action: unknown): AuthorizationVerdict {
     const session = this.#active;
-    // Signaux lus avant l'horloge : un signal ne peut pas sembler postérieur à `now`.
-    const live = this.#liveChecks();
-    const at = utc(this.#nowMs());
     if (session?.grant.sessionId !== sessionId) {
       return { allowed: false, reason: "unknown_condition", interruptSession: true };
     }
+    const checks = this.#sessionChecks(session);
+    const at = checks.now;
     if (session.halted) {
       const reason = session.interruption?.kind === "stop" ? "stopped" : "session_interrupted";
       this.#journal.record({
@@ -493,7 +654,7 @@ export class SessionRunner {
         ? { state: "stopped", emergencyStopLocked: true }
         : { state: profile.state, emergencyStopLocked: profile.emergencyStopLocked },
       session.ref,
-      { ...live, now: at },
+      checks,
       action,
     );
     this.#journal.record(
@@ -608,6 +769,7 @@ export class SessionRunner {
     } catch {
       // Ledger indisponible : la réservation restera incertaine à sa borne en fin de session.
     }
+    if (session.maxTokens === null) return;
     if (session.tokens >= session.maxTokens) {
       this.#interrupt(session, {
         kind: "budget",
@@ -656,13 +818,13 @@ export class SessionRunner {
       });
       return;
     }
-    const live = this.#liveChecks();
-    const nowMs = this.#nowMs();
+    const checks = this.#sessionChecks(session);
+    const nowMs = Date.parse(checks.now);
     const assessment = assessActiveSession(
       this.#uow.policies,
       { state: profile.state, emergencyStopLocked: profile.emergencyStopLocked },
       session.ref,
-      { ...live, now: utc(nowMs) },
+      checks,
     );
     if (assessment.interruptSession) {
       const interruption: Interruption = {
@@ -706,15 +868,18 @@ export class SessionRunner {
     session.interruption = interruption;
     session.halted = true;
     this.#enterCheckpointing(session);
-    const remainingTokens = session.maxTokens - session.tokens;
     const remainingMs = session.deadlineMs - this.#nowMs();
     const handle = session.handle;
+    const maxTokens = session.maxTokens;
+    const remainingTokens =
+      maxTokens === null ? Number.POSITIVE_INFINITY : maxTokens - session.tokens;
+    const checkpointTokens =
+      maxTokens === null ? 0 : Math.min(session.revision.groups.budget.checkpointTokens, maxTokens);
     if (
       handle === null ||
       !canRequestCheckpoint(this.adapter) ||
       remainingTokens <= 0 ||
-      remainingTokens <
-        Math.min(session.revision.groups.budget.checkpointTokens, session.maxTokens) ||
+      remainingTokens < checkpointTokens ||
       remainingMs <= 0
     ) {
       this.#terminate(session);
@@ -757,7 +922,10 @@ export class SessionRunner {
 
   // ── Fin de session ─────────────────────────────────────────────────────────────
 
-  async #finish(session: ActiveSession, exit: ContainedExit | null): Promise<SessionResult> {
+  async #finish(
+    session: ActiveSession,
+    exit: (ContainedExit & { readonly aclRevoked?: boolean }) | null,
+  ): Promise<SessionResult> {
     session.finishing = true;
     const sessionId = session.ref.sessionId;
     const termination = session.termination;
@@ -808,6 +976,7 @@ export class SessionRunner {
     }
 
     const simulated = this.#probe?.simulated === true;
+    const isolation = session.isolation;
     const provenance: UsageProvenance =
       reconciled?.status === "confirmed"
         ? simulated
@@ -862,6 +1031,8 @@ export class SessionRunner {
               termination === null ? null : Math.round(termination.elapsedMs * 1000) / 1000,
             terminationVia: termination?.via ?? null,
             mainExitCode: exit?.mainExitCode ?? null,
+            isolation,
+            aclRevoked: exit?.aclRevoked ?? null,
           },
         });
         return {
@@ -874,6 +1045,7 @@ export class SessionRunner {
           provenance,
           termination,
           checkpointCandidates: session.checkpointCandidates,
+          isolation,
         };
       });
     } catch (error) {
@@ -887,6 +1059,7 @@ export class SessionRunner {
         provenance: "unknown",
         termination,
         checkpointCandidates: session.checkpointCandidates,
+        isolation,
         persistenceError: error instanceof Error ? error.message : String(error),
       };
     }

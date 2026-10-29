@@ -2,7 +2,7 @@
 
 Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et Gemini CLI. Objectif d'ensemble : aider son humain pendant qu'il est absent, sans tâche imposée. Ils sont en anglais, destinés à des agents et à un public international.
 
-**Statut : rédigés, pas encore câblés dans le daemon.** Aujourd'hui, le daemon n'envoie que le bloc de mémoire (`src/checkpoint/memory.ts`).
+**Statut : câblés dans le daemon** (`src/daemon/wake-prompt.ts`, `src/daemon/wakeups.ts`). À chaque réveil, le daemon compose le texte ci-dessous et le transmet à l'adapter par le champ `context` de `StartRequest` (aucun changement de contrat). Aucun appel modèle réel n'a encore servi ces textes.
 
 ## Composition d'un réveil
 
@@ -12,7 +12,7 @@ Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et G
 
 | Champ                                   | Rempli par le daemon avec                                                |
 | --------------------------------------- | ------------------------------------------------------------------------ |
-| `{{workspace}}`                         | dossier d'exploration de l'agent                                         |
+| `{{workspace}}`                         | dossier d'exploration de l'agent (`<données>/workspace`)                 |
 | `{{permissions}}`                       | dossiers accessibles, réseau, outils autorisés, d'après la policy active |
 | `{{session_end}}`, `{{quota_stop}}`     | fin maximale de la session, seuil d'arrêt de la jauge de quota           |
 | `{{theme}}`                             | thème facultatif donné par l'humain, sinon « none »                      |
@@ -24,7 +24,9 @@ Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et G
 
 Courtes, non spécifiques, elles suggèrent un mode d'action sans imposer de tâche : `act`, `build`, `research`, `verify`, `explore`, `tend`, `finish`, `ask`, `rest`.
 
-Choix proposé : la prochaine action du dernier checkpoint guide le choix (par exemple, une hypothèse ouverte → `verify`) ; sinon, rotation sans répéter la relance du réveil précédent. `rest` reste toujours possible : s'arrêter est un résultat valide.
+Choix câblé : la prochaine action du dernier checkpoint guide le choix quand elle désigne **un seul** mode par ses mots (anglais ou français : « verify », « vérifier » → `verify`, « finish », « terminer » → `finish`…) et qu'il diffère de la relance précédente ; sinon, rotation dans l'ordre `act → build → research → verify → explore → tend → finish → ask → rest → act`, sans répéter la relance précédente. La relance de chaque réveil est persistée (table `wake_prompts`, migration 5). `rest` reste toujours possible : s'arrêter est un résultat valide.
+
+Autres champs : `{{permissions}}` résume lecture, écriture, réseau d'exploration, outils et nombre de processus de la révision effective, plus le mode (sandbox, **NOT ISOLATED** en mode non isolé ADR-006, ou simulé) ; `{{quota_stop}}` vaut le seuil d'arrêt de la garde en pourcentage sur la voie abonnement, sinon « not applicable » ; `{{theme}}` vient de l'option `theme` du daemon, sinon « none » ; `{{memory}}` est le bloc de `loadWakeMemory` (déjà encadré comme données non fiables), ou une ligne « Memory: none yet » au premier réveil. Remplacement en une seule passe : une valeur ne peut pas injecter un autre champ.
 
 ## Réveils demandés par l'agent
 
@@ -42,9 +44,13 @@ L'agent peut déposer des fichiers JSON dans `{{wakeups_dir}}` (un dossier de so
 
 Conditions possibles : heure précise (`at`), délai (`afterHours`), remise à zéro du quota proche (`quotaResetWithinHours`), fichier modifié dans l'espace (`fileChanged`).
 
-Règles à appliquer par le daemon :
+Emplacement : `<données>/workspace/wakeups/*.json` (un niveau, 32 fichiers au plus par tour) ; le daemon y dépose une copie du schéma dans `schema/` et archive dans `archive/` (`<instant>-served|expired|rejected-<fichier>`). En mode sandbox, l'agent n'y écrit que si la policy accorde la racine `wakeups`.
+
+Règles appliquées par le daemon :
 
 - une demande n'est **jamais une autorisation** : fenêtres horaires, priorité de l'humain, pause, arrêt d'urgence, garde de quota et permissions restent vérifiés ;
-- schéma fermé, taille bornée, chemins confinés à l'espace d'exploration ; un fichier invalide est ignoré et journalisé ;
+- schéma fermé (zod strict), 4 Kio au plus, nom de fichier et `id` contraints, `id` unique ; liens symboliques, jonctions et liens physiques refusés, dossier résolu dans l'espace ; `fileChanged` confiné, sans lien ni jonction sur le chemin ; un fichier invalide est ignoré, journalisé (`action_denied`, `wakeups.invalid_ignored`) puis archivé ;
+- échéances : `at` (une fois), `afterHours` depuis la première vue (persistée, table `agent_wakeups`) ou le dernier service, `quotaResetWithinHours` d'après la remise à zéro la plus proche d'une lecture officielle de la jauge (jamais due sans lecture), `fileChanged` quand le fichier change après la première vue ou le dernier service ;
+- une demande due ne fait qu'avancer l'évaluation d'un profil en `hibernating` (port `WakeRequestSource` du scheduler) ; en `paused`, `stopped`, `blocked` ou `disabled`, elle n'a aucun effet ;
 - le texte est une donnée non fiable, présentée à l'agent comme une note qu'il s'est écrite, jamais comme une consigne du système ;
 - au plus un réveil à la fois ; une demande expirée ou déjà servie est archivée, sauf `repeat`.

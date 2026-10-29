@@ -264,10 +264,61 @@ CREATE TABLE daemon_runs (
 CREATE INDEX daemon_runs_profile ON daemon_runs (profile_id, started_at);
 `;
 
+/**
+ * Autotests de refus de l'isolation exécutés par le daemon avant un lancement réel
+ * (S10 → runner). Une session réelle n'est lancée que si le dernier autotest a réussi
+ * pour l'empreinte du lanceur en service ; `status` en affiche le résultat.
+ */
+const ISOLATION_SELF_TESTS = `
+CREATE TABLE isolation_self_tests (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  ran_at TEXT NOT NULL,
+  source_digest TEXT,
+  passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
+  checks INTEGER NOT NULL CHECK (checks >= 0),
+  failed TEXT NOT NULL,
+  cleanup_verified INTEGER NOT NULL CHECK (cleanup_verified IN (0, 1)),
+  termination_ms REAL,
+  duration_ms REAL NOT NULL
+) STRICT;
+CREATE INDEX isolation_self_tests_profile ON isolation_self_tests (profile_id, ran_at);
+`;
+
+/**
+ * Prompts de réveil (`prompts/wake/`) : relance choisie à chaque réveil (rotation sans
+ * répéter la précédente) et état des réveils demandés par l'agent (première vue, dernier
+ * service). Le texte d'une demande n'est jamais stocké ici : il reste une donnée de
+ * l'espace d'exploration, relue et revalidée à chaque usage.
+ */
+const WAKE_PROMPTS = `
+CREATE TABLE wake_prompts (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  session_id TEXT NOT NULL,
+  nudge TEXT,
+  source TEXT NOT NULL CHECK (source IN ('next_action', 'rotation', 'agent_wakeup')),
+  agent_wakeup_id TEXT,
+  composed_at TEXT NOT NULL,
+  CHECK ((source = 'agent_wakeup') = (agent_wakeup_id IS NOT NULL)),
+  CHECK ((source = 'agent_wakeup') = (nudge IS NULL))
+) STRICT;
+CREATE INDEX wake_prompts_profile ON wake_prompts (profile_id, composed_at);
+CREATE TABLE agent_wakeups (
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  id TEXT NOT NULL,
+  first_seen_at TEXT NOT NULL,
+  last_served_at TEXT,
+  PRIMARY KEY (profile_id, id)
+) STRICT;
+`;
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "initial_schema", sql: INITIAL_SCHEMA },
   { version: 2, name: "scheduler_state", sql: SCHEDULER_STATE },
   { version: 3, name: "daemon_runs", sql: DAEMON_RUNS },
+  { version: 4, name: "isolation_self_tests", sql: ISOLATION_SELF_TESTS },
+  { version: 5, name: "wake_prompts", sql: WAKE_PROMPTS },
 ];
 
 const MIGRATIONS_TABLE = `

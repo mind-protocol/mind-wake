@@ -9,7 +9,8 @@
  * - Évaluation seulement en `ready` ou `hibernating` ; `disabled`, `paused`, `blocked`,
  *   `stopped`, `running` et `checkpointing` ne déclenchent rien.
  * - En `hibernating`, rien avant l'échéance persistée ; à l'échéance, une seule
- *   évaluation (pas de rattrapage des réveils manqués pendant une veille).
+ *   évaluation (pas de rattrapage des réveils manqués pendant une veille). Un réveil
+ *   demandé par l'agent (`wakeRequests`) peut avancer cette évaluation, jamais l'accorder.
  * - Refus en `ready` : attente temporaire → `hibernating`, intervention requise →
  *   `blocked`, arrêt verrouillé → `stopped`. Refus en `hibernating` : on y reste, et
  *   le motif n'est journalisé que s'il change (scheduler calme).
@@ -60,6 +61,7 @@ import type {
   SessionLauncher,
   SessionReport,
   UserPrioritySignal,
+  WakeRequestSource,
 } from "./ports.js";
 import type { SchedulerState, SchedulerStateRepository } from "./state.js";
 import { isWindowOpen, nextWindowOpening } from "./windows.js";
@@ -83,6 +85,8 @@ export interface SchedulerOptions {
   readonly environment: LaunchEnvironment;
   readonly priority: UserPrioritySignal;
   readonly launcher: SessionLauncher;
+  /** Réveils demandés par l'agent : échéances candidates seulement. */
+  readonly wakeRequests?: WakeRequestSource;
   /** Verrou d'instance du profil, déjà acquis. */
   readonly lock: InstanceLock;
   readonly backoff?: BackoffPolicy;
@@ -191,6 +195,26 @@ function defaultSleep(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 /** Le plus contraint de plusieurs instantanés : un inconnu l'emporte sur tout. */
+/** Remise à zéro la plus lointaine des fenêtres lues, décalée de `offsetMs`. */
+function latestReset(
+  snapshots: readonly ProviderQuotaSnapshot[] | undefined,
+  offsetMs: number,
+): number | null {
+  const resets = (snapshots ?? []).map((q) => parseTs(q.resetsAt));
+  if (resets.length === 0 || resets.some((r) => r === null)) return null;
+  return Math.max(...(resets as number[])) + offsetMs;
+}
+
+/** Remise à zéro de la fenêtre nommée dans le détail du refus (`…: <fenêtre> used_bp=…`). */
+function windowReset(
+  snapshots: readonly ProviderQuotaSnapshot[] | undefined,
+  detail: string,
+): number | null {
+  const key = /^[^:]+: (\S+)/.exec(detail)?.[1];
+  const snapshot = snapshots?.find((q) => q.windowKey === key);
+  return snapshot === undefined ? null : parseTs(snapshot.resetsAt);
+}
+
 function tightest(list: readonly BudgetAvailability[]): BudgetAvailability | undefined {
   let worst: BudgetAvailability | undefined;
   for (const item of list) {
@@ -271,7 +295,19 @@ export class Scheduler {
     }
     const wake = parseTs(profile.nextWakeAt);
     if (profile.state === "hibernating" && wake !== null && wake > nowMs) {
-      return { kind: "sleeping", nextWakeAt: iso(wake) };
+      // Une demande de l'agent peut seulement avancer l'évaluation ; tout reste vérifié.
+      const source = this.#o.wakeRequests;
+      const requested =
+        source === undefined
+          ? undefined
+          : await guarded(() => source.nextRequestedWake(nowMs), this.#factTimeoutMs);
+      if (typeof requested !== "number" || !Number.isFinite(requested) || requested > nowMs) {
+        const next =
+          typeof requested === "number" && Number.isFinite(requested)
+            ? Math.min(wake, Math.max(requested, nowMs))
+            : wake;
+        return { kind: "sleeping", nextWakeAt: iso(next) };
+      }
     }
 
     const facts = await this.#gatherFacts();
@@ -370,7 +406,7 @@ export class Scheduler {
               reason: "unknown_condition",
               detail: "scheduler.inconsistent_facts",
             };
-      return this.#deny(profile, sched, denial, revision, budget, nowMs);
+      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts.quotaSnapshots);
     }
 
     const sessionId = this.#newId() as SessionId;
@@ -391,7 +427,7 @@ export class Scheduler {
         reason: reserved.reason,
         detail: `ledger.${reserved.reason}: ${reserved.detail}`,
       };
-      return this.#deny(profile, sched, denial, revision, budget, nowMs);
+      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts.quotaSnapshots);
     }
     return this.#launch(profile, sched, revision, sessionId, reservationId, maxima, at);
   }
@@ -454,10 +490,15 @@ export class Scheduler {
   }
 
   #maxima(revision: PolicyRevision, billing: BillingFacts | undefined): readonly BudgetQuantity[] {
-    const maxima: BudgetQuantity[] = [
-      { unit: "tokens", amount: revision.groups.budget.tokensPerSession },
-      { unit: "sessions", amount: 1 },
-    ];
+    // Voie abonnement : la garde de quota borne la session (ADR-005), aucune enveloppe de
+    // tokens propre à Wake n'est réservée ; les points de base ne deviennent pas des tokens.
+    const maxima: BudgetQuantity[] =
+      billing?.kind === "subscription_quota"
+        ? [{ unit: "sessions", amount: 1 }]
+        : [
+            { unit: "tokens", amount: revision.groups.budget.tokensPerSession },
+            { unit: "sessions", amount: 1 },
+          ];
     if (billing?.kind === "paid_api" && billing.maxSessionCostMinor !== null) {
       maxima.push({
         unit: "money",
@@ -513,19 +554,31 @@ export class Scheduler {
     revision: PolicyRevision | null,
     budget: BudgetFacts | undefined,
     nowMs: number,
+    snapshots: readonly ProviderQuotaSnapshot[] | undefined,
   ): number {
     const recheck = nowMs + this.#recheckMs;
     if (revision === null) return recheck;
     let candidate: number | null;
+    const guard = revision.groups.budget.subscriptionQuota;
+    const quota = decision.detail.startsWith("subscription.");
     switch (decision.reason) {
       case "outside_window":
-        candidate = nowMs;
+        // Remise à zéro trop lointaine : réveil quand la plus lointaine entre dans le délai.
+        candidate =
+          quota && guard?.enabled === true
+            ? latestReset(snapshots, -guard.launchWhenResetWithinMs)
+            : nowMs;
         break;
       case "backoff_active":
         candidate = this.#holdUntil(sched, revision) ?? null;
         break;
       case "budget_exhausted":
-        candidate = budget === undefined ? null : parseTs(budget.periods[0]?.endsAt ?? null);
+        // Seuil de départ atteint : rien avant la remise à zéro de la fenêtre.
+        candidate = quota
+          ? windowReset(snapshots, decision.detail)
+          : budget === undefined
+            ? null
+            : parseTs(budget.periods[0]?.endsAt ?? null);
         break;
       default:
         return recheck;
@@ -547,6 +600,7 @@ export class Scheduler {
     revision: PolicyRevision | null,
     budget: BudgetFacts | undefined,
     nowMs: number,
+    snapshots?: readonly ProviderQuotaSnapshot[],
   ): TickResult {
     const { uow, profileId, state: stateRepo } = this.#o;
     const at = iso(nowMs);
@@ -580,7 +634,7 @@ export class Scheduler {
     }
     const nextWakeAt =
       state === "hibernating"
-        ? iso(this.#nextWake(decision, sched, revision, budget, nowMs))
+        ? iso(this.#nextWake(decision, sched, revision, budget, nowMs, snapshots))
         : null;
     uow.profiles.setNextWake(profileId, nextWakeAt);
     stateRepo.save({ ...sched, lastDenial: key }, at);

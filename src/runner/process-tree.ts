@@ -97,6 +97,31 @@ export interface ContainedCommand {
   readonly cwd?: string;
   /** Limite de processus actifs du job (`filesAndTools.maxProcesses`). */
   readonly maxProcesses?: number;
+  /**
+   * Le runtime est lancé en mode sans approbation (`--dangerously-skip-permissions`,
+   * `--yolo`…). Permis seulement dans la sandbox, après autotest réussi (ADR-005) : hors
+   * sandbox, le runner refuse le lancement.
+   */
+  readonly unattended?: boolean;
+  /**
+   * Canal fournisseur demandé : dans la sandbox, le runner ouvre le pipe du broker et en
+   * transmet le chemin dans `MIND_WAKE_BROKER_PIPE`. Sans broker, le réseau reste fermé.
+   */
+  readonly broker?: boolean;
+}
+
+/**
+ * Processus d'une session, contenu (Job Object seul) ou confiné (AppContainer + Job
+ * Object, `src/sandbox`) : forme commune que le runner et les adapters manipulent.
+ */
+export interface SessionProcess {
+  readonly jobName: string;
+  readonly exited: Promise<ContainedExit & { readonly aclRevoked?: boolean }>;
+  started(): Promise<number>;
+  readonly hasExited: boolean;
+  readLine(): Promise<string | null>;
+  send(line: string): void;
+  terminateTree(timeoutMs?: DurationMs): Promise<TreeTermination>;
 }
 
 /** Résultat d'une terminaison d'arborescence, mesurée depuis la décision d'arrêt. */
@@ -120,7 +145,7 @@ export interface ContainedExit {
 }
 
 /** Processus d'une session et toute sa descendance, contenus dans un Job Object. */
-export class ContainedProcess {
+export class ContainedProcess implements SessionProcess {
   readonly jobName: string;
   readonly exited: Promise<ContainedExit>;
   #child: ChildProcess;

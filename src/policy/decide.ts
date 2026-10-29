@@ -78,6 +78,14 @@ export function decideActivation(policies: PolicyRepository, profileId: ProfileI
   return allow(resolution.revision.id, "activation.allowed");
 }
 
+/**
+ * Mode non isolé consenti (ADR-006) : l'isolation système n'est plus exigée, ni au
+ * lancement ni pendant la session. Toutes les autres conditions restent vérifiées.
+ */
+export function hostUnsandboxedConsented(groups: PolicyGroups): boolean {
+  return (groups.runtime.hostUnsandboxedAcknowledged as unknown) === true;
+}
+
 function unreachable(): never {
   throw new Error("policy: état de résolution incohérent");
 }
@@ -187,8 +195,11 @@ export function decideLaunch(
       : billingDenial(id, groups, consent.grantedAt, facts.billing, facts.budget);
   if (billingDeny !== null) return billingDeny;
 
+  const isolationFacts = hostUnsandboxedConsented(groups)
+    ? []
+    : ([[facts.sandboxOperational, "sandbox", "sandbox_unavailable"]] as const);
   for (const [value, name, reason] of [
-    [facts.sandboxOperational, "sandbox", "sandbox_unavailable"],
+    ...isolationFacts,
     [facts.windowOpen, "window", "outside_window"],
   ] as const) {
     const d = factDenial(id, value, name, reason);
@@ -206,13 +217,17 @@ export function decideLaunch(
     return deny(id, "session_already_active", `sessions.open: ${String(facts.openSessionCount)}`);
   }
 
-  const tokens = availabilityDenial(
-    id,
-    facts.budget?.tokens,
-    "tokens",
-    groups.budget.tokensPerSession,
-  );
-  if (tokens !== null) return tokens;
+  // Voie abonnement : la garde de quota est la borne (ADR-005) ; aucun plafond de tokens
+  // propre à Wake n'est exigé, et les points de base ne sont jamais convertis en tokens.
+  if (facts.billing?.kind !== "subscription_quota") {
+    const tokens = availabilityDenial(
+      id,
+      facts.budget?.tokens,
+      "tokens",
+      groups.budget.tokensPerSession,
+    );
+    if (tokens !== null) return tokens;
+  }
   const sessions = availabilityDenial(id, facts.budget?.sessions, "sessions", 1);
   if (sessions !== null) return sessions;
 
@@ -256,7 +271,7 @@ function adapterDenial(
   if (!capabilities.userPrioritySignal) {
     return deny(id, "adapter_incompatible", "adapter.no_user_priority_signal");
   }
-  if (!capabilities.isolationCompatible) {
+  if (!capabilities.isolationCompatible && !hostUnsandboxedConsented(groups)) {
     return deny(id, "sandbox_unavailable", "adapter.isolation_incompatible");
   }
   return null;
@@ -361,10 +376,15 @@ function subscriptionLaunchDenial(
   return quotaDenial(id, guard, now, facts.quotaSnapshots, "start");
 }
 
+/** Préfixe du détail « remise à zéro trop lointaine », lu par le scheduler. */
+export const RESET_NOT_WITHIN = "subscription.reset_not_within";
+
 /**
  * Lectures de quota : au moins une, toutes `measured`, récentes, cohérentes, et sous le
- * seuil de départ (`start`) ou d'arrêt (`stop`). Les points de base ne sont jamais
- * convertis en tokens.
+ * seuil de départ (`start`) ou d'arrêt (`stop`). Au départ, chaque fenêtre lue doit en
+ * outre se remettre à zéro dans `launchWhenResetWithinMs` (ADR-005) : Wake ne consomme
+ * que ce qui serait perdu de toute façon. Les points de base ne sont jamais convertis en
+ * tokens.
  */
 function quotaDenial(
   id: PolicyRevisionId,
@@ -396,6 +416,23 @@ function quotaDenial(
         "budget_exhausted",
         `subscription.${phase}_threshold_reached: ${key} used_bp=${String(used)}`,
       );
+    }
+    if (phase === "start") {
+      if (!isUtcTimestamp(snapshot.resetsAt)) {
+        return deny(id, "budget_unknown", `subscription.snapshot_invalid: ${key}`);
+      }
+      const resetsInMs = Date.parse(snapshot.resetsAt) - Date.parse(now);
+      // Remise à zéro déjà passée : la lecture décrit une fenêtre close, donc périmée.
+      if (resetsInMs <= 0) {
+        return deny(id, "budget_unknown", `subscription.snapshot_reset_passed: ${key}`);
+      }
+      if (resetsInMs > guard.launchWhenResetWithinMs) {
+        return deny(
+          id,
+          "outside_window",
+          `${RESET_NOT_WITHIN}: ${key} resets_in_ms=${String(resetsInMs)}`,
+        );
+      }
     }
   }
   return null;
@@ -535,8 +572,10 @@ function sessionChecksDenial(
   }
   const priority = priorityDenial(id, revision.groups, checks.now, checks.userPriority);
   if (priority !== null) return priority;
-  const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");
-  if (sandbox !== null) return sandbox;
+  if (!hostUnsandboxedConsented(revision.groups)) {
+    const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");
+    if (sandbox !== null) return sandbox;
+  }
   if (checks.onSubscription === false) return null;
   if (checks.onSubscription !== true) {
     return deny(id, "unknown_condition", "subscription.session_mode_unknown");

@@ -4,9 +4,11 @@
  * de la session en cours puis arrêt ; un second Ctrl+C arrête aussitôt, la session est
  * alors réconciliée comme orpheline au démarrage suivant).
  *
- * Ce build ne contient aucun adapter réel : sans `--simulated`, la commande refuse de
- * démarrer. Avec `--simulated`, seul l'adapter factice tourne et tout est marqué SIMULÉ
- * (sortie, journal, statut, bilan). Aucun appel modèle, aucun port réseau.
+ * Avec `--simulated`, seul l'adapter factice tourne et tout est marqué SIMULÉ (sortie,
+ * journal, statut, bilan). Sans `--simulated`, le daemon exécute l'adapter réel désigné
+ * par la policy, seulement s'il est enregistré dans ce build et que son `probe` le dit
+ * disponible, et seulement dans la sandbox après un autotest de refus réussi ; sinon il
+ * refuse avec motif, sans repli vers un autre runtime. Aucun port réseau.
  */
 
 import {
@@ -67,7 +69,7 @@ export async function daemonRun(
   try {
     const runtimeDir = ctx.env[RUNTIME_DIR_ENV];
     const scenario = forcedScenario(ctx.env[FAKE_SCENARIO_ENV]);
-    daemon = WakeDaemon.open({
+    daemon = await WakeDaemon.open({
       dataDir: dataDir.path,
       profileId: DEFAULT_PROFILE_ID,
       simulated: options.simulated,
@@ -121,7 +123,7 @@ export async function daemonRun(
     exitCode: EXIT_OK,
     data: {
       started: true,
-      simulated: true,
+      simulated: daemon.simulated,
       runId: summary.runId,
       refusal: null,
       stopReason: summary.reason,
@@ -140,6 +142,12 @@ export async function daemonRun(
 function formatDaemonRun(data: DaemonRunData): string {
   if (!data.started) {
     return `Daemon non démarré [${data.refusal?.code ?? "—"}] : ${data.refusal?.detail ?? "—"}`;
+  }
+  if (!data.simulated) {
+    return [
+      `Exécution ${data.runId ?? "—"} terminée : ${data.stopReason ?? "—"}`,
+      `Sessions menées : ${String(data.sessions.length)} (sessions confinées, adapter réel)`,
+    ].join("\n");
   }
   return [
     `[SIMULÉ] Exécution ${data.runId ?? "—"} terminée : ${data.stopReason ?? "—"}`,

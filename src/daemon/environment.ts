@@ -1,13 +1,19 @@
 /**
- * Faits de lancement du daemon SIMULÉ : adapter factice, signal d'activité utilisateur
- * simulé, isolation déclarée simulée. Rien ici ne présente une capacité réelle : la
- * sandbox de production (S10) et l'adapter Codex (S11) ne sont pas implémentés, et le
- * daemon refuse de démarrer sans `--simulated`.
+ * Faits de lancement du daemon. Mode SIMULÉ : adapter factice, signal d'activité
+ * utilisateur simulé, Job Object seul (aucune isolation de fichiers ni de réseau).
+ * Mode réel : adapter enregistré, sandbox AppContainer après autotest de refus réussi,
+ * jauge officielle de quota pour la voie abonnement.
  */
 
 import fs from "node:fs";
-import type { RuntimeAdapter, RuntimeGroup, UtcTimestamp } from "../contracts/index.js";
+import type {
+  ProviderQuotaSnapshot,
+  RuntimeAdapter,
+  RuntimeGroup,
+  UtcTimestamp,
+} from "../contracts/index.js";
 import type { BillingFacts, LaunchFacts, PrioritySignal, SessionChecks } from "../policy/index.js";
+import { canReadQuota } from "../runner/index.js";
 import type { LaunchEnvironment, UserPrioritySignal } from "../scheduler/index.js";
 
 /** Runtime déclaré par l'adapter factice ; la policy doit le désigner exactement. */
@@ -68,4 +74,50 @@ export class SimulatedEnvironment implements LaunchEnvironment {
 /** Conditions vivantes revérifiées par le runner avant chaque action. */
 export function simulatedLiveChecks(signal: SimulatedActivitySignal): Omit<SessionChecks, "now"> {
   return { userPriority: signal.current(), sandboxOperational: true, onSubscription: false };
+}
+
+/**
+ * Environnement de lancement d'un adapter réel : faits de l'adapter enregistré (probe,
+ * capacités, runtime configuré), isolation prête seulement après autotest de refus
+ * réussi, facturation déclarée par l'enregistrement et lecture officielle de la jauge.
+ * Une lecture absente ou en erreur laisse la condition inconnue : refus.
+ */
+export class RuntimeEnvironment implements LaunchEnvironment {
+  constructor(
+    private readonly adapterFacts: RuntimeAdapter,
+    private readonly runtime: RuntimeGroup,
+    private readonly billingFacts: BillingFacts,
+    private readonly sandboxReady: () => boolean,
+  ) {}
+
+  async adapter(): Promise<LaunchFacts["adapter"]> {
+    const probe = await this.adapterFacts.probe();
+    if (probe.simulated) return undefined;
+    return { probe, capabilities: await this.adapterFacts.capabilities(), runtime: this.runtime };
+  }
+
+  sandboxOperational(): Promise<boolean | undefined> {
+    return Promise.resolve(this.sandboxReady());
+  }
+
+  billing(): Promise<BillingFacts | undefined> {
+    return Promise.resolve(this.billingFacts);
+  }
+
+  async quotaSnapshots(): Promise<readonly ProviderQuotaSnapshot[] | undefined> {
+    if (this.billingFacts.kind !== "subscription_quota") return undefined;
+    if (!canReadQuota(this.adapterFacts)) return undefined;
+    return this.adapterFacts.readQuota();
+  }
+}
+
+/**
+ * Conditions vivantes d'une session réelle. La jauge de quota est ajoutée par le runner ;
+ * le signal d'activité reste SIMULÉ (fichier) tant que `GetLastInputInfo` n'est pas câblé.
+ */
+export function runtimeLiveChecks(
+  signal: SimulatedActivitySignal,
+  sandboxReady: () => boolean,
+): Omit<SessionChecks, "now"> {
+  return { userPriority: signal.current(), sandboxOperational: sandboxReady() };
 }

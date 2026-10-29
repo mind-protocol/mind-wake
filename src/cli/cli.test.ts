@@ -554,7 +554,7 @@ describe("doctor", () => {
     expect(code).toBe(1);
     expect(h.out.join("")).toContain("[ÉCHEC] node");
     expect(h.out.join("")).toContain("[ÉCHEC] sqlite_driver");
-    expect(h.out.join("")).toContain("[NON IMPLÉMENTÉ] isolation");
+    expect(h.out.join("")).toContain("[BLOQUÉ] isolation");
   });
 
   const report = (passed: boolean): IsolationSelfTestReport => ({
