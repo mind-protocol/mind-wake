@@ -1,0 +1,5 @@
+{"type":"init","timestamp":"2026-10-29T10:00:00.000Z","session_id":"8f1c2b7e-4d3a-4f6b-9a21-0c5e7d9b1a33","model":"gemini-2.5-pro"}
+{"type":"message","timestamp":"2026-10-29T10:00:01.000Z","role":"assistant","content":"Je commence","delta":true}
+#! cut 40
+{"type":"tool_use","timestamp":"2026-10-29T10:00:02.000Z","tool_name":"run_shell_command","tool_id":"t1","parameters":{}}
+#! exit 1

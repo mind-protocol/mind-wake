@@ -50,6 +50,14 @@ Exclu : modes sans approbation sur le poste hôte, repli automatique d'un runtim
 - Un dépassement mesuré qui mange la réserve de l'humain.
 - L'utilisateur décide de rétablir des plafonds propres à Wake.
 
+## Complément : Gemini CLI (29 octobre 2026)
+
+Vérification de la session d'adapter Gemini (`src/adapters/gemini/README.md`, CLI 0.52.0) :
+
+- **Aucune lecture officielle du quota** restant ni de l'heure de remise à zéro : seule la commande interactive `/stats model` en parle, sans contenu spécifié. Gemini CLI est donc `providerQuotaReading: "none"` et **bloqué en mode autonome** ; lancement manuel seulement.
+- **Options retenues :** `--prompt`, `--output-format stream-json`, `--model`, `--approval-mode yolo` (le drapeau `--yolo` est déprécié), `GEMINI_CLI_HOME` propre à Wake, outils restreints par `tools.core`, `tools.exclude` et une politique utilisateur (`--allowed-tools` est déprécié).
+- **Conditions :** la page de conditions de Gemini CLI qualifie de violation, pouvant entraîner la suspension du compte, l'accès direct aux services qui alimentent la CLI par un logiciel tiers, en citant l'emploi de l'OAuth de Gemini CLI dans un autre outil. Pour un compte Google, le relais fournisseur **ne détient ni ne réinjecte** ce jeton : il reste dans la CLI officielle et le relais ne fait que relayer et filtrer. Une clé Gemini API relève des conditions de l'API, pas de l'abonnement. L'usage automatisé n'est ni autorisé ni interdit explicitement.
+
 ## Sources consultées
 
 `docs/feasibility/codex.md`, `docs/feasibility/isolation-windows.md`, `src/sandbox/README.md`. Lecture du lanceur de `le-conseil2` (`scripts/agents/runtime.py`) comme référence, sans reprise de code. Les documentations officielles de Claude Code et de Gemini CLI restent à vérifier par les sessions d'adapter.

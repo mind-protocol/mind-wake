@@ -1,0 +1,2 @@
+#! stderr Error authenticating: no credentials configured
+#! exit 41
