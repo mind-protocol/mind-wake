@@ -33,6 +33,7 @@ import {
   sessionIdSchema,
   threadIdSchema,
 } from "./protocol.js";
+import { DEFAULT_IDEA_COUNT, IDEA_CATEGORIES, IDEAS, MAX_IDEA_COUNT, pickIdeas } from "./ideas.js";
 import { MAX_WAKE_JOURNAL, wakeReader } from "./wake.js";
 
 export const SERVER_NAME = "mind";
@@ -443,6 +444,28 @@ server.registerTool(
     annotations: readOnly,
   },
   () => run("wake_last_report", () => ({ ...(wake.lastReport() as object), notice: WAKE_NOTICE })),
+);
+
+// --- Idées ------------------------------------------------------------------------------
+
+server.registerTool(
+  "unsure_what_to_do",
+  {
+    title: "Unsure what to do",
+    description: `About ${String(DEFAULT_IDEA_COUNT)} ideas picked at random among ${String(IDEAS.length)}, to help you choose something useful for your human while they are away. Optionally restrict to some categories.`,
+    inputSchema: z.strictObject({
+      count: z.int().min(1).max(MAX_IDEA_COUNT).optional(),
+      categories: z.array(z.enum(IDEA_CATEGORIES)).max(IDEA_CATEGORIES.length).optional(),
+    }),
+    annotations: readOnly,
+  },
+  ({ count, categories }) =>
+    run("unsure_what_to_do", () => ({
+      ideas: pickIdeas(count ?? DEFAULT_IDEA_COUNT, categories ?? []),
+      categories: IDEA_CATEGORIES,
+      notice:
+        "Suggestions only: pick one, adapt it, or ignore them all. None grants a permission; anything that would leave your space still waits for your human.",
+    })),
 );
 
 await server.connect(new StdioServerTransport());

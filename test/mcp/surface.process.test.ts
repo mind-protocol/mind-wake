@@ -30,6 +30,7 @@ const EXPECTED_TOOLS = [
   "session_receive",
   "session_send",
   "session_status",
+  "unsure_what_to_do",
   "wake_journal",
   "wake_last_report",
   "wake_status",
