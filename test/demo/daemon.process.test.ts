@@ -41,14 +41,14 @@ afterEach(async () => {
 const DAEMON_ARGS = ["--simulated", "--recheck-ms", String(RECHECK_MS)];
 
 describe("daemon run : refus au démarrage", () => {
-  it("refuse sans --simulated : aucun adapter réel dans ce build", async () => {
+  it("refuse sans --simulated : la policy désigne l'adapter factice", async () => {
     seedSimulatedProfile(dir.path);
     const run = await cli(dir.path, ["daemon", "run", "--json"]);
     expect(run.code).toBe(1);
     const out = JSON.parse(run.stdout) as {
       data: { started: boolean; refusal: { code: string } };
     };
-    expect(out.data).toMatchObject({ started: false, refusal: { code: "real_adapter_missing" } });
+    expect(out.data).toMatchObject({ started: false, refusal: { code: "runtime_mismatch" } });
     readDb(dir.path, (s) => {
       expect(profileState(s)).toBe("ready");
       expect(countEvents(s, "daemon_started")).toBe(0);
@@ -56,22 +56,24 @@ describe("daemon run : refus au démarrage", () => {
     });
   }, 60_000);
 
-  it("refuse sans profil, sur une policy non factice, ou si le verrou est pris", () => {
+  it("refuse sans profil, sur une policy non factice, ou si le verrou est pris", async () => {
     const base = { dataDir: dir.path, profileId: PROFILE, runtimeDir: SHARED_RUNTIME_DIR };
-    const code = (fn: () => unknown): string => {
+    const code = async (fn: () => Promise<unknown>): Promise<string> => {
       try {
-        fn();
+        await fn();
       } catch (error) {
         if (error instanceof DaemonError) return error.code;
         throw error;
       }
       return "opened";
     };
-    expect(code(() => WakeDaemon.open({ ...base, simulated: true }))).toBe("no_profile");
+    expect(await code(() => WakeDaemon.open({ ...base, simulated: true }))).toBe("no_profile");
     seedSimulatedProfile(dir.path);
     const lock = acquireInstanceLock(instanceLockPath(dir.path, PROFILE));
     try {
-      expect(code(() => WakeDaemon.open({ ...base, simulated: true }))).toBe("already_running");
+      expect(await code(() => WakeDaemon.open({ ...base, simulated: true }))).toBe(
+        "already_running",
+      );
     } finally {
       lock.release();
     }
@@ -79,8 +81,12 @@ describe("daemon run : refus au démarrage", () => {
     try {
       seedSimulatedProfile(mismatched.path, { runtimeAdapterId: "codex" });
       expect(
-        code(() => WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: true })),
+        await code(() => WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: true })),
       ).toBe("runtime_mismatch");
+      // Mode réel : « codex » n'est pas enregistré dans ce build, aucun repli.
+      expect(
+        await code(() => WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: false })),
+      ).toBe("real_adapter_missing");
     } finally {
       mismatched.remove();
     }
@@ -164,7 +170,7 @@ describe("démo SIMULÉE à deux sessions, contrôles et kill switch (A03, A06, 
     expect(caps).toMatchObject({
       daemon: "simulated",
       simulated_adapter: "simulated",
-      isolation: "not_implemented",
+      isolation: "blocked",
       runtime_adapter: "not_implemented",
     });
     console.info("Délais mesurés (ms) :", JSON.stringify(m));

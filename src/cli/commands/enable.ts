@@ -87,9 +87,17 @@ class Refusal extends Error {
   }
 }
 
-function missingComponents(components: EnableComponents): readonly string[] {
+/**
+ * Composants manquants. Avec le consentement au mode non isolé (ADR-006), l'isolation
+ * n'est plus exigée ; un adapter réel enregistré l'est toujours.
+ */
+function missingComponents(
+  components: EnableComponents,
+  revision: PolicyRevision,
+): readonly string[] {
   const missing: string[] = [];
-  if (!components.isolation) missing.push("isolation non livrée dans ce build");
+  const hostUnsandboxed = revision.groups.runtime.hostUnsandboxedAcknowledged === true;
+  if (!components.isolation && !hostUnsandboxed) missing.push("isolation non livrée dans ce build");
   if (!components.runtimeAdapter) missing.push("adapter runtime non livré dans ce build");
   return missing;
 }
@@ -136,6 +144,10 @@ function checkLimits(revision: PolicyRevision, profileId: ProfileId): void {
   }
 }
 
+/** Exposé du risque affiché avant de confirmer le mode non isolé (ADR-006). */
+export const HOST_UNSANDBOXED_WARNING =
+  "ATTENTION — MODE NON ISOLÉ (ADR-006) : le runtime tournera sur ce poste avec ses options sans approbation et TOUS les droits de votre compte Windows (fichiers, secrets, réseau, comptes ouverts). Un contenu lu peut l'amener à supprimer, envoyer ou modifier sans contrôle. Seuls l'arrêt d'urgence, la pause, la priorité humaine, la garde de quota et le journal restent imposés. Un compte Windows dédié est recommandé.";
+
 async function confirm(
   ctx: CliContext,
   options: EnableOptions,
@@ -165,6 +177,9 @@ async function confirm(
       `Révision ${revision.id} — empreinte ${digest}`,
       `Nature : ${change.kind} ; élargit : ${change.widened.join(", ") || "rien"}`,
       `Plafonds : ${String(revision.groups.budget.tokensPerSession)} tokens/session, ${String(revision.groups.budget.tokensPerPeriod)} tokens et ${String(revision.groups.budget.sessionsPerPeriod)} sessions par ${revision.groups.budget.period.kind}`,
+      ...(revision.groups.runtime.hostUnsandboxedAcknowledged === true
+        ? ["", HOST_UNSANDBOXED_WARNING]
+        : []),
       "",
     ].join("\n"),
   );
@@ -227,7 +242,7 @@ export async function enable(
         revision.groups.data.localStorageCapBytes,
       );
       if (storage.status === "saturated") throw new Refusal("storage_saturated", storage.detail);
-      const missing = missingComponents(components);
+      const missing = missingComponents(components, revision);
       if (missing.length > 0) {
         throw new Refusal(
           "components_missing",

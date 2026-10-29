@@ -5,7 +5,11 @@
  */
 
 import type { PolicyRevision, SubscriptionQuotaGuard } from "../contracts/index.js";
+import { defaultRegistry } from "../daemon/registry.js";
 import type { Persistence } from "./store/index.js";
+
+/** Adapters réels enregistrés dans ce build (Codex, Claude, Gemini à leur fusion). */
+const REAL_ADAPTERS = defaultRegistry().realIds();
 
 export const AVAILABILITIES = [
   "present",
@@ -66,9 +70,14 @@ export const BUILD_COMPONENTS: Readonly<
   daemon: true,
   /** Adapter factice : sessions SIMULÉES, jamais une preuve d'intégration réelle. */
   simulatedAdapter: true,
-  isolation: false,
-  /** Adapter réel (Codex, S11). */
-  runtimeAdapter: false,
+  /**
+   * Sandbox AppContainer + Job Object (S10) câblée au runner : tout adapter réel y est
+   * lancé, seulement après un autotest de refus réussi. « Présente » sur un poste
+   * seulement quand cet autotest a réussi (`doctor`, ou daemon en mode réel).
+   */
+  isolation: true,
+  /** Adapter réel enregistré dans le registre du daemon (Codex, Claude, Gemini). */
+  runtimeAdapter: REAL_ADAPTERS.length > 0,
 };
 
 /**
@@ -91,8 +100,9 @@ export function subscriptionPath(
   ) {
     blockers.push("seuil d'arrêt + dépassement mesuré empiète sur la réserve humaine");
   }
-  if (!available.adapter) blockers.push("adapter Codex non implémenté");
-  if (!available.isolation) blockers.push("isolation non implémentée");
+  if (!available.adapter) blockers.push("aucun adapter réel enregistré dans ce build");
+  if (!available.isolation)
+    blockers.push("isolation non vérifiée sur ce poste (autotest de refus)");
   const base =
     "voie expérimentale, non autorisée explicitement par le fournisseur ; jauge en pourcentage, sans conversion en tokens";
   return blockers.length === 0
@@ -111,14 +121,27 @@ export interface IsolationAssessment {
   readonly blockers: readonly string[];
 }
 
-export function isolationCapability(assessment: IsolationAssessment | undefined): Capability {
+export function isolationCapability(
+  assessment: IsolationAssessment | undefined,
+  built: boolean = BUILD_COMPONENTS.isolation,
+): Capability {
   if (assessment === undefined) {
-    return {
-      id: "isolation",
-      availability: "not_implemented",
-      detail: "aucune sandbox vérifiée sur ce poste : exécution autonome impossible",
-      blockers: [],
-    };
+    return built
+      ? {
+          id: "isolation",
+          availability: "blocked",
+          detail:
+            "sandbox AppContainer + Job Object câblée au runner, non vérifiée sur ce poste : exécution autonome impossible",
+          blockers: [
+            "aucun autotest de refus réussi connu : `mind-wake doctor` ou `daemon run` l'exécutent",
+          ],
+        }
+      : {
+          id: "isolation",
+          availability: "not_implemented",
+          detail: "aucune sandbox vérifiée sur ce poste : exécution autonome impossible",
+          blockers: [],
+        };
   }
   return assessment.passed
     ? { id: "isolation", availability: "present", detail: assessment.detail, blockers: [] }
@@ -130,11 +153,28 @@ export function isolationCapability(assessment: IsolationAssessment | undefined)
       };
 }
 
+/** Mode NON ISOLÉ consenti (ADR-006) : affiché tel quel, jamais comme une isolation. */
+function unsandboxedCapability(isolation: IsolationAssessment | undefined): Capability {
+  const sandbox =
+    isolation === undefined
+      ? "sandbox non vérifiée"
+      : isolation.passed
+        ? "sandbox vérifiée mais non utilisée"
+        : "sandbox en échec";
+  return {
+    id: "isolation",
+    availability: "experimental",
+    detail: `NON ISOLÉ (ADR-006, consentement distinct) : runtimes réels sur le poste hôte avec leurs options sans approbation, accès complet au compte Windows ; arrêt d'urgence (Job Object), pause, priorité humaine et garde de quota restent imposés (${sandbox})`,
+    blockers: [],
+  };
+}
+
 export function capabilities(
   persistence: Persistence | null,
   activePolicy: PolicyRevision | null,
   isolation?: IsolationAssessment,
 ): readonly Capability[] {
+  const hostUnsandboxed = activePolicy?.groups.runtime.hostUnsandboxedAcknowledged === true;
   const notImplemented = (id: CapabilityId, detail: string): Capability => ({
     id,
     availability: "not_implemented",
@@ -187,11 +227,13 @@ export function capabilities(
           id: "daemon",
           availability: "simulated",
           detail:
-            "`daemon run --simulated` au premier plan, adapter factice seulement ; aucun service, tâche planifiée ni démarrage automatique",
+            REAL_ADAPTERS.length === 0
+              ? "`daemon run --simulated` au premier plan, adapter factice seulement (mode réel câblé, aucun adapter réel enregistré) ; aucun service, tâche planifiée ni démarrage automatique"
+              : "`daemon run` au premier plan, adapter de la policy, sessions réelles confinées dans la sandbox ; aucun service, tâche planifiée ni démarrage automatique",
           blockers: [],
         }
       : notImplemented("daemon", "aucun daemon"),
-    isolationCapability(isolation),
+    hostUnsandboxed ? unsandboxedCapability(isolation) : isolationCapability(isolation),
     BUILD_COMPONENTS.simulatedAdapter
       ? {
           id: "simulated_adapter",
@@ -201,14 +243,21 @@ export function capabilities(
           blockers: [],
         }
       : notImplemented("simulated_adapter", "aucun adapter factice"),
-    notImplemented(
-      "runtime_adapter",
-      "adapter Codex non implémenté : aucune session réelle possible",
-    ),
+    REAL_ADAPTERS.length === 0
+      ? notImplemented(
+          "runtime_adapter",
+          "aucun adapter réel enregistré (codex, claude, gemini) : aucune session réelle possible",
+        )
+      : {
+          id: "runtime_adapter",
+          availability: "experimental",
+          detail: `adapters réels enregistrés : ${REAL_ADAPTERS.join(", ")} ; lancés seulement dans la sandbox, sans repli d'un runtime vers un autre`,
+          blockers: [],
+        },
     notImplemented("api_key_path", "voie clé API (ADR-002) non implémentée"),
     subscriptionPath(activePolicy?.groups.budget.subscriptionQuota, {
       adapter: BUILD_COMPONENTS.runtimeAdapter,
-      isolation: BUILD_COMPONENTS.isolation || isolation?.passed === true,
+      isolation: isolation?.passed === true || hostUnsandboxed,
     }),
   ];
 }

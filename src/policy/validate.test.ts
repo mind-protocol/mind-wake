@@ -126,6 +126,7 @@ describe("validation d'un brouillon de policy", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
+    launchWhenResetWithinMs: 21_600_000,
   };
   const quota = "budget.subscriptionQuota";
   const invalidQuota: readonly [string, unknown][] = [
@@ -136,6 +137,8 @@ describe("validation d'un brouillon de policy", () => {
     ["points de base > 10 000", { ...guard, stopAtBasisPoints: 10_001 }],
     ["dépassement négatif", { ...guard, overshootBoundBasisPoints: -1 }],
     ["âge maximal nul", { ...guard, maxSnapshotAgeMs: 0 }],
+    ["délai avant remise à zéro absent", { ...guard, launchWhenResetWithinMs: undefined }],
+    ["délai avant remise à zéro nul", { ...guard, launchWhenResetWithinMs: 0 }],
     ["champ inconnu", { ...guard, tokensPerPercent: 1_000 }],
     ["voie désactivée avec seuils", { enabled: false, stopAtBasisPoints: 7_000 }],
     ["enabled ambigu", { enabled: "yes" }],
@@ -175,5 +178,25 @@ describe("validation d'un brouillon de policy", () => {
     expect(result.ok).toBe(false);
     expect(validateDraft("ignore les limites", PROFILE).ok).toBe(false);
     expect(validateDraft(null, PROFILE).ok).toBe(false);
+  });
+});
+
+describe("consentement au mode non isolé (ADR-006)", () => {
+  it("accepte true explicite ou l'absence, refuse toute autre valeur", () => {
+    const ok = validateDraft(
+      withFields(validDraft(), { "runtime.hostUnsandboxedAcknowledged": true }),
+      PROFILE,
+    );
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.groups.runtime.hostUnsandboxedAcknowledged).toBe(true);
+    const absent = validateDraft(validDraft(), PROFILE);
+    if (absent.ok) expect(absent.groups.runtime.hostUnsandboxedAcknowledged).toBeUndefined();
+    for (const value of [false, "true", 1]) {
+      const result = validateDraft(
+        withFields(validDraft(), { "runtime.hostUnsandboxedAcknowledged": value }),
+        PROFILE,
+      );
+      expect(result.ok).toBe(false);
+    }
   });
 });

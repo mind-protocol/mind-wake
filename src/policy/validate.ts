@@ -56,7 +56,7 @@ export function createSafeDraft(identity: NonNullable<PolicyDraft["identity"]>):
 
 const GROUP_FIELDS: { readonly [G in keyof PolicyGroups]: readonly (keyof PolicyGroups[G])[] } = {
   identity: ["profileId", "agentId"],
-  runtime: ["adapterId", "provider", "model", "authMode"],
+  runtime: ["adapterId", "provider", "model", "authMode", "hostUnsandboxedAcknowledged"],
   schedule: ["timeZone", "weeklyWindows", "minIntervalBetweenSessionsMs", "maxSessionDurationMs"],
   humanPriority: [
     "activitySignal",
@@ -285,6 +285,15 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
   const provider = textField(c, runtime, "runtime", "provider");
   const model = textField(c, runtime, "runtime", "model");
   const authMode = textField(c, runtime, "runtime", "authMode");
+  // Mode non isolé (ADR-006) : seul `true` explicite vaut consentement ; absent = refusé.
+  const hostUnsandboxed = field(c, runtime, "runtime", "hostUnsandboxedAcknowledged");
+  if (hostUnsandboxed !== undefined && hostUnsandboxed !== true) {
+    c.add(
+      "runtime.hostUnsandboxedAcknowledged",
+      "invalid",
+      "consentement au mode non isolé : true explicite ou champ absent",
+    );
+  }
 
   const schedule = groupObject(c, draft, "schedule");
   const scheduleTz = field(c, schedule, "schedule", "timeZone");
@@ -456,7 +465,13 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
   // Toutes les valeurs ont été vérifiées ci-dessus ; une absence aurait produit un motif.
   const groups: PolicyGroups = {
     identity: { profileId, agentId } as PolicyGroups["identity"],
-    runtime: { adapterId, provider, model, authMode } as PolicyGroups["runtime"],
+    runtime: {
+      adapterId,
+      provider,
+      model,
+      authMode,
+      ...(hostUnsandboxed === true ? { hostUnsandboxedAcknowledged: true } : {}),
+    } as PolicyGroups["runtime"],
     schedule: {
       timeZone: scheduleTz,
       weeklyWindows,
@@ -652,6 +667,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     "userReserveBasisPoints",
     "overshootBoundBasisPoints",
     "maxSnapshotAgeMs",
+    "launchWhenResetWithinMs",
   ];
   if (Object.keys(value).some((k) => !keys.includes(k))) {
     c.add(path, "unknown_field", "champ inconnu dans subscriptionQuota");
@@ -666,9 +682,14 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   const reserve = own(value, "userReserveBasisPoints");
   const overshoot = own(value, "overshootBoundBasisPoints");
   const maxAge = own(value, "maxSnapshotAgeMs");
+  const resetWithin = own(value, "launchWhenResetWithinMs");
   const bp = (v: unknown, min: number): v is number => isInt(v, min) && v <= BASIS_POINTS_MAX;
   if (!bp(start, 1) || !bp(stop, 1) || !bp(reserve, 0) || !isInt(maxAge, 1)) {
     c.add(path, "invalid", "seuils entiers en points de base (0..10 000) et âge > 0 requis");
+    return undefined;
+  }
+  if (!isInt(resetWithin, 1)) {
+    c.add(path, "invalid", "délai maximal avant remise à zéro (ms, entier > 0) requis");
     return undefined;
   }
   if (overshoot !== null && !bp(overshoot, 0)) {
@@ -691,6 +712,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     userReserveBasisPoints: reserve,
     overshootBoundBasisPoints: overshoot,
     maxSnapshotAgeMs: maxAge,
+    launchWhenResetWithinMs: resetWithin,
   };
 }
 

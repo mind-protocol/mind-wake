@@ -21,6 +21,7 @@ import type {
   PolicyGroups,
   PolicyRevisionId,
   ProfileId,
+  SubscriptionQuotaGuard,
   UtcTimestamp,
 } from "../../src/contracts/index.js";
 import { POLICY_SCHEMA_VERSION } from "../../src/contracts/index.js";
@@ -49,6 +50,10 @@ export interface DemoPolicyOptions {
   readonly tokensPerSession?: number;
   /** Adapter désigné par la policy ; `fake` par défaut. */
   readonly runtimeAdapterId?: string;
+  /** Garde de quota d'abonnement (voie ADR-004/ADR-005) ; absente par défaut. */
+  readonly subscriptionQuota?: SubscriptionQuotaGuard;
+  /** Consentement au mode non isolé (ADR-006). */
+  readonly hostUnsandboxed?: boolean;
 }
 
 /** Policy de la démo : adapter factice, aucune dépense, écriture sous `artifacts/`. */
@@ -61,6 +66,9 @@ export function demoPolicy(options: DemoPolicyOptions = {}): PolicyGroups {
       sessionsPerPeriod: 20,
       userReserveTokens: 2_000,
       checkpointTokens: 100,
+      ...(options.subscriptionQuota === undefined
+        ? {}
+        : { subscriptionQuota: options.subscriptionQuota }),
     },
     filesAndTools: { readRoots: ["artifacts"], writeRoots: ["artifacts"] },
   });
@@ -69,6 +77,7 @@ export function demoPolicy(options: DemoPolicyOptions = {}): PolicyGroups {
     runtime: {
       ...base.runtime,
       adapterId: (options.runtimeAdapterId ?? base.runtime.adapterId) as AdapterId,
+      ...(options.hostUnsandboxed === true ? { hostUnsandboxedAcknowledged: true } : {}),
     },
     schedule: { ...base.schedule, minIntervalBetweenSessionsMs: options.minIntervalMs ?? 1_500 },
   };

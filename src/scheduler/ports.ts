@@ -86,3 +86,13 @@ export interface LaunchEnvironment {
 export interface UserPrioritySignal {
   read(): Promise<PrioritySignal | undefined>;
 }
+
+/**
+ * Échéances candidates demandées par l'agent (réveils qu'il s'est programmés). Une
+ * échéance atteinte ne fait qu'avancer l'évaluation d'un profil en `hibernating` :
+ * `decideLaunch` vérifie toujours fenêtres, priorité humaine, pause, arrêt d'urgence,
+ * garde de quota et permissions. Une erreur ou un délai dépassé vaut « aucune ».
+ */
+export interface WakeRequestSource {
+  nextRequestedWake(nowMs: number): Promise<number | null>;
+}

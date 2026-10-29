@@ -12,6 +12,7 @@
 
 import type { IsolationSelfTestReport } from "../../sandbox/index.js";
 import {
+  BUILD_COMPONENTS,
   capabilities,
   formatCapability,
   type Capability,
@@ -111,7 +112,7 @@ const STATUS_LABEL: Record<CheckStatus, string> = { ok: "OK", warn: "ATTENTION",
 
 export const DOCTOR_NOTES: readonly string[] = [
   "Aucune commande de cette CLI n'active l'exploration, n'appelle de modèle, n'envoie de message ni n'installe de service ou de démarrage automatique.",
-  "Seul `daemon run --simulated` lance des sessions : au premier plan, avec l'adapter factice, tout marqué SIMULÉ.",
+  "`daemon run --simulated` lance des sessions au premier plan avec l'adapter factice, tout marqué SIMULÉ ; `daemon run` (mode réel) exige un adapter réel enregistré et disponible, lancé seulement dans la sandbox après un autotest de refus réussi.",
   "Voie abonnement : avant toute activation future, désactiver l'achat automatique de crédits du forfait (ADR-004) ; cette CLI ne le vérifie pas.",
 ];
 
@@ -229,7 +230,9 @@ function formatDoctor(data: DoctorData): string {
     "",
     ...data.notes,
     failed === 0
-      ? "Environnement sans échec bloquant. Ce build ne peut lancer aucune session réelle : isolation et adapter Codex non implémentés."
+      ? BUILD_COMPONENTS.runtimeAdapter
+        ? "Environnement sans échec bloquant. Sessions réelles possibles seulement dans la sandbox, après autotest de refus réussi."
+        : "Environnement sans échec bloquant. Ce build ne peut lancer aucune session réelle : aucun adapter réel enregistré (codex, claude, gemini)."
       : `${String(failed)} vérification(s) d'environnement en échec.`,
   ].join("\n");
 }

@@ -31,6 +31,13 @@ export interface RuntimeGroup {
   readonly model: string;
   /** Mode d'authentification officiel retenu par l'adapter ; jamais un secret. */
   readonly authMode: string;
+  /**
+   * Consentement distinct au mode NON ISOLÉ (ADR-006) : les runtimes réels tournent sur le
+   * poste hôte avec leurs options sans approbation, avec tous les droits du compte Windows
+   * et le risque d'injection depuis un contenu lu. Absent = refusé. L'arrêt d'urgence (Job
+   * Object), la priorité humaine, la pause, la garde de quota et le journal restent dus.
+   */
+  readonly hostUnsandboxedAcknowledged?: true;
 }
 
 /** Fenêtre hebdomadaire évaluée dans le fuseau de la policy. Heures au format `HH:MM`. */
@@ -73,7 +80,8 @@ export type PaidApiAllowance =
  * exprimée en points de base de chaque fenêtre du fournisseur. Absente ou désactivée
  * par défaut. Règles de validation :
  * - lancement seulement si chaque fenêtre lue est `measured`, plus récente que
- *   `maxSnapshotAgeMs` et sous `startBelowBasisPoints` ;
+ *   `maxSnapshotAgeMs`, sous `startBelowBasisPoints`, et se remet à zéro dans
+ *   `launchWhenResetWithinMs` (ADR-005 : capacité qui serait perdue de toute façon) ;
  * - interruption dès qu'une fenêtre atteint `stopAtBasisPoints` ;
  * - `stopAtBasisPoints + overshootBoundBasisPoints ≤ 10 000 − userReserveBasisPoints` ;
  * - `overshootBoundBasisPoints` à `null` (dépassement non mesuré) bloque le lancement.
@@ -91,6 +99,11 @@ export type SubscriptionQuotaGuard =
       /** Dépassement maximal mesuré après le seuil d'arrêt (une réponse en cours). */
       readonly overshootBoundBasisPoints: number | null;
       readonly maxSnapshotAgeMs: DurationMs;
+      /**
+       * Délai maximal entre le lancement et la remise à zéro de chaque fenêtre lue
+       * (ADR-005). Aucun plafond de tokens propre à Wake n'est exigé sur cette voie.
+       */
+      readonly launchWhenResetWithinMs: DurationMs;
     };
 
 export interface BudgetGroup {

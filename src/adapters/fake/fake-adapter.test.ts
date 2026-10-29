@@ -9,6 +9,7 @@ const host: AdapterHost = {
     throw new Error("aucun processus dans ce test");
   },
   authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+  isolation: () => "none",
 };
 
 describe("adapter factice", () => {

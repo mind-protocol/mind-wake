@@ -20,6 +20,7 @@ import type {
   PolicyRevisionId,
   ProfileId,
   ReservationId,
+  RuntimeGroup,
   SessionId,
   UnitOfWork,
   UtcTimestamp,
@@ -43,6 +44,7 @@ const PARIS = "Europe/Paris" as IanaTimeZone;
 export const SHARED_RUNTIME_DIR = join(tmpdir(), "mind-wake-test-runtime");
 
 export interface PolicyOverrides {
+  readonly runtime?: Partial<RuntimeGroup>;
   readonly budget?: Partial<BudgetGroup>;
   readonly filesAndTools?: Partial<FilesAndToolsGroup>;
   readonly maxSessionDurationMs?: number;
@@ -51,7 +53,13 @@ export interface PolicyOverrides {
 export function policyGroups(overrides: PolicyOverrides = {}): PolicyGroups {
   return {
     identity: { profileId: PROFILE, agentId: "default" as AgentId },
-    runtime: { adapterId: "fake" as AdapterId, provider: "none", model: "none", authMode: "none" },
+    runtime: {
+      adapterId: "fake" as AdapterId,
+      provider: "none",
+      model: "none",
+      authMode: "none",
+      ...overrides.runtime,
+    },
     schedule: {
       timeZone: PARIS,
       weeklyWindows: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
