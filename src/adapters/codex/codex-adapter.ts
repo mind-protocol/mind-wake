@@ -18,7 +18,9 @@ import type {
   AdapterId,
   CancelResult,
   DurationMs,
+  PolicyRevision,
   ProbeResult,
+  ProviderQuotaSnapshot,
   ReconcileResult,
   RuntimeAdapter,
   SessionHandle,
@@ -87,6 +89,16 @@ export interface CodexAdapterOptions {
   readonly effort?: string;
   /** `autonomous` (défaut) exige AppContainer + autotest ; `manual` = lancé par l'humain. */
   readonly mode?: CodexLaunchMode;
+  /**
+   * Consentement distinct d'ADR-006 (mode sans approbation non isolé sur l'hôte), lu dans
+   * la policy de la session par la fabrique qui connaît son champ. Absent = refusé.
+   */
+  readonly hostUnattendedConsent?: (policy: PolicyRevision) => boolean;
+  /**
+   * Lanceur des lectures de jauge, hors session (le scheduler lit la jauge avant tout
+   * lancement) ; par défaut le lanceur des sessions.
+   */
+  readonly quotaLauncher?: CodexLauncher;
   /** Sandbox Codex hors AppContainer (mode manuel) : `workspace-write` par défaut. */
   readonly hostSandbox?: HostSandbox;
   /** Fils éphémères (`thread/start.ephemeral`) : rien d'écrit dans l'historique Codex. */
@@ -313,14 +325,27 @@ export class CodexAdapter implements RuntimeAdapter {
     });
   }
 
-  /** Mode sans approbation : seulement sous AppContainer avec autotest réussi. */
-  #assertLaunchAllowed(): { attestation: IsolationAttestation; bypass: boolean } {
-    const attestation = this.#options.launcher.isolation();
-    const bypass = attestation.confined && attestation.selfTestPassed;
-    if ((this.#options.mode ?? "autonomous") === "autonomous" && !bypass) {
+  /**
+   * Mode sans approbation : sous AppContainer avec autotest réussi (ADR-005), ou sur l'hôte
+   * avec le consentement distinct d'ADR-006 consigné dans la policy. Sinon, refus en
+   * autonome. Une lecture de jauge (aucun tour) n'en demande jamais.
+   */
+  #assertLaunchAllowed(
+    launcher: CodexLauncher,
+    sessionId: SessionId,
+    policy: PolicyRevision | null,
+  ): { attestation: IsolationAttestation; bypass: boolean } {
+    const attestation = launcher.isolation(sessionId);
+    const confined = attestation.confined && attestation.selfTestPassed;
+    const hostConsent =
+      !attestation.confined &&
+      policy !== null &&
+      this.#options.hostUnattendedConsent?.(policy) === true;
+    const bypass = policy !== null && (confined || hostConsent);
+    if (policy !== null && (this.#options.mode ?? "autonomous") === "autonomous" && !bypass) {
       throw new CodexAdapterError(
         "isolation_required",
-        `lancement autonome refusé hors sandbox vérifiée : ${attestation.detail}`,
+        `lancement autonome refusé : ni sandbox vérifiée, ni consentement au mode non isolé (ADR-006) — ${attestation.detail}`,
       );
     }
     if (attestation.confined && this.#options.transport === undefined) {
@@ -344,13 +369,22 @@ export class CodexAdapter implements RuntimeAdapter {
     }
   }
 
-  async #launch(sessionId: SessionId): Promise<{
+  /** `policy` nulle : lecture de jauge, sans fil ni tour, par `quotaLauncher`. */
+  async #launch(
+    sessionId: SessionId,
+    policy: PolicyRevision | null,
+  ): Promise<{
     process: CodexProcess;
     channel: ProviderChannel | null;
     bypass: boolean;
+    isolated: boolean;
   }> {
     await this.#assertVersion();
-    const { bypass } = this.#assertLaunchAllowed();
+    const launcher =
+      policy === null
+        ? (this.#options.quotaLauncher ?? this.#options.launcher)
+        : this.#options.launcher;
+    const { attestation, bypass } = this.#assertLaunchAllowed(launcher, sessionId, policy);
     const channel =
       this.#options.transport === undefined ? null : await this.#options.transport.open(sessionId);
     try {
@@ -364,14 +398,19 @@ export class CodexAdapter implements RuntimeAdapter {
           ? {}
           : { extraConfig: this.#options.extraConfig }),
       });
-      const process_ = this.#options.launcher.launch(sessionId, command);
+      const process_ = launcher.launch(sessionId, { ...command, unattended: bypass });
       try {
         await process_.started();
       } catch (error) {
         await process_.terminateTree(SHUTDOWN_TIMEOUT_MS).catch(() => undefined);
         throw new CodexAdapterError("launch_failed", `codex app-server : ${errorMessage(error)}`);
       }
-      return { process: process_, channel, bypass };
+      return {
+        process: process_,
+        channel,
+        bypass,
+        isolated: attestation.confined && attestation.selfTestPassed,
+      };
     } catch (error) {
       await channel?.close().catch(() => undefined);
       throw error;
@@ -382,7 +421,12 @@ export class CodexAdapter implements RuntimeAdapter {
     if (this.#sessions.has(request.sessionId)) {
       throw new Error(`session déjà lancée : ${request.sessionId}`);
     }
-    const { process: process_, channel, bypass } = await this.#launch(request.sessionId);
+    const {
+      process: process_,
+      channel,
+      bypass,
+      isolated,
+    } = await this.#launch(request.sessionId, request.policy);
     let resolveTurn: () => void = () => undefined;
     const turnDone = new Promise<void>((resolve) => (resolveTurn = resolve));
     const session: CodexSession = {
@@ -417,6 +461,15 @@ export class CodexAdapter implements RuntimeAdapter {
       },
     });
     this.#sessions.set(request.sessionId, session);
+    if (bypass && !isolated) {
+      // ADR-006 : le mode non isolé doit rester visible dans le journal et les bilans.
+      this.#emit(session, {
+        type: "activity",
+        sessionId: request.sessionId,
+        at: this.#now(),
+        summary: "mode sans approbation NON ISOLÉ sur l'hôte (ADR-006, consentement consigné)",
+      });
+    }
     session.finished = this.#drive(session, request);
     return { adapterId: CODEX_ADAPTER_ID, sessionId: request.sessionId, startedAt: this.#now() };
   }
@@ -859,7 +912,7 @@ export class CodexAdapter implements RuntimeAdapter {
    */
   async readProviderQuota(): Promise<QuotaReading> {
     const sessionId = `codex-quota-${randomUUID()}` as SessionId;
-    const { process: process_, channel } = await this.#launch(sessionId);
+    const { process: process_, channel } = await this.#launch(sessionId, null);
     const rpc = new RpcClient(process_, {
       requestTimeoutMs: this.#options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS,
       onNotification: () => undefined,
@@ -875,6 +928,18 @@ export class CodexAdapter implements RuntimeAdapter {
     } finally {
       await process_.terminateTree(SHUTDOWN_TIMEOUT_MS).catch(() => undefined);
       await channel?.close().catch(() => undefined);
+    }
+  }
+
+  /**
+   * `QuotaReadable` du runner : fenêtres complètes lues officiellement. Une lecture
+   * impossible rend un tableau vide, que le scheduler traite comme un quota inconnu.
+   */
+  async readQuota(): Promise<readonly ProviderQuotaSnapshot[]> {
+    try {
+      return (await this.readProviderQuota()).snapshots;
+    } catch {
+      return [];
     }
   }
 }

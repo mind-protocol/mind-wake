@@ -90,7 +90,10 @@ describe.skipIf(!ENABLED)(
           memoryLimitMb: 4_096,
           maxWallMs: 120_000,
         });
-        expect(launcher.isolation()).toMatchObject({ confined: true, selfTestPassed: true });
+        expect(launcher.isolation("s" as SessionId)).toMatchObject({
+          confined: true,
+          selfTestPassed: true,
+        });
 
         const adapter = new CodexAdapter({
           executable: { path: binary },

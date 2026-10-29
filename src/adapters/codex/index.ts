@@ -26,6 +26,7 @@ export {
 export {
   appContainerLauncher,
   hostLauncher,
+  supervisorLauncher,
   type AppContainerLauncherOptions,
   type CodexCommand,
   type CodexLauncher,
@@ -33,7 +34,9 @@ export {
   type IsolationAttestation,
   type ProviderChannel,
   type ProviderTransport,
+  type RunnerHostLike,
   type SandboxLike,
+  type SupervisorLike,
 } from "./launch.js";
 export {
   classifyCodexError,
@@ -44,3 +47,8 @@ export {
   type IncompleteQuotaWindow,
   type QuotaReading,
 } from "./protocol.js";
+export {
+  codexRegistration,
+  type CodexFactoryContext,
+  type CodexRegistrationConfig,
+} from "./registration.js";

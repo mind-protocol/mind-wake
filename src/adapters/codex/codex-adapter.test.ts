@@ -26,10 +26,12 @@ import {
   classifyCodexError,
   CODEX_ADAPTER_ID,
   CODEX_SUPPORTED_VERSION,
+  codexRegistration,
   CodexAdapter,
   CodexAdapterError,
   CodexConfigError,
   FileThreadStore,
+  hostLauncher,
   MemoryThreadStore,
   parseCodexVersion,
   quotaFromRateLimitsResponse,
@@ -545,7 +547,7 @@ describe("lanceur AppContainer", () => {
         readWriteRoots: [],
         readOnlyRoots: [],
         protectedPaths: [],
-      }).isolation();
+      }).isolation("s" as SessionId);
     expect(make("abc")).toMatchObject({ confined: true, selfTestPassed: true });
     expect(make("old")).toMatchObject({ confined: true, selfTestPassed: false });
     expect(make(null)).toMatchObject({ selfTestPassed: false });
@@ -627,5 +629,104 @@ describe("flux réels enregistrés (codex-cli 0.147.0, expurgés)", () => {
       adapter({ codexHome: userHome, allowUserCodexHome: true }).start(request()),
     ).rejects.toThrow(/dossier Codex de l'utilisateur/);
     expect(h.launches).toHaveLength(0);
+  });
+});
+
+describe("alignement ADR-006 et câblage", () => {
+  const HOST: IsolationAttestation = { confined: false, selfTestPassed: false, detail: "hôte" };
+
+  it("hôte non isolé avec consentement ADR-006 : sans approbation, signalé au journal", async () => {
+    h.attestation = HOST;
+    const a = adapter({ transport: undefined, hostUnattendedConsent: () => true });
+    const events = await collect(a, request());
+    expect(h.launches[0]?.unattended).toBe(true);
+    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
+      approvalPolicy: "never",
+      sandbox: "danger-full-access",
+    });
+    expect(events[0]).toMatchObject({
+      type: "activity",
+      summary: expect.stringContaining("NON ISOLÉ") as unknown,
+    });
+  });
+
+  it("hôte non isolé sans consentement : refus en autonome, rien de lancé", async () => {
+    h.attestation = HOST;
+    const a = adapter({ transport: undefined, hostUnattendedConsent: () => false });
+    await expect(a.start(request())).rejects.toMatchObject({ code: "isolation_required" });
+    expect(h.launches).toHaveLength(0);
+  });
+
+  it("readQuota : lecture hors session par quotaLauncher, sans mode sans approbation", async () => {
+    h.attestation = HOST;
+    const quotaLaunches: string[] = [];
+    const a = adapter({
+      transport: undefined,
+      quotaLauncher: {
+        isolation: () => HOST,
+        launch: (sessionId, command) => {
+          quotaLaunches.push(sessionId);
+          expect(command.unattended).toBe(false);
+          return h.launcher.launch(sessionId, command);
+        },
+      },
+    });
+    const snapshots = await a.readQuota();
+    expect(snapshots.map((s) => s.usedBasisPoints)).toEqual([4_200]);
+    expect(quotaLaunches).toHaveLength(1);
+  });
+
+  it("readQuota : lecture impossible = tableau vide (quota inconnu)", async () => {
+    const a = adapter({ versionCheck: () => Promise.resolve("codex-cli 0.1.0") });
+    expect(await a.readQuota()).toEqual([]);
+  });
+
+  it("hostLauncher : isolation du runner par session, `unattended` transmis", () => {
+    const spawned: unknown[] = [];
+    const host = {
+      spawnContained: (_s: SessionId, command: unknown) => {
+        spawned.push(command);
+        return {} as never;
+      },
+      authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+      isolation: (s: SessionId) => (s === ("confinée" as SessionId) ? "sandbox" : "none") as never,
+    };
+    const launcher = hostLauncher(host);
+    expect(launcher.isolation("confinée" as SessionId)).toMatchObject({ confined: true });
+    expect(launcher.isolation("autre" as SessionId)).toMatchObject({ confined: false });
+    launcher.launch("autre" as SessionId, {
+      executable: "codex.exe",
+      args: [],
+      env: {},
+      cwd: h.dir,
+      unattended: true,
+    });
+    expect(spawned[0]).toMatchObject({ executable: "codex.exe", unattended: true });
+  });
+
+  it("codexRegistration : runtime déclaré, facturation par quota, fabrique", () => {
+    const registration = codexRegistration({
+      executable: { path: path.join(h.dir, "bin", "codex.exe") },
+      codexHome: path.join(h.dir, "codex-home"),
+      model: "gpt-5.6-luna",
+      systemPrompt: "p",
+      threadsDir: path.join(h.dir, "threads"),
+    });
+    expect(registration).toMatchObject({ id: CODEX_ADAPTER_ID, simulated: false });
+    expect(registration.runtime()).toEqual({
+      adapterId: CODEX_ADAPTER_ID,
+      provider: "openai",
+      model: "gpt-5.6-luna",
+      authMode: "chatgpt",
+    });
+    expect(registration.billing()).toEqual({ kind: "subscription_quota" });
+    expect(registration.runtimeRoots()).toEqual([path.join(h.dir, "bin")]);
+    const host = {
+      spawnContained: () => ({}) as never,
+      authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+    };
+    expect(
+      registration.create({ host, workspaceDir: path.join(h.dir, "workspace") }),
+    ).toBeInstanceOf(CodexAdapter);
   });
 });

@@ -110,3 +110,18 @@ Résultat du 29 octobre 2026, avec `codex-cli 0.147.0` :
 - le profil et les dossiers sont supprimés à la fin.
 
 Durée totale ≈ 9 s, autotest compris. Ce test ne couvre pas un tour réel confiné : il faut pour cela le relais fournisseur (broker) et une connexion dans le `CODEX_HOME` Wake.
+
+## Alignement ADR-006 et câblage des runtimes
+
+- **Mode sans approbation non isolé (ADR-006).** Sur l'hôte, sans AppContainer, il n'est accordé que si `hostUnattendedConsent(policy)` répond `true`. Ce prédicat est fourni par la fabrique, qui connaît le champ de consentement de la policy ; celui-ci n'existe pas encore dans `src/contracts/policy.ts`. Sans ce consentement, le lancement autonome est refusé (`isolation_required`). Un mode accordé :
+  - est signalé au journal par une activité « mode sans approbation NON ISOLÉ… » en début de session ;
+  - passe `unattended: true` au runner, qui garde le dernier mot (`unattended_outside_sandbox` côté câblage).
+- **Lancement par le runner.** `hostLauncher(host)` lance Codex par `host.spawnContained`, ce qui couvre l'arrêt d'urgence et le Job Object. Il lit `host.isolation(sessionId)` quand le runner câblé l'expose : `sandbox` vaut confinement vérifié, tout autre état vaut hôte non isolé.
+- **Jauge (`QuotaReadable`).** `readQuota()` rend les fenêtres officielles complètes, ou `[]` si la lecture échoue (quota inconnu, donc lancement bloqué). Le scheduler la lit hors session : passer `quotaLauncher: supervisorLauncher(supervisor, profileId)`, un Job Object sans approbation puisqu'il n'y a aucun tour.
+- **Enregistrement.** `codexRegistration(config)` produit la forme `AdapterRegistration` du câblage :
+  - `runtime` : `openai`, modèle configuré, `authMode: "chatgpt"` ;
+  - `billing` : `subscription_quota` ;
+  - `runtimeRoots` : dossier du binaire ;
+  - `create` : branche `ctx.host` et `ctx.workspaceDir`.
+
+  Il reste à l'ajouter à `defaultRegistry()` quand le câblage sera dans `main`.

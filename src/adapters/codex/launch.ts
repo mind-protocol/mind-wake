@@ -8,7 +8,7 @@
  * (AGENTS §3.6, ADR-005 §2).
  */
 
-import type { DurationMs, SessionId } from "../../contracts/index.js";
+import type { DurationMs, ProfileId, SessionId } from "../../contracts/index.js";
 import type { AdapterHost } from "../../runner/host.js";
 import type { BrokerEndpoint } from "../../sandbox/broker.js";
 import type { SandboxLaunchSpec } from "../../sandbox/sandbox.js";
@@ -34,6 +34,11 @@ export interface CodexCommand {
   readonly cwd: string;
   /** Canal fournisseur ; absent = aucun réseau dans le conteneur. */
   readonly broker?: BrokerEndpoint;
+  /**
+   * Mode sans approbation demandé à Codex : transmis au runner, qui le refuse hors sandbox
+   * sauf consentement ADR-006 qu'il vérifie lui-même.
+   */
+  readonly unattended?: boolean;
 }
 
 export interface IsolationAttestation {
@@ -45,7 +50,8 @@ export interface IsolationAttestation {
 }
 
 export interface CodexLauncher {
-  isolation(): IsolationAttestation;
+  /** Confinement prévu pour cette session (le runner le connaît par session). */
+  isolation(sessionId: SessionId): IsolationAttestation;
   launch(sessionId: SessionId, command: CodexCommand): CodexProcess;
 }
 
@@ -68,24 +74,43 @@ export interface ProviderTransport {
 }
 
 /**
- * Lancement dans l'arborescence contenue du runner (Job Object, sans AppContainer) :
- * le runner peut tout terminer, mais rien n'est confiné. Mode manuel seulement.
+ * Hôte du runner, sous sa forme câblée (`isolation(sessionId)`, `unattended`) ou sous la
+ * forme initiale (sans isolation déclarée : Job Object seul).
  */
-export function hostLauncher(host: AdapterHost, maxProcesses?: number): CodexLauncher {
+export type RunnerHostLike = AdapterHost & {
+  isolation?(sessionId: SessionId): "sandbox" | "job_only" | "none";
+};
+
+/**
+ * Lancement par le runner (`spawnContained`) : le processus est dans l'arborescence de la
+ * session, que l'arrêt d'urgence termine. Confiné si le runner déclare `sandbox` (son
+ * autotest de refus a réussi), sinon sur l'hôte (Job Object seul).
+ */
+export function hostLauncher(host: RunnerHostLike, maxProcesses?: number): CodexLauncher {
   return {
-    isolation: () => ({
-      confined: false,
-      selfTestPassed: false,
-      detail: "arborescence contenue de l'hôte (Job Object), sans AppContainer",
-    }),
-    launch: (sessionId, command) =>
-      host.spawnContained(sessionId, {
+    isolation: (sessionId) => {
+      const mode = host.isolation?.(sessionId) ?? "job_only";
+      return mode === "sandbox"
+        ? { confined: true, selfTestPassed: true, detail: "sandbox du runner (autotest réussi)" }
+        : {
+            confined: false,
+            selfTestPassed: false,
+            detail: "hôte, Job Object seul : non isolé",
+          };
+    },
+    launch: (sessionId, command) => {
+      // `unattended` et `broker` (forme câblée) passent par un objet intermédiaire : la forme
+      // initiale de `ContainedCommand` les ignore.
+      const contained = {
         executable: command.executable,
         args: command.args,
         env: command.env,
         cwd: command.cwd,
         ...(maxProcesses === undefined ? {} : { maxProcesses }),
-      }),
+        ...(command.unattended === true ? { unattended: true } : {}),
+      };
+      return host.spawnContained(sessionId, contained);
+    },
   };
 }
 
@@ -143,6 +168,44 @@ export function appContainerLauncher(options: AppContainerLauncherOptions): Code
         ...(options.memoryLimitMb === undefined ? {} : { memoryLimitMb: options.memoryLimitMb }),
         ...(options.maxWallMs === undefined ? {} : { maxWallMs: options.maxWallMs }),
         ...(command.broker === undefined ? {} : { broker: command.broker }),
+      }),
+  };
+}
+
+/** Superviseur d'arborescence du runner (`ProcessTreeSupervisor`), forme employée. */
+export interface SupervisorLike {
+  spawn(
+    profileId: ProfileId,
+    sessionId: SessionId,
+    command: {
+      readonly executable: string;
+      readonly args: readonly string[];
+      readonly env?: Readonly<Record<string, string>>;
+      readonly cwd?: string;
+    },
+  ): CodexProcess;
+}
+
+/**
+ * Lanceur des lectures de jauge, hors de toute session : Job Object nommé d'après une
+ * session synthétique, aucune approbation (aucun tour, donc aucune commande du modèle).
+ */
+export function supervisorLauncher(
+  supervisor: SupervisorLike,
+  profileId: ProfileId,
+): CodexLauncher {
+  return {
+    isolation: () => ({
+      confined: false,
+      selfTestPassed: false,
+      detail: "lecture de jauge : Job Object seul, aucun tour",
+    }),
+    launch: (sessionId, command) =>
+      supervisor.spawn(profileId, sessionId, {
+        executable: command.executable,
+        args: command.args,
+        env: command.env,
+        cwd: command.cwd,
       }),
   };
 }
