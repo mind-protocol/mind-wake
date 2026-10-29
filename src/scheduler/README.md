@@ -98,14 +98,15 @@ Implémentations :
 
 - `ManualPrioritySignal` : tests.
 - `IdlePrioritySignal` : seuil `idleThresholdMs` appliqué à une source d'inactivité.
-- `windowsIdleSource()` : proposition pour Windows.
+- `windowsIdleSource()` : une lecture ponctuelle pour Windows (`doctor`).
+- `windowsIdleWatcher()` : flux continu (un PowerShell persistant, une valeur toutes les 250 ms), utilisé par le daemon en mode réel avec `WatchedPrioritySignal` ; `pollingIdleWatcher(source)` pour une `IdleSource` injectée (tests).
   - Lit `GetLastInputInfo` via un PowerShell court sans profil : instant de la dernière entrée seulement, sans contenu, sans droits administrateur.
   - Valable dans la session interactive de l'utilisateur ; un service en session 0 lirait une autre session.
   - Chaque lecture lance un processus (environ 1 s).
 
 ## Limites connues
 
-- Voie abonnement (`billing.kind === "subscription_quota"`, ADR-005) : la réservation ne porte que `sessions` (aucune enveloppe de tokens propre à Wake, aucun `provider_quota_bp` réservé). Les lectures passent par `LaunchEnvironment.quotaSnapshots` jusqu'à `decideLaunch`. Prochain réveil : remise à zéro trop lointaine → la plus lointaine moins `launchWhenResetWithinMs` ; seuil de départ atteint → remise à zéro de la fenêtre en cause. Une lecture absente ou périmée (`budget_unknown`) bloque le profil, comme tout budget inconnu.
+- Voie abonnement (`billing.kind === "subscription_quota"`, ADR-005) : la réservation ne porte que `sessions` (aucune enveloppe de tokens propre à Wake, aucun `provider_quota_bp` réservé). Les lectures passent par `LaunchEnvironment.quotaSnapshots` jusqu'à `decideLaunch`. Pilotage (ADR-005, complément) : estimations lues par `LaunchEnvironment.pacingEstimates` ; en attente de pilotage, prochain réveil = `min(heure calculée, maintenant + 15 min)` (la projection peut avancer le réveil) ; cible ou seuil atteint → remise à zéro de la fenêtre en cause. Sous la garde, `minIntervalBetweenSessionsMs` est ignoré : les sessions s'enchaînent jusqu'à la cible. Une lecture absente ou périmée (`budget_unknown`) bloque le profil, comme tout budget inconnu.
 - `duration_ms` n'est pas réservé : le ledger n'a pas de plafond de période fourni pour cette unité. La durée est bornée par l'échéance du ticket, que le runner doit imposer.
 - Un blocage requis alors que le runner a déjà mis le profil en `hibernating` ne peut pas être appliqué (`hibernating → blocked` absent de la table). Il est journalisé (`error`), et le backoff maximal empêche une relance immédiate.
 - `profiles.active_policy_revision_id` n'est pas mis à jour par le scheduler : la révision en vigueur vient de `resolvePolicy`.

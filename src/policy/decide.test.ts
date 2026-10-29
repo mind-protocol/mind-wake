@@ -872,7 +872,9 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
-    launchWhenResetWithinMs: 21_600_000,
+    targetUsageBasisPoints: 7_000,
+    initialRateBasisPointsPerHour: 1_000,
+    pacingMarginRatio: 0.25,
   };
   const snapshot = (used: number, extra: Partial<ProviderQuotaSnapshot> = {}) =>
     ({
@@ -1009,16 +1011,23 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
       "sessions.availability_unknown",
     ],
     [
-      "remise à zéro trop lointaine (une fenêtre)",
+      "pilotage : remise à zéro encore loin pour le débit estimé",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { resetsAt: ts("2026-10-30T15:00:00Z") })] },
+      "outside_window",
+      "subscription.pacing_wait: primary",
+    ],
+    [
+      "fenêtre pilotée à la cible",
       guard,
       {
         quotaSnapshots: [
-          snapshot(1_000),
+          snapshot(7_000),
           snapshot(1_000, { windowKey: "weekly", resetsAt: ts("2026-11-02T00:00:00Z") }),
         ],
       },
-      "outside_window",
-      "subscription.reset_not_within: weekly",
+      "budget_exhausted",
+      "subscription.target_reached: primary",
     ],
     [
       "remise à zéro déjà passée",
@@ -1053,26 +1062,55 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     expect(decision).toMatchObject({ verdict: "allow" });
   });
 
-  it("déclenche selon l'heure de remise à zéro (horloge simulée)", () => {
+  it("pilotage : réveil quand le temps restant ≤ temps nécessaire × (1 + marge)", () => {
     const policies = store(guard).policies;
-    const at = (now: string, resetsAt: string): PolicyDecision =>
+    const at = (now: string, estimates?: LaunchFacts["quotaPacing"]): PolicyDecision =>
       decideLaunch(
         policies,
         PROFILE,
         subFacts({
           now: ts(now),
           userPriority: { favorable: true, observedAt: ts(now) },
-          quotaSnapshots: [snapshot(1_000, { observedAt: ts(now), resetsAt: ts(resetsAt) })],
+          quotaSnapshots: [snapshot(1_000, { observedAt: ts(now) })],
+          ...(estimates === undefined ? {} : { quotaPacing: estimates }),
         }),
       );
-    // Délai consenti : 6 h. 6 h 00 min 01 s avant la remise à zéro : attente.
-    expect(at("2026-10-29T08:59:59Z", "2026-10-29T15:00:00Z")).toMatchObject({
+    // Cible 7 000, usage 1 000 : 6 000 bp à 1 000 bp/h (débit initial) = 6 h, × 1,25 =
+    // 7 h 30 avant la remise à zéro de 15:00 → réveil à 07:30.
+    expect(at("2026-10-29T07:29:59Z")).toMatchObject({
       verdict: "deny",
       reason: "outside_window",
-      detail: "subscription.reset_not_within: primary resets_in_ms=21601000",
+      detail: expect.stringContaining("wake_at=2026-10-29T07:30:00.000Z") as unknown,
     });
-    expect(at("2026-10-29T09:00:00Z", "2026-10-29T15:00:00Z").verdict).toBe("allow");
-    expect(at("2026-10-29T14:59:59Z", "2026-10-29T15:00:00Z").verdict).toBe("allow");
+    expect(at("2026-10-29T07:30:00Z").verdict).toBe("allow");
+    // Débit mesuré deux fois plus rapide : réveil plus tard (11:15).
+    const fast = [
+      { windowKey: "primary", rateBasisPointsPerHour: 2_000, marginRatio: 0.25, samples: 3 },
+    ];
+    expect(at("2026-10-29T11:14:00Z", fast).verdict).toBe("deny");
+    expect(at("2026-10-29T11:15:00Z", fast).verdict).toBe("allow");
+    // Marge augmentée après une fenêtre manquée : réveil plus tôt.
+    const wide = [
+      { windowKey: "primary", rateBasisPointsPerHour: 2_000, marginRatio: 1, samples: 3 },
+    ];
+    expect(at("2026-10-29T09:00:00Z", wide).verdict).toBe("allow");
+  });
+
+  it("le pilotage passe après la priorité humaine et les fenêtres horaires", () => {
+    const policies = store(guard).policies;
+    const tooEarly = {
+      quotaSnapshots: [snapshot(1_000, { resetsAt: ts("2026-10-30T15:00:00Z") })],
+    };
+    expect(
+      decideLaunch(policies, PROFILE, subFacts({ ...tooEarly, windowOpen: false })),
+    ).toMatchObject({ reason: "outside_window", detail: "window.unfavorable" });
+    expect(
+      decideLaunch(
+        policies,
+        PROFILE,
+        subFacts({ ...tooEarly, userPriority: { favorable: false, observedAt: NOW } }),
+      ),
+    ).toMatchObject({ reason: "user_priority" });
   });
 
   it("interrompt la session au seuil d'arrêt, la laisse continuer en dessous", () => {
@@ -1092,7 +1130,7 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     expect(decideAction(s.policies, RUNNING, session, sub(7_000), read)).toMatchObject({
       verdict: "deny",
       reason: "budget_exhausted",
-      detail: "subscription.stop_threshold_reached: primary used_bp=7000",
+      detail: "subscription.target_reached: primary used_bp=7000",
       interruptSession: true,
     });
     expect(

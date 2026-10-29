@@ -55,6 +55,16 @@ export interface DoctorData {
   readonly capabilities: readonly Capability[];
   /** Résumé de l'autotest de refus ; absent s'il n'a pas été exécuté. */
   readonly isolationSelfTest?: IsolationSelfTestSummary;
+  /**
+   * Signal de priorité humaine : réel (`GetLastInputInfo`) pour `daemon run`, fichier
+   * simulé pour `--simulated`. `readable` : une lecture réelle a réussi ici.
+   */
+  readonly prioritySignal: {
+    readonly real: "readable" | "unreadable" | "not_checked";
+    readonly idleMs: number | null;
+    readonly readMs: number | null;
+    readonly detail: string;
+  };
   readonly notes: readonly string[];
 }
 
@@ -180,6 +190,7 @@ export async function doctor(
       break;
   }
 
+  const prioritySignal = await probePriority(ctx);
   const selfTest = ctx.isolationSelfTest === undefined ? undefined : await ctx.isolationSelfTest();
   const isolation = selfTest === undefined ? undefined : assessIsolation(selfTest);
   const caps = withReadStore(ctx, dataDir, ({ uow, persistence }) => {
@@ -201,10 +212,41 @@ export async function doctor(
       checks,
       capabilities: caps,
       ...(selfTest === undefined ? {} : { isolationSelfTest: summarize(selfTest) }),
+      prioritySignal,
       notes: DOCTOR_NOTES,
     },
     human: formatDoctor,
   };
+}
+
+async function probePriority(ctx: CliContext): Promise<DoctorData["prioritySignal"]> {
+  const simulated = "`--simulated` lit le fichier simulated-user-activity (SIMULÉ)";
+  if (ctx.idleProbe === undefined) {
+    return {
+      real: "not_checked",
+      idleMs: null,
+      readMs: null,
+      detail: `signal réel non vérifié ici ; ${simulated}`,
+    };
+  }
+  const begin = performance.now();
+  try {
+    const idleMs = await ctx.idleProbe();
+    const readMs = Math.round(performance.now() - begin);
+    return {
+      real: "readable",
+      idleMs,
+      readMs,
+      detail: `inactivité réelle du poste lisible (GetLastInputInfo, ${String(Math.round(idleMs / 1000))} s d'inactivité, lecture ${String(readMs)} ms), utilisée par \`daemon run\` ; ${simulated}`,
+    };
+  } catch (error) {
+    return {
+      real: "unreadable",
+      idleMs: null,
+      readMs: null,
+      detail: `inactivité réelle illisible (${error instanceof Error ? error.message.slice(0, 120) : "erreur"}) : \`daemon run\` ne réveillera pas l'agent ; ${simulated}`,
+    };
+  }
 }
 
 const SOURCE_LABEL: Record<DataDir["source"], string> = {
@@ -227,6 +269,8 @@ function formatDoctor(data: DoctorData): string {
     "Composants (présent, simulé, expérimental, bloqué, non implémenté) :",
     ...data.capabilities.map(formatCapability),
     ...formatSelfTest(data.isolationSelfTest),
+    "",
+    `Priorité humaine : ${data.prioritySignal.detail}`,
     "",
     ...data.notes,
     failed === 0

@@ -59,17 +59,17 @@ Aucune fonction de ce module ne fournit de garantie système.
 
 ## Voie abonnement (`budget.subscriptionQuota`, ADR-004, ADR-005)
 
-La voie est absente ou désactivée par défaut. Son activation dans une révision consentie exige `accountRiskAcknowledged: true`, des seuils cohérents (`stopAt + overshoot ≤ 10 000 − userReserve`, avec `start < stop`) et un délai maximal avant remise à zéro `launchWhenResetWithinMs` (entier > 0 ; l'augmenter élargit, le réduire restreint).
+La voie est absente ou désactivée par défaut. Son activation dans une révision consentie exige `accountRiskAcknowledged: true`, des seuils cohérents (`stopAt + overshoot ≤ 10 000 − userReserve`, `start < stop`, `targetUsageBasisPoints ≤ stopAt`), un débit initial prudent `initialRateBasisPointsPerHour` (entier > 0) et une marge `pacingMarginRatio` (0 à 10). Défauts : cible 9 900 (99 %), marge 0,25 ; la réserve humaine peut valoir 0 (choix de l'utilisateur : le quota non utilisé avant la remise à zéro est perdu). Élargissent : cible plus haute, débit initial plus bas, marge plus grande.
 
 Le lancement exige en plus :
 
 - `billing.kind === "subscription_quota"`, sans quoi la jauge de quota ne compte pas comme borne ;
 - un `overshootBoundBasisPoints` non nul ;
 - `providerQuotaReading: "official"` ;
-- au moins une lecture de fenêtre ; chaque lecture doit être `measured`, plus récente que `maxSnapshotAgeMs` et sous `startBelowBasisPoints` ;
-- **déclenchement avant remise à zéro (ADR-005)** : chaque fenêtre lue doit avoir un `resetsAt` futur à moins de `launchWhenResetWithinMs` (`outside_window`, `subscription.reset_not_within: <fenêtre> resets_in_ms=…`, attente) ; une remise à zéro déjà passée rend la lecture périmée (`budget_unknown`). Toutes les fenêtres sont exigées, y compris une fenêtre hebdomadaire : Wake ne consomme que ce qui serait perdu de toute façon.
+- au moins une lecture de fenêtre ; chaque lecture doit être `measured`, plus récente que `maxSnapshotAgeMs`, avec une remise à zéro future (sinon `budget_unknown`) ;
+- **pilotage (`pacing.ts`, ADR-005 complément)** : la fenêtre qui se remet à zéro le plus tôt est pilotée ; elle doit être sous la cible (`subscription.target_reached`), les autres sous `startBelowBasisPoints` ; puis, vérifié en dernier (après fenêtres horaires, priorité humaine, pause, arrêt et budget), `temps avant remise à zéro ≤ (cible − usage) / débit × (1 + marge)`, sinon `outside_window` `subscription.pacing_wait: … wake_at=… projected_bp=…`. Débit et marge viennent de `LaunchFacts.quotaPacing` (mesures du daemon) ou, à défaut, de la policy.
 
-Sur cette voie, la garde de quota est la borne : aucun plafond de tokens propre à Wake n'est exigé (`tokens.availability` n'est pas vérifiée ; les champs de tokens restent obligatoires dans le schéma mais ne bornent pas la session). La voie ne lève aucune autre condition : isolation, priorité humaine, annulation et sessions restent exigés. En session, une fenêtre qui atteint `stopAtBasisPoints`, ou une lecture absente, ancienne ou non mesurée, exige l'interruption. Aucun pourcentage n'est converti en tokens.
+Sur cette voie, la garde de quota est la borne : aucun plafond de tokens propre à Wake n'est exigé (`tokens.availability` n'est pas vérifiée ; les champs de tokens restent obligatoires dans le schéma mais ne bornent pas la session). La voie ne lève aucune autre condition : isolation, priorité humaine, annulation et sessions restent exigés. En session, la fenêtre pilotée qui atteint `min(stopAt, cible)`, une autre fenêtre qui atteint `stopAtBasisPoints`, ou une lecture absente, ancienne ou non mesurée, exige l'interruption. Aucun pourcentage n'est converti en tokens.
 
 Limite : le moteur traite une valeur non nulle de `overshootBoundBasisPoints` comme une borne consentie. Il ne peut pas vérifier que cette valeur vient d'une mesure validée, car le contrat ne porte aucune référence de mesure.
 

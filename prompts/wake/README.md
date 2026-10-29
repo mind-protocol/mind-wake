@@ -14,7 +14,8 @@ Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et G
 | --------------------------------------- | ------------------------------------------------------------------------ |
 | `{{workspace}}`                         | dossier d'exploration de l'agent (`<données>/workspace`)                 |
 | `{{permissions}}`                       | dossiers accessibles, réseau, outils autorisés, d'après la policy active |
-| `{{session_end}}`, `{{quota_stop}}`     | fin maximale de la session, seuil d'arrêt de la jauge de quota           |
+| `{{session_end}}`                       | fin maximale de la session (checkpoint à chaque fin)                     |
+| `{{quota_plan}}`                        | pilotage du quota : cible et remise à zéro de la fenêtre pilotée         |
 | `{{theme}}`                             | thème facultatif donné par l'humain, sinon « none »                      |
 | `{{wakeups_dir}}`, `{{wakeups_schema}}` | dossier des réveils demandés par l'agent et chemin de ce schéma          |
 | `{{nudge}}`                             | texte d'une relance                                                      |
@@ -26,7 +27,7 @@ Courtes, non spécifiques, elles suggèrent un mode d'action sans imposer de tâ
 
 Choix câblé : la prochaine action du dernier checkpoint guide le choix quand elle désigne **un seul** mode par ses mots (anglais ou français : « verify », « vérifier » → `verify`, « finish », « terminer » → `finish`…) et qu'il diffère de la relance précédente ; sinon, rotation dans l'ordre `act → build → research → verify → explore → tend → finish → ask → rest → act`, sans répéter la relance précédente. La relance de chaque réveil est persistée (table `wake_prompts`, migration 5). `rest` reste toujours possible : s'arrêter est un résultat valide.
 
-Autres champs : `{{permissions}}` résume lecture, écriture, réseau d'exploration, outils et nombre de processus de la révision effective, plus le mode (sandbox, **NOT ISOLATED** en mode non isolé ADR-006, ou simulé) ; `{{quota_stop}}` vaut le seuil d'arrêt de la garde en pourcentage sur la voie abonnement, sinon « not applicable » ; `{{theme}}` vient de l'option `theme` du daemon, sinon « none » ; `{{memory}}` est le bloc de `loadWakeMemory` (déjà encadré comme données non fiables), ou une ligne « Memory: none yet » au premier réveil. Remplacement en une seule passe : une valeur ne peut pas injecter un autre champ.
+Autres champs : `{{permissions}}` résume lecture, écriture, réseau d'exploration, outils et nombre de processus de la révision effective, plus le mode (sandbox, **NOT ISOLATED** en mode non isolé ADR-006, ou simulé) ; `{{quota_plan}}` dit, sur la voie abonnement, que les sessions s'enchaînent jusqu'à environ la cible (`min(cible, stopAt)`, en pourcentage de la fenêtre, jamais en tokens) ou la remise à zéro de la fenêtre pilotée (heure UTC de la dernière lecture officielle), sinon « No subscription quota applies. » ; `{{theme}}` vient de l'option `theme` du daemon, sinon « none » ; `{{memory}}` est le bloc de `loadWakeMemory` (déjà encadré comme données non fiables), ou une ligne « Memory: none yet » au premier réveil. Remplacement en une seule passe : une valeur ne peut pas injecter un autre champ.
 
 ## Réveils demandés par l'agent
 

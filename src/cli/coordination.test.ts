@@ -85,7 +85,9 @@ const ENABLED_GUARD: SubscriptionQuotaGuard = {
   userReserveBasisPoints: 1_500,
   overshootBoundBasisPoints: 250,
   maxSnapshotAgeMs: 60_000,
-  launchWhenResetWithinMs: 21_600_000,
+  targetUsageBasisPoints: 8_000,
+  initialRateBasisPointsPerHour: 2_000,
+  pacingMarginRatio: 0.25,
 };
 
 function revisionWithGuard(guard: SubscriptionQuotaGuard | undefined): PolicyRevision {
@@ -250,6 +252,7 @@ describe("voie abonnement", () => {
       stopAt: "80 %",
       userReserve: "15 %",
       overshootBound: "2.5 %",
+      pacing: { target: "80 %", initialRatePerHour: "20 %", margin: 0.25 },
       note: "pourcentage d'une fenêtre de quota du fournisseur, usage humain inclus ; non converti en tokens, ce n'est pas une borne de consommation",
     });
     const human = (await run(ctx, out, "status")).stdout;

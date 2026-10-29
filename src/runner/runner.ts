@@ -834,11 +834,14 @@ export class SessionRunner {
         kind: "policy",
         outcome: "interrupted",
         reason: `policy.${assessment.reason}: ${assessment.detail}`,
-        next: ["revoked", "sandbox_unavailable", "not_consented", "unknown_condition"].includes(
-          assessment.reason,
-        )
-          ? "blocked"
-          : "hibernating",
+        // Signal d'activité illisible ou périmé : condition inconnue, mais passagère
+        // (hibernation, pas de blocage) ; le scheduler ne relance rien tant qu'elle dure.
+        next:
+          ["revoked", "sandbox_unavailable", "not_consented", "unknown_condition"].includes(
+            assessment.reason,
+          ) && !assessment.detail.startsWith("user_priority.")
+            ? "blocked"
+            : "hibernating",
       };
       if (assessment.checkpointAllowed) this.#interruptWithCheckpoint(session, interruption);
       else this.#interrupt(session, interruption);

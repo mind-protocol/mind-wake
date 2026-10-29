@@ -7,6 +7,7 @@ import os from "node:os";
 import readline from "node:readline/promises";
 import type { AgentId, ProfileId } from "../contracts/index.js";
 import { runIsolationSelfTest, type IsolationSelfTestReport } from "../sandbox/index.js";
+import { windowsIdleSource } from "../scheduler/priority.js";
 import {
   openStore,
   probeSqliteDriver,
@@ -52,6 +53,11 @@ export interface CliContext {
    * retirés et vérifiés. Absent : l'isolation reste « non implémentée ».
    */
   readonly isolationSelfTest?: () => Promise<IsolationSelfTestReport>;
+  /**
+   * Une lecture de l'inactivité réelle du poste (`GetLastInputInfo`), pour `doctor`.
+   * Absente : le signal réel n'est pas vérifié.
+   */
+  readonly idleProbe?: () => Promise<number>;
 }
 
 async function promptTerminal(question: string): Promise<string | null> {
@@ -79,6 +85,7 @@ export function processContext(): CliContext {
     storeBackend: STORE_BACKEND,
     probeSqlite: probeSqliteDriver,
     isolationSelfTest: () => runIsolationSelfTest(),
+    ...(process.platform === "win32" ? { idleProbe: () => windowsIdleSource().idleMs() } : {}),
     ...(process.stdin.isTTY && process.stdout.isTTY ? { prompt: promptTerminal } : {}),
     onInterrupt: (handler) => {
       process.on("SIGINT", handler);

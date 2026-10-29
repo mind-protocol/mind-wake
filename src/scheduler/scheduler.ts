@@ -41,8 +41,10 @@ import {
   decideLaunch,
   decisionJournalEvent,
   resolvePolicy,
+  planPacing,
   type BillingFacts,
   type LaunchFacts,
+  type PacingEstimate,
   type PrioritySignal,
 } from "../policy/index.js";
 import {
@@ -117,6 +119,7 @@ interface GatheredFacts {
   readonly sandboxOperational: boolean | undefined;
   readonly billing: BillingFacts | undefined;
   readonly quotaSnapshots: readonly ProviderQuotaSnapshot[] | undefined;
+  readonly quotaPacing: readonly PacingEstimate[] | undefined;
   readonly userPriority: PrioritySignal | undefined;
 }
 
@@ -195,14 +198,14 @@ function defaultSleep(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 /** Le plus contraint de plusieurs instantanés : un inconnu l'emporte sur tout. */
-/** Remise à zéro la plus lointaine des fenêtres lues, décalée de `offsetMs`. */
-function latestReset(
-  snapshots: readonly ProviderQuotaSnapshot[] | undefined,
-  offsetMs: number,
-): number | null {
-  const resets = (snapshots ?? []).map((q) => parseTs(q.resetsAt));
-  if (resets.length === 0 || resets.some((r) => r === null)) return null;
-  return Math.max(...(resets as number[])) + offsetMs;
+/** Réévaluation maximale d'un pilotage en attente (le réveil peut avancer). */
+export const PACING_RECHECK_MS = 15 * 60_000;
+
+/** Intervalle minimal entre sessions ; aucun quand la garde de quota pilote la voie. */
+function minIntervalFor(revision: PolicyRevision): number {
+  return revision.groups.budget.subscriptionQuota?.enabled === true
+    ? 0
+    : revision.groups.schedule.minIntervalBetweenSessionsMs;
 }
 
 /** Remise à zéro de la fenêtre nommée dans le détail du refus (`…: <fenêtre> used_bp=…`). */
@@ -361,7 +364,13 @@ export class Scheduler {
       ),
       guarded(() => priority.read(), t),
     ]);
-    return { adapter, sandboxOperational, billing, quotaSnapshots, userPriority };
+    const quotaPacing = await guarded(
+      environment.pacingEstimates === undefined
+        ? undefined
+        : () => environment.pacingEstimates?.() ?? Promise.resolve(undefined),
+      t,
+    );
+    return { adapter, sandboxOperational, billing, quotaSnapshots, quotaPacing, userPriority };
   }
 
   /** Corps transactionnel d'un tour : relit tout, décide, réserve ou consigne le refus. */
@@ -386,6 +395,7 @@ export class Scheduler {
       ...(facts.adapter === undefined ? {} : { adapter: facts.adapter }),
       ...(facts.billing === undefined ? {} : { billing: facts.billing }),
       ...(facts.quotaSnapshots === undefined ? {} : { quotaSnapshots: facts.quotaSnapshots }),
+      ...(facts.quotaPacing === undefined ? {} : { quotaPacing: facts.quotaPacing }),
       ...(facts.sandboxOperational === undefined
         ? {}
         : { sandboxOperational: facts.sandboxOperational }),
@@ -406,7 +416,7 @@ export class Scheduler {
               reason: "unknown_condition",
               detail: "scheduler.inconsistent_facts",
             };
-      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts.quotaSnapshots);
+      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts);
     }
 
     const sessionId = this.#newId() as SessionId;
@@ -427,7 +437,7 @@ export class Scheduler {
         reason: reserved.reason,
         detail: `ledger.${reserved.reason}: ${reserved.detail}`,
       };
-      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts.quotaSnapshots);
+      return this.#deny(profile, sched, denial, revision, budget, nowMs, facts);
     }
     return this.#launch(profile, sched, revision, sessionId, reservationId, maxima, at);
   }
@@ -452,10 +462,8 @@ export class Scheduler {
     ) {
       return undefined;
     }
-    const interval =
-      ended === null || revision === null
-        ? null
-        : ended + revision.groups.schedule.minIntervalBetweenSessionsMs;
+    // Pilotage du quota : sessions enchaînées sans délai minimal jusqu'à la cible.
+    const interval = ended === null || revision === null ? null : ended + minIntervalFor(revision);
     if (backoff === null) return interval;
     return interval === null ? backoff : Math.max(backoff, interval);
   }
@@ -554,7 +562,7 @@ export class Scheduler {
     revision: PolicyRevision | null,
     budget: BudgetFacts | undefined,
     nowMs: number,
-    snapshots: readonly ProviderQuotaSnapshot[] | undefined,
+    facts: Pick<GatheredFacts, "quotaSnapshots" | "quotaPacing"> | undefined,
   ): number {
     const recheck = nowMs + this.#recheckMs;
     if (revision === null) return recheck;
@@ -564,10 +572,13 @@ export class Scheduler {
     switch (decision.reason) {
       case "outside_window":
         // Remise à zéro trop lointaine : réveil quand la plus lointaine entre dans le délai.
-        candidate =
-          quota && guard?.enabled === true
-            ? latestReset(snapshots, -guard.launchWhenResetWithinMs)
-            : nowMs;
+        candidate = nowMs;
+        if (quota && guard?.enabled === true) {
+          // Pilotage : réveil à l'heure calculée, réévalué au plus tard après
+          // `PACING_RECHECK_MS` (débit, interruption, usage humain changent la projection).
+          const plan = planPacing(guard, facts?.quotaSnapshots ?? [], nowMs, facts?.quotaPacing);
+          candidate = plan === null ? null : Math.min(plan.wakeAtMs, nowMs + PACING_RECHECK_MS);
+        }
         break;
       case "backoff_active":
         candidate = this.#holdUntil(sched, revision) ?? null;
@@ -575,7 +586,7 @@ export class Scheduler {
       case "budget_exhausted":
         // Seuil de départ atteint : rien avant la remise à zéro de la fenêtre.
         candidate = quota
-          ? windowReset(snapshots, decision.detail)
+          ? windowReset(facts?.quotaSnapshots, decision.detail)
           : budget === undefined
             ? null
             : parseTs(budget.periods[0]?.endsAt ?? null);
@@ -600,7 +611,7 @@ export class Scheduler {
     revision: PolicyRevision | null,
     budget: BudgetFacts | undefined,
     nowMs: number,
-    snapshots?: readonly ProviderQuotaSnapshot[],
+    facts?: Pick<GatheredFacts, "quotaSnapshots" | "quotaPacing">,
   ): TickResult {
     const { uow, profileId, state: stateRepo } = this.#o;
     const at = iso(nowMs);
@@ -634,7 +645,7 @@ export class Scheduler {
     }
     const nextWakeAt =
       state === "hibernating"
-        ? iso(this.#nextWake(decision, sched, revision, budget, nowMs, snapshots))
+        ? iso(this.#nextWake(decision, sched, revision, budget, nowMs, facts))
         : null;
     uow.profiles.setNextWake(profileId, nextWakeAt);
     stateRepo.save({ ...sched, lastDenial: key }, at);
@@ -818,10 +829,7 @@ export class Scheduler {
         }
       }
       const revision = resolvePolicy(uow.policies, profileId);
-      const interval =
-        revision.status === "active"
-          ? revision.revision.groups.schedule.minIntervalBetweenSessionsMs
-          : 0;
+      const interval = revision.status === "active" ? minIntervalFor(revision.revision) : 0;
       this.#monotonicHold = clock.monotonic() + Math.max(holdMs, interval);
 
       if (report === null && profile.state === "running") {

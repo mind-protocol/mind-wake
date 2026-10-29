@@ -49,7 +49,7 @@ export {
   loadWakeTemplates,
   nudgeFromNextAction,
   previousNudge,
-  quotaStopText,
+  quotaPlanText,
   recordWakePrompt,
   rotateNudge,
 } from "./wake-prompt.js";

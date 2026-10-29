@@ -15,7 +15,7 @@ import type {
   SessionOutcome,
   UtcTimestamp,
 } from "../contracts/index.js";
-import type { BillingFacts, LaunchFacts, PrioritySignal } from "../policy/index.js";
+import type { BillingFacts, LaunchFacts, PacingEstimate, PrioritySignal } from "../policy/index.js";
 import type { SessionFailure } from "./backoff.js";
 
 /**
@@ -76,6 +76,8 @@ export interface LaunchEnvironment {
   billing(): Promise<BillingFacts | undefined>;
   /** Lectures officielles de quota, pour la voie abonnement seulement. */
   quotaSnapshots?(): Promise<readonly ProviderQuotaSnapshot[] | undefined>;
+  /** Débits mesurés et marges ajustées du pilotage, par fenêtre (voie abonnement). */
+  pacingEstimates?(): Promise<readonly PacingEstimate[] | undefined>;
 }
 
 /**

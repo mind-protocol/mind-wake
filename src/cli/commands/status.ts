@@ -51,6 +51,12 @@ export interface SubscriptionQuotaStatus {
   readonly stopAt: string | null;
   readonly userReserve: string | null;
   readonly overshootBound: string | null;
+  /** Pilotage (ADR-005, complément) : usage visé à la remise à zéro de la fenêtre. */
+  readonly pacing: {
+    readonly target: string;
+    readonly initialRatePerHour: string;
+    readonly margin: number;
+  } | null;
   readonly note: string;
 }
 
@@ -69,6 +75,7 @@ function subscriptionQuotaStatus(revision: PolicyRevision): SubscriptionQuotaSta
       stopAt: null,
       userReserve: null,
       overshootBound: null,
+      pacing: null,
       note: QUOTA_NOTE,
     };
   }
@@ -83,6 +90,11 @@ function subscriptionQuotaStatus(revision: PolicyRevision): SubscriptionQuotaSta
       guard.overshootBoundBasisPoints === null
         ? null
         : basisPointsToPercent(guard.overshootBoundBasisPoints),
+    pacing: {
+      target: basisPointsToPercent(guard.targetUsageBasisPoints),
+      initialRatePerHour: basisPointsToPercent(guard.initialRateBasisPointsPerHour),
+      margin: guard.pacingMarginRatio,
+    },
     note: QUOTA_NOTE,
   };
 }
@@ -98,6 +110,8 @@ export interface DaemonStatus {
   readonly startedAt: string | null;
   readonly endedAt: string | null;
   readonly endReason: string | null;
+  /** Signal de priorité humaine : réel (`GetLastInputInfo`) en mode réel, fichier en simulé. */
+  readonly prioritySignal: "real" | "simulated" | null;
 }
 
 export interface LastSessionStatus {
@@ -117,6 +131,7 @@ const NO_DAEMON: DaemonStatus = {
   startedAt: null,
   endedAt: null,
   endReason: null,
+  prioritySignal: null,
 };
 
 export interface StatusData {
@@ -212,6 +227,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
             state:
               run.endedAt !== null ? "stopped" : isProcessAlive(run.pid) ? "running" : "crashed",
             mode: run.mode,
+            prioritySignal: run.mode === "real" ? "real" : "simulated",
             pid: run.pid,
             startedAt: run.startedAt,
             endedAt: run.endedAt,
@@ -308,7 +324,7 @@ function formatStatus(data: StatusData): string {
   if (q !== null) {
     lines.push(
       q.enabled
-        ? `  Jauge abonnement (expérimentale) : lancement sous ${orDash(q.startBelow)}, arrêt à ${orDash(q.stopAt)}, réserve humaine ${orDash(q.userReserve)}, dépassement ${q.overshootBound ?? "non mesuré"} — ${q.note}`
+        ? `  Jauge abonnement (expérimentale) : lancement sous ${orDash(q.startBelow)}, arrêt à ${orDash(q.stopAt)}, réserve humaine ${orDash(q.userReserve)}, dépassement ${q.overshootBound ?? "non mesuré"}${q.pacing === null ? "" : `, cible ${q.pacing.target} à la remise à zéro (débit initial ${q.pacing.initialRatePerHour}/h, marge ${String(q.pacing.margin)})`} — ${q.note}`
         : "  Jauge abonnement : désactivée",
     );
   }
@@ -340,7 +356,13 @@ function formatDaemon(d: DaemonStatus): string {
       : d.state === "stopped"
         ? ` le ${orDash(d.endedAt)} (${orDash(d.endReason)})`
         : `, pid ${String(d.pid)} disparu`;
-  return `${DAEMON_LABEL[d.state]}${since}${mode}`;
+  const signal =
+    d.prioritySignal === "real"
+      ? " ; priorité humaine : inactivité réelle du poste (GetLastInputInfo)"
+      : d.prioritySignal === "simulated"
+        ? " ; priorité humaine : SIMULÉE (fichier simulated-user-activity)"
+        : "";
+  return `${DAEMON_LABEL[d.state]}${since}${mode}${signal}`;
 }
 
 function formatLastSession(s: LastSessionStatus | null): string {

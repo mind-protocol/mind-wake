@@ -52,6 +52,19 @@ Vérification de la documentation officielle par la session d'adapter (détail d
 - **Fumée réelle (2.1.308, feu vert de l'utilisateur).** `--session-id` puis `--resume` : continuité vérifiée. `/usage` en `-p` a d'abord renvoyé `rate_limits: null` sous `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` ; sans cette variable, la jauge officielle est **démontrée** (session 13 %, hebdomadaire 45 %, dates de remise à zéro). `readQuota()` ne pose donc plus cette variable. `rate_limit_event` expose à chaque appel `unifiedWindows` (fenêtres 5 h et 7 j, utilisation 0-1, remise à zéro), champ non documenté : signal utile, pas une lecture officielle.
 - **Conséquence pour le relais fournisseur.** Pour Claude avec abonnement, le relais ne doit **pas** détenir ni injecter le jeton : l'humain se connecte par `/login` dans un `CLAUDE_CONFIG_DIR` dédié, le CLI confiné s'authentifie lui-même, le relais ne fait que transporter vers les destinations autorisées. L'hypothèse « le broker détient seul le credential » reste valable pour une clé API.
 
+## Complément : pilotage vers 99 % d'usage (29 octobre 2026)
+
+Demande de l'utilisateur : « l'idée, c'est d'arriver juste au dessus de 99% d'usage. Il faut qu'il ait suffisamment de temps pour les utiliser en tournant en continu, il faut faire une petite estimation, et ajuster les délais de réveil si on passe sous la ligne ». Le délai fixe `launchWhenResetWithinMs` est remplacé par un pilotage (contrat `SubscriptionQuotaGuard`, changement signalé) :
+
+- **Cible** `targetUsageBasisPoints` (9 900 par défaut, ≤ `stopAtBasisPoints`) sur la fenêtre qui se remet à zéro le plus tôt. La réserve humaine peut être à 0 : c'est le choix de l'utilisateur, puisque le quota non utilisé avant la remise à zéro est perdu.
+- **Débit** en points de base par heure de session continue : mesuré par le daemon entre le début et la fin de chaque session (fenêtre inchangée, au moins 5 min), moyenne glissante (poids 0,3) persistée par runtime et par fenêtre (migration `quota_pacing`) ; avant toute mesure, `initialRateBasisPointsPerHour`, valeur prudente de la policy. La jauge inclut l'usage de l'humain : le débit mesuré est surestimé, donc prudent. Jamais converti en tokens.
+- **Réveil** quand `temps avant remise à zéro ≤ (cible − usage) / débit × (1 + marge)` (`pacingMarginRatio`, 0,25 par défaut). En attente, le scheduler réévalue au plus tard toutes les 15 min : un débit plus lent, une interruption ou un usage humain avancent le réveil. Les autres fenêtres doivent rester sous `startBelowBasisPoints` au lancement et sous `stopAtBasisPoints` en session.
+- **Continu** : sous la garde, aucun délai minimal entre sessions ; arrêt dès que la fenêtre pilotée atteint la cible (`min(stopAt, cible)`). Une limitation du fournisseur (100 %) entraîne un backoff, pas un blocage.
+- **Ajustement** : à chaque changement de fenêtre, usage final sous la cible (tolérance 50 bp) → marge × 1,5 (au plus 3) ; cible atteinte plus d'une heure avant la remise à zéro → marge × 0,8 (au moins 0,05). Chaque mesure de débit et chaque ajustement sont journalisés avec la projection d'usage à la remise à zéro.
+- Fenêtres horaires, priorité humaine, pause et arrêt d'urgence restent vérifiés avant le pilotage.
+
+Non mesuré à ce jour : le débit réel des runtimes et le dépassement après la cible (`overshootBoundBasisPoints`) ; les premiers essais réels restent soumis au feu vert de l'utilisateur.
+
 ## Critères de révision
 
 - Un fournisseur interdit l'usage automatisé de son CLI avec un abonnement, ou n'expose aucune lecture officielle de quota.

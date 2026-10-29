@@ -6,6 +6,10 @@ Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câbla
 
 `RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Ce build n'enregistre que l'adapter factice (`defaultRegistry`) ; les adapters réels s'y ajoutent à leur fusion.
 
+## Pilotage du quota (`pacing.ts`)
+
+`QuotaPacingStore` (migration 6 `quota_pacing`) observe chaque lecture officielle de la jauge (scheduler et runner) : usage de la fenêtre en cours, instant où la cible est atteinte, ajustement de la marge à chaque remise à zéro. Le daemon lit la jauge au début et à la fin de chaque session pour mesurer le débit (moyenne glissante par runtime et par fenêtre) et journalise la projection (`quota.pacing_rate_measured`, `quota.pacing_margin_adjusted`). Ces estimations alimentent `decideLaunch` ; elles n'autorisent rien.
+
 ## Prompt de réveil et réveils demandés par l'agent
 
 À chaque lancement, `wake-prompt.ts` compose `prompts/wake/base.md` (champs remplis depuis la révision effective et le ticket), une relance ou la note d'une demande de l'agent, et le bloc de mémoire ; le texte part dans `context`. `wakeups.ts` lit `workspace/wakeups/*.json` : validation fermée, confinement, archivage, échéances candidates transmises au scheduler (`wakeRequests`), jamais une autorisation. Règles détaillées : `prompts/wake/README.md`.
@@ -35,7 +39,7 @@ Variables réservées au développement et aux tests : `MIND_WAKE_RUNTIME_DIR` (
 
 ## Canal de contrôle
 
-Aucun port. `pause`, `resume` et `stop` de la CLI écrivent l'état dans SQLite ; le watchdog du runner le relit toutes les 50 ms pendant une session, le scheduler à chaque tour (`--recheck-ms`, 2 s par défaut). `stop` termine aussi le Job Object de la session par son nom, sans dépendre du daemon. Signal de priorité utilisateur **simulé** : présence du fichier `<données>/simulated-user-activity` (hors de l'espace d'exploration), lu à chaque tour et à chaque tick du watchdog.
+Aucun port. `pause`, `resume` et `stop` de la CLI écrivent l'état dans SQLite ; le watchdog du runner le relit toutes les 50 ms pendant une session, le scheduler à chaque tour (`--recheck-ms`, 2 s par défaut). `stop` termine aussi le Job Object de la session par son nom, sans dépendre du daemon. Signal de priorité utilisateur : en mode `--simulated`, **simulé** par la présence du fichier `<données>/simulated-user-activity` (hors de l'espace d'exploration) ; en mode réel, **inactivité réelle du poste** (`GetLastInputInfo`, `windowsIdleWatcher`) comparée à `humanPriority.idleThresholdMs` de la révision effective, lue à chaque tour du scheduler et à chaque tick du watchdog (50 ms). Retour de l'humain → interruption (checkpoint si possible) puis hibernation ; signal illisible ou plus vieux que `maxSignalAgeMs` → aucun réveil, et la session en cours est interrompue (hibernation, pas de blocage). `daemon_started` journalise `prioritySignal`.
 
 ## Délais mesurés (démo, Windows 11, Node 24)
 
@@ -49,7 +53,7 @@ Voir le rapport de session S-D dans `docs/PLAN.md`. Bornes documentées (ADR-003
 
 - **Adapter factice non confiné** : seule son arborescence de processus est contenue (Job Object) ; il pourrait écrire hors de l'espace. `sandboxOperational` est déclaré `true` pour le seul mode simulé. Les adapters réels sont confinés (mode réel).
 - **Désinstallation** : le profil AppContainer `mindwake.sandbox` créé par le mode réel n'est pas encore supprimé par `uninstall`.
-- **Signal d'activité simulé** (fichier) ; `GetLastInputInfo` (S6) n'est pas câblé.
+- **Coût du signal réel** (mesuré le 29 octobre 2026, Windows 11, poste au repos) : un PowerShell par lecture coûte 0,44 à 0,86 s (compilation `Add-Type`), trop lent pour la borne d'une seconde. Le daemon garde donc **un seul PowerShell persistant**, sans droits administrateur, qui compile une fois (première valeur ≈ 0,64 s) puis écrit l'inactivité toutes les 250 ms (écart maximal mesuré 263 ms). Retour de l'humain → session terminée en 79 ms avec un signal injecté ; avec le flux réel, ajouter au plus un intervalle de lecture. Valable dans la session interactive de l'utilisateur seulement (un service en session 0 lirait une autre session).
 - Aucune commande de réactivation après arrêt d'urgence : `resume` et `enable` refusent ; le profil reste `stopped` (aucun réveil, vérifié).
 - `--exit-after-sessions` et l'arrêt par Ctrl+C attendent la fin de la session en cours (au plus la durée maximale de session).
 - Rattachement de la session A à l'expérience choisie : écriture SQL directe (`SessionRepository` n'a pas de méthode dédiée).

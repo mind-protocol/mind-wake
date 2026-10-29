@@ -373,7 +373,7 @@ describe.runIf(WINDOWS)("runner sous sandbox réelle (AppContainer + Job Object)
           profileState: "hibernating",
         });
         expect(result.reason).toBe(
-          "policy.budget_exhausted: subscription.stop_threshold_reached: primary used_bp=8000",
+          "policy.budget_exhausted: subscription.target_reached: primary used_bp=8000",
         );
         expect(result.termination?.confirmed).toBe(true);
         expect(result.tokens).toBe(0);

@@ -126,7 +126,9 @@ describe("validation d'un brouillon de policy", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
-    launchWhenResetWithinMs: 21_600_000,
+    targetUsageBasisPoints: 7_000,
+    initialRateBasisPointsPerHour: 2_000,
+    pacingMarginRatio: 0.25,
   };
   const quota = "budget.subscriptionQuota";
   const invalidQuota: readonly [string, unknown][] = [
@@ -137,8 +139,15 @@ describe("validation d'un brouillon de policy", () => {
     ["points de base > 10 000", { ...guard, stopAtBasisPoints: 10_001 }],
     ["dépassement négatif", { ...guard, overshootBoundBasisPoints: -1 }],
     ["âge maximal nul", { ...guard, maxSnapshotAgeMs: 0 }],
-    ["délai avant remise à zéro absent", { ...guard, launchWhenResetWithinMs: undefined }],
-    ["délai avant remise à zéro nul", { ...guard, launchWhenResetWithinMs: 0 }],
+    ["débit initial absent", { ...guard, initialRateBasisPointsPerHour: undefined }],
+    ["débit initial nul", { ...guard, initialRateBasisPointsPerHour: 0 }],
+    ["cible au-dessus du seuil d'arrêt", { ...guard, targetUsageBasisPoints: 7_001 }],
+    [
+      "cible par défaut (99 %) au-dessus du seuil d'arrêt",
+      { ...guard, targetUsageBasisPoints: undefined },
+    ],
+    ["marge négative", { ...guard, pacingMarginRatio: -0.1 }],
+    ["ancien délai fixe", { ...guard, launchWhenResetWithinMs: 21_600_000 }],
     ["champ inconnu", { ...guard, tokensPerPercent: 1_000 }],
     ["voie désactivée avec seuils", { enabled: false, stopAtBasisPoints: 7_000 }],
     ["enabled ambigu", { enabled: "yes" }],
@@ -152,6 +161,30 @@ describe("validation d'un brouillon de policy", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.issues.map((i) => i.field)).toContain(quota);
+  });
+
+  it("pilotage : cible 99 % et marge 0,25 par défaut, réserve humaine à 0 permise", () => {
+    const pacing = {
+      ...guard,
+      startBelowBasisPoints: 9_800,
+      stopAtBasisPoints: 9_900,
+      userReserveBasisPoints: 0,
+      overshootBoundBasisPoints: 100,
+      targetUsageBasisPoints: undefined,
+      pacingMarginRatio: undefined,
+    };
+    const result = validateDraft(
+      withFields(validDraft(), { [quota]: JSON.parse(JSON.stringify(pacing)) as unknown }),
+      PROFILE,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.groups.budget.subscriptionQuota).toMatchObject({
+        targetUsageBasisPoints: 9_900,
+        pacingMarginRatio: 0.25,
+        userReserveBasisPoints: 0,
+      });
+    }
   });
 
   it("accepte une voie abonnement absente, désactivée, ou au dépassement non mesuré", () => {

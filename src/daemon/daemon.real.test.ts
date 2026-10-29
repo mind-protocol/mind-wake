@@ -57,7 +57,15 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
     expect(fs.existsSync(base)).toBe(false);
   });
 
+  /** Inactivité du poste simulée : 10 min par défaut, `null` = illisible. */
+  let idleMs: number | null;
+  const idleWatcher = {
+    latest: () => (idleMs === null ? null : { idleMs, observedAtMs: Date.now() }),
+    close: () => undefined,
+  };
+
   beforeEach(() => {
+    idleMs = 600_000;
     dir = demoDir("mind-wake-real-");
     seedSimulatedProfile(dir.path, { runtimeAdapterId: PROBE_ID, subscriptionQuota: GUARD });
     sandbox = new Sandbox(path.join(base, "build"), ephemeralProfileName("mindwake.test"));
@@ -122,6 +130,7 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
       simulated: false,
       registry: registry(),
       isolation: { sandbox, selfTest },
+      idleWatcher,
       runtimeDir: SHARED_RUNTIME_DIR,
       recheckIntervalMs: 1_000,
       exitAfterSessions: 1,
@@ -247,6 +256,7 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
         profileId: PROFILE,
         simulated: false,
         registry: registry(),
+        idleWatcher,
         runtimeDir: SHARED_RUNTIME_DIR,
         recheckIntervalMs: 1_000,
         exitAfterSessions: 1,
@@ -284,6 +294,102 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
     },
     TIMEOUT,
   );
+
+  describe("signal d'activité réel (mode non isolé, observateur injecté)", () => {
+    function hostSetup(): void {
+      dir.remove();
+      dir = demoDir("mind-wake-idle-");
+      seedSimulatedProfile(dir.path, {
+        runtimeAdapterId: PROBE_ID,
+        subscriptionQuota: GUARD,
+        hostUnsandboxed: true,
+      });
+    }
+
+    async function openHost(): Promise<WakeDaemon> {
+      return WakeDaemon.open({
+        dataDir: dir.path,
+        profileId: PROFILE,
+        simulated: false,
+        registry: registry({ args: ["probe", "sleep:60000"] }),
+        idleWatcher,
+        runtimeDir: SHARED_RUNTIME_DIR,
+        recheckIntervalMs: 1_000,
+        exitAfterSessions: 1,
+      });
+    }
+
+    it(
+      "retour de l'humain pendant une session : interruption sous la borne, hibernation",
+      async () => {
+        hostSetup();
+        const daemon = await openHost();
+        const running = daemon.run();
+        await waitForSessionStart();
+        const back = performance.now();
+        idleMs = 0;
+        const summary = await running;
+        const latency = performance.now() - back;
+        expect(summary.sessions[0]).toMatchObject({
+          outcome: "interrupted",
+          profileState: "hibernating",
+        });
+        expect(summary.sessions[0]?.reason).toMatch(
+          /^policy\.user_priority: user_priority\.unfavorable/,
+        );
+        expect(summary.sessions[0]?.termination?.confirmed).toBe(true);
+        // Borne documentée (ADR-003) : 1 s entre le retour de l'humain et la terminaison.
+        expect(latency).toBeLessThan(1_000);
+        console.info(`retour de l'humain → session terminée en ${latency.toFixed(0)} ms`);
+      },
+      TIMEOUT,
+    );
+
+    it(
+      "signal illisible : pas de réveil ; illisible en session : interruption sans blocage",
+      async () => {
+        hostSetup();
+        idleMs = null;
+        const idle = await openHost();
+        const waiting = idle.run();
+        await new Promise((resolve) => setTimeout(resolve, 1_500));
+        idle.requestStop("fin du test");
+        expect((await waiting).sessions).toHaveLength(0);
+        const store = openStoreReadOnly(controlDbPath(dir.path));
+        try {
+          expect(
+            store.uow.journal
+              .list(PROFILE)
+              .some((e) => e.type === "action_denied" && e.reason === "unknown_condition"),
+          ).toBe(true);
+          const profile = store.uow.profiles.get(PROFILE);
+          expect(profile?.state).toBe("hibernating");
+          expect(profile?.stateReason).toMatch(/user_priority\.unknown/);
+        } finally {
+          store.close();
+        }
+      },
+      TIMEOUT,
+    );
+  });
+
+  /** Attend qu'une session soit ouverte (lecture seule de la base de contrôle). */
+  async function waitForSessionStart(): Promise<void> {
+    const deadline = Date.now() + 20_000;
+    while (Date.now() < deadline) {
+      const store = openStoreReadOnly(controlDbPath(dir.path));
+      try {
+        if (store.uow.sessions.listOpen(PROFILE).length > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          return;
+        }
+      } finally {
+        store.close();
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error("aucune session lancée");
+  }
 
   it("refuse un adapter enregistré que probe dit indisponible, sans repli", async () => {
     probeAvailable = false;

@@ -454,6 +454,7 @@ describe("sortie JSON versionnée", () => {
         startedAt: null,
         endedAt: null,
         endReason: null,
+        prioritySignal: null,
       },
       lastSession: null,
       lastEvent: {

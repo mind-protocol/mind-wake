@@ -151,7 +151,9 @@ export const GUARD: SubscriptionQuotaGuard = {
   userReserveBasisPoints: 1_000,
   overshootBoundBasisPoints: 500,
   maxSnapshotAgeMs: 60_000,
-  launchWhenResetWithinMs: 6 * 3_600_000,
+  targetUsageBasisPoints: 8_000,
+  initialRateBasisPointsPerHour: 2_000,
+  pacingMarginRatio: 0.25,
 };
 
 export function snapshot(used: number, observedAt: UtcTimestamp = utcNow()): ProviderQuotaSnapshot {
