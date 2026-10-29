@@ -12,6 +12,7 @@
  */
 
 import { readOwnerMessages, type OwnerMessage } from "../../communication/owner-messages.js";
+import { readPublicActivity, type PublicActivity } from "../../communication/public-activity.js";
 import { readMessageWait, type MessageWait } from "../../communication/runtime-activity.js";
 import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
 import { readRepoConversations, type RepoConversation } from "../../communication/repo-conversations.js";
@@ -45,6 +46,7 @@ interface LogEntry extends HumanReply {
 }
 
 export interface MessagesData {
+  readonly publicActivity?: readonly PublicActivity[];
   readonly profileId: string | null;
   readonly hint: string | null;
   readonly agentNote: {
@@ -180,7 +182,7 @@ export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<Messa
   });
   return {
     exitCode: EXIT_OK,
-    data: { profileId: DEFAULT_PROFILE_ID, hint: null, agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
+    data: { profileId: DEFAULT_PROFILE_ID, hint: null, publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
     human: formatMessages,
   };
 }

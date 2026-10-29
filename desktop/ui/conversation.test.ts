@@ -6,6 +6,11 @@ function envelope(data: unknown): unknown {
 }
 
 describe("conversation", () => {
+  it("interleaves public activity with messages without treating it as a new owner answer",()=>{
+    const c=conversation(envelope({profileId:"default",agentMessages:[{id:"answer",createdAt:"2026-10-29T10:02:00Z",updatedAt:"2026-10-29T10:02:00Z",text:"Résultat"}],replies:[{id:"human",at:"2026-10-29T10:00:00Z",text:"Continue"}],publicActivity:[{id:"step",at:"2026-10-29T10:01:00Z",text:"Je vérifie le résultat."},{id:"bad",at:"invalid",text:"Ignore"}]}));
+    expect(c?.items.map(i=>i.from)).toEqual(["human","activity","agent"]);
+    expect(c?.agentUpdatedAt).toBe("2026-10-29T10:02:00Z");
+  });
   it("explains exhausted provider quota rather than ordinary scheduling and rounds the reset boundary up",()=>{
     const now=Date.parse("2026-10-29T20:51:00Z");
     const c=conversation(envelope({profileId:"default",agentMessages:[],replies:[{id:"pending",at:"2026-10-29T20:50:00Z",text:"ok"}],agentStatus:{state:"hibernating",reason:"budget_exhausted: subscription.start_threshold_reached: claude:session used_bp=10000",nextWakeAt:"2026-10-29T20:59:59.846Z"}}),null,now);

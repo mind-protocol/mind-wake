@@ -6,7 +6,7 @@
 
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
-  readonly from: "agent" | "human" | "session";
+  readonly from: "agent" | "human" | "session" | "activity";
   readonly at: string;
   readonly text: string;
   readonly id?: string;
@@ -154,6 +154,10 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     }
   }
   items.push(...sessionAnswers(helpers));
+  for(const raw of Array.isArray(data["publicActivity"])?data["publicActivity"]:[]) {
+    const a=rec(raw),id=str(a?.["id"]),at=str(a?.["at"]),text=str(a?.["text"]);
+    if(id && at && text && Number.isFinite(Date.parse(at)))items.push({from:"activity",id,at,text});
+  }
   // La note est réécrite par l'agent : on l'ordonne à sa dernière modification.
   items.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   return {

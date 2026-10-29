@@ -469,7 +469,7 @@ async function refreshChat(): Promise<void> {
       const meta = document.createElement("small");
       li.dataset["from"] = item.from;
       const who =
-        item.from === "human"
+        item.from === "activity" ? "Activité" : item.from === "human"
           ? "Toi"
           : item.from === "session"
             ? `Aide · ${item.source ?? "session"}`

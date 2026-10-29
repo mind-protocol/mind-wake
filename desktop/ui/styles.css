@@ -443,6 +443,9 @@ main>#view-chat { display:flex; flex-direction:column; padding:0; overflow:hidde
 .messages li small { font-size:11px; color:var(--muted); display:block; margin-bottom:8px; }
 .messages li[data-self="true"] { background:color-mix(in srgb,var(--idle) 10%,var(--surface)); max-width:85%; }
 .messages p { line-height:1.7; margin:0; font-size:14px; }
+#chat li[data-from="activity"] { background:transparent; border:0; border-radius:0; box-shadow:none; padding:4px 2px; margin:4px 0 12px; max-width:100%; color:var(--muted); }
+#chat li[data-from="activity"] small { margin-bottom:3px; font-size:10px; opacity:.8; }
+#chat li[data-from="activity"] p { font-size:13px; line-height:1.55; }
 #chat-note { padding:0 28px; }
 #chat-form { flex:none; background:var(--surface); border-top:1px solid var(--line); padding:16px 24px; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:12px; }
 #chat-text { min-height:56px; max-height:160px; resize:vertical; border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--bg); }
