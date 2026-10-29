@@ -9,9 +9,12 @@
  * - GUEST_HOME : dossier privé (system-prompt.txt, credentials.json, memory.jsonl) ;
  * - GUEST_SCRIPT : `cooperative` (défaut) ou `hostile` (premier message hostile) ;
  * - GUEST_DUPLICATE_SENDS=1 : chaque envoi est livré deux fois (duplicata de transport) ;
- * - GUEST_CLOSE_AFTER : nombre de réponses après lequel le guest résume puis clôt.
+ * - GUEST_CLOSE_AFTER : nombre de réponses après lequel le guest résume puis clôt ;
+ * - GUEST_CHECKPOINTS (facultatif, ajout G3) : fichier où le runtime de l'agent atteste
+ *   chaque sauvegarde de réponse par une référence opaque, sans contenu.
  */
 
+import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GatewayLink, LinkError } from "../link.js";
@@ -39,6 +42,7 @@ const home = env("GUEST_HOME");
 const script = process.env["GUEST_SCRIPT"] ?? "cooperative";
 const duplicateSends = process.env["GUEST_DUPLICATE_SENDS"] === "1";
 const closeAfter = Number(process.env["GUEST_CLOSE_AFTER"] ?? "0");
+const checkpointLog = process.env["GUEST_CHECKPOINTS"] ?? "";
 
 // --- État privé : ne quitte jamais ce processus ---------------------------------------
 const systemPrompt = readFileSync(join(home, "system-prompt.txt"), "utf8");
@@ -71,6 +75,17 @@ function privateNotesTool(): boolean {
   const ok = credentials.privateToken.length > 0 && systemPrompt.length > 0;
   remember({ type: "tool", name: "private-notes", ok });
   return ok;
+}
+
+/**
+ * Attestation de sauvegarde (G3) : une fois la réponse mémorisée, le runtime de l'agent
+ * publie une référence opaque liée à la contribution traitée. Ni texte ni mémoire.
+ */
+function attestCheckpoint(to: string): void {
+  if (checkpointLog.length === 0) return;
+  const hash = createHash("sha256").update(`${encounterId}:${to}`).digest("hex");
+  const line = { encounterId, inReplyTo: to, checkpointRef: `ckpt-${hash.slice(0, 24)}` };
+  appendFileSync(checkpointLog, `${JSON.stringify(line)}\n`, "utf8");
 }
 
 // --- Composition : seule source du texte partagé ---------------------------------------
@@ -128,6 +143,8 @@ for (const record of past) {
   }
 }
 privateNotesTool();
+// Après un redémarrage, réatteste les sauvegardes déjà faites (idempotent côté lecteur).
+for (const to of replied) attestCheckpoint(to);
 
 async function send(idempotencyKey: string, text: string, inReplyTo?: string): Promise<void> {
   const request = {
@@ -180,6 +197,7 @@ for (;;) {
       await send(`reply:${message.messageId}`, compose(message, replied.size), message.messageId);
       replied.add(message.messageId);
       remember({ type: "replied", encounterId, to: message.messageId });
+      attestCheckpoint(message.messageId);
       if (closeAfter > 0 && replied.size >= closeAfter) {
         await send(
           `summary:${encounterId}`,
