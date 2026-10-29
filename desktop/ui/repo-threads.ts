@@ -1,6 +1,6 @@
 export interface RepoThread {
   id: string; repo: string; project: string; runtime: string; sessionId: string; transcript: string;
-  messages: { id: string; at: string; from: "repo" | "wake"; text: string }[];
+  messages: { id: string; at: string; from: "repo" | "wake" | "system"; text: string }[];
 }
 export function repoThreads(envelope: unknown): RepoThread[] {
   const e = envelope as {schema?:unknown;data?:{repoThreads?:unknown}} | null;
@@ -13,7 +13,7 @@ export function repoThreads(envelope: unknown): RepoThread[] {
     for (const r of t["messages"]) {
       if (!r || typeof r !== "object") continue;
       const m = r as Record<string,unknown>;
-      if (typeof m["id"]==="string" && typeof m["at"]==="string" && typeof m["text"]==="string" && (m["from"]==="repo" || m["from"]==="wake"))
+      if (typeof m["id"]==="string" && typeof m["at"]==="string" && typeof m["text"]==="string" && (m["from"]==="repo" || m["from"]==="wake" || m["from"]==="system"))
         messages.push({id:m["id"],at:m["at"],text:m["text"],from:m["from"]});
     }
     messages.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at));

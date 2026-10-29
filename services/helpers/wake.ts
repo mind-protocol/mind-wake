@@ -28,17 +28,23 @@ export type WakeTarget = Pick<SessionDoc, "runtime" | "sessionId" | "cwd">;
 
 export type Waker = (session: WakeTarget, prompt: string) => Promise<WakeResult>;
 
-function claudeExe(): string {
-  return (
-    process.env["MIND_WAKE_CLAUDE_EXE"] ?? path.join(os.homedir(), ".local", "bin", "claude.exe")
-  );
-}
-
-function codexExe(): string {
-  return (
-    process.env["MIND_WAKE_CODEX_BIN"] ??
-    path.join(process.env["LOCALAPPDATA"] ?? "", "Programs", "OpenAI", "Codex", "bin", "codex.exe")
-  );
+export function adviceExecutables(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): { claudeExe: string; codexBin: string } {
+  return {
+    claudeExe:
+      env["MIND_WAKE_CLAUDE_EXE"] ?? path.join(os.homedir(), ".local", "bin", "claude.exe"),
+    codexBin:
+      env["MIND_WAKE_CODEX_BIN"] ??
+      path.join(
+        env["LOCALAPPDATA"] ?? path.join(os.homedir(), "AppData", "Local"),
+        "Programs",
+        "OpenAI",
+        "Codex",
+        "bin",
+        "codex.exe",
+      ),
+  };
 }
 
 function run(
@@ -70,65 +76,82 @@ function run(
   });
 }
 
-const clip = (s: string): string => s.trim().slice(0, MAX_ANSWER_CHARS);
+export const answerText = (s: string, limit: number | null = MAX_ANSWER_CHARS): string =>
+  limit === null ? s.trim() : s.trim().slice(0, limit);
 
-export function claudeAdviceArgs(sessionId:string):string[] {
- return ["--resume",sessionId,"--fork-session","--no-session-persistence","-p","--tools","default","--output-format","json"];
+export function claudeAdviceArgs(sessionId: string): string[] {
+  return [
+    "--resume",
+    sessionId,
+    "--fork-session",
+    "--no-session-persistence",
+    "-p",
+    "--tools",
+    "default",
+    "--output-format",
+    "json",
+  ];
 }
-export function codexAdviceArgs(sessionId:string,outFile:string):string[] {
- return ["exec","resume","--ephemeral","--skip-git-repo-check","-o",outFile,sessionId,"-"];
+export function codexAdviceArgs(sessionId: string, outFile: string): string[] {
+  return ["exec", "resume", "--ephemeral", "--skip-git-repo-check", "-o", outFile, sessionId, "-"];
 }
 
-export const officialWaker: Waker = async (session, prompt) => {
-  if (!fs.existsSync(session.cwd)) {
-    return { ok: false, text: "", detail: `dossier de la session introuvable : ${session.cwd}` };
-  }
-  if (session.runtime === "claude") {
-    const r = await run(
-      claudeExe(),
-      claudeAdviceArgs(session.sessionId),
-      session.cwd,
-      prompt,
-    );
-    try {
-      const out = JSON.parse(r.stdout) as { result?: unknown; is_error?: unknown };
-      if (out.is_error === true || typeof out.result !== "string") {
+export function createOfficialWaker(
+  options: { maxAnswerChars?: number | null; claudeExe?: string; codexBin?: string } = {},
+): Waker {
+  const limit = options.maxAnswerChars === undefined ? MAX_ANSWER_CHARS : options.maxAnswerChars;
+  return async (session, prompt) => {
+    if (!fs.existsSync(session.cwd)) {
+      return { ok: false, text: "", detail: `dossier de la session introuvable : ${session.cwd}` };
+    }
+    if (session.runtime === "claude") {
+      const r = await run(
+        options.claudeExe ?? adviceExecutables().claudeExe,
+        claudeAdviceArgs(session.sessionId),
+        session.cwd,
+        prompt,
+      );
+      try {
+        const out = JSON.parse(r.stdout) as { result?: unknown; is_error?: unknown };
+        if (out.is_error === true || typeof out.result !== "string") {
+          return {
+            ok: false,
+            text: "",
+            detail: `claude : ${(typeof out.result === "string" ? out.result : r.stderr).slice(0, 300)}`,
+          };
+        }
+        return { ok: true, text: answerText(out.result, limit), detail: "claude" };
+      } catch {
         return {
           ok: false,
           text: "",
-          detail: `claude : ${(typeof out.result === "string" ? out.result : r.stderr).slice(0, 300)}`,
+          detail: `claude (code ${String(r.code)}) : ${r.stderr.slice(0, 300)}`,
         };
       }
-      return { ok: true, text: clip(out.result), detail: "claude" };
-    } catch {
-      return {
-        ok: false,
-        text: "",
-        detail: `claude (code ${String(r.code)}) : ${r.stderr.slice(0, 300)}`,
-      };
     }
-  }
-  const outFile = path.join(
-    os.tmpdir(),
-    `mind-wake-helper-${String(process.pid)}-${String(Date.now())}.txt`,
-  );
-  try {
-    const r = await run(
-      codexExe(),
-      codexAdviceArgs(session.sessionId,outFile),
-      session.cwd,
-      prompt,
+    const outFile = path.join(
+      os.tmpdir(),
+      `mind-wake-helper-${String(process.pid)}-${String(Date.now())}.txt`,
     );
-    const text = fs.existsSync(outFile) ? fs.readFileSync(outFile, "utf8") : "";
-    if (text.trim() === "") {
-      return {
-        ok: false,
-        text: "",
-        detail: `codex (code ${String(r.code)}) : ${r.stderr.slice(-300)}`,
-      };
+    try {
+      const r = await run(
+        options.codexBin ?? adviceExecutables().codexBin,
+        codexAdviceArgs(session.sessionId, outFile),
+        session.cwd,
+        prompt,
+      );
+      const text = fs.existsSync(outFile) ? fs.readFileSync(outFile, "utf8") : "";
+      if (text.trim() === "") {
+        return {
+          ok: false,
+          text: "",
+          detail: `codex (code ${String(r.code)}) : ${r.stderr.slice(-300)}`,
+        };
+      }
+      return { ok: true, text: answerText(text, limit), detail: "codex" };
+    } finally {
+      fs.rmSync(outFile, { force: true });
     }
-    return { ok: true, text: clip(text), detail: "codex" };
-  } finally {
-    fs.rmSync(outFile, { force: true });
-  }
-};
+  };
+}
+export const officialWaker: Waker = createOfficialWaker();

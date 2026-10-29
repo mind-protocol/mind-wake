@@ -2,7 +2,7 @@
 
 ## Parcours principal : demander conseil
 
-`publish_help_request` (« Demander conseil ») est l'entrée unique. Avec le profil local supervisé activé, il crée la demande existante du hub et un job idempotent, puis rend la main. Le worker réutilise l'index mécanique des sessions autorisées pour consulter une session pertinente en fork éphémère ; à défaut, il choisit aléatoirement un autre agent de l'annuaire qui accepte les messages dans la langue voulue. Les humains sont exclus de cette sélection automatique : aucune invitation de guide ni transaction n'est créée.
+`publish_help_request` (« Demander conseil ») est l'entrée de recherche automatique. Pour choisir une session de repo explicitement, employer le parcours direct ci-dessous. Avec le profil local supervisé activé, il crée la demande existante du hub et un job idempotent, puis rend la main. Le worker réutilise l'index mécanique des sessions autorisées pour consulter une session pertinente en fork éphémère ; à défaut, il choisit aléatoirement un autre agent de l'annuaire qui accepte les messages dans la langue voulue. Les humains sont exclus de cette sélection automatique : aucune invitation de guide ni transaction n'est créée.
 
 Le fork sert uniquement à consulter une session de repo. Les agents MIND reçoivent un message direct dans un fil normal. Le « merge » réintègre la réponse et les pointeurs de provenance dans la conversation locale et la boîte de réception de Wake ; il ne fusionne ni Git ni l'historique complet des sessions. Les réponses d'un agent MIND sont attendues par le job séparé, sans bloquer Wake. Pause et arrêt conservent leurs effets sur les processus supervisés.
 
@@ -17,7 +17,7 @@ Quand l'agent Wake écrit à son humain (canal `message_owner`), la session Clau
 - **Opt-in** : seules les sessions dont le dossier de travail est sous une racine autorisée (`allow`) sont lues.
   - Côté Claude Code, seuls les dossiers de projet correspondants sont ouverts.
   - Côté Codex, seule la ligne de métadonnées est lue avant la décision.
-  - Les dossiers de Wake (`mind-wake*`) sont toujours exclus.
+  - Les dossiers de données Wake et les espaces de l’agent sont toujours exclus (`excludedRoots(dataDir)`, dont les voisins `mind-wake*` du profil). Un dépôt source `mind-wake` dans une racine distincte explicitement autorisée reste consultable ; son nom seul ne l’exclut pas.
 - **Conversation d'origine intacte** :
   - Claude Code : `--resume <id> --fork-session --no-session-persistence -p --tools default`, outils natifs et réglages habituels conservés ;
   - Codex : `exec resume --ephemeral`, réglages habituels conservés, sans forcer un mode lecture seule.
@@ -53,3 +53,24 @@ node --experimental-transform-types --import ./test/fixtures/store-ledger/ts-hoo
 | `answers`                           | réponses rangées (lues par le desktop : commande `helpers_answers`)    |
 
 Recette : `test/helpers/helpers.test.ts`. Le réveil réel d'une session n'est pas couvert par les tests.
+
+
+## Consultation directe d’une session identifiée
+
+Parcours local supervisé : `list_repo_sessions` fournit des cibles explicites, `send_repo_request` choisit exactement l’une d’elles, `read_repo_thread` retrouve l’état et le texte dans le même fil. Pas de classement par mots-clés, pas de fallback aléatoire. Les racines helpers autorisées et l’exclusion des espaces Wake restent appliquées avant l’envoi et à l’exécution. Le daemon possède le job ; Pause/Stop arrêtent le processus. Une clé idempotente ne peut pas changer de cible ou de question.
+
+Le worker reçoit le dossier de données par les arguments du job et vérifie qu’il correspond à `MIND_WAKE_JOB_ID/OUTPUT`. Il recharge le profil et uniquement les chemins de configuration capturés lors de l’envoi ; il ne dépend pas d’un héritage large d’environnement. Les réponses directes sont conservées intégralement. L’ancien mécanisme garde son aperçu de 4 000 caractères.
+
+La liste MCP est paginée (30 sessions par défaut, maximum 100) et peut être filtrée par chemin exact `repo`. La CLI renvoie la liste en JSON, à filtrer localement sans charger les transcriptions.
+
+Les nouveaux outils MCP apparaissent à la prochaine connexion du serveur stdio. Le daemon n’a pas besoin de redémarrer. Pour utiliser immédiatement le même chemin dans un client MCP déjà connecté, la CLI suivante charge le source actuel :
+
+```powershell
+node scripts/repo-advice.mjs list --data-dir C:/chemin/profil
+node scripts/repo-advice.mjs send --data-dir C:/chemin/profil --input C:/chemin/question.json
+node scripts/repo-advice.mjs read --data-dir C:/chemin/profil --thread direct_REFERENCE
+```
+
+`question.json` contient `target` (valeur exacte retournée par list), `topic`, `context`, `idempotency_key`. `--helpers-dir` permet de reprendre une configuration helpers non standard. La CLI ne démarre aucun modèle pour `list` ou `read` ; `send` enregistre le job et retourne son identifiant et son état courant. Une cible absente ou révoquée échoue explicitement, sans demander à une autre session à sa place.
+
+Dans le fil Conseils de l’app, les diagnostics « État de la consultation » sont séparés des messages de la session. Le statut courant complet et les résultats sont accessibles via `read_repo_thread` / `read` ; un job `succeeded` sans texte est `missing_answer`, jamais `answered`. Les demandes directes ne modifient ni ne ferment les anciennes demandes automatiques en attente.

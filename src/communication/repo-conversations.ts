@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { readOwnerMessages } from "./owner-messages.js";
 
-export interface RepoThreadMessage { id: string; at: string; from: "repo" | "wake"; text: string; }
+export interface RepoThreadMessage { id: string; at: string; from: "repo" | "wake" | "system"; text: string; }
 export interface RepoConversation {
   id: string; repo: string; runtime: string; sessionId: string; transcript: string;
   messages: RepoThreadMessage[];
@@ -30,7 +30,7 @@ export function readRepoConversations(dataDir: string): RepoConversation[] {
     if (!r.thread || !r.message || typeof r.thread.id !== "string" ||
         typeof r.thread.repo !== "string" || typeof r.message.id !== "string" ||
         typeof r.message.text !== "string" || typeof r.message.at !== "string" ||
-        !["repo","wake"].includes(r.message.from)) continue;
+        !["repo","wake","system"].includes(r.message.from)) continue;
     const thread = threads.get(r.thread.id) ?? { ...r.thread, messages: [] };
     // A retry may replay the initial placeholder; keep the resolved interlocutor.
     if(r.thread.sessionId || !thread.sessionId)Object.assign(thread,r.thread);

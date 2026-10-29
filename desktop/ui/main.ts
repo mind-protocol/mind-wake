@@ -645,7 +645,7 @@ function renderAgentThreads(): void {
     const li = document.createElement("li"), meta = document.createElement("small"), body = document.createElement("p");
     li.dataset["self"] = String(m.from === "wake");
     li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
-    meta.textContent = `${m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    meta.textContent = `${m.from === "system" ? "État de la consultation" : m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
     body.textContent = plainText(m.text); li.append(meta, body); return li;
   }));
 }

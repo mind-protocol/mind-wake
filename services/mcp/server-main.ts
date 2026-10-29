@@ -13,6 +13,7 @@
 
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
+import { registerRepoTools } from "./repo-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
@@ -483,5 +484,6 @@ server.registerTool(
 
 registerOwnerTools(server, process.env);
 registerBackgroundTools(server, process.env);
+registerRepoTools(server, process.env);
 
 await server.connect(new StdioServerTransport());
