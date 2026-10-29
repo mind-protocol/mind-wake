@@ -10,3 +10,7 @@ CLAUDE.md
 SPEC.md
 docs/PLAN.md
 .claude/
+.local/
+desktop/ui/build/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
