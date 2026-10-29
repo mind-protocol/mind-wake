@@ -292,3 +292,35 @@ export function migrate(
   }
   return applied;
 }
+
+/**
+ * Vérifie, sans rien écrire, que la base porte exactement les migrations connues.
+ * Utilisé par l'ouverture en lecture seule, qui ne peut pas migrer.
+ */
+export function assertSchemaCurrent(
+  db: SqliteDatabase,
+  migrations: readonly Migration[] = MIGRATIONS,
+): void {
+  const table = db
+    .prepare<[], { name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'",
+    )
+    .get();
+  const rows =
+    table === undefined
+      ? []
+      : db
+          .prepare<[], AppliedRow>("SELECT version, name FROM schema_migrations ORDER BY version")
+          .all();
+  const current =
+    rows.length === migrations.length &&
+    rows.every(
+      (row, i) => migrations[i]?.version === row.version && migrations[i].name === row.name,
+    );
+  if (!current) {
+    throw new StoreError(
+      "schema_mismatch",
+      `schéma de la base (${String(rows.length)} migration(s)) différent de ce binaire (${String(migrations.length)}) : ouvrir en écriture pour migrer`,
+    );
+  }
+}

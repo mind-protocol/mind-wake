@@ -4,7 +4,12 @@
 
 import type { UnitOfWork } from "../contracts/index.js";
 import { SqliteLedgerRepository } from "../ledger/sqlite-ledger.js";
-import { openDatabase, type OpenDatabaseOptions, type SqliteDatabase } from "./database.js";
+import {
+  openDatabase,
+  openDatabaseReadOnly,
+  type OpenDatabaseOptions,
+  type SqliteDatabase,
+} from "./database.js";
 import { StoreError } from "./errors.js";
 import {
   SqliteCheckpointRepository,
@@ -73,6 +78,21 @@ export interface Store {
 /** Ouvre la base de contrôle, applique les migrations et expose les dépôts. */
 export function openStore(path: string, options: OpenDatabaseOptions = {}): Store {
   const db = openDatabase(path, options);
+  return {
+    db,
+    uow: new SqliteUnitOfWork(db),
+    close: () => {
+      db.close();
+    },
+  };
+}
+
+/**
+ * Ouvre une base existante en lecture seule. Toute écriture, y compris
+ * `transaction`, échoue avec `SQLITE_READONLY`.
+ */
+export function openStoreReadOnly(path: string, options: OpenDatabaseOptions = {}): Store {
+  const db = openDatabaseReadOnly(path, options);
   return {
     db,
     uow: new SqliteUnitOfWork(db),

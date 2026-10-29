@@ -1,8 +1,8 @@
-export { DEFAULT_BUSY_TIMEOUT_MS, openDatabase } from "./database.js";
+export { DEFAULT_BUSY_TIMEOUT_MS, openDatabase, openDatabaseReadOnly } from "./database.js";
 export type { OpenDatabaseOptions, SqliteDatabase } from "./database.js";
 export { StoreError } from "./errors.js";
 export type { StoreErrorCode } from "./errors.js";
-export { MIGRATIONS, migrate } from "./migrations.js";
+export { MIGRATIONS, assertSchemaCurrent, migrate } from "./migrations.js";
 export type { Migration } from "./migrations.js";
 export {
   SqliteCheckpointRepository,
@@ -12,5 +12,5 @@ export {
   SqliteProfileRepository,
   SqliteSessionRepository,
 } from "./repositories.js";
-export { SqliteUnitOfWork, openStore } from "./unit-of-work.js";
+export { SqliteUnitOfWork, openStore, openStoreReadOnly } from "./unit-of-work.js";
 export type { Store } from "./unit-of-work.js";

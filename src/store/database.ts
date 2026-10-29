@@ -4,7 +4,7 @@
  */
 
 import Database from "better-sqlite3";
-import { migrate } from "./migrations.js";
+import { assertSchemaCurrent, migrate } from "./migrations.js";
 
 export type SqliteDatabase = Database.Database;
 
@@ -38,6 +38,27 @@ export function openDatabase(path: string, options: OpenDatabaseOptions = {}): S
       throw new Error("impossible d'activer les clés étrangères");
     }
     migrate(db);
+    return db;
+  } catch (error) {
+    db.close();
+    throw error;
+  }
+}
+
+/**
+ * Ouvre une base existante en lecture seule, pour les consultations : aucune création,
+ * aucune migration, aucune écriture possible (`SQLITE_READONLY`). SQLite peut créer
+ * les fichiers annexes `-wal` et `-shm` vides nécessaires à la lecture d'une base WAL.
+ */
+export function openDatabaseReadOnly(
+  path: string,
+  options: OpenDatabaseOptions = {},
+): SqliteDatabase {
+  const busyTimeoutMs = options.busyTimeoutMs ?? DEFAULT_BUSY_TIMEOUT_MS;
+  const db = new Database(path, { readonly: true, fileMustExist: true, timeout: busyTimeoutMs });
+  try {
+    db.pragma("foreign_keys = ON");
+    assertSchemaCurrent(db);
     return db;
   } catch (error) {
     db.close();

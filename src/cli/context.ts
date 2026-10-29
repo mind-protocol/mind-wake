@@ -12,6 +12,7 @@ import {
   type Persistence,
   type SqliteProbe,
   type Store,
+  type StoreAccess,
 } from "./store/index.js";
 
 /** v0.1 : un seul utilisateur local, un seul agent (AGENTS §2). Identifiants stables. */
@@ -27,7 +28,7 @@ export interface CliContext {
   readonly cwd: string;
   readonly nodeVersion: string;
   readonly now: () => Date;
-  readonly openStore: (dataDir: string) => Store;
+  readonly openStore: (dataDir: string, access: StoreAccess) => Store;
   /** Stockage que `openStore` ouvrirait, connu sans l'ouvrir. */
   readonly storeBackend: Persistence;
   readonly probeSqlite: () => Promise<SqliteProbe>;

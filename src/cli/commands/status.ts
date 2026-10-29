@@ -142,7 +142,10 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
         ? NO_BUDGET
         : {
             availability: "unknown",
-            detail: "disponibilité non calculée : ledger SQLite non câblé",
+            detail:
+              persistence === "sqlite"
+                ? "disponibilité non calculée : status ne lit pas encore le ledger"
+                : "disponibilité non calculée : ledger SQLite non câblé",
             caps: {
               period: revision.groups.budget.period,
               tokensPerSession: revision.groups.budget.tokensPerSession,

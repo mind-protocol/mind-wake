@@ -20,7 +20,7 @@ export function withReadStore<T>(
   fn: (scope: ReadScope) => T,
 ): T {
   if (inspectDataDir(dataDir.path).status !== "ok") return fn({ uow: null, persistence: null });
-  const store = ctx.openStore(dataDir.path);
+  const store = ctx.openStore(dataDir.path, "read");
   try {
     return fn({ uow: store.uow, persistence: store.persistence });
   } finally {
