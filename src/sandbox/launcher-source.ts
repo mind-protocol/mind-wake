@@ -17,7 +17,7 @@
  *     suspendu dans l'AppContainer sans capacité (SECURITY_CAPABILITIES), assigné au job
  *     dès sa création (JOB_LIST), avec un environnement limité aux --env et trois poignées
  *     héritées (HANDLE_LIST : stdin alimenté par ce lanceur, stdout du lanceur, stderr NUL).
- *     Commandes sur stdin : `in <texte>`, `kill` ; fin de stdin = kill. Fin du processus
+ *     Commandes sur stdin : `in <texte>`, `eof` (ferme l'entrée de l'enfant), `kill` ; fin de stdin = kill. Fin du processus
  *     principal = fin de ses descendants. Retire les ACE en sortie. Événements JSON sur
  *     stderr, préfixés par `mindwake-sandbox `.
  *   query | terminate --job-name N [--timeout-ms n]
@@ -478,6 +478,10 @@ static class Launcher
             while ((line = reader.ReadLine()) != null)
             {
                 if (line == "kill") Kill("command");
+                else if (line == "eof")
+                {
+                    try { childIn.Dispose(); } catch (Exception) { }
+                }
                 else if (line.StartsWith("in "))
                 {
                     try { byte[] b = new UTF8Encoding(false).GetBytes(line.Substring(3) + "\n"); childIn.Write(b, 0, b.Length); childIn.Flush(); }

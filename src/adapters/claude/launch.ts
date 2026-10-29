@@ -1,18 +1,23 @@
 /**
  * Ports de lancement de l'adapter Claude Code. L'adapter ne lance jamais `claude` lui-même :
  *
- * - `ClaudeLauncher` donne le processus, soit dans la sandbox AppContainer + Job Object
- *   (`sandboxClaudeLauncher`, seule voie autonome, ADR-005), soit dans l'arborescence
- *   contenue du runner sur le poste hôte (`hostClaudeLauncher`, lancement supervisé par
- *   l'humain, sans mode sans approbation) ;
+ * - `ClaudeLauncher` donne le processus : par le runner (`hostClaudeLauncher`, qui confine
+ *   selon le mode de la session : sandbox, ou hôte NON ISOLÉ consenti par la policy,
+ *   ADR-006), directement par la sandbox (`sandboxClaudeLauncher`, ADR-005), ou hors session
+ *   pour la seule lecture de jauge (`supervisorClaudeLauncher`, Job Object, aucun tour) ;
  * - `ClaudeNetworkPort` ouvre le transport fournisseur d'une session. Il sera fourni par
  *   le relais fournisseur (`src/broker/`) ; cet adapter ne l'implémente pas. Il ne transmet
  *   jamais de credential : l'authentification reste celle du CLI officiel.
  */
 
 import type { DurationMs, SessionId, UtcTimestamp } from "../../contracts/index.js";
+import type { ProfileId } from "../../contracts/index.js";
 import type { AdapterHost } from "../../runner/host.js";
-import type { TreeTermination } from "../../runner/process-tree.js";
+import type {
+  ContainedCommand,
+  SessionProcess,
+  TreeTermination,
+} from "../../runner/process-tree.js";
 import type { BrokerEndpoint } from "../../sandbox/broker.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
 
@@ -23,6 +28,8 @@ export interface ClaudeProcess {
   readonly hasExited: boolean;
   readLine(): Promise<string | null>;
   send(line: string): void;
+  /** Ferme l'entrée standard : le CLI en entrée `stream-json` se termine après son tour. */
+  closeInput?(): void;
   terminateTree(timeoutMs?: DurationMs): Promise<TreeTermination>;
 }
 
@@ -52,6 +59,8 @@ export interface ClaudeLaunchSpec {
   readonly readOnlyRoots: readonly string[];
   readonly network: ClaudeNetworkGrant | null;
   readonly deadline: UtcTimestamp;
+  /** Mode sans approbation (`--dangerously-skip-permissions`) : le runner le revérifie. */
+  readonly unattended: boolean;
 }
 
 /**
@@ -60,10 +69,19 @@ export interface ClaudeLaunchSpec {
  */
 export type ClaudeIsolation =
   | { readonly kind: "appcontainer"; readonly selfTestPassed: boolean; readonly detail: string }
-  | { readonly kind: "host_job"; readonly detail: string };
+  | {
+      readonly kind: "host_job";
+      readonly detail: string;
+      /**
+       * Le lanceur atteste le consentement distinct au mode non isolé (runner en
+       * `host_unsandboxed`, dérivé de la policy, ADR-006).
+       */
+      readonly unsandboxedConsent?: boolean;
+    };
 
 export interface ClaudeLauncher {
-  isolation(): ClaudeIsolation;
+  /** Isolation pour une session donnée, ou en général sans session. */
+  isolation(sessionId?: SessionId): ClaudeIsolation;
   launch(spec: ClaudeLaunchSpec): ClaudeProcess;
 }
 
@@ -115,19 +133,59 @@ export function sandboxClaudeLauncher(options: SandboxClaudeLauncherOptions): Cl
 }
 
 /**
- * Lancement sur le poste hôte, dans le Job Object du runner. Ce n'est pas une isolation :
- * l'adapter le refuse en mode autonome et n'y passe jamais le mode sans approbation.
+ * Lancement par le runner (`AdapterHost.spawnContained`), qui confine selon le mode de la
+ * session : `sandbox` (AppContainer, autotest réussi), `host_unsandboxed` (NON ISOLÉ,
+ * consentement de la policy, Job Object pour l'arrêt d'urgence) ou Job Object seul.
  */
 export function hostClaudeLauncher(host: AdapterHost, maxProcesses?: number): ClaudeLauncher {
   return {
-    isolation: () => ({ kind: "host_job", detail: "Job Object du runner, sans AppContainer" }),
+    isolation: (sessionId) => {
+      const mode = sessionId === undefined ? "none" : host.isolation(sessionId);
+      if (mode === "sandbox") {
+        return { kind: "appcontainer", selfTestPassed: true, detail: "sandbox du runner" };
+      }
+      return {
+        kind: "host_job",
+        detail: `Job Object du runner (${mode})`,
+        unsandboxedConsent: mode === "host_unsandboxed",
+      };
+    },
     launch: (spec) =>
       host.spawnContained(spec.sessionId, {
         executable: spec.executable,
         args: spec.args,
         cwd: spec.cwd,
         env: spec.env,
+        unattended: spec.unattended,
+        ...(spec.network?.broker === undefined ? {} : { broker: true }),
         ...(maxProcesses === undefined ? {} : { maxProcesses }),
+      }),
+  };
+}
+
+/** Superviseur d'arborescences du runner (`ProcessTreeSupervisor`), forme employée. */
+export interface ClaudeSupervisorLike {
+  spawn(profileId: ProfileId, sessionId: SessionId, command: ContainedCommand): SessionProcess;
+}
+
+/**
+ * Lecture de jauge hors session : Job Object nommé d'après une session synthétique, jamais
+ * de mode sans approbation (aucun outil, aucune requête au modèle).
+ */
+export function supervisorClaudeLauncher(
+  supervisor: ClaudeSupervisorLike | (() => ClaudeSupervisorLike),
+  profileId: ProfileId,
+): ClaudeLauncher {
+  const resolve = (): ClaudeSupervisorLike =>
+    typeof supervisor === "function" ? supervisor() : supervisor;
+  return {
+    isolation: () => ({ kind: "host_job", detail: "lecture de jauge : Job Object, aucun tour" }),
+    launch: (spec) =>
+      resolve().spawn(profileId, spec.sessionId, {
+        executable: spec.executable,
+        args: spec.args,
+        cwd: spec.cwd,
+        env: spec.env,
       }),
   };
 }

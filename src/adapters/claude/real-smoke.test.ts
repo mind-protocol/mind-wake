@@ -261,7 +261,7 @@ describe.skipIf(!ENABLED)("adapter Claude Code : fumée réelle (opt-in)", () =>
         const second = await runOnce("smoke-2", "Quelle couleur as-tu choisie juste avant ?");
         stop = blocking(second);
       }
-      if (stop === undefined) report["quota"] = await adapter.readQuota(60_000);
+      if (stop === undefined) report["quota"] = await adapter.readQuotaReading(60_000);
       report["stoppedOn"] = stop ?? null;
 
       // Vérification de continuité : le texte des réponses n'est lu qu'ici, pour comparer.

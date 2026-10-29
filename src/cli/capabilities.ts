@@ -9,7 +9,7 @@ import { defaultRegistry } from "../daemon/registry.js";
 import type { Persistence } from "./store/index.js";
 
 /** Adapters réels enregistrés dans ce build (Codex, Claude, Gemini à leur fusion). */
-const REAL_ADAPTERS = defaultRegistry().realIds();
+export const REAL_ADAPTERS: readonly string[] = defaultRegistry().realIds();
 
 export const AVAILABILITIES = [
   "present",

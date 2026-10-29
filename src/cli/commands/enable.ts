@@ -30,7 +30,7 @@ import {
   revisionDigest,
   validateDraft,
 } from "../../policy/index.js";
-import { BUILD_COMPONENTS } from "../capabilities.js";
+import { BUILD_COMPONENTS, REAL_ADAPTERS } from "../capabilities.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
@@ -49,6 +49,11 @@ export interface EnableOptions {
 export interface EnableComponents {
   readonly isolation: boolean;
   readonly runtimeAdapter: boolean;
+  /**
+   * Adapters réels enregistrés dans ce build : celui que désigne la policy doit en faire
+   * partie (un adapter réel enregistré n'en rend pas un autre activable). Absent : non vérifié.
+   */
+  readonly realAdapters?: readonly string[];
 }
 
 export const ENABLE_REFUSALS = [
@@ -98,7 +103,16 @@ function missingComponents(
   const missing: string[] = [];
   const hostUnsandboxed = revision.groups.runtime.hostUnsandboxedAcknowledged === true;
   if (!components.isolation && !hostUnsandboxed) missing.push("isolation non livrée dans ce build");
-  if (!components.runtimeAdapter) missing.push("adapter runtime non livré dans ce build");
+  if (!components.runtimeAdapter) {
+    missing.push("adapter runtime non livré dans ce build");
+  } else if (
+    components.realAdapters !== undefined &&
+    !components.realAdapters.includes(revision.groups.runtime.adapterId)
+  ) {
+    missing.push(
+      `adapter runtime non livré dans ce build pour « ${revision.groups.runtime.adapterId} » (enregistrés : ${components.realAdapters.join(", ") || "aucun"})`,
+    );
+  }
   return missing;
 }
 
@@ -194,7 +208,11 @@ export async function enable(
   ctx: CliContext,
   dataDir: DataDir,
   options: EnableOptions,
-  components: EnableComponents = BUILD_COMPONENTS,
+  components: EnableComponents = {
+    isolation: BUILD_COMPONENTS.isolation,
+    runtimeAdapter: BUILD_COMPONENTS.runtimeAdapter,
+    realAdapters: REAL_ADAPTERS,
+  },
 ): Promise<CommandResult<EnableData>> {
   const refused = (
     code: EnableRefusal,

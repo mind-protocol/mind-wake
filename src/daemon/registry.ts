@@ -6,6 +6,7 @@
  * le démarrage ; un adapter enregistré n'est accepté que si `probe` le dit disponible.
  */
 
+import { claudeRegistration, defaultClaudeConfig } from "../adapters/claude/index.js";
 import {
   FAKE_ADAPTER_ID,
   FakeAdapter,
@@ -100,5 +101,5 @@ export class AdapterRegistry {
  * s'y ajoutent à leur fusion ; d'ici là, seule l'exécution simulée est possible.
  */
 export function defaultRegistry(): AdapterRegistry {
-  return new AdapterRegistry([FAKE_REGISTRATION]);
+  return new AdapterRegistry([FAKE_REGISTRATION, claudeRegistration(defaultClaudeConfig())]);
 }

@@ -59,6 +59,10 @@ export class ChildClaude implements ClaudeProcess {
     return new Promise((resolve) => this.#waiters.push(resolve));
   }
 
+  closeInput(): void {
+    this.#child.stdin.end();
+  }
+
   send(line: string): void {
     this.#child.stdin.write(`${line}\n`);
   }

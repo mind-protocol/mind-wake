@@ -171,7 +171,7 @@ describe("démo SIMULÉE à deux sessions, contrôles et kill switch (A03, A06, 
       daemon: "simulated",
       simulated_adapter: "simulated",
       isolation: "blocked",
-      runtime_adapter: "not_implemented",
+      runtime_adapter: "experimental",
     });
     console.info("Délais mesurés (ms) :", JSON.stringify(m));
   }, 240_000);
