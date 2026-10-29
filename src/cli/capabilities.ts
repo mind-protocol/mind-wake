@@ -84,9 +84,40 @@ export function subscriptionPath(
     : { id: "subscription_path", availability: "blocked", detail: base, blockers };
 }
 
+/**
+ * Résultat de l'autotest de refus de la couche d'isolation (`src/sandbox`), exécuté par
+ * `doctor` sur le poste. Sans autotest, l'isolation reste « non implémentée » : le code
+ * livré ne vaut rien tant que le système n'a pas refusé réellement chaque sortie.
+ */
+export interface IsolationAssessment {
+  readonly passed: boolean;
+  readonly detail: string;
+  readonly blockers: readonly string[];
+}
+
+export function isolationCapability(assessment: IsolationAssessment | undefined): Capability {
+  if (assessment === undefined) {
+    return {
+      id: "isolation",
+      availability: "not_implemented",
+      detail: "aucune sandbox vérifiée sur ce poste : exécution autonome impossible",
+      blockers: [],
+    };
+  }
+  return assessment.passed
+    ? { id: "isolation", availability: "present", detail: assessment.detail, blockers: [] }
+    : {
+        id: "isolation",
+        availability: "blocked",
+        detail: assessment.detail,
+        blockers: assessment.blockers,
+      };
+}
+
 export function capabilities(
   persistence: Persistence | null,
   activePolicy: PolicyRevision | null,
+  isolation?: IsolationAssessment,
 ): readonly Capability[] {
   const notImplemented = (id: CapabilityId, detail: string): Capability => ({
     id,
@@ -119,12 +150,12 @@ export function capabilities(
       : notImplemented("ledger", "réservations et disponibilité budgétaire non câblées"),
     notImplemented("policy_engine", "aucune décision d'autorisation n'est rendue"),
     notImplemented("scheduler", "aucun daemon ni réveil planifié"),
-    notImplemented("isolation", "aucune sandbox : exécution autonome impossible"),
+    isolationCapability(isolation),
     notImplemented("runtime_adapter", "aucun adapter, réel ou simulé : aucune session possible"),
     notImplemented("api_key_path", "voie clé API (ADR-002) non implémentée"),
     subscriptionPath(activePolicy?.groups.budget.subscriptionQuota, {
       adapter: BUILD_COMPONENTS.runtimeAdapter,
-      isolation: BUILD_COMPONENTS.isolation,
+      isolation: BUILD_COMPONENTS.isolation || isolation?.passed === true,
     }),
   ];
 }
