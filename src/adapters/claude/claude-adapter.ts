@@ -135,6 +135,8 @@ export interface ClaudeAdapterOptions {
   /** Alias ou nom complet ; défaut `opus`. */
   readonly model?: string;
   readonly tools?: readonly string[];
+  /** Configuration MCP de confiance ; ne charge pas les serveurs du workspace. */
+  readonly mcpConfigFile?: string;
   readonly maxTurns?: number;
   readonly homeDir?: string;
   readonly gitBashPath?: string;
@@ -357,7 +359,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
     args: readonly string[],
     grant: ClaudeNetworkGrant | null,
     cwd: string,
-    deadline: UtcTimestamp,
+    deadline: UtcTimestamp | null,
     mode: { readonly quotaRead: boolean; readonly unattended: boolean },
   ): ClaudeProcess {
     const o = this.#options;
@@ -409,6 +411,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
       systemPromptFile: promptFile,
       systemPromptMode: o.systemPromptMode ?? "replace",
       tools: o.tools ?? DEFAULT_CLAUDE_TOOLS,
+      ...(o.mcpConfigFile === undefined ? {} : { mcpConfigFile: o.mcpConfigFile }),
       permission,
       session: { mode: record.started ? "resume" : "new", id: claudeSessionId },
       ...(o.maxTurns === undefined ? {} : { maxTurns: o.maxTurns }),

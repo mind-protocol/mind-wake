@@ -227,6 +227,7 @@ export function quotaPlanText(
 ): string {
   const guard = revision.groups.budget.subscriptionQuota;
   if (!onSubscription || guard?.enabled !== true) return "No subscription quota applies.";
+  if (guard.providerLimitsOnly === true) return "Continue while provider capacity is available; no local usage target or session cap applies.";
   const target = percent(Math.min(guard.targetUsageBasisPoints, guard.stopAtBasisPoints));
   const reset = resetAt === null ? "" : ` or the window resets at ${resetAt}`;
   return `Your sessions continue back to back until about ${target} of the provider quota window is used${reset}.`;
@@ -247,7 +248,8 @@ export interface WakeInputs {
   readonly workspaceDir: string;
   readonly wakeupsDir: string;
   readonly wakeupsSchema: string;
-  readonly sessionEnd: UtcTimestamp;
+  /** `null` : aucune durée locale, seules les limites du fournisseur s'appliquent. */
+  readonly sessionEnd: UtcTimestamp | null;
   /** Remise à zéro de la fenêtre pilotée (lecture officielle), si connue. */
   readonly quotaResetAt?: UtcTimestamp | null;
   readonly theme: string | null;
@@ -270,7 +272,7 @@ export function composeWake(inputs: WakeInputs): WakeComposition {
   const text = fillTemplate(inputs.templates.base, {
     workspace: inputs.workspaceDir,
     permissions: describePermissions(inputs.revision, inputs.isolation),
-    session_end: inputs.sessionEnd,
+    session_end: inputs.sessionEnd ?? "the provider's usage limit (no local time limit)",
     quota_plan: quotaPlanText(inputs.revision, inputs.onSubscription, inputs.quotaResetAt ?? null),
     theme: theme === undefined || theme === "" ? "none" : theme,
     wakeups_dir: inputs.wakeupsDir,

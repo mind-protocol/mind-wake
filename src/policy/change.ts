@@ -108,9 +108,21 @@ export function classifyChange(before: PolicyGroups | null, after: PolicyGroups)
   const widened: string[] = [];
   const restricted: string[] = [];
 
+  const UNLIMITED_FIELDS = new Set([
+    "schedule.maxSessionDurationMs",
+    "budget.tokensPerSession",
+    "budget.tokensPerPeriod",
+    "budget.sessionsPerPeriod",
+  ]);
   for (const [g, f] of HIGHER_IS_WIDER) {
     const b = get(before, g, f) as number;
     const a = get(after, g, f) as number;
+    // 0 = sans limite locale : passer à 0 élargit, quitter 0 restreint.
+    const unlimitedField = UNLIMITED_FIELDS.has(`${g}.${f}`);
+    if (unlimitedField && a !== b && (a === 0 || b === 0)) {
+      (a === 0 ? widened : restricted).push(`${g}.${f}`);
+      continue;
+    }
     if (a > b) widened.push(`${g}.${f}`);
     if (a < b) restricted.push(`${g}.${f}`);
   }
@@ -220,6 +232,7 @@ function compareSubscriptionQuota(
   // Dépassement : null (non mesuré) bloque le lancement, donc null → valeur élargit.
   const overshoot = (v: number | null): number => v ?? Number.NEGATIVE_INFINITY;
   const wider =
+    (aOn.providerLimitsOnly === true && bOn.providerLimitsOnly !== true) ||
     aOn.startBelowBasisPoints > bOn.startBelowBasisPoints ||
     aOn.stopAtBasisPoints > bOn.stopAtBasisPoints ||
     aOn.userReserveBasisPoints < bOn.userReserveBasisPoints ||
@@ -230,6 +243,7 @@ function compareSubscriptionQuota(
     aOn.initialRateBasisPointsPerHour < bOn.initialRateBasisPointsPerHour ||
     aOn.pacingMarginRatio > bOn.pacingMarginRatio;
   const narrower =
+    (bOn.providerLimitsOnly === true && aOn.providerLimitsOnly !== true) ||
     aOn.startBelowBasisPoints < bOn.startBelowBasisPoints ||
     aOn.stopAtBasisPoints < bOn.stopAtBasisPoints ||
     aOn.userReserveBasisPoints > bOn.userReserveBasisPoints ||

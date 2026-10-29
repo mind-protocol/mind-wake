@@ -345,7 +345,8 @@ export class SqliteLedgerRepository implements LedgerRepository {
             );
           }
           const amount = quantityAmount(quantity);
-          if (amount > availability.available) {
+          // A zero accounting envelope consumes nothing, including after a cap was removed.
+          if (amount > 0 && amount > availability.available) {
             return denied(
               "budget_exhausted",
               `${String(amount)} demandés, ${String(Math.max(0, availability.available))} disponibles pour ${label}`,

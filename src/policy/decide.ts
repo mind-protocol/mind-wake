@@ -135,6 +135,12 @@ export interface LaunchFacts {
   readonly sandboxOperational?: boolean;
   readonly windowOpen?: boolean;
   readonly userPriority?: PrioritySignal;
+  /**
+   * Réveil demandé à l'instant par l'humain (bouton « Réveil », `mind-wake wake`) : ni
+   * fenêtre horaire, ni attente d'inactivité, ni pilotage. Arrêt, pause, plafonds,
+   * garde de quota et consentements restent vérifiés.
+   */
+  readonly humanRequested?: boolean;
   readonly backoffExpired?: boolean;
   readonly openSessionCount?: number;
   readonly budget?: {
@@ -203,12 +209,15 @@ export function decideLaunch(
     : ([[facts.sandboxOperational, "sandbox", "sandbox_unavailable"]] as const);
   for (const [value, name, reason] of [
     ...isolationFacts,
-    [facts.windowOpen, "window", "outside_window"],
+    ...(facts.humanRequested === true
+      ? []
+      : ([[facts.windowOpen, "window", "outside_window"]] as const)),
   ] as const) {
     const d = factDenial(id, value, name, reason);
     if (d !== null) return d;
   }
-  const priority = priorityDenial(id, groups, now, facts.userPriority);
+  const priority =
+    facts.humanRequested === true ? null : priorityDenial(id, groups, now, facts.userPriority);
   if (priority !== null) return priority;
   const backoff = factDenial(id, facts.backoffExpired, "backoff", "backoff_active");
   if (backoff !== null) return backoff;
@@ -231,10 +240,13 @@ export function decideLaunch(
     );
     if (tokens !== null) return tokens;
   }
-  const sessions = availabilityDenial(id, facts.budget?.sessions, "sessions", 1);
+  const sessions =
+    groups.budget.sessionsPerPeriod === 0 && facts.billing?.kind === "subscription_quota"
+      ? null
+      : availabilityDenial(id, facts.budget?.sessions, "sessions", 1);
   if (sessions !== null) return sessions;
   if (facts.billing?.kind === "subscription_quota") {
-    const pacing = pacingDenial(id, groups, now, facts);
+    const pacing = facts.humanRequested === true ? null : pacingDenial(id, groups, now, facts);
     if (pacing !== null) return pacing;
   }
 
@@ -371,10 +383,16 @@ function subscriptionLaunchDenial(
   const guard = enabledGuard(groups);
   if (guard === null) return deny(id, "permission_not_granted", "subscription.not_enabled");
   const overshoot = guard.overshootBoundBasisPoints;
-  if (overshoot === null || !Number.isSafeInteger(overshoot) || overshoot < 0) {
+  if (
+    guard.providerLimitsOnly !== true &&
+    (overshoot === null || !Number.isSafeInteger(overshoot) || overshoot < 0)
+  ) {
     return deny(id, "bound_not_enforceable", "subscription.overshoot_not_measured");
   }
-  if (guard.stopAtBasisPoints + overshoot > BASIS_POINTS_MAX - guard.userReserveBasisPoints) {
+  if (
+    guard.providerLimitsOnly !== true &&
+    guard.stopAtBasisPoints + (overshoot ?? 0) > BASIS_POINTS_MAX - guard.userReserveBasisPoints
+  ) {
     return deny(id, "bound_not_enforceable", "subscription.bound_exceeds_user_reserve");
   }
   if (facts.adapter?.capabilities.providerQuotaReading !== "official") {
@@ -407,9 +425,10 @@ function quotaDenial(
     return deny(id, "budget_unknown", "subscription.quota_unknown");
   }
   const nowMs = Date.parse(now);
-  const plan = snapshots.every((s) => s.provenance === "measured")
-    ? planPacing(guard, snapshots, nowMs, estimates)
-    : null;
+  const plan =
+    guard.providerLimitsOnly !== true && snapshots.every((s) => s.provenance === "measured")
+      ? planPacing(guard, snapshots, nowMs, estimates)
+      : null;
   const target = Math.min(guard.stopAtBasisPoints, guard.targetUsageBasisPoints);
   for (const snapshot of snapshots) {
     const key = snapshot.windowKey;
@@ -425,11 +444,15 @@ function quotaDenial(
       return deny(id, "budget_unknown", `subscription.snapshot_invalid: ${key}`);
     }
     const piloted = plan?.windowKey === key;
-    const threshold = piloted
-      ? target
-      : phase === "start"
-        ? guard.startBelowBasisPoints
-        : guard.stopAtBasisPoints;
+    // Limites du fournisseur seules : seule la fenêtre pleine (100 %) arrête l'agent.
+    const threshold =
+      guard.providerLimitsOnly === true
+        ? BASIS_POINTS_MAX
+        : piloted
+          ? target
+          : phase === "start"
+            ? guard.startBelowBasisPoints
+            : guard.stopAtBasisPoints;
     if (used >= threshold) {
       return deny(
         id,
@@ -464,7 +487,9 @@ function pacingDenial(
   facts: LaunchFacts,
 ): PolicyDecision | null {
   const guard = enabledGuard(groups);
-  if (guard === null || facts.quotaSnapshots === undefined) return null;
+  // Limites du fournisseur seules : aucun pilotage local du moment du réveil.
+  if (guard === null || guard.providerLimitsOnly === true || facts.quotaSnapshots === undefined)
+    return null;
   const plan = planPacing(guard, facts.quotaSnapshots, Date.parse(now), facts.quotaPacing);
   if (plan === null || plan.due) return null;
   return deny(id, "outside_window", `${PACING_WAIT}: ${pacingDetail(plan)}`);

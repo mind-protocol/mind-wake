@@ -7,6 +7,7 @@
  * accordé qu'avec `runtime.hostUnsandboxedAcknowledged` (ADR-006), constaté par le runner.
  */
 
+import { WAKE_HOME_SYSTEM_PROMPT } from "../wake-system-prompt.js";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import type { ProfileId, StartRequest } from "../../contracts/index.js";
@@ -70,7 +71,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         ),
         model: config.model,
         ...(config.effort === undefined ? {} : { effort: config.effort }),
-        ...(config.systemPrompt === undefined ? {} : { systemPrompt: config.systemPrompt }),
+        systemPrompt: config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT,
       }),
   };
 }

@@ -474,7 +474,8 @@ export class SessionRunner {
       quota: undefined,
       startSequence: ready.startSequence,
       startedAtMs: nowMs,
-      deadlineMs: nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
+      deadlineMs: ready.revision.groups.schedule.maxSessionDurationMs === 0
+        ? Number.POSITIVE_INFINITY : nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
       handle: null,
       process: null,
       tokens: 0,
@@ -514,7 +515,7 @@ export class SessionRunner {
           policy: session.revision,
           context: session.grant.context,
           maxInputTokens: session.grant.maxInputTokens,
-          deadline: utc(session.deadlineMs),
+          deadline: Number.isFinite(session.deadlineMs) ? utc(session.deadlineMs) : null,
         });
       } catch (error) {
         this.#interrupt(session, {
@@ -1095,7 +1096,7 @@ export class SessionRunner {
     if (delta > 0 || session.tokens === 0) push({ unit: "tokens", amount: Math.max(0, delta) });
     if (delta > 0) session.tokens = confirmedTokens;
     for (const max of session.reservation.maxima) {
-      if (max.unit === "sessions") push({ unit: "sessions", amount: 1 });
+      if (max.unit === "sessions" && max.amount > 0) push({ unit: "sessions", amount: 1 });
       if (max.unit === "duration_ms") {
         push({ unit: "duration_ms", amount: Math.max(0, Math.ceil(nowMs - session.startedAtMs)) });
       }

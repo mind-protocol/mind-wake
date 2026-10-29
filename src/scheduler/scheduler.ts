@@ -91,6 +91,8 @@ export interface SchedulerOptions {
   readonly launcher: SessionLauncher;
   /** Réveils demandés par l'agent : échéances candidates seulement. */
   readonly wakeRequests?: WakeRequestSource;
+  /** Réveil demandé par l'humain en attente (`mind-wake wake`) : lève fenêtre et attente. */
+  readonly humanWakePending?: (nowMs: number) => boolean;
   /** Verrou d'instance du profil, déjà acquis. */
   readonly lock: InstanceLock;
   readonly backoff?: BackoffPolicy;
@@ -440,6 +442,7 @@ export class Scheduler {
         : { sandboxOperational: facts.sandboxOperational }),
       ...(facts.userPriority === undefined ? {} : { userPriority: facts.userPriority }),
       ...this.#windowFact(revision, nowMs),
+      ...(this.#o.humanWakePending?.(nowMs) === true ? { humanRequested: true } : {}),
       ...this.#backoffFact(sched, revision, nowMs),
       openSessionCount: uow.sessions.listOpen(profileId).length,
       ...(budget === undefined ? {} : { budget: budget.availability }),
@@ -541,7 +544,7 @@ export class Scheduler {
     // tokens propre à Wake n'est réservée ; les points de base ne deviennent pas des tokens.
     const maxima: BudgetQuantity[] =
       billing?.kind === "subscription_quota"
-        ? [{ unit: "sessions", amount: 1 }]
+        ? [{ unit: "sessions", amount: revision.groups.budget.sessionsPerPeriod === 0 ? 0 : 1 }]
         : [
             { unit: "tokens", amount: revision.groups.budget.tokensPerSession },
             { unit: "sessions", amount: 1 },
@@ -762,7 +765,7 @@ export class Scheduler {
         policyRevisionId: revision.id,
         maxima,
         launchedAt: at,
-        deadline: iso(Date.parse(at) + maxDurationMs),
+        deadline: maxDurationMs === 0 ? null : iso(Date.parse(at) + maxDurationMs),
         maxDurationMs,
       },
     };

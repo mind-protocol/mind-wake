@@ -263,9 +263,11 @@ export class WakeDaemon implements SessionLauncher {
         ? new SimulatedActivitySignal(simulatedActivityFlagFor(options.dataDir))
         : new WatchedPrioritySignal(this.#idleWatcher, () => {
             const resolution = resolvePolicy(store.uow.policies, options.profileId);
-            return resolution.status === "active"
-              ? resolution.revision.groups.humanPriority.idleThresholdMs
-              : null;
+            if (resolution.status !== "active") return null;
+            const priority = resolution.revision.groups.humanPriority;
+            // `none` : choix explicite de l'humain, l'agent travaille aussi pendant qu'il
+            // utilise le poste (seuil nul) ; pause, arrêt et garde de quota restent imposés.
+            return priority.activitySignal === "none" ? 0 : priority.idleThresholdMs;
           });
     fs.mkdirSync(artifactsDirFor(options.dataDir), { recursive: true });
     this.#root = openRoot(artifactsDirFor(options.dataDir));
@@ -556,6 +558,7 @@ export class WakeDaemon implements SessionLauncher {
           return agent === null ? human : human === null ? agent : Math.min(agent, human);
         },
       },
+      humanWakePending: (now) => pendingHumanWake(this.#o.dataDir, now) !== null,
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -634,7 +637,8 @@ export class WakeDaemon implements SessionLauncher {
       tokens?.unit === "tokens"
         ? tokens.amount
         : (uow.policies.getRevision(ticket.policyRevisionId)?.groups.budget.tokensPerSession ?? 0);
-    const maxInputTokens = Math.max(1, Math.floor(sessionTokens / 2));
+    const maxInputTokens =
+      sessionTokens === 0 ? 32_000 : Math.max(1, Math.floor(sessionTokens / 2));
     // La consigne de réveil occupe une part du contexte ; la mémoire prend le reste. Le
     // factice ignore le contexte : sa mémoire garde toute l'enveloppe (démo inchangée).
     const promptBound = utf8TokenBound(this.#templates.base) + 2_048;

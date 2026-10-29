@@ -53,7 +53,7 @@ export interface StartRequest {
   readonly policy: PolicyRevision;
   readonly context: string;
   readonly maxInputTokens: number;
-  readonly deadline: UtcTimestamp;
+  readonly deadline: UtcTimestamp | null;
 }
 
 /** Handle opaque côté agent ; seul le runner peut l'utiliser. */

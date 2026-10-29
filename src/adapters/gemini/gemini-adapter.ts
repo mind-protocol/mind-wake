@@ -259,6 +259,7 @@ export class GeminiAdapter implements RuntimeAdapter {
     env["GEMINI_CLI_HOME"] = home;
     env["NO_COLOR"] = "1";
 
+    if (request.deadline === null) throw new Error("Unlimited duration unsupported by this launcher");
     const maxWallMs = Date.parse(request.deadline) - Date.now();
     let process_: GeminiProcess;
     try {

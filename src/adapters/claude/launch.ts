@@ -58,7 +58,7 @@ export interface ClaudeLaunchSpec {
   /** Binaire `claude`, prompts système, Git Bash. */
   readonly readOnlyRoots: readonly string[];
   readonly network: ClaudeNetworkGrant | null;
-  readonly deadline: UtcTimestamp;
+  readonly deadline: UtcTimestamp | null;
   /** Mode sans approbation (`--dangerously-skip-permissions`) : le runner le revérifie. */
   readonly unattended: boolean;
 }
@@ -113,6 +113,7 @@ export function sandboxClaudeLauncher(options: SandboxClaudeLauncherOptions): Cl
       };
     },
     launch(spec: ClaudeLaunchSpec): ClaudeProcess {
+      if (spec.deadline === null) throw new Error("Unlimited duration is currently supported by the host launcher only");
       const remaining = Date.parse(spec.deadline) - now();
       return options.sandbox.launch({
         jobName: options.jobNameFor(spec.sessionId),

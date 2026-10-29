@@ -34,6 +34,8 @@ export interface ClaudeRunArgs {
   /** `replace` : `--system-prompt-file` ; `append` : `--append-system-prompt-file`. */
   readonly systemPromptMode?: "replace" | "append";
   readonly tools: readonly string[];
+  /** Configuration MCP explicitement fournie par le lanceur de confiance. */
+  readonly mcpConfigFile?: string;
   readonly permission: ClaudePermissionStance;
   /** `--session-id` pour une conversation neuve, `--resume` pour la suite. */
   readonly session: { readonly mode: "new" | "resume"; readonly id: string };
@@ -74,6 +76,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     args.push("--permission-mode", "dontAsk", "--permission-prompts", "none");
     if (options.tools.length > 0) args.push("--allowedTools", options.tools.join(","));
   }
+  if (options.mcpConfigFile !== undefined) args.push("--mcp-config", options.mcpConfigFile);
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
   return args;
 }

@@ -187,6 +187,26 @@ describe("validation d'un brouillon de policy", () => {
     }
   });
 
+  it("limites du fournisseur seules : révision antérieure au pilotage acceptée", () => {
+    const legacy = {
+      enabled: true,
+      accountRiskAcknowledged: true,
+      providerLimitsOnly: true,
+      startBelowBasisPoints: 10_000,
+      stopAtBasisPoints: 10_000,
+      userReserveBasisPoints: 0,
+      overshootBoundBasisPoints: null,
+      maxSnapshotAgeMs: 120_000,
+      launchWhenResetWithinMs: 604_800_000,
+    };
+    const result = validateDraft(withFields(validDraft(), { [quota]: legacy }), PROFILE);
+    expect(result.ok ? [] : result.issues).toEqual([]);
+    if (result.ok) {
+      expect(result.groups.budget.subscriptionQuota).not.toHaveProperty("launchWhenResetWithinMs");
+      expect(result.groups.budget.subscriptionQuota).toMatchObject({ providerLimitsOnly: true });
+    }
+  });
+
   it("accepte une voie abonnement absente, désactivée, ou au dépassement non mesuré", () => {
     for (const value of [
       undefined,

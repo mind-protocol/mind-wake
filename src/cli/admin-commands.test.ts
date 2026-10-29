@@ -150,25 +150,9 @@ describe("enable", () => {
     });
   });
 
-  it("refuse sans confirmation humaine, même avec tous les composants", async () => {
+  it("un code --confirm erroné reste refusé, sans rien activer", async () => {
     const { revisionId } = await configured();
     const out: string[] = [];
-    const noTerminal = await enable(
-      context(out),
-      { path: dataDir, source: "option" },
-      { revisionId: null, confirm: null, interactive: true },
-      ALL_COMPONENTS,
-    );
-    expect(noTerminal.data).toMatchObject({ refusal: { code: "confirmation_required" } });
-
-    const jsonMode = await enable(
-      context(out, () => Promise.resolve("ne sera pas demandé")),
-      { path: dataDir, source: "option" },
-      { revisionId: null, confirm: null, interactive: false },
-      ALL_COMPONENTS,
-    );
-    expect(jsonMode.data).toMatchObject({ refusal: { code: "confirmation_required" } });
-
     const wrong = await enable(
       context(out),
       { path: dataDir, source: "option" },
@@ -176,29 +160,20 @@ describe("enable", () => {
       ALL_COMPONENTS,
     );
     expect(wrong.data).toMatchObject({ refusal: { code: "confirmation_mismatch" } });
-
-    const typedWrong = await enable(
-      context(out, () => Promise.resolve("oui")),
-      { path: dataDir, source: "option" },
-      { revisionId: null, confirm: null, interactive: true },
-      ALL_COMPONENTS,
-    );
-    expect(typedWrong.data).toMatchObject({ refusal: { code: "confirmation_mismatch" } });
-
     readDb((s) => {
       expect(s.uow.policies.getConsent(revisionId as PolicyRevisionId)).toBeNull();
       expect(s.uow.profiles.get(DEFAULT_PROFILE_ID)?.state).toBe("disabled");
     });
   });
 
-  it("active après saisie du code dans le terminal quand les composants existent", async () => {
+  it("active sans code à saisir (ADR-008), résumé affiché, aucune question posée", async () => {
     const { revisionId, code } = await configured();
     const questions: string[] = [];
     const out: string[] = [];
     const result = await enable(
       context(out, (question) => {
         questions.push(question);
-        return Promise.resolve(code);
+        return Promise.resolve("");
       }),
       { path: dataDir, source: "option" },
       { revisionId: null, confirm: null, interactive: true },
@@ -208,9 +183,10 @@ describe("enable", () => {
       enabled: true,
       state: "ready",
       revisionId,
-      confirmationChannel: "interactive_terminal",
+      confirmationChannel: "direct",
     });
-    expect(questions[0]).toContain(code);
+    expect(questions).toEqual([]);
+    expect(out.join("")).toContain(revisionId);
     readDb((s) => {
       expect(s.uow.policies.getConsent(revisionId as PolicyRevisionId)).toMatchObject({
         channel: "local_cli",
@@ -222,6 +198,17 @@ describe("enable", () => {
     });
     const again = await run("enable", "--confirm", code);
     expect(again.json.data).toMatchObject({ refusal: { code: "no_pending_revision" } });
+  });
+
+  it("en --json (non interactif), active aussi sans code", async () => {
+    const { revisionId } = await configured();
+    const result = await enable(
+      context([]),
+      { path: dataDir, source: "option" },
+      { revisionId: null, confirm: null, interactive: false },
+      ALL_COMPONENTS,
+    );
+    expect(result.data).toMatchObject({ enabled: true, revisionId, confirmationChannel: "direct" });
   });
 
   it("refuse une révision enregistrée sans limite obligatoire", async () => {

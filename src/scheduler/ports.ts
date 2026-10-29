@@ -31,7 +31,7 @@ export interface LaunchTicket {
   readonly maxima: readonly BudgetQuantity[];
   readonly launchedAt: UtcTimestamp;
   /** Échéance murale ; le runner mesure la durée sur son horloge monotone. */
-  readonly deadline: UtcTimestamp;
+  readonly deadline: UtcTimestamp | null;
   readonly maxDurationMs: number;
 }
 

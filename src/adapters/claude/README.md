@@ -184,3 +184,7 @@ Fichier `policy-claude.example.json`, validé par `policy-example.test.ts`. Le c
 
 - `ClaudeNetworkPort` par le relais fournisseur (suspendu, ADR-006) pour la voie sandbox.
 - `onQuotaSignal` (`rate_limit_event`) vers la garde, en complément de `/usage`.
+
+### MCP explicite du runtime
+
+`MIND_WAKE_CLAUDE_MCP_CONFIG` peut désigner une configuration JSON MCP administrée hors du workspace. Le lanceur la passe par `--mcp-config`, tout en conservant `--strict-mcp-config` : aucun serveur de projet implicite. La jauge `/usage` ne charge jamais cette configuration. La configuration doit respecter les permissions de la policy ; une clé du hub ne constitue pas une délégation supplémentaire. Pour le premier essai local sur hôte non isolé, la configuration ne fournit que `MIND_WAKE_DATA_DIR` : vues Wake et idées disponibles, messagerie et conseil indisponibles faute de liaison authentifiée. Le fonctionnement de ce branchement dans AppContainer n’est pas validé.

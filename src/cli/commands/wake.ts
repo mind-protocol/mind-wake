@@ -1,15 +1,17 @@
 /**
- * `wake` : l'humain demande un réveil au plus tôt. Avance la prochaine évaluation du
- * scheduler sans rien accorder : fenêtres, priorité humaine, budgets et permissions
- * restent vérifiés au lancement. Refusé en pause, après arrêt d'urgence, sur un profil
- * désactivé ou bloqué : `wake` ne lève aucun de ces états.
+ * `wake` : l'humain réveille son agent maintenant. Lève une pause, puis demande une
+ * session immédiate : ni fenêtre horaire, ni attente d'inactivité, ni pilotage. Arrêt
+ * d'urgence, plafonds, garde de quota et consentements restent imposés. Refusé après
+ * un arrêt d'urgence ou sur un profil désactivé.
  */
 
 import type { ProfileState } from "../../contracts/index.js";
 import { requestHumanWake } from "../../daemon/human-wake.js";
+import { requestResume } from "../../runner/controls.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
+import { withControlStore } from "./control.js";
 import { NO_PROFILE_HINT, withReadStore } from "./read.js";
 
 export type WakeStatus = "requested" | "already_running" | "refused";
@@ -22,7 +24,7 @@ export interface WakeData {
   readonly detail: string;
 }
 
-const ACCEPTING: readonly ProfileState[] = ["ready", "hibernating"];
+const ACCEPTING: readonly ProfileState[] = ["ready", "hibernating", "paused", "blocked"];
 
 export function wake(ctx: CliContext, dataDir: DataDir): CommandResult<WakeData> {
   const state = withReadStore(ctx, dataDir, ({ uow }) =>
@@ -54,13 +56,19 @@ export function wake(ctx: CliContext, dataDir: DataDir): CommandResult<WakeData>
       detail: `profil ${state} : un réveil ne lève ni pause, ni arrêt, ni blocage`,
     };
   } else {
+    let now: ProfileState = state;
+    if (state === "paused") {
+      const resumed = withControlStore(ctx, dataDir, (uow) =>
+        requestResume({ uow, profileId: DEFAULT_PROFILE_ID, now: ctx.now }),
+      );
+      now = resumed?.state ?? state;
+    }
     data = {
       profileId: DEFAULT_PROFILE_ID,
       status: "requested",
-      state,
+      state: now,
       requestedAt: requestHumanWake(dataDir.path, ctx.now().getTime()),
-      detail:
-        "réveil demandé : le daemon l'évalue à son prochain tour, sous les mêmes contrôles (fenêtres, priorité, budgets) ; valable une heure",
+      detail: "réveil demandé : l'agent démarre dès que le daemon le prend",
     };
   }
   return { exitCode: data.status === "refused" ? EXIT_FAILURE : EXIT_OK, data, human: formatWake };

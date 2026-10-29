@@ -332,7 +332,7 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
     },
   );
   const minInterval = intField(c, schedule, "schedule", "minIntervalBetweenSessionsMs", 0);
-  const maxSession = intField(c, schedule, "schedule", "maxSessionDurationMs", 1);
+  const maxSession = intField(c, schedule, "schedule", "maxSessionDurationMs", 0);
 
   const priority = groupObject(c, draft, "humanPriority");
   const activitySignal = textField(c, priority, "humanPriority", "activitySignal");
@@ -343,11 +343,11 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
 
   const budget = groupObject(c, draft, "budget");
   const period = validatePeriod(c, field(c, budget, "budget", "period"));
-  const tokensPerSession = intField(c, budget, "budget", "tokensPerSession", 1);
-  const tokensPerPeriod = intField(c, budget, "budget", "tokensPerPeriod", 1);
-  const sessionsPerPeriod = intField(c, budget, "budget", "sessionsPerPeriod", 1);
+  const tokensPerSession = intField(c, budget, "budget", "tokensPerSession", 0);
+  const tokensPerPeriod = intField(c, budget, "budget", "tokensPerPeriod", 0);
+  const sessionsPerPeriod = intField(c, budget, "budget", "sessionsPerPeriod", 0);
   const userReserve = intField(c, budget, "budget", "userReserveTokens", 0);
-  const checkpointTokens = intField(c, budget, "budget", "checkpointTokens", 1);
+  const checkpointTokens = intField(c, budget, "budget", "checkpointTokens", 0);
   const paidApi = validatePaidApi(c, field(c, budget, "budget", "paidApi"));
   const subscriptionQuota = validateSubscriptionQuota(
     c,
@@ -355,7 +355,9 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
   );
   if (
     tokensPerSession !== undefined &&
+    tokensPerSession > 0 &&
     tokensPerPeriod !== undefined &&
+    tokensPerPeriod > 0 &&
     userReserve !== undefined
   ) {
     if (userReserve >= tokensPerPeriod) {
@@ -370,12 +372,23 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
   }
   if (
     tokensPerSession !== undefined &&
+    tokensPerSession > 0 &&
     checkpointTokens !== undefined &&
     checkpointTokens >= tokensPerSession
   ) {
     c.add("budget.checkpointTokens", "inconsistent", "doit être < tokensPerSession");
   }
 
+  if (
+    [maxSession, tokensPerSession, tokensPerPeriod, sessionsPerPeriod].includes(0) &&
+    (subscriptionQuota as { enabled?: boolean } | undefined)?.enabled !== true
+  ) {
+    c.add(
+      maxSession === 0 ? "schedule.maxSessionDurationMs" : "budget",
+      "inconsistent",
+      "unlimited local limits require an enabled subscription quota guard",
+    );
+  }
   const files = groupObject(c, draft, "filesAndTools");
   const rootItem = (path: string) => (entry: unknown, index: number) => {
     if (!isConfinedPath(entry, true)) {
@@ -636,6 +649,8 @@ export const BASIS_POINTS_MAX = 10_000;
 /** Cible par défaut : juste au-dessus de 99 % d'usage à la remise à zéro. */
 export const DEFAULT_TARGET_USAGE_BASIS_POINTS = 9_900;
 export const DEFAULT_PACING_MARGIN_RATIO = 0.25;
+/** Débit initial par défaut, seulement quand le pilotage est sans objet. */
+export const DEFAULT_INITIAL_RATE_BASIS_POINTS_PER_HOUR = 1_000;
 
 /**
  * Voie abonnement expérimentale (ADR-004). Absente = désactivée. L'activation exige la
@@ -665,6 +680,8 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   const keys = [
     "enabled",
     "accountRiskAcknowledged",
+    "providerLimitsOnly",
+    "launchWhenResetWithinMs", // Legacy persisted profiles; replaced by pacing.
     "startBelowBasisPoints",
     "stopAtBasisPoints",
     "userReserveBasisPoints",
@@ -674,7 +691,10 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     "initialRateBasisPointsPerHour",
     "pacingMarginRatio",
   ];
-  if (Object.keys(value).some((k) => !keys.includes(k))) {
+  // Révisions antérieures au pilotage : `launchWhenResetWithinMs` n'est accepté qu'en mode
+  // limites du fournisseur seules, où il était déjà sans effet ; il n'est pas conservé.
+  const legacy = own(value, "providerLimitsOnly") === true ? ["launchWhenResetWithinMs"] : [];
+  if (Object.keys(value).some((k) => !keys.includes(k) && !legacy.includes(k))) {
     c.add(path, "unknown_field", "champ inconnu dans subscriptionQuota");
     return undefined;
   }
@@ -682,13 +702,24 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     c.add(path, "invalid", "reconnaissance explicite du risque de compte requise");
     return undefined;
   }
+  const providerOnly = own(value, "providerLimitsOnly");
+  if (providerOnly !== undefined && providerOnly !== true) {
+    c.add(path, "invalid", "providerLimitsOnly requires true or absence");
+    return undefined;
+  }
+  if (own(value, "launchWhenResetWithinMs") !== undefined && providerOnly !== true) {
+    c.add(path, "unknown_field", "legacy reset delay is accepted only for provider-only profile migration"); return undefined;
+  }
   const start = own(value, "startBelowBasisPoints");
   const stop = own(value, "stopAtBasisPoints");
   const reserve = own(value, "userReserveBasisPoints");
   const overshoot = own(value, "overshootBoundBasisPoints");
   const maxAge = own(value, "maxSnapshotAgeMs");
   const target = own(value, "targetUsageBasisPoints") ?? DEFAULT_TARGET_USAGE_BASIS_POINTS;
-  const rate = own(value, "initialRateBasisPointsPerHour");
+  // Sans pilotage (limites du fournisseur seules), le débit initial n'est jamais utilisé.
+  const rate =
+    own(value, "initialRateBasisPointsPerHour") ??
+    (providerOnly === true ? DEFAULT_INITIAL_RATE_BASIS_POINTS_PER_HOUR : undefined);
   const margin = own(value, "pacingMarginRatio") ?? DEFAULT_PACING_MARGIN_RATIO;
   const bp = (v: unknown, min: number): v is number => isInt(v, min) && v <= BASIS_POINTS_MAX;
   if (!bp(start, 1) || !bp(stop, 1) || !bp(reserve, 0) || !isInt(maxAge, 1)) {
@@ -711,7 +742,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     c.add(path, "invalid", "dépassement en points de base ou null (non mesuré)");
     return undefined;
   }
-  if (start >= stop) {
+  if (start >= stop && providerOnly !== true) {
     c.add(path, "inconsistent", "startBelowBasisPoints doit être < stopAtBasisPoints");
     return undefined;
   }
@@ -726,6 +757,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   return {
     enabled: true,
     accountRiskAcknowledged: true,
+    ...(providerOnly === true ? { providerLimitsOnly: true } : {}),
     startBelowBasisPoints: start,
     stopAtBasisPoints: stop,
     userReserveBasisPoints: reserve,

@@ -51,6 +51,7 @@ export interface ScheduleGroup {
   readonly timeZone: IanaTimeZone;
   readonly weeklyWindows: readonly WeeklyWindow[];
   readonly minIntervalBetweenSessionsMs: DurationMs;
+  /** 0: no local duration limit (subscription only). */
   readonly maxSessionDurationMs: DurationMs;
 }
 
@@ -96,6 +97,8 @@ export type SubscriptionQuotaGuard =
       readonly enabled: true;
       /** Consentement distinct : usage non explicitement autorisé, risque pour le compte. */
       readonly accountRiskAcknowledged: true;
+      /** Use provider availability only; no local reserve, threshold or reset proximity. */
+      readonly providerLimitsOnly?: true;
       readonly startBelowBasisPoints: number;
       readonly stopAtBasisPoints: number;
       /** Part de fenêtre laissée à l'humain, jamais consommable par Wake. */
@@ -122,8 +125,10 @@ export type SubscriptionQuotaGuard =
 
 export interface BudgetGroup {
   readonly period: BudgetPeriodDefinition;
+  /** 0: no local token limit (subscription only). */
   readonly tokensPerSession: number;
   readonly tokensPerPeriod: number;
+  /** 0: no local session limit (subscription only). */
   readonly sessionsPerPeriod: number;
   /** Tokens laissés à l'humain dans chaque période, jamais réservables par Wake. */
   readonly userReserveTokens: number;

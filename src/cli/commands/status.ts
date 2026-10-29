@@ -317,7 +317,7 @@ function formatStatus(data: StatusData): string {
   if (data.budget.caps !== null) {
     const c = data.budget.caps;
     lines.push(
-      `  Plafonds : ${String(c.tokensPerSession)} tokens/session, ${String(c.tokensPerPeriod)} tokens et ${String(c.sessionsPerPeriod)} sessions par ${c.period.kind} (${c.period.timeZone}), réserve utilisateur ${String(c.userReserveTokens)} tokens`,
+      `  Plafonds : ${c.tokensPerSession === 0 ? "sans limite locale de" : String(c.tokensPerSession)} tokens/session, ${c.tokensPerPeriod === 0 ? "sans limite locale de" : String(c.tokensPerPeriod)} tokens et ${c.sessionsPerPeriod === 0 ? "sans limite locale de" : String(c.sessionsPerPeriod)} sessions par ${c.period.kind} (${c.period.timeZone}), réserve utilisateur ${String(c.userReserveTokens)} tokens`,
     );
   }
   const q = data.budget.subscriptionQuota;

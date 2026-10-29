@@ -310,6 +310,13 @@ describe("adapter Claude Code : mode non isolé sur l'hôte (ADR-006)", () => {
 });
 
 describe("adapter Claude Code : session", () => {
+  it("charge seulement la configuration MCP explicitement fournie", async () => {
+    await run(adapter({ mcpConfigFile: path.join(h.configDir, "mind-mcp.json") }), "mcp-explicit");
+    const argv = invocations()[0]?.argv ?? [];
+    expect(argv).toContain("--strict-mcp-config");
+    expect(flagValue(argv, "--mcp-config")).toBe(path.join(h.configDir, "mind-mcp.json"));
+  });
+
   it("lance dans la sandbox avec session fixée, outils listés et environnement minimal", async () => {
     const net = network();
     const subject = adapter({ network: net });
@@ -326,6 +333,7 @@ describe("adapter Claude Code : session", () => {
     expect(flagValue(argv, "--tools")).toBe("Bash,Read,Edit,Write,Glob,Grep");
     expect(flagValue(argv, "--setting-sources")).toBe("user");
     expect(argv).toContain("--strict-mcp-config");
+    expect(argv).not.toContain("--mcp-config");
     const promptFile = flagValue(argv, "--system-prompt-file") ?? "";
     expect(path.dirname(promptFile)).toBe(h.promptDir);
     expect(fs.readFileSync(promptFile, "utf8")).toBe("Tu es l'agent Wake.");

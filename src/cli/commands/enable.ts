@@ -1,14 +1,14 @@
 /**
- * `enable` : active une révision proposée par `policy configure`, seulement après
- * confirmation humaine sur le canal de confiance — saisie du code de confirmation dans
- * un terminal interactif, ou option `--confirm CODE` réservée à l'humain. Jamais par la
- * skill ni par l'espace d'exploration.
+ * `enable` : active une révision proposée par `policy configure`. Décision de
+ * l'utilisateur (ADR-008, 2026-10-29) : la commande vaut confirmation, sans code à saisir ;
+ * `--confirm CODE` reste accepté et vérifié s'il est passé. Résumé et avertissement du
+ * mode non isolé restent affichés.
  *
  * Refus, profil laissé `disabled` avec un motif journalisé :
  * - aucune révision en attente, ou révision incomplète (limite obligatoire absente) ;
  * - stockage local déjà saturé au regard du plafond de la révision ;
  * - composants absents : isolation et adapter runtime ne sont pas livrés dans ce build ;
- * - confirmation absente ou erronée.
+ * - code `--confirm` erroné.
  *
  * Limite : la CLI ne peut pas distinguer un humain d'un agent qui dispose d'un shell.
  * La garantie structurelle vient de l'isolation (l'exploration n'atteint pas la CLI
@@ -17,7 +17,13 @@
 
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import type { ConsentId, PolicyRevision, ProfileId, UnitOfWork } from "../../contracts/index.js";
+import type {
+  ConsentId,
+  PolicyRevision,
+  ProfileId,
+  ProfileState,
+  UnitOfWork,
+} from "../../contracts/index.js";
 import { REQUIRED_LIMIT_FIELDS } from "../../contracts/index.js";
 import { assessStorage, measureDataDir } from "../../export/index.js";
 import { JournalWriter, toUtcTimestamp } from "../../journal/index.js";
@@ -80,8 +86,11 @@ export interface EnableData {
   readonly revisionId: string | null;
   readonly state: string | null;
   readonly refusal: { readonly code: EnableRefusal; readonly detail: string } | null;
-  readonly confirmationChannel: "interactive_terminal" | "confirm_option" | null;
+  readonly confirmationChannel: "direct" | "confirm_option" | null;
 }
+
+/** États où une révision peut être activée (aucune session en cours, aucun blocage). */
+const CHANGEABLE_STATES: readonly ProfileState[] = ["disabled", "ready", "hibernating", "paused"];
 
 class Refusal extends Error {
   constructor(
@@ -162,7 +171,7 @@ function checkLimits(revision: PolicyRevision, profileId: ProfileId): void {
 export const HOST_UNSANDBOXED_WARNING =
   "ATTENTION — MODE NON ISOLÉ (ADR-006) : le runtime tournera sur ce poste avec ses options sans approbation et TOUS les droits de votre compte Windows (fichiers, secrets, réseau, comptes ouverts). Un contenu lu peut l'amener à supprimer, envoyer ou modifier sans contrôle. Seuls l'arrêt d'urgence, la pause, la priorité humaine, la garde de quota et le journal restent imposés. Un compte Windows dédié est recommandé.";
 
-async function confirm(
+function confirm(
   ctx: CliContext,
   options: EnableOptions,
   revision: PolicyRevision,
@@ -178,14 +187,11 @@ async function confirm(
         "code de confirmation erroné : rien n'a été activé",
       );
     }
-    return "confirm_option";
+    return Promise.resolve("confirm_option");
   }
-  if (!options.interactive || ctx.prompt === undefined) {
-    throw new Refusal(
-      "confirmation_required",
-      "confirmation humaine requise : lancer `mind-wake enable` dans un terminal interactif, ou passer --confirm CODE (option réservée à l'humain)",
-    );
-  }
+  // Décision de l'utilisateur (ADR-008) : plus de code à saisir. `enable` vaut
+  // confirmation ; le résumé et l'avertissement restent affichés, sauf en `--json`.
+  if (!options.interactive) return Promise.resolve("direct");
   ctx.stdout(
     [
       `Révision ${revision.id} — empreinte ${digest}`,
@@ -197,11 +203,7 @@ async function confirm(
       "",
     ].join("\n"),
   );
-  const answer = await ctx.prompt(`Pour activer, taper le code ${code} : `);
-  if (answer?.trim().toLowerCase() !== code) {
-    throw new Refusal("confirmation_mismatch", "confirmation non saisie : rien n'a été activé");
-  }
-  return "interactive_terminal";
+  return Promise.resolve("direct");
 }
 
 export async function enable(
@@ -249,10 +251,12 @@ export async function enable(
           "arrêt d'urgence verrouillé : la reprise passe par une action explicite dédiée",
         );
       }
-      if (profile.state !== "disabled") {
+      // Une nouvelle révision s'applique aussi à un profil déjà actif, hors session en cours
+      // et hors blocage (dont la sortie passe par ses propres contrôles).
+      if (!CHANGEABLE_STATES.includes(profile.state)) {
         throw new Refusal(
           "invalid_state",
-          `enable active un profil désactivé ; profil en état ${profile.state}`,
+          `une session en cours ou un blocage empêche le changement de policy ; état ${profile.state}`,
         );
       }
       const storage = assessStorage(
@@ -302,7 +306,15 @@ export async function enable(
           throw new Refusal("activation_denied", `${decision.reason} : ${decision.detail}`);
         }
         const reason = `activé par l'humain (révision ${revision.id})`;
-        tx.profiles.transition(profile.id, { from: "disabled", to: "ready", reason, at });
+        const current = tx.profiles.get(profile.id);
+        if (current?.state !== profile.state) {
+          throw new Refusal("invalid_state", "profil modifié pendant la confirmation");
+        }
+        // Une pause reste une pause : seule `resume` la lève.
+        const target = profile.state === "paused" ? "paused" : "ready";
+        if (profile.state === "disabled" || profile.state === "hibernating") {
+          tx.profiles.transition(profile.id, { from: profile.state, to: "ready", reason, at });
+        }
         tx.profiles.setActivePolicyRevision(profile.id, revision.id);
         new JournalWriter(tx.journal).record({
           type: "profile_state_changed",
@@ -310,9 +322,9 @@ export async function enable(
           profileId: profile.id,
           policyRevisionId: revision.id,
           reason,
-          metadata: { from: "disabled", to: "ready", command: "enable", channel },
+          metadata: { from: profile.state, to: target, command: "enable", channel },
         });
-        return "ready";
+        return target;
       });
       return {
         exitCode: EXIT_OK,
