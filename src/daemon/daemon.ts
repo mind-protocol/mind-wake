@@ -65,6 +65,9 @@ import {
 import {
   InstanceLockError,
   Scheduler,
+  WatchedPrioritySignal,
+  windowsIdleWatcher,
+  type IdleWatcher,
   SqliteSchedulerStateRepository,
   acquireInstanceLock,
   instanceLockPath,
@@ -138,6 +141,11 @@ export interface DaemonOptions {
   readonly simulated: boolean;
   /** Registre d'adapters ; par défaut celui de ce build. */
   readonly registry?: AdapterRegistry;
+  /**
+   * Inactivité du poste en mode réel ; par défaut `windowsIdleWatcher()` (GetLastInputInfo).
+   * Injectable pour les tests. Ignorée en mode simulé (fichier `simulated-user-activity`).
+   */
+  readonly idleWatcher?: IdleWatcher;
   /** Isolation du mode réel ; ignorée en mode simulé. */
   readonly isolation?: DaemonIsolation;
   /** Thème facultatif suggéré par l'humain (`{{theme}}`) ; sinon « none ». */
@@ -215,7 +223,9 @@ export class WakeDaemon implements SessionLauncher {
   readonly #store: Store;
   readonly #lock: InstanceLock;
   readonly #runner: SessionRunner;
-  readonly #signal: SimulatedActivitySignal;
+  /** Mode simulé : fichier ; mode réel : inactivité réelle du poste (`GetLastInputInfo`). */
+  readonly #signal: SimulatedActivitySignal | WatchedPrioritySignal;
+  readonly #idleWatcher: IdleWatcher | null;
   readonly #root: ConfinedRoot;
   readonly #sessions = new Map<SessionId, SessionContext>();
   readonly #results: SessionResult[] = [];
@@ -244,7 +254,18 @@ export class WakeDaemon implements SessionLauncher {
     this.#lock = lock;
     this.#registration = registration;
     this.#real = real;
-    this.#signal = new SimulatedActivitySignal(simulatedActivityFlagFor(options.dataDir));
+    // Le fichier simulé reste réservé au mode `--simulated` ; en mode réel, l'inactivité
+    // du poste est lue en continu et comparée au seuil de la révision effective.
+    this.#idleWatcher = real === null ? null : (options.idleWatcher ?? windowsIdleWatcher());
+    this.#signal =
+      this.#idleWatcher === null
+        ? new SimulatedActivitySignal(simulatedActivityFlagFor(options.dataDir))
+        : new WatchedPrioritySignal(this.#idleWatcher, () => {
+            const resolution = resolvePolicy(store.uow.policies, options.profileId);
+            return resolution.status === "active"
+              ? resolution.revision.groups.humanPriority.idleThresholdMs
+              : null;
+          });
     fs.mkdirSync(artifactsDirFor(options.dataDir), { recursive: true });
     this.#root = openRoot(artifactsDirFor(options.dataDir));
     const workspaceDir = workspaceDirFor(options.dataDir);
@@ -296,7 +317,7 @@ export class WakeDaemon implements SessionLauncher {
   }
 
   #liveChecks(): Omit<SessionChecks, "now"> {
-    return this.#real === null
+    return this.#signal instanceof SimulatedActivitySignal
       ? simulatedLiveChecks(this.#signal)
       : runtimeLiveChecks(this.#signal, () => this.#readiness.ok);
   }
@@ -472,6 +493,12 @@ export class WakeDaemon implements SessionLauncher {
           pid: process.pid,
           mode,
           adapterId,
+          prioritySignal:
+            real === null
+              ? "simulated_file"
+              : this.#o.idleWatcher === undefined
+                ? "windows_last_input"
+                : "injected",
           isolation:
             real === null ? "job_only" : real.sandbox === null ? "host_unsandboxed" : "sandbox",
           ...(real === null ? {} : { adapterVersion: real.probe.version }),
@@ -553,6 +580,7 @@ export class WakeDaemon implements SessionLauncher {
         }),
       );
     } finally {
+      this.#idleWatcher?.close();
       this.#lock.release();
       this.#store.close();
     }
@@ -679,6 +707,20 @@ export class WakeDaemon implements SessionLauncher {
     return reportFor(result);
   }
 
+  /** Remise à zéro de la fenêtre pilotée (la plus proche), d'après une lecture officielle. */
+  async #pilotedResetAt(billing: BillingFacts): Promise<UtcTimestamp | null> {
+    if (billing.kind !== "subscription_quota" || this.#quota === undefined) return null;
+    const snapshots = await this.#quota().catch(() => undefined);
+    const now = Date.now();
+    const resets = (snapshots ?? [])
+      .filter((s) => s.provenance === "measured")
+      .map((s) => Date.parse(s.resetsAt))
+      .filter((ms) => Number.isFinite(ms) && ms > now);
+    return resets.length === 0
+      ? null
+      : (new Date(Math.min(...resets)).toISOString() as UtcTimestamp);
+  }
+
   /** Garde de quota de la révision active, si elle est activée. */
   #activeGuard(): Extract<SubscriptionQuotaGuard, { enabled: true }> | null {
     const resolution = resolvePolicy(this.#store.uow.policies, this.#o.profileId);
@@ -717,6 +759,7 @@ export class WakeDaemon implements SessionLauncher {
       wakeupsDir: this.#wakeups.dir,
       wakeupsSchema: this.#wakeups.schemaPath,
       sessionEnd: ticket.deadline,
+      quotaResetAt: await this.#pilotedResetAt(billing),
       theme: this.#o.theme ?? null,
       memory: memory === null || memory.status === "empty" ? null : memory.text,
       nextAction: memory?.included.find((i) => i.section === "next_action")?.text ?? null,

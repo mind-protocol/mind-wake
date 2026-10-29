@@ -110,6 +110,8 @@ export interface DaemonStatus {
   readonly startedAt: string | null;
   readonly endedAt: string | null;
   readonly endReason: string | null;
+  /** Signal de priorité humaine : réel (`GetLastInputInfo`) en mode réel, fichier en simulé. */
+  readonly prioritySignal: "real" | "simulated" | null;
 }
 
 export interface LastSessionStatus {
@@ -129,6 +131,7 @@ const NO_DAEMON: DaemonStatus = {
   startedAt: null,
   endedAt: null,
   endReason: null,
+  prioritySignal: null,
 };
 
 export interface StatusData {
@@ -224,6 +227,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
             state:
               run.endedAt !== null ? "stopped" : isProcessAlive(run.pid) ? "running" : "crashed",
             mode: run.mode,
+            prioritySignal: run.mode === "real" ? "real" : "simulated",
             pid: run.pid,
             startedAt: run.startedAt,
             endedAt: run.endedAt,
@@ -352,7 +356,13 @@ function formatDaemon(d: DaemonStatus): string {
       : d.state === "stopped"
         ? ` le ${orDash(d.endedAt)} (${orDash(d.endReason)})`
         : `, pid ${String(d.pid)} disparu`;
-  return `${DAEMON_LABEL[d.state]}${since}${mode}`;
+  const signal =
+    d.prioritySignal === "real"
+      ? " ; priorité humaine : inactivité réelle du poste (GetLastInputInfo)"
+      : d.prioritySignal === "simulated"
+        ? " ; priorité humaine : SIMULÉE (fichier simulated-user-activity)"
+        : "";
+  return `${DAEMON_LABEL[d.state]}${since}${mode}${signal}`;
 }
 
 function formatLastSession(s: LastSessionStatus | null): string {

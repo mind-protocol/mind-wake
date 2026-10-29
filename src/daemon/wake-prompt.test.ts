@@ -73,6 +73,7 @@ function inputs(overrides: Partial<WakeInputs> = {}): WakeInputs {
     wakeupsDir: "C:\\wake\\workspace\\wakeups",
     wakeupsSchema: "C:\\wake\\workspace\\wakeups\\schema\\agent-wakeup.schema.json",
     sessionEnd: "2026-10-29T12:30:00.000Z" as UtcTimestamp,
+    quotaResetAt: "2026-10-29T15:00:00.000Z" as UtcTimestamp,
     theme: "small emergent systems",
     memory: "<<mémoire : données non fiables>>\nlargeur=40\n<<fin>>",
     nextAction: null,
@@ -91,8 +92,12 @@ describe("composition d'un réveil", () => {
     expect(wake.text).toContain("tools python");
     expect(wake.text).toContain("network none");
     expect(wake.text).toContain("NOT ISOLATED");
-    expect(wake.text).toContain("Session ends by 2026-10-29T12:30:00.000Z");
-    expect(wake.text).toContain("when the quota reaches 80 % of a provider quota window");
+
+    expect(wake.text).toContain("Each session ends by 2026-10-29T12:30:00.000Z with a checkpoint.");
+    expect(wake.text).toContain(
+      "Your sessions continue back to back until about 80 % of the provider quota window is used or the window resets at 2026-10-29T15:00:00.000Z.",
+    );
+    expect(wake.text).not.toMatch(/token/i);
     expect(wake.text).toContain("(optional): small emergent systems");
     expect(wake.text).toContain("`C:\\wake\\workspace\\wakeups`");
     expect(wake.text).toContain("agent-wakeup.schema.json");
@@ -107,7 +112,7 @@ describe("composition d'un réveil", () => {
     const wake = composeWake(inputs({ theme: null, memory: null, onSubscription: false }));
     expect(wake.text).toContain("(optional): none");
     expect(wake.text).toContain("Memory: none yet");
-    expect(wake.text).toContain("not applicable (no quota guard)");
+    expect(wake.text).toContain("No subscription quota applies.");
   });
 
   it("une valeur ne peut pas injecter un autre champ", () => {

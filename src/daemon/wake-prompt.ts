@@ -36,7 +36,7 @@ export const WAKE_FIELDS = [
   "workspace",
   "permissions",
   "session_end",
-  "quota_stop",
+  "quota_plan",
   "theme",
   "wakeups_dir",
   "wakeups_schema",
@@ -211,10 +211,25 @@ export function describePermissions(
   ].join("; ");
 }
 
-export function quotaStopText(revision: PolicyRevision, onSubscription: boolean): string {
+function percent(bp: number): string {
+  return `${(bp / 100).toFixed(2).replace(/\.?0+$/, "")} %`;
+}
+
+/**
+ * Pilotage du quota dit à l'agent (ADR-005, complément) : il peut travailler en continu,
+ * de session en session, jusqu'à la cible ou la remise à zéro de la fenêtre pilotée. Un
+ * pourcentage de fenêtre fournisseur, jamais converti en tokens.
+ */
+export function quotaPlanText(
+  revision: PolicyRevision,
+  onSubscription: boolean,
+  resetAt: UtcTimestamp | null,
+): string {
   const guard = revision.groups.budget.subscriptionQuota;
-  if (!onSubscription || guard?.enabled !== true) return "not applicable (no quota guard)";
-  return `${(guard.stopAtBasisPoints / 100).toFixed(2).replace(/\.?0+$/, "")} % of a provider quota window`;
+  if (!onSubscription || guard?.enabled !== true) return "No subscription quota applies.";
+  const target = percent(Math.min(guard.targetUsageBasisPoints, guard.stopAtBasisPoints));
+  const reset = resetAt === null ? "" : ` or the window resets at ${resetAt}`;
+  return `Your sessions continue back to back until about ${target} of the provider quota window is used${reset}.`;
 }
 
 export interface WakeComposition {
@@ -233,6 +248,8 @@ export interface WakeInputs {
   readonly wakeupsDir: string;
   readonly wakeupsSchema: string;
   readonly sessionEnd: UtcTimestamp;
+  /** Remise à zéro de la fenêtre pilotée (lecture officielle), si connue. */
+  readonly quotaResetAt?: UtcTimestamp | null;
   readonly theme: string | null;
   /** Bloc de mémoire (déjà encadré comme données non fiables), ou `null` au premier réveil. */
   readonly memory: string | null;
@@ -254,7 +271,7 @@ export function composeWake(inputs: WakeInputs): WakeComposition {
     workspace: inputs.workspaceDir,
     permissions: describePermissions(inputs.revision, inputs.isolation),
     session_end: inputs.sessionEnd,
-    quota_stop: quotaStopText(inputs.revision, inputs.onSubscription),
+    quota_plan: quotaPlanText(inputs.revision, inputs.onSubscription, inputs.quotaResetAt ?? null),
     theme: theme === undefined || theme === "" ? "none" : theme,
     wakeups_dir: inputs.wakeupsDir,
     wakeups_schema: inputs.wakeupsSchema,

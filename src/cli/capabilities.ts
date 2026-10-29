@@ -251,7 +251,7 @@ export function capabilities(
       : {
           id: "runtime_adapter",
           availability: "experimental",
-          detail: `adapters réels enregistrés : ${REAL_ADAPTERS.join(", ")} ; lancés seulement dans la sandbox, sans repli d'un runtime vers un autre`,
+          detail: `adapters réels enregistrés : ${REAL_ADAPTERS.join(", ")} ; lancés dans la sandbox, ou sur le poste hôte NON ISOLÉ si la policy le consent (ADR-006) ; sans repli d'un runtime vers un autre`,
           blockers: [],
         },
     notImplemented("api_key_path", "voie clé API (ADR-002) non implémentée"),

@@ -98,7 +98,8 @@ Implémentations :
 
 - `ManualPrioritySignal` : tests.
 - `IdlePrioritySignal` : seuil `idleThresholdMs` appliqué à une source d'inactivité.
-- `windowsIdleSource()` : proposition pour Windows.
+- `windowsIdleSource()` : une lecture ponctuelle pour Windows (`doctor`).
+- `windowsIdleWatcher()` : flux continu (un PowerShell persistant, une valeur toutes les 250 ms), utilisé par le daemon en mode réel avec `WatchedPrioritySignal` ; `pollingIdleWatcher(source)` pour une `IdleSource` injectée (tests).
   - Lit `GetLastInputInfo` via un PowerShell court sans profil : instant de la dernière entrée seulement, sans contenu, sans droits administrateur.
   - Valable dans la session interactive de l'utilisateur ; un service en session 0 lirait une autre session.
   - Chaque lecture lance un processus (environ 1 s).

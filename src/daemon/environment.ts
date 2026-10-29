@@ -133,12 +133,17 @@ export class RuntimeEnvironment implements LaunchEnvironment {
 }
 
 /**
- * Conditions vivantes d'une session réelle. La jauge de quota est ajoutée par le runner ;
- * le signal d'activité reste SIMULÉ (fichier) tant que `GetLastInputInfo` n'est pas câblé.
+ * Conditions vivantes d'une session réelle : signal d'activité réel (`GetLastInputInfo`,
+ * observation continue) ; absent ou périmé, la policy le traite comme inconnu et
+ * interrompt. La jauge de quota est ajoutée par le runner.
  */
 export function runtimeLiveChecks(
-  signal: SimulatedActivitySignal,
+  signal: { current(): PrioritySignal | undefined },
   sandboxReady: () => boolean,
 ): Omit<SessionChecks, "now"> {
-  return { userPriority: signal.current(), sandboxOperational: sandboxReady() };
+  const userPriority = signal.current();
+  return {
+    ...(userPriority === undefined ? {} : { userPriority }),
+    sandboxOperational: sandboxReady(),
+  };
 }
