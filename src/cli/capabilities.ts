@@ -48,7 +48,7 @@ export interface Capability {
 export const BUILD_COMPONENTS: Readonly<
   Record<"ledger" | "policyEngine" | "scheduler" | "isolation" | "runtimeAdapter", boolean>
 > = {
-  ledger: false,
+  ledger: true,
   policyEngine: false,
   scheduler: false,
   isolation: false,
@@ -108,7 +108,15 @@ export function capabilities(
           "persistence",
           "stockage SQLite non câblé : état en mémoire, perdu à la fin de la commande",
         ),
-    notImplemented("ledger", "réservations et disponibilité budgétaire non câblées"),
+    persistence === "sqlite" && BUILD_COMPONENTS.ledger
+      ? {
+          id: "ledger",
+          availability: "present",
+          detail:
+            "réservations atomiques et rapprochement idempotent (SQLite) ; aucune session ne le sollicite encore",
+          blockers: [],
+        }
+      : notImplemented("ledger", "réservations et disponibilité budgétaire non câblées"),
     notImplemented("policy_engine", "aucune décision d'autorisation n'est rendue"),
     notImplemented("scheduler", "aucun daemon ni réveil planifié"),
     notImplemented("isolation", "aucune sandbox : exécution autonome impossible"),

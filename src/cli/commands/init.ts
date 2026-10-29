@@ -28,7 +28,7 @@ export const INIT_REASON =
 
 export function init(ctx: CliContext, dataDir: DataDir): CommandResult<InitData> {
   fs.mkdirSync(dataDir.path, { recursive: true });
-  const store = ctx.openStore(dataDir.path);
+  const store = ctx.openStore(dataDir.path, "write");
   try {
     const { uow } = store;
     const { created, profile } = uow.transaction((tx) => {

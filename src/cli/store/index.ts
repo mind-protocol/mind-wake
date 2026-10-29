@@ -1,16 +1,30 @@
 /**
- * Seul module de câblage du stockage de la CLI. Aujourd'hui : `UnitOfWork` en mémoire,
- * non persistant. Après fusion de S3, `openStore` ouvrira la base SQLite de `dataDir`
- * via `src/store/` ; aucun autre fichier de la CLI ne doit changer.
+ * Seul module de câblage du stockage de la CLI : la base SQLite de contrôle de
+ * `dataDir`, via `src/store/` (S3). Le `UnitOfWork` en mémoire (`memory.ts`) reste
+ * réservé aux tests.
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import type { UnitOfWork } from "../../contracts/index.js";
-import { MemoryUnitOfWork } from "./memory.js";
+import {
+  openStore as openSqliteStore,
+  openStoreReadOnly as openSqliteStoreReadOnly,
+} from "../../store/index.js";
 
 export type Persistence = "memory" | "sqlite";
 
-/** Stockage câblé dans ce build ; passera à `sqlite` avec S3. */
-export const STORE_BACKEND: Persistence = "memory";
+/** Stockage câblé dans ce build. */
+export const STORE_BACKEND: Persistence = "sqlite";
+
+/** Nom de la base de contrôle dans le dossier de données. */
+export const CONTROL_DB_FILE = "control.sqlite";
+
+/**
+ * `write` : crée la base si besoin et applique les migrations (`init`).
+ * `read` : consultation ; n'ouvre qu'une base existante, en lecture seule, sans migrer.
+ */
+export type StoreAccess = "read" | "write";
 
 export interface Store {
   readonly uow: UnitOfWork;
@@ -21,15 +35,25 @@ export interface Store {
 }
 
 /**
- * Ouvre le stockage du profil situé dans `dataDir`. N'écrit rien tant que S3 n'est pas
- * câblé ; ensuite, seule la base de `dataDir` pourra être créée ou modifiée.
+ * Ouvre le stockage du profil situé dans `dataDir` ; seule la base de `dataDir` peut
+ * être créée ou modifiée, et seulement en accès `write`. En accès `read`, une base
+ * absente donne un stockage SQLite vide en mémoire : aucun fichier n'est créé.
  */
-export function openStore(dataDir: string): Store {
+export function openStore(dataDir: string, access: StoreAccess): Store {
+  const file = path.join(dataDir, CONTROL_DB_FILE);
+  const opened =
+    access === "write"
+      ? openSqliteStore(file)
+      : fs.existsSync(file)
+        ? openSqliteStoreReadOnly(file)
+        : openSqliteStore(":memory:");
   return {
-    uow: new MemoryUnitOfWork(),
-    persistence: STORE_BACKEND,
+    uow: opened.uow,
+    persistence: "sqlite",
     dataDir,
-    close: () => undefined,
+    close: () => {
+      opened.close();
+    },
   };
 }
 

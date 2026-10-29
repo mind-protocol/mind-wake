@@ -12,6 +12,7 @@ import type {
   BudgetPeriodDefinition,
   BudgetQuantity,
   BudgetUnit,
+  PeriodLimit,
   Reservation,
   UsageRecord,
 } from "./budget.js";
@@ -87,11 +88,16 @@ export type ReservationResult =
     };
 
 export interface LedgerRepository {
-  /** Crée ou retrouve la période couvrant `at` ; jamais remise à zéro par un redémarrage. */
+  /**
+   * Crée ou retrouve la période couvrant `at` ; jamais remise à zéro par un redémarrage
+   * ni par un recul d'horloge. `limits` remplace les plafonds persistés de la période :
+   * une réduction bloque aussitôt les nouvelles réservations, sans annuler l'usage engagé.
+   */
   ensurePeriod(
     profileId: ProfileId,
     definition: BudgetPeriodDefinition,
     at: UtcTimestamp,
+    limits: readonly PeriodLimit[],
   ): BudgetPeriod;
   /** Réservation atomique ; idempotente sur `request.id`. */
   reserve(request: ReservationRequest): ReservationResult;
@@ -101,7 +107,8 @@ export interface LedgerRepository {
   /** Conserve la borne maximale jusqu'à rapprochement fiable. */
   markUncertain(id: ReservationId, at: UtcTimestamp): Reservation;
   getReservation(id: ReservationId): Reservation | null;
-  availability(periodId: BudgetPeriodId, unit: BudgetUnit): BudgetAvailability;
+  /** `windowKey` est obligatoire pour `provider_quota_bp`, ignoré sinon. */
+  availability(periodId: BudgetPeriodId, unit: BudgetUnit, windowKey?: string): BudgetAvailability;
 }
 
 export interface JournalRepository {

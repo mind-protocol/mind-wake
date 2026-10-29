@@ -91,12 +91,31 @@ export interface BudgetPeriodDefinition {
   readonly weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
+/**
+ * Plafond d'une unité pour une période, issu de la policy consentie en vigueur.
+ * `cap` et `userReserve` sont des entiers dans l'unité (unités mineures pour la
+ * monnaie, qui porte alors sa devise). Une unité sans plafond est inconnue, donc non
+ * réservable. Le ledger refuse tout plafond au-delà de la révision de policy consentie
+ * et effective du profil.
+ */
+export interface PeriodLimit {
+  readonly unit: BudgetUnit;
+  readonly cap: number;
+  readonly userReserve: number;
+  /** Obligatoire pour `money`, absent sinon. */
+  readonly currency?: CurrencyCode;
+  /** Obligatoire pour `provider_quota_bp` (un plafond par fenêtre), absent sinon. */
+  readonly windowKey?: string;
+}
+
 /** Instance persistée d'une période : intervalle semi-ouvert [startsAt, endsAt). */
 export interface BudgetPeriod {
   readonly id: BudgetPeriodId;
   readonly definition: BudgetPeriodDefinition;
   readonly startsAt: UtcTimestamp;
   readonly endsAt: UtcTimestamp;
+  /** Plafonds persistés avec la période, une entrée au plus par unité. */
+  readonly limits: readonly PeriodLimit[];
 }
 
 /**
@@ -144,9 +163,16 @@ export interface BudgetAvailability {
   readonly periodId: BudgetPeriodId;
   readonly unit: BudgetUnit;
   readonly currency?: CurrencyCode;
+  /** Fenêtre de quota concernée, pour `provider_quota_bp`. */
+  readonly windowKey?: string;
   readonly cap: number;
   readonly reconciled: number;
   readonly openReservations: number;
   readonly userReserve: number;
   readonly available: number | null;
+  /**
+   * Décomposition de `reconciled` par provenance. Une consommation estimée ou inconnue
+   * y figure à sa borne maximale.
+   */
+  readonly reconciledByProvenance?: Readonly<Record<UsageProvenance, number>>;
 }
