@@ -7,8 +7,11 @@ import { parseArgs } from "node:util";
 import { doctor } from "./commands/doctor.js";
 import { init } from "./commands/init.js";
 import { DEFAULT_JOURNAL_LIMIT, journal, MAX_JOURNAL_LIMIT } from "./commands/journal.js";
+import { pause } from "./commands/pause.js";
 import { policyShow } from "./commands/policy.js";
+import { resume } from "./commands/resume.js";
 import { status } from "./commands/status.js";
+import { stop } from "./commands/stop.js";
 import type { CliContext } from "./context.js";
 import {
   EXIT_FAILURE,
@@ -31,6 +34,9 @@ Commandes :
   status        État, expérience active, budget, prochain réveil
   journal       Derniers événements (--limit N, --after SÉQUENCE)
   policy show   Révision de policy active, consentement et révocations
+  pause         Plus aucun réveil ; la session en cours s'arrête après checkpoint
+  resume        Lève une pause (refusée après un arrêt d'urgence)
+  stop          Arrêt d'urgence : verrouille le profil, termine les processus
 
 Options :
   --json             Sortie JSON versionnée (schema mind-wake.cli, schemaVersion 1)
@@ -108,6 +114,15 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         break;
       case "policy show":
         result = policyShow(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "pause":
+        result = pause(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "resume":
+        result = resume(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "stop":
+        result = stop(ctx, dataDir) as CommandResult<unknown>;
         break;
       default:
         throw new UsageError(`commande inconnue : ${command}`);

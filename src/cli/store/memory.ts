@@ -102,6 +102,13 @@ export class MemoryUnitOfWork implements UnitOfWork {
       if (current === undefined) throw new Error(`profil inconnu : ${id}`);
       this.state.profiles.set(id, { ...current, nextWakeAt: at });
     },
+    setEmergencyStopLocked: (id: ProfileId, locked: boolean, at: UtcTimestamp) => {
+      const current = this.state.profiles.get(id);
+      if (current === undefined) throw new Error(`profil inconnu : ${id}`);
+      const next: ProfileRecord = { ...current, emergencyStopLocked: locked, updatedAt: at };
+      this.state.profiles.set(id, next);
+      return clone(next);
+    },
   };
 
   readonly policies: PolicyRepository = {
