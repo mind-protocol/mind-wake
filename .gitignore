@@ -16,3 +16,6 @@ coverage/
 
 # Worktrees des sessions Claude Code
 .claude/
+
+# Kits de test locaux (clés de test, données)
+.local/
