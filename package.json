@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "MIND Wake — local daemon and CLI giving an AI agent bounded spare compute (v0.1, in development).",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "mind-wake": "dist/cli/main.js"
@@ -16,6 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "demo:advice": "node --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts services/advice/demo/main.ts",
+    "demo:wake": "node --experimental-transform-types --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts test/demo/demo-simulee.ts",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write ."
   },
