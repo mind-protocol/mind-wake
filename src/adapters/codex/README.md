@@ -93,3 +93,20 @@ Constats :
 - Le compte n'expose qu'une fenêtre hebdomadaire.
 - Près de 8 200 tokens d'entrée pour un prompt de trois mots : instructions de base de Codex et outils.
 - `thread/start` renvoie `sandbox` sous forme d'objet (`{ "type": "readOnly", "networkAccess": false }`).
+
+## Codex réel dans l'AppContainer (opt-in)
+
+`src/adapters/codex/codex-sandbox.smoke.test.ts`, activé par `MIND_WAKE_SANDBOX_CODEX=1` (Windows). Le test :
+
+- exécute l'autotest de refus S10 ;
+- copie `codex.exe` dans une racine temporaire en lecture seule ;
+- lance `codex app-server` par `appContainerLauncher` : profil éphémère, `CODEX_HOME` dédié et vide, transport sans broker, donc aucun réseau.
+
+Résultat du 29 octobre 2026, avec `codex-cli 0.147.0` :
+
+- Codex démarre confiné et répond à `initialize` par les pipes du lanceur ;
+- `account/read` signale l'absence de compte, et l'adapter s'arrête sur `auth_failed` / `auth_required` avant tout fil ;
+- Codex écrit son état dans le `CODEX_HOME` dédié ;
+- le profil et les dossiers sont supprimés à la fin.
+
+Durée totale ≈ 9 s, autotest compris. Ce test ne couvre pas un tour réel confiné : il faut pour cela le relais fournisseur (broker) et une connexion dans le `CODEX_HOME` Wake.
