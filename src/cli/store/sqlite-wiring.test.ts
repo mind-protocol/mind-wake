@@ -104,7 +104,7 @@ describe("CLI câblée sur SQLite", () => {
       daemon: "simulated",
       simulated_adapter: "simulated",
       isolation: "blocked",
-      runtime_adapter: "not_implemented",
+      runtime_adapter: "experimental",
     });
   });
 });

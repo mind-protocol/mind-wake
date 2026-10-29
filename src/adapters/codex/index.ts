@@ -26,6 +26,7 @@ export {
 export {
   appContainerLauncher,
   hostLauncher,
+  hostPassthroughEnv,
   supervisorLauncher,
   type AppContainerLauncherOptions,
   type CodexCommand,
@@ -48,7 +49,9 @@ export {
   type QuotaReading,
 } from "./protocol.js";
 export {
+  CODEX_DEFAULT_MODEL,
   codexRegistration,
-  type CodexFactoryContext,
+  codexRegistrationFromEnv,
+  locateCodex,
   type CodexRegistrationConfig,
 } from "./registration.js";

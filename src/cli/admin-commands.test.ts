@@ -126,16 +126,20 @@ describe("policy configure", () => {
 describe("enable", () => {
   it("reste disabled faute d'isolation et d'adapter, même confirmé", async () => {
     const { revisionId, code } = await configured();
-    const result = await run("enable", "--confirm", code);
-    expect(result.code).toBe(1);
-    expect(result.json.data).toMatchObject({
+    // Composants injectés : le build contient désormais un adapter réel (Codex).
+    const result = await enable(
+      context([]),
+      { path: dataDir, source: "option" },
+      { revisionId: null, confirm: code, interactive: false },
+      { isolation: false, runtimeAdapter: false },
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.data).toMatchObject({
       enabled: false,
       state: "disabled",
       refusal: { code: "components_missing" },
     });
-    expect((result.json.data["refusal"] as { detail: string }).detail).toMatch(
-      /adapter runtime non livré/,
-    );
+    expect(result.data.refusal?.detail).toMatch(/adapter runtime non livré/);
     readDb((s) => {
       expect(s.uow.policies.getConsent(revisionId as PolicyRevisionId)).toBeNull();
       expect(s.uow.profiles.get(DEFAULT_PROFILE_ID)?.state).toBe("disabled");

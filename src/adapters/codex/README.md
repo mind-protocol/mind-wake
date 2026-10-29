@@ -125,3 +125,16 @@ Durée totale ≈ 9 s, autotest compris. Ce test ne couvre pas un tour réel con
   - `create` : branche `ctx.host` et `ctx.workspaceDir`.
 
   Il reste à l'ajouter à `defaultRegistry()` quand le câblage sera dans `main`.
+
+### Branchement effectif (fusion de `claude/cablage-runtimes-43e636`)
+
+- **Registre :** Codex figure dans `defaultRegistry()` via `codexRegistrationFromEnv()`. Variables du daemon, aucune n'est un secret :
+  - `MIND_WAKE_CODEX_BIN` : binaire ; sinon `where codex`, résolu au premier besoin ;
+  - `MIND_WAKE_CODEX_MODEL` : modèle ; défaut `gpt-5.6-luna`, comparé à `policy.runtime.model` ;
+  - `MIND_WAKE_CODEX_EFFORT` : effort de raisonnement.
+- **Dossiers par défaut :** `CODEX_HOME` vaut `<données>/codex-home` (l'humain y fait `codex login`) et les fils sont dans `<données>/codex-threads`.
+- **Consentement ADR-006 :** il est lu par défaut dans `policy.groups.runtime.hostUnsandboxedAcknowledged === true`. Le runner le constate de son côté (`host.isolation(sessionId) === "host_unsandboxed"`).
+  - Sur l'hôte, le lanceur ajoute les variables du profil Windows (`PATH`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`…) ; dans la sandbox, l'environnement reste minimal.
+- **Jauge :** le runner n'admet qu'un processus par session. Les lectures de jauge passent donc par un Job Object séparé (`supervisorLauncher`). Pendant une session, `readQuota()` réutilise la jauge reçue en fin de tour si elle date de moins de 60 s.
+- **Prompt :** le prompt de réveil composé par le daemon (`StartRequest.context`) est transmis tel quel. `systemPrompt` est facultatif.
+- **Effets visibles :** `doctor` et `status` déclarent désormais `runtime_adapter: experimental`. La sonde refuse tant que Codex installé n'est pas en 0.165.0, ou si le binaire est introuvable : le daemon répond alors `adapter_unavailable`, sans repli.

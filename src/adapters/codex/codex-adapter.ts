@@ -80,8 +80,11 @@ export interface CodexAdapterOptions {
   /** Relais fournisseur ; obligatoire sous AppContainer (aucun autre réseau). */
   readonly transport?: ProviderTransport;
   readonly threads: ThreadStore;
-  /** Prompt système (skill Wake), réinjecté au fil quand son empreinte change. */
-  readonly systemPrompt: string | ((request: StartRequest) => string);
+  /**
+   * Instructions développeur du fil, réinjectées quand leur empreinte change. Absentes :
+   * le prompt de réveil composé par le daemon (`StartRequest.context`) suffit.
+   */
+  readonly systemPrompt?: string | ((request: StartRequest) => string);
   /** Clé de continuité du fil ; par défaut le profil de la policy. */
   readonly continuityKey?: (request: StartRequest) => string;
   readonly model?: string;
@@ -90,15 +93,20 @@ export interface CodexAdapterOptions {
   /** `autonomous` (défaut) exige AppContainer + autotest ; `manual` = lancé par l'humain. */
   readonly mode?: CodexLaunchMode;
   /**
-   * Consentement distinct d'ADR-006 (mode sans approbation non isolé sur l'hôte), lu dans
-   * la policy de la session par la fabrique qui connaît son champ. Absent = refusé.
+   * Consentement distinct d'ADR-006 (mode sans approbation non isolé sur l'hôte). Par
+   * défaut : `policy.groups.runtime.hostUnsandboxedAcknowledged === true`.
    */
   readonly hostUnattendedConsent?: (policy: PolicyRevision) => boolean;
   /**
-   * Lanceur des lectures de jauge, hors session (le scheduler lit la jauge avant tout
-   * lancement) ; par défaut le lanceur des sessions.
+   * Lanceur des lectures de jauge, hors session : le runner n'admet qu'un processus, celui
+   * de la session active. Par défaut le lanceur des sessions (tests).
    */
   readonly quotaLauncher?: CodexLauncher;
+  /**
+   * Âge maximal d'une jauge reçue en cours de tour (`account/rateLimits/updated`) pour
+   * répondre à `readQuota` sans lancer de processus ; 60 s par défaut.
+   */
+  readonly quotaReuseMs?: DurationMs;
   /** Sandbox Codex hors AppContainer (mode manuel) : `workspace-write` par défaut. */
   readonly hostSandbox?: HostSandbox;
   /** Fils éphémères (`thread/start.ephemeral`) : rien d'écrit dans l'historique Codex. */
@@ -340,7 +348,7 @@ export class CodexAdapter implements RuntimeAdapter {
     const hostConsent =
       !attestation.confined &&
       policy !== null &&
-      this.#options.hostUnattendedConsent?.(policy) === true;
+      (this.#options.hostUnattendedConsent ?? defaultHostConsent)(policy);
     const bypass = policy !== null && (confined || hostConsent);
     if (policy !== null && (this.#options.mode ?? "autonomous") === "autonomous" && !bypass) {
       throw new CodexAdapterError(
@@ -594,11 +602,13 @@ export class CodexAdapter implements RuntimeAdapter {
 
   async #openThread(session: CodexSession, rpc: RpcClient, request: StartRequest): Promise<void> {
     const key = this.#options.continuityKey?.(request) ?? String(request.policy.profileId);
-    const prompt =
+    const given =
       typeof this.#options.systemPrompt === "function"
         ? this.#options.systemPrompt(request)
         : this.#options.systemPrompt;
-    const fingerprint = promptFingerprint(prompt);
+    const prompt = given === undefined || given === "" ? null : given;
+    const fingerprint = promptFingerprint(prompt ?? "");
+    const instructions = prompt === null ? {} : { developerInstructions: prompt };
     const common = {
       cwd: this.#options.workspaceDir,
       approvalPolicy: session.permissions.approvalPolicy,
@@ -613,7 +623,7 @@ export class CodexAdapter implements RuntimeAdapter {
           excludeTurns: true,
           ...common,
           // Prompt système réinjecté seulement s'il a changé depuis la dernière session.
-          ...(previous.promptFingerprint === fingerprint ? {} : { developerInstructions: prompt }),
+          ...(previous.promptFingerprint === fingerprint ? {} : instructions),
         });
         const id = asRecord(resumed["thread"])?.["id"];
         session.threadId = typeof id === "string" ? id : previous.threadId;
@@ -645,7 +655,7 @@ export class CodexAdapter implements RuntimeAdapter {
     }
     const created = await rpc.request("thread/start", {
       ...common,
-      developerInstructions: prompt,
+      ...instructions,
       serviceName: CLIENT_INFO.name,
       ephemeral: this.#options.ephemeralThreads === true,
     });
@@ -936,10 +946,24 @@ export class CodexAdapter implements RuntimeAdapter {
    * impossible rend un tableau vide, que le scheduler traite comme un quota inconnu.
    */
   async readQuota(): Promise<readonly ProviderQuotaSnapshot[]> {
+    // Pendant une session, la jauge arrive à chaque fin de tour : la réutiliser si récente.
+    const reuseMs = this.#options.quotaReuseMs ?? 60_000;
+    const now = this.#clock().getTime();
+    for (const session of this.#sessions.values()) {
+      const recent = session.lastQuota?.snapshots.filter(
+        (s) => now - Date.parse(s.observedAt) <= reuseMs,
+      );
+      if (!session.ended && recent !== undefined && recent.length > 0) return recent;
+    }
     try {
       return (await this.readProviderQuota()).snapshots;
     } catch {
       return [];
     }
   }
+}
+
+/** Consentement ADR-006 consigné dans la policy (seule la valeur `true` vaut accord). */
+function defaultHostConsent(policy: PolicyRevision): boolean {
+  return policy.groups.runtime.hostUnsandboxedAcknowledged === true;
 }

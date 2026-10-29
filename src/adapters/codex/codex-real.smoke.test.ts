@@ -191,7 +191,10 @@ describe.skipIf(!ENABLED)("Codex réel (fumée, opt-in MIND_WAKE_REAL_SMOKE=1)",
     const request: StartRequest = {
       sessionId: `smoke-${String(Date.now())}` as SessionId,
       reservationId: "smoke" as ReservationId,
-      policy: { profileId: "smoke" as ProfileId } as PolicyRevision,
+      policy: {
+        profileId: "smoke" as ProfileId,
+        groups: { runtime: {} },
+      } as unknown as PolicyRevision,
       context: "Réponds seulement OK",
       maxInputTokens: 1_000,
       deadline: new Date(Date.now() + 180_000).toISOString() as UtcTimestamp,

@@ -12,6 +12,7 @@ import {
   fakeScenario,
   type FakeScenario,
 } from "../adapters/fake/index.js";
+import { codexRegistrationFromEnv } from "../adapters/codex/registration.js";
 import type {
   AdapterId,
   ExperimentId,
@@ -97,8 +98,9 @@ export class AdapterRegistry {
 
 /**
  * Registre de ce build. Les adapters Codex, Claude et Gemini (`src/adapters/<runtime>/`)
- * s'y ajoutent à leur fusion ; d'ici là, seule l'exécution simulée est possible.
+ * s'y ajoutent à leur fusion ; Codex est lu dans l'environnement du daemon
+ * (`MIND_WAKE_CODEX_BIN`, `MIND_WAKE_CODEX_MODEL`, `MIND_WAKE_CODEX_EFFORT`).
  */
 export function defaultRegistry(): AdapterRegistry {
-  return new AdapterRegistry([FAKE_REGISTRATION]);
+  return new AdapterRegistry([FAKE_REGISTRATION, codexRegistrationFromEnv()]);
 }

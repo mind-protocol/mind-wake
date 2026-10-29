@@ -117,7 +117,10 @@ describe.skipIf(!ENABLED)(
         const request: StartRequest = {
           sessionId: `sandbox-${String(Date.now())}` as SessionId,
           reservationId: "sandbox" as ReservationId,
-          policy: { profileId: "sandbox" as ProfileId } as PolicyRevision,
+          policy: {
+            profileId: "sandbox" as ProfileId,
+            groups: { runtime: {} },
+          } as unknown as PolicyRevision,
           context: "Réponds seulement OK",
           maxInputTokens: 1_000,
           deadline: new Date(Date.now() + 120_000).toISOString() as UtcTimestamp,

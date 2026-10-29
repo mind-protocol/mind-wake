@@ -18,6 +18,8 @@ import type {
   StartRequest,
   UtcTimestamp,
 } from "../../contracts/index.js";
+import { defaultRegistry } from "../../daemon/registry.js";
+import { canReadQuota } from "../../runner/host.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
 import { SpawnedCodexProcess } from "../../../test/fixtures/codex/process.js";
 import {
@@ -26,12 +28,15 @@ import {
   classifyCodexError,
   CODEX_ADAPTER_ID,
   CODEX_SUPPORTED_VERSION,
+  CODEX_DEFAULT_MODEL,
   codexRegistration,
+  codexRegistrationFromEnv,
   CodexAdapter,
   CodexAdapterError,
   CodexConfigError,
   FileThreadStore,
   hostLauncher,
+  hostPassthroughEnv,
   MemoryThreadStore,
   parseCodexVersion,
   quotaFromRateLimitsResponse,
@@ -145,7 +150,10 @@ function request(profile = "profil-1"): StartRequest {
   return {
     sessionId: `session-${String(counter)}` as SessionId,
     reservationId: `res-${String(counter)}` as ReservationId,
-    policy: { profileId: profile as ProfileId } as PolicyRevision,
+    policy: {
+      profileId: profile as ProfileId,
+      groups: { runtime: {} },
+    } as unknown as PolicyRevision,
     context: "Reprends l'expérience des automates.",
     maxInputTokens: 10_000,
     deadline: "2030-01-01T00:00:00.000Z" as UtcTimestamp,
@@ -720,13 +728,85 @@ describe("alignement ADR-006 et câblage", () => {
       authMode: "chatgpt",
     });
     expect(registration.billing()).toEqual({ kind: "subscription_quota" });
-    expect(registration.runtimeRoots()).toEqual([path.join(h.dir, "bin")]);
-    const host = {
-      spawnContained: () => ({}) as never,
-      authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+    expect(registration.runtimeRoots?.()).toEqual([path.join(h.dir, "bin")]);
+    const created = registration.create({
+      host: {
+        spawnContained: () => {
+          throw new Error("aucun lancement");
+        },
+        authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+        isolation: () => "none",
+      },
+      dataDir: h.dir,
+      workspaceDir: path.join(h.dir, "workspace"),
+      experimentFor: () => null,
+      onProposal: () => undefined,
+      fakeScenario: () => undefined,
+    });
+    expect(created).toBeInstanceOf(CodexAdapter);
+    expect(canReadQuota(created)).toBe(true);
+  });
+
+  it("registre par défaut : Codex enregistré, configuration lue dans l'environnement", () => {
+    expect(defaultRegistry().realIds()).toContain(CODEX_ADAPTER_ID);
+    const fromEnv = codexRegistrationFromEnv({
+      MIND_WAKE_CODEX_BIN: path.join(h.dir, "codex.exe"),
+      MIND_WAKE_CODEX_MODEL: "gpt-6-luna",
+      MIND_WAKE_CODEX_EFFORT: "low",
+    });
+    expect(fromEnv.runtime().model).toBe("gpt-6-luna");
+    expect(fromEnv.runtimeRoots?.()).toEqual([h.dir]);
+    expect(codexRegistrationFromEnv({}).runtime().model).toBe(CODEX_DEFAULT_MODEL);
+  });
+
+  it("consentement ADR-006 lu par défaut dans runtime.hostUnsandboxedAcknowledged", async () => {
+    h.attestation = { confined: false, selfTestPassed: false, detail: "hôte" };
+    const consented = {
+      ...request(),
+      policy: {
+        profileId: "profil-1" as ProfileId,
+        groups: { runtime: { hostUnsandboxedAcknowledged: true } },
+      } as unknown as PolicyRevision,
     };
-    expect(
-      registration.create({ host, workspaceDir: path.join(h.dir, "workspace") }),
-    ).toBeInstanceOf(CodexAdapter);
+    const events = await collect(adapter({ transport: undefined }), consented);
+    expect(h.launches[0]?.unattended).toBe(true);
+    expect(events.at(-1)).toMatchObject({ exitReason: "completed" });
+    await expect(adapter({ transport: undefined }).start(request())).rejects.toMatchObject({
+      code: "isolation_required",
+    });
+  });
+
+  it("sur l'hôte, le lanceur ajoute le profil Windows ; dans la sandbox, non", () => {
+    const spawned: { env?: Record<string, string> }[] = [];
+    const make = (mode: "sandbox" | "host_unsandboxed") =>
+      hostLauncher({
+        spawnContained: (_s, command) => {
+          spawned.push(command);
+          return {} as never;
+        },
+        authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+        isolation: () => mode,
+      });
+    const command = { executable: "codex.exe", args: [], env: { CODEX_HOME: h.dir }, cwd: h.dir };
+    make("host_unsandboxed").launch("s" as SessionId, command);
+    make("sandbox").launch("s" as SessionId, command);
+    expect(Object.keys(spawned[0]?.env ?? {})).toEqual(
+      expect.arrayContaining(["CODEX_HOME", ...Object.keys(hostPassthroughEnv())]),
+    );
+    expect(spawned[1]?.env).toEqual({ CODEX_HOME: h.dir });
+  });
+
+  it("pendant une session, readQuota réutilise la jauge reçue en fin de tour", async () => {
+    const a = adapter();
+    const handle = await a.start(request());
+    for await (const event of a.events(handle)) {
+      if (event.type === "usage") break;
+    }
+    const before = h.launches.length;
+    // Jauge du flux enregistré : reçue à l'instant, donc réutilisée sans nouveau processus.
+    const snapshots = await a.readQuota();
+    expect(snapshots.map((s) => s.windowKey)).toEqual(["codex:primary"]);
+    expect(h.launches.length).toBe(before);
+    await a.cancel(handle, 500);
   });
 });

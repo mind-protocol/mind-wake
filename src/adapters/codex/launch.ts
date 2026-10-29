@@ -73,43 +73,78 @@ export interface ProviderTransport {
   open(sessionId: SessionId): Promise<ProviderChannel>;
 }
 
+/** Hôte du runner (`spawnContained`, `isolation(sessionId)`, `unattended`). */
+export type RunnerHostLike = AdapterHost;
+
 /**
- * Hôte du runner, sous sa forme câblée (`isolation(sessionId)`, `unattended`) ou sous la
- * forme initiale (sans isolation déclarée : Job Object seul).
+ * Variables du profil Windows nécessaires à Codex sur l'hôte (le runner ne transmet que
+ * `SystemRoot`, `SystemDrive`, `windir`, `TEMP`, `TMP`). Aucune ne porte de secret ; la
+ * connexion reste dans `CODEX_HOME`.
  */
-export type RunnerHostLike = AdapterHost & {
-  isolation?(sessionId: SessionId): "sandbox" | "job_only" | "none";
-};
+export const HOST_PASSTHROUGH_ENV = [
+  "PATH",
+  "PATHEXT",
+  "USERPROFILE",
+  "HOMEDRIVE",
+  "HOMEPATH",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "ProgramData",
+  "ComSpec",
+] as const;
+
+export function hostPassthroughEnv(
+  source: Readonly<Record<string, string | undefined>> = process.env,
+): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const key of HOST_PASSTHROUGH_ENV) {
+    const value = source[key];
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
+}
 
 /**
  * Lancement par le runner (`spawnContained`) : le processus est dans l'arborescence de la
- * session, que l'arrêt d'urgence termine. Confiné si le runner déclare `sandbox` (son
- * autotest de refus a réussi), sinon sur l'hôte (Job Object seul).
+ * session, que l'arrêt d'urgence termine. `sandbox` : AppContainer, autotest réussi.
+ * `host_unsandboxed` : hôte avec consentement ADR-006 consigné. Sinon : hôte sans droit au
+ * mode sans approbation (le runner le refuse aussi).
  */
 export function hostLauncher(host: RunnerHostLike, maxProcesses?: number): CodexLauncher {
   return {
     isolation: (sessionId) => {
-      const mode = host.isolation?.(sessionId) ?? "job_only";
-      return mode === "sandbox"
-        ? { confined: true, selfTestPassed: true, detail: "sandbox du runner (autotest réussi)" }
-        : {
+      switch (host.isolation(sessionId)) {
+        case "sandbox":
+          return {
+            confined: true,
+            selfTestPassed: true,
+            detail: "sandbox du runner (autotest réussi)",
+          };
+        case "host_unsandboxed":
+          return {
             confined: false,
             selfTestPassed: false,
-            detail: "hôte, Job Object seul : non isolé",
+            detail: "hôte NON ISOLÉ, consentement ADR-006 constaté par le runner",
           };
+        default:
+          return {
+            confined: false,
+            selfTestPassed: false,
+            detail: "hôte, Job Object seul : non isolé et sans consentement",
+          };
+      }
     },
     launch: (sessionId, command) => {
-      // `unattended` et `broker` (forme câblée) passent par un objet intermédiaire : la forme
-      // initiale de `ContainedCommand` les ignore.
-      const contained = {
+      const sandboxed = host.isolation(sessionId) === "sandbox";
+      return host.spawnContained(sessionId, {
         executable: command.executable,
         args: command.args,
-        env: command.env,
+        // Dans la sandbox, l'environnement reste minimal ; sur l'hôte, Codex a besoin du profil.
+        env: sandboxed ? command.env : { ...hostPassthroughEnv(), ...command.env },
         cwd: command.cwd,
         ...(maxProcesses === undefined ? {} : { maxProcesses }),
         ...(command.unattended === true ? { unattended: true } : {}),
-      };
-      return host.spawnContained(sessionId, contained);
+      });
     },
   };
 }
@@ -204,7 +239,7 @@ export function supervisorLauncher(
       supervisor.spawn(profileId, sessionId, {
         executable: command.executable,
         args: command.args,
-        env: command.env,
+        env: { ...hostPassthroughEnv(), ...command.env },
         cwd: command.cwd,
       }),
   };
