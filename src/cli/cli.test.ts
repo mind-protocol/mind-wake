@@ -187,6 +187,7 @@ const WRITE_METHODS = new Set([
   "create",
   "transition",
   "setNextWake",
+  "setEmergencyStopLocked",
   "appendRevision",
   "recordConsent",
   "recordRevocation",

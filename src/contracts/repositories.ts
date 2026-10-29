@@ -38,6 +38,12 @@ export interface ProfileRepository {
   /** Applique une transition autorisée ; refuse toute transition hors table. */
   transition(id: ProfileId, transition: ProfileTransition): ProfileRecord;
   setNextWake(id: ProfileId, at: UtcTimestamp | null): void;
+  /**
+   * Pose ou lève le verrou d'arrêt d'urgence (kill switch, AGENTS §5). Le verrou est posé
+   * dans la même transaction que la transition vers `stopped` ; seule une réactivation
+   * humaine explicite peut le lever.
+   */
+  setEmergencyStopLocked(id: ProfileId, locked: boolean, at: UtcTimestamp): ProfileRecord;
 }
 
 export interface PolicyRepository {

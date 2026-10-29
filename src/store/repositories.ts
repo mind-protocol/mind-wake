@@ -137,6 +137,18 @@ export class SqliteProfileRepository implements ProfileRepository {
       throw new StoreError("not_found", `profil ${id} inconnu`);
     }
   }
+
+  setEmergencyStopLocked(id: ProfileId, locked: boolean, at: UtcTimestamp): ProfileRecord {
+    const updatedAt = normalizeUtcTimestamp(at);
+    return immediate(this.#db, () => {
+      const result = this.#db
+        .prepare("UPDATE profiles SET emergency_stop_locked = ?, updated_at = ? WHERE id = ?")
+        .run(locked ? 1 : 0, updatedAt, id);
+      const current = result.changes === 1 ? this.get(id) : null;
+      if (current === null) throw new StoreError("not_found", `profil ${id} inconnu`);
+      return current;
+    });
+  }
 }
 
 // ── Policies ───────────────────────────────────────────────────────────────────
