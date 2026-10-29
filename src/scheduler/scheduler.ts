@@ -12,7 +12,9 @@
  *   évaluation (pas de rattrapage des réveils manqués pendant une veille). Un réveil
  *   demandé par l'agent (`wakeRequests`) peut avancer cette évaluation, jamais l'accorder.
  * - Refus en `ready` : attente temporaire → `hibernating`, intervention requise →
- *   `blocked`, arrêt verrouillé → `stopped`. Refus en `hibernating` : on y reste, et
+ *   `blocked`, arrêt verrouillé → `stopped`. Exception : un blocage par jauge
+ *   d'abonnement illisible revient en `ready` dès que la jauge est relue, puis tout est
+ *   revérifié. Refus en `hibernating` : on y reste, et
  *   le motif n'est journalisé que s'il change (scheduler calme).
  * - Échéances persistées en UTC ; backoff aussi gardé sur l'horloge monotone tant que
  *   le processus vit : un saut d'horloge murale vers l'avant ne l'abrège pas.
@@ -155,6 +157,9 @@ function parseTs(value: string | null): number | null {
 }
 
 /** Clé stable d'un refus : motif et code de détail, sans le contexte numérique variable. */
+/** Clé de refus d'une jauge d'abonnement illisible (`denialKey`). */
+const QUOTA_UNKNOWN_KEY = "budget_unknown/subscription.quota_unknown";
+
 function denialKey(decision: Denial): string {
   return `${decision.reason}/${decision.detail.split(":")[0] ?? ""}`;
 }
@@ -293,6 +298,9 @@ export class Scheduler {
     if (this.#inFlight !== null) {
       return { kind: "inactive", state: profile.state, detail: "session.in_flight" };
     }
+    if (profile.state === "blocked" && this.#blockedOnUnknownQuota()) {
+      return this.#recheckBlockedQuota(profile);
+    }
     if (profile.state !== "ready" && profile.state !== "hibernating") {
       return { kind: "inactive", state: profile.state, detail: `profile.state: ${profile.state}` };
     }
@@ -317,6 +325,37 @@ export class Scheduler {
     const result = this.#o.uow.transaction(() => this.#decide(this.#o.clock.now(), facts));
     if (result.kind === "launched") this.#startSession(result.ticket);
     return result;
+  }
+
+  /** Dernier refus : jauge d'abonnement illisible (lecture échouée ou hors délai). */
+  #blockedOnUnknownQuota(): boolean {
+    return this.#o.state.get(this.#o.profileId).lastDenial === QUOTA_UNKNOWN_KEY;
+  }
+
+  /**
+   * `blocked → ready` (garde `checks`, `src/contracts/lifecycle.ts`) seulement quand la
+   * jauge redevient lisible. Rien n'est lancé ici : le tour suivant repasse par
+   * `decideLaunch`, qui revérifie toutes les conditions avec cette lecture.
+   */
+  async #recheckBlockedQuota(profile: ProfileRecord): Promise<TickResult> {
+    const facts = await this.#gatherFacts();
+    if (facts.quotaSnapshots === undefined || facts.quotaSnapshots.length === 0) {
+      return { kind: "inactive", state: profile.state, detail: "subscription.quota_unknown" };
+    }
+    const at = iso(this.#o.clock.now());
+    const { uow, profileId, state: stateRepo } = this.#o;
+    uow.transaction(() => {
+      transitionProfile(uow, {
+        profileId,
+        from: "blocked",
+        to: "ready",
+        reason: "jauge d'abonnement de nouveau lisible : conditions à revérifier",
+        at,
+        metadata: { by: "scheduler" },
+      });
+      stateRepo.save({ ...stateRepo.get(profileId), lastDenial: null }, at);
+    });
+    return { kind: "inactive", state: "ready", detail: "quota.readable" };
   }
 
   /** Boucle du daemon : réévalue à l'échéance, au plus tard après `recheckIntervalMs`. */

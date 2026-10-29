@@ -115,22 +115,48 @@ export class RuntimeEnvironment implements LaunchEnvironment {
     return Promise.resolve(this.billingFacts);
   }
 
+  #quotaCache: {
+    readonly at: number;
+    readonly snapshots: readonly ProviderQuotaSnapshot[];
+  } | null = null;
+  #quotaRead: Promise<readonly ProviderQuotaSnapshot[]> | null = null;
+
+  /**
+   * Jauge officielle. Une seule lecture à la fois, terminée même si le scheduler cesse de
+   * l'attendre (lancer le CLI dépasse son délai de fait) : le tour suivant la trouve. Une
+   * lecture réussie sert `QUOTA_CACHE_MS`, sans relancer le CLI à chaque tour ; sa
+   * fraîcheur reste jugée par la policy (`maxSnapshotAgeMs`, `observedAt` des relevés).
+   */
   async quotaSnapshots(): Promise<readonly ProviderQuotaSnapshot[] | undefined> {
     if (this.billingFacts.kind !== "subscription_quota") return undefined;
-    if (!canReadQuota(this.adapterFacts)) return undefined;
-    const snapshots = await this.adapterFacts.readQuota();
-    try {
-      this.pacing?.observe(snapshots);
-    } catch {
-      // Le suivi du pilotage ne doit jamais empêcher la lecture de la jauge.
-    }
-    return snapshots;
+    const reader = this.adapterFacts;
+    if (!canReadQuota(reader)) return undefined;
+    const cached = this.#quotaCache;
+    if (cached !== null && Date.now() - cached.at < QUOTA_CACHE_MS) return cached.snapshots;
+    this.#quotaRead ??= reader
+      .readQuota()
+      .then((snapshots) => {
+        if (snapshots.length > 0) this.#quotaCache = { at: Date.now(), snapshots };
+        try {
+          this.pacing?.observe(snapshots);
+        } catch {
+          // Le suivi du pilotage ne doit jamais empêcher la lecture de la jauge.
+        }
+        return snapshots;
+      })
+      .finally(() => {
+        this.#quotaRead = null;
+      });
+    return this.#quotaRead;
   }
 
   pacingEstimates(): Promise<readonly PacingEstimate[] | undefined> {
     return Promise.resolve(this.pacing?.estimates());
   }
 }
+
+/** Durée de réutilisation d'une lecture de jauge réussie. */
+export const QUOTA_CACHE_MS = 60_000;
 
 /**
  * Conditions vivantes d'une session réelle : signal d'activité réel (`GetLastInputInfo`,

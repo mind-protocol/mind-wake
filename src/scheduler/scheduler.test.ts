@@ -629,6 +629,47 @@ describe("voie abonnement : pilotage vers la cible (ADR-005, complément)", () =
     expect(b.events("budget_reserved")).toHaveLength(0);
   });
 
+  it("jauge de nouveau lisible : blocked → ready, puis tout est revérifié", async () => {
+    pacingSetup();
+    await tickFresh();
+    expect(state()).toBe("blocked");
+
+    // Toujours illisible : on reste bloqué, sans rien réserver.
+    expect(await tickFresh()).toMatchObject({
+      kind: "inactive",
+      detail: "subscription.quota_unknown",
+    });
+    expect(state()).toBe("blocked");
+
+    gauge(() => [{ key: "primary", used: 2_000, resetsAt: RESET }]);
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "ready" });
+    expect(state()).toBe("ready");
+    expect(b.launcher.tickets).toHaveLength(0);
+    // Le tour suivant repasse par decideLaunch avec la jauge lue.
+    expect(["launched", "denied"]).toContain((await tickFresh()).kind);
+    expectTransitionsAllowed();
+  });
+
+  it("autre motif de blocage : une jauge lisible ne débloque rien", async () => {
+    pacingSetup();
+    const observed = b.clock.now() - 2 * MINUTE;
+    b.environment.quota = () => [
+      {
+        windowKey: "primary",
+        windowDurationMs: 5 * HOUR,
+        usedBasisPoints: 1_000,
+        resetsAt: iso(RESET),
+        observedAt: iso(observed),
+        provenance: "measured",
+      },
+    ];
+    await tickFresh();
+    expect(state()).toBe("blocked");
+    gauge(() => [{ key: "primary", used: 2_000, resetsAt: RESET }]);
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "blocked" });
+    expect(b.launcher.tickets).toHaveLength(0);
+  });
+
   it("sans lecture officielle de la jauge : bloqué en mode autonome", async () => {
     pacingSetup();
     const facts = b.environment.adapterFacts;
