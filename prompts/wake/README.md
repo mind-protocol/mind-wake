@@ -1,6 +1,6 @@
 # Prompts de réveil
 
-Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et Gemini CLI. Ils sont en anglais, destinés à des agents et à un public international.
+Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et Gemini CLI. Objectif d'ensemble : aider son humain pendant qu'il est absent, sans tâche imposée. Ils sont en anglais, destinés à des agents et à un public international.
 
 **Statut : rédigés, pas encore câblés dans le daemon.** Aujourd'hui, le daemon n'envoie que le bloc de mémoire (`src/checkpoint/memory.ts`).
 
