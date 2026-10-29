@@ -5,6 +5,7 @@
  * daemon pendant une session et pendant un checkpoint (A08). Aucun appel modèle.
  */
 
+import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { SessionId } from "../../src/contracts/index.js";
 import { DaemonError, WakeDaemon, latestDaemonRun } from "../../src/daemon/index.js";
@@ -83,10 +84,19 @@ describe("daemon run : refus au démarrage", () => {
       expect(
         await code(() => WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: true })),
       ).toBe("runtime_mismatch");
-      // Mode réel : « codex » n'est pas enregistré dans ce build, aucun repli.
-      expect(
-        await code(() => WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: false })),
-      ).toBe("real_adapter_missing");
+      // Mode réel : « codex » est enregistré ; sa sonde refuse un binaire absent, aucun repli.
+      const previousBin = process.env["MIND_WAKE_CODEX_BIN"];
+      process.env["MIND_WAKE_CODEX_BIN"] = path.join(mismatched.path, "absent", "codex.exe");
+      try {
+        expect(
+          await code(() =>
+            WakeDaemon.open({ ...base, dataDir: mismatched.path, simulated: false }),
+          ),
+        ).toBe("adapter_unavailable");
+      } finally {
+        if (previousBin === undefined) Reflect.deleteProperty(process.env, "MIND_WAKE_CODEX_BIN");
+        else process.env["MIND_WAKE_CODEX_BIN"] = previousBin;
+      }
     } finally {
       mismatched.remove();
     }
@@ -171,7 +181,7 @@ describe("démo SIMULÉE à deux sessions, contrôles et kill switch (A03, A06, 
       daemon: "simulated",
       simulated_adapter: "simulated",
       isolation: "blocked",
-      runtime_adapter: "not_implemented",
+      runtime_adapter: "experimental",
     });
     console.info("Délais mesurés (ms) :", JSON.stringify(m));
   }, 240_000);

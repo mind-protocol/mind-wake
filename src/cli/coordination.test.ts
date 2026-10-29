@@ -178,7 +178,7 @@ describe("disponibilité des composants", () => {
         daemon: "not_implemented",
         isolation: "blocked",
         simulated_adapter: "simulated",
-        runtime_adapter: "not_implemented",
+        runtime_adapter: "experimental",
         api_key_path: "not_implemented",
         subscription_path: "blocked",
       });

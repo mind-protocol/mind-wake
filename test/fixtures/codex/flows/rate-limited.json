@@ -1,0 +1,70 @@
+{
+  "extends": "common.json",
+  "on": {
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "turn_1",
+          "status": "inProgress",
+          "items": [],
+          "error": null
+        }
+      },
+      "then": [
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "inProgress",
+              "items": []
+            }
+          }
+        },
+        {
+          "notify": "account/rateLimits/updated",
+          "params": {
+            "rateLimits": {
+              "limitId": "codex",
+              "primary": {
+                "usedPercent": 100,
+                "windowDurationMins": 300,
+                "resetsAt": 1793300000
+              },
+              "secondary": null,
+              "rateLimitReachedType": "rate_limit_reached"
+            }
+          }
+        },
+        {
+          "notify": "error",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "willRetry": false,
+            "error": {
+              "message": "You've hit your usage limit.",
+              "codexErrorInfo": "usageLimitExceeded"
+            }
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "failed",
+              "items": [],
+              "error": {
+                "message": "You've hit your usage limit.",
+                "codexErrorInfo": "usageLimitExceeded"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
