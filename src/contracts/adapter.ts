@@ -32,8 +32,12 @@ export interface AdapterCapabilities {
   /**
    * Plafond de tokens imposable sur toute la session. `none` interdit l'exécution
    * autonome (AGENTS §5) ; un timeout seul ne compte pas comme borne.
+   * `provider_quota_guard` : borne par la jauge officielle de quota d'abonnement,
+   * l'interruption au seuil et un dépassement mesuré (ADR-004).
    */
-  readonly tokenCapEnforcement: "native" | "conservative_bound" | "none";
+  readonly tokenCapEnforcement: "native" | "conservative_bound" | "provider_quota_guard" | "none";
+  /** Lecture officielle des fenêtres de quota d'abonnement, si le runtime l'expose. */
+  readonly providerQuotaReading: "official" | "none";
   readonly cancellation: "graceful" | "forced_only" | "none";
   /** Borne de consommation résiduelle après annulation, à inclure dans la réservation. */
   readonly residualUsageBound: BudgetQuantity | null;

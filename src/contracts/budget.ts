@@ -15,19 +15,46 @@ import type {
 /** Code devise ISO 4217 en majuscules, par exemple `EUR`. */
 export type CurrencyCode = string;
 
-export const BUDGET_UNITS = ["tokens", "sessions", "duration_ms", "money"] as const;
+export const BUDGET_UNITS = [
+  "tokens",
+  "sessions",
+  "duration_ms",
+  "money",
+  "provider_quota_bp",
+] as const;
 
 export type BudgetUnit = (typeof BUDGET_UNITS)[number];
 
 /**
  * Quantité typée par unité. Toutes les valeurs sont des entiers positifs ou nuls.
  * La monnaie est exprimée en unités mineures (centimes) et porte toujours sa devise.
+ * `provider_quota_bp` est une part d'une fenêtre de quota d'abonnement, en points de
+ * base (10 000 = 100 %), propre à une fenêtre du fournisseur (ADR-004) ; elle ne se
+ * convertit ni en tokens ni en monnaie.
  */
 export type BudgetQuantity =
   | { readonly unit: "tokens"; readonly amount: number }
   | { readonly unit: "sessions"; readonly amount: number }
   | { readonly unit: "duration_ms"; readonly amount: DurationMs }
-  | { readonly unit: "money"; readonly amountMinor: number; readonly currency: CurrencyCode };
+  | { readonly unit: "money"; readonly amountMinor: number; readonly currency: CurrencyCode }
+  | { readonly unit: "provider_quota_bp"; readonly amount: number; readonly windowKey: string };
+
+/**
+ * Lecture d'une fenêtre de quota d'abonnement par la méthode officielle du runtime
+ * (pour Codex : `account/rateLimits/read` ou `account/rateLimits/updated`). La jauge
+ * inclut l'usage de l'humain : c'est un signal de disponibilité, pas un compteur Wake.
+ */
+export interface ProviderQuotaSnapshot {
+  /** Identifiant de la fenêtre côté fournisseur (par exemple fenêtre courte, hebdomadaire). */
+  readonly windowKey: string;
+  readonly windowDurationMs: DurationMs;
+  /** `usedPercent × 100`, arrondi vers le haut ; 0 … 10 000. */
+  readonly usedBasisPoints: number;
+  readonly resetsAt: UtcTimestamp;
+  readonly observedAt: UtcTimestamp;
+  /** `measured` uniquement pour une lecture officielle ; une valeur absente est `unknown`. */
+  readonly provenance: UsageProvenance;
+}
 
 /**
  * Provenance d'une valeur de consommation. Elle doit rester visible partout où la
