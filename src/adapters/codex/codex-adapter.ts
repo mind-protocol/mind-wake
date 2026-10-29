@@ -30,6 +30,7 @@ import {
   buildAppServerCommand,
   threadPermissions,
   type CodexExecutable,
+  type HostSandbox,
   type ThreadPermissions,
 } from "./command.js";
 import { promptFingerprint, type ThreadStore } from "./continuity.js";
@@ -86,6 +87,17 @@ export interface CodexAdapterOptions {
   readonly effort?: string;
   /** `autonomous` (défaut) exige AppContainer + autotest ; `manual` = lancé par l'humain. */
   readonly mode?: CodexLaunchMode;
+  /** Sandbox Codex hors AppContainer (mode manuel) : `workspace-write` par défaut. */
+  readonly hostSandbox?: HostSandbox;
+  /** Fils éphémères (`thread/start.ephemeral`) : rien d'écrit dans l'historique Codex. */
+  readonly ephemeralThreads?: boolean;
+  /**
+   * Versions acceptées ; par défaut la seule version validée. Une autre version n'est
+   * admise qu'en mode manuel (test de fumée) et la sonde la signale comme non validée.
+   */
+  readonly acceptedVersions?: readonly string[];
+  /** Connexion déjà configurée de l'utilisateur (`~/.codex`) : mode manuel seulement. */
+  readonly allowUserCodexHome?: boolean;
   /** Surcharges `-c` supplémentaires ; les réglages de sûreté Wake priment. */
   readonly extraConfig?: Readonly<Record<string, string>>;
   readonly requestTimeoutMs?: number;
@@ -255,14 +267,32 @@ export class CodexAdapter implements RuntimeAdapter {
     if (detected.version === null) {
       return { ...base, available: false, unavailableReason: detected.reason ?? "inconnue" };
     }
-    if (detected.version !== CODEX_SUPPORTED_VERSION) {
+    if (!this.#acceptedVersions().includes(detected.version)) {
       return {
         ...base,
         available: false,
         unavailableReason: `version ${detected.version} non validée (attendue ${CODEX_SUPPORTED_VERSION})`,
       };
     }
+    if (detected.version !== CODEX_SUPPORTED_VERSION) {
+      return {
+        ...base,
+        available: true,
+        unavailableReason: `version ${detected.version} admise en mode manuel seulement, non validée`,
+      };
+    }
     return { ...base, available: true };
+  }
+
+  /** Une version non validée ou le `CODEX_HOME` de l'utilisateur n'existent qu'en manuel. */
+  #manualOnly(): boolean {
+    return (this.#options.mode ?? "autonomous") === "manual";
+  }
+
+  #acceptedVersions(): readonly string[] {
+    return this.#manualOnly()
+      ? (this.#options.acceptedVersions ?? [CODEX_SUPPORTED_VERSION])
+      : [CODEX_SUPPORTED_VERSION];
   }
 
   capabilities(): Promise<AdapterCapabilities> {
@@ -304,7 +334,7 @@ export class CodexAdapter implements RuntimeAdapter {
 
   async #assertVersion(): Promise<void> {
     const detected = await this.#detectVersion();
-    if (detected.version !== CODEX_SUPPORTED_VERSION) {
+    if (detected.version === null || !this.#acceptedVersions().includes(detected.version)) {
       throw new CodexAdapterError(
         "version_unsupported",
         detected.version === null
@@ -329,6 +359,7 @@ export class CodexAdapter implements RuntimeAdapter {
         codexHome: this.#options.codexHome,
         workspaceDir: this.#options.workspaceDir,
         channel,
+        allowUserCodexHome: this.#manualOnly() && this.#options.allowUserCodexHome === true,
         ...(this.#options.extraConfig === undefined
           ? {}
           : { extraConfig: this.#options.extraConfig }),
@@ -359,7 +390,7 @@ export class CodexAdapter implements RuntimeAdapter {
       process: process_,
       channel,
       queue: new EventQueue(),
-      permissions: threadPermissions(bypass),
+      permissions: threadPermissions(bypass, this.#options.hostSandbox),
       rpc: null,
       threadId: null,
       turnId: null,
@@ -422,7 +453,7 @@ export class CodexAdapter implements RuntimeAdapter {
 
   /** Traduit une erreur Codex en limitation ou en erreur d'adapter. */
   #emitTurnError(session: CodexSession, error: { message: string; info: unknown }): void {
-    const kind = classifyCodexError(error.info).kind;
+    const kind = classifyCodexError(error.info, error.message).kind;
     if (kind === "rate_limited") {
       this.#emit(session, {
         type: "rate_limited",
@@ -496,7 +527,7 @@ export class CodexAdapter implements RuntimeAdapter {
     }
     if (error instanceof RpcError) {
       const info = asRecord(error.data)?.["codexErrorInfo"] ?? null;
-      const kind = classifyCodexError(info).kind;
+      const kind = classifyCodexError(info, error.message).kind;
       if (kind === "rate_limited") {
         this.#emitTurnError(session, { message: error.message, info });
       } else {
@@ -563,7 +594,7 @@ export class CodexAdapter implements RuntimeAdapter {
       ...common,
       developerInstructions: prompt,
       serviceName: CLIENT_INFO.name,
-      ephemeral: false,
+      ephemeral: this.#options.ephemeralThreads === true,
     });
     const id = asRecord(created["thread"])?.["id"];
     if (typeof id !== "string") {

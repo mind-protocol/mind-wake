@@ -13,6 +13,7 @@ export {
   threadPermissions,
   WAKE_CONFIG_OVERRIDES,
   type CodexExecutable,
+  type HostSandbox,
   type ThreadPermissions,
 } from "./command.js";
 export {

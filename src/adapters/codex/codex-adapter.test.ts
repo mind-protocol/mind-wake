@@ -4,11 +4,9 @@
  * credential : ces tests ne prouvent pas l'intégration réelle (AGENTS §5).
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type {
@@ -21,6 +19,7 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
+import { SpawnedCodexProcess } from "../../../test/fixtures/codex/process.js";
 import {
   appContainerLauncher,
   buildAppServerCommand,
@@ -37,7 +36,6 @@ import {
   type CodexAdapterOptions,
   type CodexCommand,
   type CodexLauncher,
-  type CodexProcess,
   type IsolationAttestation,
   type ProviderTransport,
   type SandboxLike,
@@ -45,73 +43,6 @@ import {
 
 const FAKE = fileURLToPath(new URL("../../../test/fixtures/codex/fake-codex.ts", import.meta.url));
 const FLOWS = fileURLToPath(new URL("../../../test/fixtures/codex/flows/", import.meta.url));
-
-/** Processus enfant ordinaire, sans Job Object ni AppContainer : tests seulement. */
-class TestProcess implements CodexProcess {
-  readonly exited: Promise<number | null>;
-  #child: ChildProcess;
-  #lines: string[] = [];
-  #waiters: ((line: string | null) => void)[] = [];
-  #closed = false;
-  #done = false;
-
-  constructor(command: CodexCommand, extraEnv: Record<string, string>) {
-    const env: Record<string, string> = { ...command.env, ...extraEnv };
-    const systemRoot = process.env["SystemRoot"];
-    if (systemRoot !== undefined) env["SystemRoot"] = systemRoot;
-    this.#child = spawn(command.executable, [...command.args], {
-      cwd: command.cwd,
-      env,
-      stdio: ["pipe", "pipe", "ignore"],
-      windowsHide: true,
-    });
-    this.#child.stdin?.on("error", () => undefined);
-    createInterface({ input: this.#child.stdout as NodeJS.ReadableStream }).on("line", (line) => {
-      const waiter = this.#waiters.shift();
-      if (waiter === undefined) this.#lines.push(line);
-      else waiter(line);
-    });
-    this.#child.stdout?.on("close", () => {
-      this.#closed = true;
-      for (const waiter of this.#waiters.splice(0)) waiter(null);
-    });
-    this.exited = new Promise((resolve) => {
-      this.#child.on("close", (code) => {
-        this.#done = true;
-        resolve(code);
-      });
-    });
-  }
-
-  started(): Promise<number> {
-    return new Promise((resolve, reject) => {
-      if (this.#child.pid !== undefined) resolve(this.#child.pid);
-      else this.#child.once("error", reject);
-    });
-  }
-
-  get hasExited(): boolean {
-    return this.#done;
-  }
-
-  readLine(): Promise<string | null> {
-    const line = this.#lines.shift();
-    if (line !== undefined) return Promise.resolve(line);
-    if (this.#closed) return Promise.resolve(null);
-    return new Promise((resolve) => this.#waiters.push(resolve));
-  }
-
-  send(line: string): void {
-    if (!this.#done) this.#child.stdin?.write(`${line}\n`);
-  }
-
-  async terminateTree(): Promise<{ confirmed: boolean; elapsedMs: number }> {
-    const begin = performance.now();
-    if (!this.#done) this.#child.kill();
-    await this.exited;
-    return { confirmed: true, elapsedMs: performance.now() - begin };
-  }
-}
 
 interface Harness {
   readonly dir: string;
@@ -146,7 +77,7 @@ beforeEach(() => {
       isolation: () => harness.attestation,
       launch: (_sessionId, command) => {
         launches.push(command);
-        return new TestProcess(command, {
+        return new SpawnedCodexProcess(command, {
           FAKE_CODEX_FLOW: path.join(FLOWS, harness.flow),
           FAKE_CODEX_LOG: logPath,
         });
@@ -623,5 +554,78 @@ describe("lanceur AppContainer", () => {
   it("la Sandbox de production satisfait le port", () => {
     const check = (sandbox: Sandbox): SandboxLike => sandbox;
     expect(typeof check).toBe("function");
+  });
+});
+
+describe("flux réels enregistrés (codex-cli 0.147.0, expurgés)", () => {
+  const manual = (quota: unknown[] = []): CodexAdapter => {
+    h.attestation = { confined: false, selfTestPassed: false, detail: "hôte" };
+    return adapter({
+      mode: "manual",
+      hostSandbox: "read-only",
+      transport: undefined,
+      acceptedVersions: ["0.147.0"],
+      versionCheck: () => Promise.resolve("codex-cli 0.147.0"),
+      onQuota: (r) => quota.push(r),
+    });
+  };
+
+  it("tour « OK » : usage mesuré, jauge reçue pendant le tour, rapprochement confirmé", async () => {
+    h.flow = "real-0.147.0-ok.json";
+    const quota: unknown[] = [];
+    const a = manual(quota);
+    const req = request();
+    const events = await collect(a, req);
+    expect(events.map((e) => e.type)).toEqual(["started", "activity", "usage", "ended"]);
+    expect(events[1]).toMatchObject({ summary: "message : OK" });
+    expect(events[2]).toMatchObject({
+      quantity: { unit: "tokens", amount: 8_196 },
+      provenance: "measured",
+      tokenBreakdown: { input: 8_191, cached_input: 0, output: 5, reasoning: 0 },
+    });
+    expect(quota).toEqual([
+      expect.objectContaining({
+        snapshots: [
+          expect.objectContaining({
+            windowKey: "codex:primary",
+            windowDurationMs: 604_800_000,
+            usedBasisPoints: 2_800,
+            resetsAt: "2026-11-04T06:38:41.000Z",
+          }),
+        ],
+      }),
+    ]);
+    expect(await a.reconcile(req.sessionId)).toMatchObject({
+      status: "confirmed",
+      usage: [{ unit: "tokens", amount: 8_196 }],
+    });
+    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({ sandbox: "read-only" });
+  });
+
+  it("modèle refusé (`codexErrorInfo: other`, 400 model_not_found) : incompatible", async () => {
+    h.flow = "real-0.147.0-model-not-found.json";
+    const a = manual();
+    const req = request();
+    const events = await collect(a, req);
+    expect(events.find((e) => e.type === "error")).toMatchObject({ code: "incompatible" });
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "failed" });
+    expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+
+  it("une version non validée reste refusée en mode autonome", async () => {
+    const a = adapter({
+      acceptedVersions: ["0.147.0"],
+      versionCheck: () => Promise.resolve("codex-cli 0.147.0"),
+    });
+    expect(await a.probe()).toMatchObject({ available: false });
+    await expect(a.start(request())).rejects.toMatchObject({ code: "version_unsupported" });
+  });
+
+  it("le CODEX_HOME de l'utilisateur n'est admis qu'en mode manuel", async () => {
+    const userHome = path.join(os.homedir(), ".codex");
+    await expect(
+      adapter({ codexHome: userHome, allowUserCodexHome: true }).start(request()),
+    ).rejects.toThrow(/dossier Codex de l'utilisateur/);
+    expect(h.launches).toHaveLength(0);
   });
 });

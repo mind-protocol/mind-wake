@@ -74,3 +74,22 @@ Le binaire installé sur le poste de développement est `codex-cli 0.147.0` (seu
 7. `account/read` avec le relais : `requiresOpenaiAuth` quand le fournisseur est le relais.
 
 Mention de la doc à garder en vue : « App-server authentication has never been permitted for commercial or hosted services ». Wake est local et open source, mais la voie reste expérimentale (ADR-004).
+
+## Test de fumée réel (opt-in)
+
+`src/adapters/codex/codex-real.smoke.test.ts`, ignoré par `npm test`, activé par `MIND_WAKE_REAL_SMOKE=1`. Bornes : connexion déjà configurée de l'utilisateur (jamais lue ni copiée), hôte, mode `manual`, sandbox Codex `read-only`, `approvalPolicy: "never"`, aucun mode sans approbation, fil éphémère, prompt « Réponds seulement OK ». Serveurs MCP, plugins, hooks, mémoires, navigateur, `computer_use`, génération d'images, multi-agent, objectifs et recherche web sont désactivés par `-c`. Les serveurs MCP sont listés après la désactivation des plugins : surcharger un serveur fourni par un plugin crée une entrée invalide qui empêche le démarrage.
+
+Exécution du 29 octobre 2026 avec `codex-cli 0.147.0` (version non validée, admise en mode manuel seulement) et un compte ChatGPT Pro. Trois appels au total :
+
+1. Tour avec le modèle par défaut de l'utilisateur (`gpt-6.1-sol`) : refusé, HTTP 400 `model_not_found` (« not supported when using Codex with a ChatGPT account »), `codexErrorInfo: "other"`. Le classement lit désormais ce code et renvoie `incompatible`.
+2. `account/rateLimits/read` : une fenêtre `codex:primary`, `usedPercent` 28, `windowDurationMins` 10080 (hebdomadaire), `resetsAt` 1793774321 (2026-11-04T06:38:41Z), `secondary` nul.
+3. Tour avec `gpt-5.6-luna`, effort `low` : réponse `OK`. Usage mesuré : 8 196 tokens (8 191 en entrée, 0 en cache, 5 en sortie, 0 de raisonnement), rapprochement `confirmed`. `account/rateLimits/updated` est reçu pendant le tour, avec la même fenêtre.
+
+Les flux expurgés (email, solde, nom du poste, identifiant d'installation, chemins du profil) sont rejoués par les tests ordinaires : `test/fixtures/codex/flows/real-0.147.0-ok.json` et `real-0.147.0-model-not-found.json`.
+
+Constats :
+
+- Ordre réel : `thread/tokenUsage/updated` arrive après `turn/started`, puis `account/rateLimits/updated`, puis `turn/completed`.
+- Le compte n'expose qu'une fenêtre hebdomadaire.
+- Près de 8 200 tokens d'entrée pour un prompt de trois mots : instructions de base de Codex et outils.
+- `thread/start` renvoie `sandbox` sous forme d'objet (`{ "type": "readOnly", "networkAccess": false }`).

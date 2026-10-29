@@ -1,0 +1,327 @@
+{
+  "version": "codex-cli 0.147.0",
+  "recordedAt": "2026-10-29T12:37:25.531Z",
+  "on": {
+    "initialize": {
+      "result": {
+        "userAgent": "mind_wake/0.147.0 (Windows 10.0.26200; x86_64) unknown (mind_wake; 0.1.0)",
+        "codexHome": "<HOME>\\.codex",
+        "platformFamily": "windows",
+        "platformOs": "windows"
+      },
+      "then": [
+        {
+          "notify": "remoteControl/status/changed",
+          "params": {
+            "status": "disabled",
+            "serverName": "<redacted>",
+            "installationId": "<redacted>",
+            "environmentId": null
+          }
+        }
+      ]
+    },
+    "account/read": {
+      "result": {
+        "account": {
+          "type": "chatgpt",
+          "email": "<redacted>",
+          "planType": "pro"
+        },
+        "requiresOpenaiAuth": true
+      },
+      "then": []
+    },
+    "thread/start": {
+      "result": {
+        "thread": {
+          "id": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+          "extra": null,
+          "sessionId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": true,
+          "section": null,
+          "sectionEnteredAt": null,
+          "historyMode": "legacy",
+          "modelProvider": "openai",
+          "createdAt": 1793277443,
+          "updatedAt": 1793277443,
+          "recencyAt": 1793277443,
+          "status": {
+            "type": "idle"
+          },
+          "path": null,
+          "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-GnAJLt",
+          "cliVersion": "0.147.0",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "turns": []
+        },
+        "model": "gpt-5.6-luna",
+        "modelProvider": "openai",
+        "serviceTier": "priority",
+        "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-GnAJLt",
+        "runtimeWorkspaceRoots": ["<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-GnAJLt"],
+        "instructionSources": [],
+        "approvalPolicy": "never",
+        "approvalsReviewer": "user",
+        "sandbox": {
+          "type": "readOnly",
+          "networkAccess": false
+        },
+        "activePermissionProfile": null,
+        "reasoningEffort": "medium",
+        "multiAgentMode": "explicitRequestOnly"
+      },
+      "then": [
+        {
+          "notify": "thread/started",
+          "params": {
+            "thread": {
+              "id": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+              "extra": null,
+              "sessionId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+              "forkedFromId": null,
+              "parentThreadId": null,
+              "preview": "",
+              "ephemeral": true,
+              "section": null,
+              "sectionEnteredAt": null,
+              "historyMode": "legacy",
+              "modelProvider": "openai",
+              "createdAt": 1793277443,
+              "updatedAt": 1793277443,
+              "recencyAt": 1793277443,
+              "status": {
+                "type": "idle"
+              },
+              "path": null,
+              "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-GnAJLt",
+              "cliVersion": "0.147.0",
+              "source": "vscode",
+              "canAcceptDirectInput": true,
+              "threadSource": null,
+              "agentNickname": null,
+              "agentRole": null,
+              "gitInfo": null,
+              "name": null,
+              "turns": []
+            }
+          }
+        }
+      ]
+    },
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "durationMs": null
+        }
+      },
+      "then": [
+        {
+          "notify": "thread/status/changed",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "status": {
+              "type": "active",
+              "activeFlags": []
+            }
+          }
+        },
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turn": {
+              "id": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+              "items": [],
+              "itemsView": "notLoaded",
+              "status": "inProgress",
+              "error": null,
+              "startedAt": 1793277443,
+              "completedAt": null,
+              "durationMs": null
+            }
+          }
+        },
+        {
+          "notify": "item/started",
+          "params": {
+            "item": {
+              "type": "userMessage",
+              "id": "01a187aa-405e-7da1-897d-a65a85bf64cf",
+              "clientId": null,
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Réponds seulement OK",
+                  "text_elements": []
+                }
+              ]
+            },
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "startedAtMs": 1793277444190
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "item": {
+              "type": "userMessage",
+              "id": "01a187aa-405e-7da1-897d-a65a85bf64cf",
+              "clientId": null,
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Réponds seulement OK",
+                  "text_elements": []
+                }
+              ]
+            },
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "completedAtMs": 1793277444190
+          }
+        },
+        {
+          "notify": "item/started",
+          "params": {
+            "item": {
+              "type": "agentMessage",
+              "id": "msg_0b94789615fd9b5e016ae33e054e0c81918ee7a0b9e1826a26",
+              "text": "",
+              "phase": "final_answer",
+              "memoryCitation": null
+            },
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "startedAtMs": 1793277445315
+          }
+        },
+        {
+          "notify": "item/agentMessage/delta",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "itemId": "msg_0b94789615fd9b5e016ae33e054e0c81918ee7a0b9e1826a26",
+            "delta": "OK"
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "item": {
+              "type": "agentMessage",
+              "id": "msg_0b94789615fd9b5e016ae33e054e0c81918ee7a0b9e1826a26",
+              "text": "OK",
+              "phase": "final_answer",
+              "memoryCitation": null
+            },
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "completedAtMs": 1793277445390
+          }
+        },
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turnId": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+            "tokenUsage": {
+              "total": {
+                "totalTokens": 8196,
+                "inputTokens": 8191,
+                "cachedInputTokens": 0,
+                "cacheWriteInputTokens": 0,
+                "outputTokens": 5,
+                "reasoningOutputTokens": 0
+              },
+              "last": {
+                "totalTokens": 8196,
+                "inputTokens": 8191,
+                "cachedInputTokens": 0,
+                "cacheWriteInputTokens": 0,
+                "outputTokens": 5,
+                "reasoningOutputTokens": 0
+              },
+              "modelContextWindow": 258400
+            }
+          }
+        },
+        {
+          "notify": "account/rateLimits/updated",
+          "params": {
+            "rateLimits": {
+              "limitId": "codex",
+              "limitName": null,
+              "primary": {
+                "usedPercent": 28,
+                "windowDurationMins": 10080,
+                "resetsAt": 1793774321
+              },
+              "secondary": null,
+              "credits": {
+                "hasCredits": false,
+                "unlimited": false,
+                "balance": "<redacted>"
+              },
+              "individualLimit": null,
+              "spendControlReached": null,
+              "planType": "pro",
+              "rateLimitReachedType": null
+            }
+          }
+        },
+        {
+          "notify": "thread/status/changed",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "status": {
+              "type": "idle"
+            }
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "01a187aa-3b7b-72c3-9f7e-607caaa7790f",
+            "turn": {
+              "id": "01a187aa-3c1a-7290-a0fc-19242cf06ec7",
+              "items": [
+                {
+                  "type": "agentMessage",
+                  "id": "msg_0b94789615fd9b5e016ae33e054e0c81918ee7a0b9e1826a26",
+                  "text": "OK",
+                  "phase": "final_answer",
+                  "memoryCitation": null
+                }
+              ],
+              "itemsView": "summary",
+              "status": "completed",
+              "error": null,
+              "startedAt": 1793277443,
+              "completedAt": 1793277445,
+              "durationMs": 2313
+            }
+          }
+        }
+      ]
+    }
+  },
+  "note": "Flux réel enregistré le 29 octobre 2026 (codex-cli 0.147.0, compte ChatGPT), expurgé : email, solde, nom du poste, identifiant d installation, chemins du profil."
+}

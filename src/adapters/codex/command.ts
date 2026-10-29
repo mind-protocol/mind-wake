@@ -45,6 +45,11 @@ export interface BuildCommandInput {
   readonly channel: ProviderChannel | null;
   readonly extraConfig?: Readonly<Record<string, string>>;
   readonly userHome?: string;
+  /**
+   * Accepte le `CODEX_HOME` de l'utilisateur et sa connexion déjà configurée : lancement
+   * manuel par l'humain seulement (test de fumée), jamais en autonome.
+   */
+  readonly allowUserCodexHome?: boolean;
 }
 
 /** Refuse le dossier Codex de l'utilisateur (credentials et configuration personnels). */
@@ -80,7 +85,13 @@ function configArgs(overrides: Readonly<Record<string, string>>): string[] {
 }
 
 export function buildAppServerCommand(input: BuildCommandInput): CodexCommand {
-  assertDedicatedCodexHome(input.codexHome, input.userHome);
+  if (input.allowUserCodexHome === true) {
+    if (!path.isAbsolute(input.codexHome)) {
+      throw new CodexConfigError(`CODEX_HOME doit être absolu : ${input.codexHome}`);
+    }
+  } else {
+    assertDedicatedCodexHome(input.codexHome, input.userHome);
+  }
   if (!path.isAbsolute(input.workspaceDir)) {
     throw new CodexConfigError(`dossier de travail non absolu : ${input.workspaceDir}`);
   }
@@ -115,15 +126,21 @@ export function buildAppServerCommand(input: BuildCommandInput): CodexCommand {
 /** Permissions demandées à Codex pour un fil (`thread/start`, `thread/resume`). */
 export interface ThreadPermissions {
   readonly approvalPolicy: "never";
-  readonly sandbox: "danger-full-access" | "workspace-write";
+  readonly sandbox: "danger-full-access" | "workspace-write" | "read-only";
 }
+
+/** Sandbox Codex conservée hors AppContainer. */
+export type HostSandbox = "workspace-write" | "read-only";
 
 /**
  * Sans approbation, toujours : personne n'est là pour répondre. Sous AppContainer avec
  * autotest réussi, Codex n'ajoute pas sa propre sandbox (`danger-full-access`, équivalent
  * de `--dangerously-bypass-approvals-and-sandbox`) ; sinon il garde sa sandbox Windows
- * `workspace-write`, réseau des commandes coupé.
+ * (`workspace-write` par défaut, ou `read-only`), réseau des commandes coupé.
  */
-export function threadPermissions(bypass: boolean): ThreadPermissions {
-  return { approvalPolicy: "never", sandbox: bypass ? "danger-full-access" : "workspace-write" };
+export function threadPermissions(
+  bypass: boolean,
+  hostSandbox: HostSandbox = "workspace-write",
+): ThreadPermissions {
+  return { approvalPolicy: "never", sandbox: bypass ? "danger-full-access" : hostSandbox };
 }

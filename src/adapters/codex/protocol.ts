@@ -211,8 +211,17 @@ export function httpStatusOf(info: unknown): number | null {
   return null;
 }
 
-export function classifyCodexError(info: unknown): CodexErrorClass {
-  const key = codexErrorKey(info);
+/**
+ * Code de l'API Responses repris dans le message quand `codexErrorInfo` vaut `other`
+ * (observé avec 0.147.0 : `"code":"model_not_found"`, statut 400).
+ */
+function upstreamCode(message: string | undefined): string | null {
+  if (message === undefined) return null;
+  return /"code"\s*:\s*"([a-z_]+)"/.exec(message)?.[1] ?? null;
+}
+
+export function classifyCodexError(info: unknown, message?: string): CodexErrorClass {
+  const key = upstreamCode(message) === "model_not_found" ? "modelNotFound" : codexErrorKey(info);
   const status = httpStatusOf(info);
   if (key === "unauthorized" || status === 401 || status === 403) return { kind: "auth_failed" };
   if ((key !== null && RATE_LIMITED.has(key)) || status === 429) return { kind: "rate_limited" };
