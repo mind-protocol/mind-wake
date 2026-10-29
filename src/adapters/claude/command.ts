@@ -64,14 +64,8 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
   if (options.permission === "skip_permissions_in_sandbox") {
     args.push("--dangerously-skip-permissions");
   } else {
-    args.push(
-      "--permission-mode",
-      "dontAsk",
-      "--permission-prompts",
-      "none",
-      "--allowedTools",
-      options.tools.join(","),
-    );
+    args.push("--permission-mode", "dontAsk", "--permission-prompts", "none");
+    if (options.tools.length > 0) args.push("--allowedTools", options.tools.join(","));
   }
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
   return args;
@@ -118,8 +112,11 @@ export class ClaudeEnvironmentError extends Error {
 }
 
 export interface ClaudeEnvironmentOptions {
-  /** Dossier de configuration dédié à Wake (`CLAUDE_CONFIG_DIR`). */
-  readonly configDir: string;
+  /**
+   * Dossier de configuration dédié à Wake (`CLAUDE_CONFIG_DIR`). Absent : configuration
+   * par défaut du CLI, celle de l'humain (lancement supervisé seulement).
+   */
+  readonly configDir?: string;
   /** Dossier personnel substitué (`HOME`, `USERPROFILE`) ; absent = non défini. */
   readonly homeDir?: string;
   /** Windows : chemin de `bash.exe` (`CLAUDE_CODE_GIT_BASH_PATH`). */
@@ -134,11 +131,10 @@ export interface ClaudeEnvironmentOptions {
  * du relais (`ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`…).
  */
 export function claudeEnvironment(options: ClaudeEnvironmentOptions): Record<string, string> {
-  const env: Record<string, string> = {
-    CLAUDE_CONFIG_DIR: options.configDir,
-    DISABLE_AUTOUPDATER: "1",
-    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
-  };
+  const env: Record<string, string> = {};
+  if (options.configDir !== undefined) env["CLAUDE_CONFIG_DIR"] = options.configDir;
+  env["DISABLE_AUTOUPDATER"] = "1";
+  env["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "1";
   if (options.homeDir !== undefined) {
     env["HOME"] = options.homeDir;
     env["USERPROFILE"] = options.homeDir;

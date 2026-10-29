@@ -19,16 +19,6 @@ export interface ClaudeConversationRecord {
   readonly started: boolean;
   /** Empreinte du dernier prompt système transmis. */
   readonly promptDigest: string | null;
-  /**
-   * Derniers totaux cumulés rapportés par le CLI pour cette conversation. Une reprise
-   * rapporte le total de la conversation, exécutions précédentes comprises
-   * (documentation `headless`, coût) : l'usage d'un réveil en est la différence.
-   */
-  readonly reportedTotals: {
-    readonly input: number;
-    readonly cachedInput: number;
-    readonly output: number;
-  } | null;
 }
 
 /** Stockage des conversations ; le daemon fournit une implémentation persistante. */
@@ -50,7 +40,7 @@ export class MemoryConversationStore implements ClaudeConversationStore {
 }
 
 export function freshConversation(key: string, generation = 0): ClaudeConversationRecord {
-  return { key, generation, started: false, promptDigest: null, reportedTotals: null };
+  return { key, generation, started: false, promptDigest: null };
 }
 
 /**

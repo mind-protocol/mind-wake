@@ -1,8 +1,6 @@
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type {
@@ -13,8 +11,9 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import type { AdapterHost } from "../../runner/host.js";
-import type { ContainedProcess, TreeTermination } from "../../runner/process-tree.js";
+import type { ContainedProcess } from "../../runner/process-tree.js";
 import type { Sandbox, SandboxLaunchSpec, SandboxedProcess } from "../../sandbox/sandbox.js";
+import { ChildClaude } from "../../../test/fixtures/claude/child-process.js";
 import {
   CLAUDE_ADAPTER_ID,
   ClaudeAdapter,
@@ -33,81 +32,12 @@ import {
   type ClaudeLauncher,
   type ClaudeLaunchSpec,
   type ClaudeNetworkPort,
-  type ClaudeProcess,
   type ClaudeQuotaSignal,
 } from "./index.js";
 
 const FAKE_CLAUDE = fileURLToPath(
   new URL("../../../test/fixtures/claude/fake-claude.ts", import.meta.url),
 );
-
-/** Processus enfant direct, même forme que les processus contenus (tests seulement). */
-class ChildClaude implements ClaudeProcess {
-  readonly exited: Promise<{ readonly mainExitCode: number | null }>;
-  readonly #child;
-  readonly #lines: string[] = [];
-  readonly #waiters: ((line: string | null) => void)[] = [];
-  #closed = false;
-  #done = false;
-
-  constructor(spec: ClaudeLaunchSpec, extraEnv: Readonly<Record<string, string>>) {
-    this.#child = spawn(spec.executable, spec.args, {
-      cwd: spec.cwd,
-      env: { SystemRoot: process.env["SystemRoot"] ?? "", ...spec.env, ...extraEnv },
-      stdio: ["pipe", "pipe", "ignore"],
-      windowsHide: true,
-    });
-    createInterface({ input: this.#child.stdout }).on("line", (line) => {
-      const waiter = this.#waiters.shift();
-      if (waiter === undefined) this.#lines.push(line);
-      else waiter(line);
-    });
-    this.#child.stdout.on("close", () => {
-      this.#closed = true;
-      for (const waiter of this.#waiters.splice(0)) waiter(null);
-    });
-    this.exited = new Promise((resolve) => {
-      this.#child.on("exit", (code) => {
-        this.#done = true;
-        resolve({ mainExitCode: code });
-      });
-    });
-  }
-
-  started(): Promise<number> {
-    return Promise.resolve(this.#child.pid ?? 0);
-  }
-
-  get hasExited(): boolean {
-    return this.#done;
-  }
-
-  readLine(): Promise<string | null> {
-    const line = this.#lines.shift();
-    if (line !== undefined) return Promise.resolve(line);
-    if (this.#closed) return Promise.resolve(null);
-    return new Promise((resolve) => this.#waiters.push(resolve));
-  }
-
-  send(line: string): void {
-    this.#child.stdin.write(`${line}\n`);
-  }
-
-  async terminateTree(): Promise<TreeTermination> {
-    const begin = performance.now();
-    if (this.#done) {
-      return { confirmed: true, elapsedMs: 0, kernelMs: null, via: "already_exited" };
-    }
-    this.#child.kill("SIGKILL");
-    await this.exited;
-    return {
-      confirmed: true,
-      elapsedMs: performance.now() - begin,
-      kernelMs: null,
-      via: "kill_command",
-    };
-  }
-}
 
 interface Harness {
   readonly dir: string;
@@ -148,6 +78,7 @@ beforeEach(() => {
       launch: (spec) => {
         harness.launches.push(spec);
         const child = new ChildClaude(spec, {
+          SystemRoot: process.env["SystemRoot"] ?? "",
           FAKE_CLAUDE_SCENARIO: harness.scenario,
           FAKE_CLAUDE_STATE: harness.state,
           FAKE_CLAUDE_LOG: harness.log,

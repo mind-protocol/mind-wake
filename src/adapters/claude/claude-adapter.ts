@@ -86,8 +86,11 @@ export interface ClaudeAdapterOptions {
   readonly executable: string;
   /** Arguments placés avant ceux de l'adapter (tests : script du faux exécutable). */
   readonly executablePrefixArgs?: readonly string[];
-  /** Dossier de configuration dédié à Wake, connecté par l'humain via `/login`. */
-  readonly configDir: string;
+  /**
+   * Dossier de configuration dédié, connecté par l'humain via `/login`. Absent :
+   * configuration par défaut du CLI (lancement supervisé de l'humain).
+   */
+  readonly configDir?: string;
   /** Dossier côté contrôle où sont publiés les prompts système (lecture seule pour l'agent). */
   readonly promptDir: string;
   readonly systemPrompt: string | ((sessionId: SessionId) => string);
@@ -114,6 +117,13 @@ export interface ClaudeQuotaSignal {
   readonly resetsAt: UtcTimestamp | null;
   readonly utilization: number | null;
   readonly creditsRequired: boolean;
+  /** Fenêtre concernée et fenêtres `unifiedWindows` : observées en 2.1.308, non documentées. */
+  readonly rateLimitType: string | null;
+  readonly windows: readonly {
+    readonly key: string;
+    readonly utilization: number;
+    readonly resetsAt: UtcTimestamp | null;
+  }[];
 }
 
 export type ClaudeAdapterErrorCode = "isolation_required" | "transport_unavailable";
@@ -131,7 +141,6 @@ export class ClaudeAdapterError extends Error {
 interface ClaudeSession {
   readonly process: ClaudeProcess;
   readonly claudeSessionId: string;
-  readonly resumed: boolean;
   readonly promptChanged: boolean;
   readonly promptDigest: string;
   record: ClaudeConversationRecord;
@@ -148,18 +157,6 @@ export function compareVersions(a: string, b: string): number {
     if (d !== 0) return Math.sign(d);
   }
   return 0;
-}
-
-function difference(
-  current: ClaudeTokenTotals,
-  previous: ClaudeTokenTotals | null,
-): ClaudeTokenTotals {
-  if (previous === null) return current;
-  const input = current.input - previous.input;
-  const cachedInput = current.cachedInput - previous.cachedInput;
-  const output = current.output - previous.output;
-  // Un total inférieur au précédent ne peut pas être cumulatif : c'est l'usage du réveil.
-  return input < 0 || cachedInput < 0 || output < 0 ? current : { input, cachedInput, output };
 }
 
 function totalOf(tokens: ClaudeTokenTotals): number {
@@ -258,6 +255,12 @@ export class ClaudeAdapter implements RuntimeAdapter {
           `lancement autonome refusé hors sandbox à autotest réussi (${isolation.kind} : ${isolation.detail})`,
         );
       }
+      if (this.#options.configDir === undefined) {
+        throw new ClaudeAdapterError(
+          "isolation_required",
+          "lancement autonome refusé sans dossier de configuration dédié (CLAUDE_CONFIG_DIR)",
+        );
+      }
       return "skip_permissions_in_sandbox";
     }
     return "allowlist_only";
@@ -294,7 +297,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
   ): ClaudeProcess {
     const o = this.#options;
     const env = claudeEnvironment({
-      configDir: o.configDir,
+      ...(o.configDir === undefined ? {} : { configDir: o.configDir }),
       ...(o.homeDir === undefined ? {} : { homeDir: o.homeDir }),
       ...(o.gitBashPath === undefined ? {} : { gitBashPath: o.gitBashPath }),
       ...(grant === null ? {} : { network: grant.env }),
@@ -305,7 +308,11 @@ export class ClaudeAdapter implements RuntimeAdapter {
       args: [...(o.executablePrefixArgs ?? []), ...args],
       cwd,
       env,
-      readWriteRoots: [cwd, o.configDir, ...(o.homeDir === undefined ? [] : [o.homeDir])],
+      readWriteRoots: [
+        cwd,
+        ...(o.configDir === undefined ? [] : [o.configDir]),
+        ...(o.homeDir === undefined ? [] : [o.homeDir]),
+      ],
       readOnlyRoots: [path.dirname(o.executable), o.promptDir, ...(o.extraReadOnlyRoots ?? [])],
       network: grant,
       deadline,
@@ -346,7 +353,6 @@ export class ClaudeAdapter implements RuntimeAdapter {
     this.#sessions.set(sessionId, {
       process: process_,
       claudeSessionId,
-      resumed: record.started,
       promptChanged: record.promptDigest !== null && record.promptDigest !== digest,
       promptDigest: digest,
       record,
@@ -455,6 +461,15 @@ export class ClaudeAdapter implements RuntimeAdapter {
                   : (new Date(item.resetsAtMs).toISOString() as UtcTimestamp),
               utilization: item.utilization,
               creditsRequired: item.creditsRequired,
+              rateLimitType: item.rateLimitType,
+              windows: item.windows.map((w) => ({
+                key: w.key,
+                utilization: w.utilization,
+                resetsAt:
+                  w.resetsAtMs === null
+                    ? null
+                    : (new Date(w.resetsAtMs).toISOString() as UtcTimestamp),
+              })),
             });
           } catch {
             // Un consommateur défaillant ne doit pas interrompre le flux d'événements.
@@ -497,11 +512,8 @@ export class ClaudeAdapter implements RuntimeAdapter {
         case "result": {
           session.result = { tokens: item.tokens };
           if (item.tokens !== null) {
-            const tokens = session.resumed
-              ? difference(item.tokens, session.record.reportedTotals)
-              : item.tokens;
-            this.#save(session, { ...session.record, reportedTotals: item.tokens });
-            session.result = { tokens };
+            // Mesuré avec 2.1.308 : après `--resume`, `modelUsage` ne couvre que cet appel.
+            const tokens = item.tokens;
             yield {
               type: "usage",
               sessionId,

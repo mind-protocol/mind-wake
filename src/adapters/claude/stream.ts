@@ -42,6 +42,27 @@ export interface ClaudeUsageLimitRow {
   readonly scope: string | null;
 }
 
+/** Fenêtre de `rate_limit_info.unifiedWindows` (champ observé, absent de la documentation). */
+export interface ClaudeRateLimitWindow {
+  readonly key: string;
+  /** Part utilisée, de 0 à 1 (0.44 observé pour 44 %). */
+  readonly utilization: number;
+  readonly resetsAtMs: number | null;
+}
+
+function rateLimitWindows(value: unknown): ClaudeRateLimitWindow[] {
+  const windows = object(value);
+  if (windows === null) return [];
+  const out: ClaudeRateLimitWindow[] = [];
+  for (const [key, raw] of Object.entries(windows)) {
+    const entry = object(raw);
+    const utilization = finite(entry?.["utilization"]);
+    if (utilization === null) continue;
+    out.push({ key, utilization, resetsAtMs: epochMs(entry?.["resetsAt"]) });
+  }
+  return out;
+}
+
 export type ClaudeStreamItem =
   | {
       readonly kind: "init";
@@ -67,6 +88,10 @@ export type ClaudeStreamItem =
       readonly resetsAtMs: number | null;
       readonly utilization: number | null;
       readonly creditsRequired: boolean;
+      /** Fenêtre concernée (`five_hour`…), observée en 2.1.308, non documentée. */
+      readonly rateLimitType: string | null;
+      /** `unifiedWindows`, observé en 2.1.308, non documenté : utilisation 0-1 par fenêtre. */
+      readonly windows: readonly ClaudeRateLimitWindow[];
     }
   | { readonly kind: "usage_report"; readonly limits: readonly ClaudeUsageLimitRow[] | null }
   | { readonly kind: "permission_denied"; readonly tool: string }
@@ -231,6 +256,8 @@ export function parseStreamLine(line: string): ClaudeStreamItem {
       resetsAtMs: epochMs(info?.["resetsAt"]),
       utilization: finite(info?.["utilization"]),
       creditsRequired: info?.["errorCode"] === "credits_required",
+      rateLimitType: text(info?.["rateLimitType"]),
+      windows: rateLimitWindows(info?.["unifiedWindows"]),
     };
   }
   if (type === "assistant") {

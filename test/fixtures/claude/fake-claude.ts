@@ -124,7 +124,7 @@ function init(): void {
   });
 }
 
-/** Totaux cumulés de la conversation, comme le CLI les rapporte après une reprise. */
+/** Usage du seul appel, reprise comprise, comme mesuré avec Claude Code 2.1.308. */
 function successResult(run: Totals): void {
   const totals: Totals = {
     input: previous.input + run.input,
@@ -139,10 +139,10 @@ function successResult(run: Totals): void {
     usage: { input_tokens: run.input, output_tokens: run.output },
     modelUsage: {
       "claude-opus": {
-        inputTokens: totals.input,
-        outputTokens: totals.output,
-        cacheReadInputTokens: totals.cacheRead,
-        cacheCreationInputTokens: totals.cacheCreation,
+        inputTokens: run.input,
+        outputTokens: run.output,
+        cacheReadInputTokens: run.cacheRead,
+        cacheCreationInputTokens: run.cacheCreation,
         webSearchRequests: 0,
         costUSD: 0,
         contextWindow: 200_000,
