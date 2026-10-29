@@ -5,6 +5,9 @@
   "description": "MIND Wake — local daemon and CLI giving an AI agent bounded spare compute (v0.1, in development).",
   "license": "UNLICENSED",
   "type": "module",
+  "bin": {
+    "mind-wake": "dist/cli/main.js"
+  },
   "engines": {
     "node": "^24.17.0 || ^26.13.0"
   },
