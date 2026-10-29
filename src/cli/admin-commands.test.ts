@@ -381,3 +381,53 @@ describe("uninstall", () => {
     expect(fs.existsSync(path.join(dataDir, "autre.txt"))).toBe(true);
   });
 });
+
+describe("enable en mode non isolé (ADR-006)", () => {
+  async function configuredHost(): Promise<{ revisionId: string; code: string }> {
+    await run("init");
+    const draft = draftWithoutIdentity();
+    const runtime = { ...(draft["runtime"] as Record<string, unknown>) };
+    const proposed = await run(
+      "policy",
+      "configure",
+      writeDraft({ ...draft, runtime: { ...runtime, hostUnsandboxedAcknowledged: true } }),
+    );
+    expect(proposed.json).toMatchObject({ ok: true, data: { status: "proposed" } });
+    return {
+      revisionId: String(proposed.json.data["revisionId"]),
+      code: String(proposed.json.data["confirmationCode"]),
+    };
+  }
+
+  it("n'exige plus l'isolation, exige toujours un adapter réel enregistré", async () => {
+    const { code } = await configuredHost();
+    const out: string[] = [];
+    const refused = await enable(
+      context(out),
+      { path: dataDir, source: "option" },
+      { revisionId: null, confirm: code, interactive: false },
+      { isolation: false, runtimeAdapter: false },
+    );
+    expect(refused.data).toMatchObject({ refusal: { code: "components_missing" } });
+    expect(refused.data.refusal?.detail).toMatch(/adapter runtime non livré/);
+    expect(refused.data.refusal?.detail).not.toMatch(/isolation/);
+  });
+
+  it("affiche l'exposé du risque avant la confirmation humaine", async () => {
+    const { code } = await configuredHost();
+    const out: string[] = [];
+    const result = await enable(
+      context(out, () => Promise.resolve(code)),
+      { path: dataDir, source: "option" },
+      { revisionId: null, confirm: null, interactive: true },
+      { isolation: false, runtimeAdapter: true },
+    );
+    expect(result.data).toMatchObject({ enabled: true, state: "ready" });
+    expect(out.join("")).toContain("MODE NON ISOLÉ");
+    const status = await run("status");
+    const caps = (status.json.data["capabilities"] as { id: string; detail: string }[]).find(
+      (c) => c.id === "isolation",
+    );
+    expect(caps?.detail).toMatch(/^NON ISOLÉ/);
+  });
+});

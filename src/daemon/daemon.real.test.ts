@@ -78,6 +78,8 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
     dir.remove();
   });
 
+  let lastAdapter: ProbeAdapter | null = null;
+
   function registry(options: Partial<ProbeAdapterOptions> = {}): AdapterRegistry {
     const registration: AdapterRegistration = {
       id: PROBE_ID,
@@ -98,6 +100,7 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
           quota: () => [snapshot(quotaUsed)],
           ...options,
         });
+        lastAdapter = adapter;
         const probe = adapter.probe.bind(adapter);
         adapter.probe = async () => ({
           ...(await probe()),
@@ -211,6 +214,73 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
       const summary = await running;
       expect(state).toBe("blocked");
       expect(summary.sessions).toHaveLength(0);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    "mode non isolé consenti : session sur l'hôte, ni sandbox ni autotest exigés",
+    async () => {
+      dir.remove();
+      dir = demoDir("mind-wake-host-");
+      seedSimulatedProfile(dir.path, {
+        runtimeAdapterId: PROBE_ID,
+        subscriptionQuota: GUARD,
+        hostUnsandboxed: true,
+      });
+      // Demande de réveil déposée par l'agent lors d'une session précédente.
+      const wakeupsDir = path.join(workspaceDirFor(dir.path), "wakeups");
+      fs.mkdirSync(wakeupsDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(wakeupsDir, "retest.json"),
+        JSON.stringify({
+          version: 1,
+          id: "retest-rule-110",
+          when: { at: "2026-01-01T00:00:00Z" },
+          prompt: "Re-run the rule 110 test and compare.",
+        }),
+      );
+      const lines: string[] = [];
+      const daemon = await WakeDaemon.open({
+        theme: "small emergent systems",
+        dataDir: dir.path,
+        profileId: PROFILE,
+        simulated: false,
+        registry: registry(),
+        runtimeDir: SHARED_RUNTIME_DIR,
+        recheckIntervalMs: 1_000,
+        exitAfterSessions: 1,
+        log: (line) => lines.push(line),
+      });
+      const summary = await daemon.run();
+      expect(summary.sessions[0]).toMatchObject({
+        outcome: "completed",
+        isolation: "host_unsandboxed",
+      });
+      expect(lines.some((l) => l.startsWith("[NON ISOLÉ]"))).toBe(true);
+      // Prompt de réveil composé et transmis par `context`, note de l'agent en place de relance.
+      const context = lastAdapter?.context ?? "";
+      expect(context).toContain("You are waking up in MIND Wake");
+      expect(context).toContain(`Your space: ${workspaceDirFor(dir.path)}.`);
+      expect(context).toContain("NOT ISOLATED");
+      expect(context).toContain("small emergent systems");
+      expect(context).toContain("> Re-run the rule 110 test and compare.");
+      expect(context).not.toMatch(/\{\{[a-z_]+\}\}/);
+      expect(fs.existsSync(path.join(wakeupsDir, "retest.json"))).toBe(false);
+      expect(fs.existsSync(path.join(wakeupsDir, "schema", "agent-wakeup.schema.json"))).toBe(true);
+      const store = openStoreReadOnly(controlDbPath(dir.path));
+      try {
+        expect(latestSelfTest(store.db, PROFILE)).toBeNull();
+        const events = store.uow.journal.list(PROFILE);
+        expect(events.find((e) => e.type === "daemon_started")?.metadata).toMatchObject({
+          isolation: "host_unsandboxed",
+        });
+        expect(events.findLast((e) => e.type === "session_ended")?.metadata).toMatchObject({
+          isolation: "host_unsandboxed",
+        });
+      } finally {
+        store.close();
+      }
     },
     TIMEOUT,
   );

@@ -25,20 +25,24 @@ export interface AuthorizationVerdict {
 
 /**
  * Confinement d'une session : `sandbox` (AppContainer + Job Object, autotest de refus
- * réussi), `job_only` (Job Object seul : adapter simulé), `none` (aucune session active).
+ * réussi), `host_unsandboxed` (NON ISOLÉ : poste hôte, Job Object seul pour l'arrêt
+ * d'urgence, consentement distinct ADR-006), `job_only` (adapter simulé), `none` (aucune
+ * session active). Un mode sans approbation n'est permis qu'en `sandbox` ou
+ * `host_unsandboxed`.
  */
-export type SessionIsolationMode = "sandbox" | "job_only" | "none";
+export type SessionIsolationMode = "sandbox" | "host_unsandboxed" | "job_only" | "none";
 
 export interface AdapterHost {
   /**
    * Seul moyen de lancer un processus de session : le runner peut toujours le terminer.
-   * Pour un adapter réel, le processus est lancé dans la sandbox. Lève `RunnerError`
-   * (`unattended_outside_sandbox`) si `command.unattended` est demandé hors sandbox.
+   * Pour un adapter réel, le processus est lancé dans la sandbox, ou sur l'hôte (Job Object)
+   * en mode non isolé consenti. Lève `RunnerError` (`unattended_outside_sandbox`) si
+   * `command.unattended` est demandé sans l'un ou l'autre.
    */
   spawnContained(sessionId: SessionId, command: ContainedCommand): SessionProcess;
   /** Décision `decideAction` revérifiée au moment de l'action, journalisée par le runner. */
   authorize(sessionId: SessionId, action: unknown): AuthorizationVerdict;
-  /** Confinement de la session : un mode sans approbation n'est permis qu'en `sandbox`. */
+  /** Confinement de la session : mode sans approbation permis en `sandbox` ou `host_unsandboxed`. */
   isolation(sessionId: SessionId): SessionIsolationMode;
 }
 

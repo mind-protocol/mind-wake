@@ -150,6 +150,11 @@ export function classifyChange(before: PolicyGroups | null, after: PolicyGroups)
 
   comparePaidApi(before, after, widened, restricted);
   compareSubscriptionQuota(before, after, widened, restricted);
+  // Mode non isolé (ADR-006) : l'accorder élargit, le retirer restreint.
+  const hostBefore = before.runtime.hostUnsandboxedAcknowledged === true;
+  const hostAfter = after.runtime.hostUnsandboxedAcknowledged === true;
+  if (!hostBefore && hostAfter) widened.push("runtime.hostUnsandboxedAcknowledged");
+  if (hostBefore && !hostAfter) restricted.push("runtime.hostUnsandboxedAcknowledged");
 
   const kind: ChangeSummary["kind"] =
     widened.length > 0 && restricted.length > 0

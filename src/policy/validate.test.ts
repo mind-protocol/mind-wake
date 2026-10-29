@@ -180,3 +180,23 @@ describe("validation d'un brouillon de policy", () => {
     expect(validateDraft(null, PROFILE).ok).toBe(false);
   });
 });
+
+describe("consentement au mode non isolé (ADR-006)", () => {
+  it("accepte true explicite ou l'absence, refuse toute autre valeur", () => {
+    const ok = validateDraft(
+      withFields(validDraft(), { "runtime.hostUnsandboxedAcknowledged": true }),
+      PROFILE,
+    );
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.groups.runtime.hostUnsandboxedAcknowledged).toBe(true);
+    const absent = validateDraft(validDraft(), PROFILE);
+    if (absent.ok) expect(absent.groups.runtime.hostUnsandboxedAcknowledged).toBeUndefined();
+    for (const value of [false, "true", 1]) {
+      const result = validateDraft(
+        withFields(validDraft(), { "runtime.hostUnsandboxedAcknowledged": value }),
+        PROFILE,
+      );
+      expect(result.ok).toBe(false);
+    }
+  });
+});

@@ -72,3 +72,7 @@ Le lancement exige en plus :
 Sur cette voie, la garde de quota est la borne : aucun plafond de tokens propre à Wake n'est exigé (`tokens.availability` n'est pas vérifiée ; les champs de tokens restent obligatoires dans le schéma mais ne bornent pas la session). La voie ne lève aucune autre condition : isolation, priorité humaine, annulation et sessions restent exigés. En session, une fenêtre qui atteint `stopAtBasisPoints`, ou une lecture absente, ancienne ou non mesurée, exige l'interruption. Aucun pourcentage n'est converti en tokens.
 
 Limite : le moteur traite une valeur non nulle de `overshootBoundBasisPoints` comme une borne consentie. Il ne peut pas vérifier que cette valeur vient d'une mesure validée, car le contrat ne porte aucune référence de mesure.
+
+## Mode non isolé (`runtime.hostUnsandboxedAcknowledged`, ADR-006)
+
+Absent par défaut ; seule la valeur `true` est valide. L'accorder est un élargissement (nouveau consentement humain via `enable`, qui affiche l'exposé du risque), le retirer une restriction appliquée aux sessions actives. Avec ce consentement, `decideLaunch` et l'évaluation en session n'exigent plus `sandboxOperational` ni `isolationCompatible` ; toutes les autres conditions (fenêtres, priorité humaine, pause, arrêt, garde de quota, budget, permissions) restent vérifiées.

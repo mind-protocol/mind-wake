@@ -37,3 +37,28 @@ export {
   recordDaemonStart,
 } from "./runs.js";
 export type { DaemonMode, DaemonRun } from "./runs.js";
+export {
+  DEFAULT_PROMPTS_DIR,
+  NUDGES,
+  WAKE_FIELDS,
+  agentNote,
+  chooseNudge,
+  composeWake,
+  describePermissions,
+  fillTemplate,
+  loadWakeTemplates,
+  nudgeFromNextAction,
+  previousNudge,
+  quotaStopText,
+  recordWakePrompt,
+  rotateNudge,
+} from "./wake-prompt.js";
+export type { Nudge, WakeComposition, WakeInputs, WakeTemplates } from "./wake-prompt.js";
+export {
+  AgentWakeups,
+  MAX_FILES,
+  MAX_WAKEUP_BYTES,
+  WAKEUP_SCHEMA_FILE,
+  WAKEUPS_SEGMENT,
+} from "./wakeups.js";
+export type { AgentWakeup, QuotaSource, WakeupRequest } from "./wakeups.js";

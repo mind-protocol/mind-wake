@@ -9,7 +9,8 @@
  * - Évaluation seulement en `ready` ou `hibernating` ; `disabled`, `paused`, `blocked`,
  *   `stopped`, `running` et `checkpointing` ne déclenchent rien.
  * - En `hibernating`, rien avant l'échéance persistée ; à l'échéance, une seule
- *   évaluation (pas de rattrapage des réveils manqués pendant une veille).
+ *   évaluation (pas de rattrapage des réveils manqués pendant une veille). Un réveil
+ *   demandé par l'agent (`wakeRequests`) peut avancer cette évaluation, jamais l'accorder.
  * - Refus en `ready` : attente temporaire → `hibernating`, intervention requise →
  *   `blocked`, arrêt verrouillé → `stopped`. Refus en `hibernating` : on y reste, et
  *   le motif n'est journalisé que s'il change (scheduler calme).
@@ -60,6 +61,7 @@ import type {
   SessionLauncher,
   SessionReport,
   UserPrioritySignal,
+  WakeRequestSource,
 } from "./ports.js";
 import type { SchedulerState, SchedulerStateRepository } from "./state.js";
 import { isWindowOpen, nextWindowOpening } from "./windows.js";
@@ -83,6 +85,8 @@ export interface SchedulerOptions {
   readonly environment: LaunchEnvironment;
   readonly priority: UserPrioritySignal;
   readonly launcher: SessionLauncher;
+  /** Réveils demandés par l'agent : échéances candidates seulement. */
+  readonly wakeRequests?: WakeRequestSource;
   /** Verrou d'instance du profil, déjà acquis. */
   readonly lock: InstanceLock;
   readonly backoff?: BackoffPolicy;
@@ -291,7 +295,19 @@ export class Scheduler {
     }
     const wake = parseTs(profile.nextWakeAt);
     if (profile.state === "hibernating" && wake !== null && wake > nowMs) {
-      return { kind: "sleeping", nextWakeAt: iso(wake) };
+      // Une demande de l'agent peut seulement avancer l'évaluation ; tout reste vérifié.
+      const source = this.#o.wakeRequests;
+      const requested =
+        source === undefined
+          ? undefined
+          : await guarded(() => source.nextRequestedWake(nowMs), this.#factTimeoutMs);
+      if (typeof requested !== "number" || !Number.isFinite(requested) || requested > nowMs) {
+        const next =
+          typeof requested === "number" && Number.isFinite(requested)
+            ? Math.min(wake, Math.max(requested, nowMs))
+            : wake;
+        return { kind: "sleeping", nextWakeAt: iso(next) };
+      }
     }
 
     const facts = await this.#gatherFacts();

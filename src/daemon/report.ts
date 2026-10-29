@@ -24,6 +24,8 @@ export interface SessionSummary {
   readonly tokens: number | null;
   readonly provenance: UsageProvenance | null;
   readonly simulated: boolean;
+  /** Confinement journalisé : `sandbox`, `host_unsandboxed` (NON ISOLÉ), `job_only`. */
+  readonly isolation: string | null;
   /** Borne de tokens réservée pour la session. */
   readonly reservedTokens: number | null;
   readonly reservationStatus: string | null;
@@ -37,6 +39,8 @@ export interface ExperimentReport {
     readonly status: string;
   };
   readonly simulated: boolean;
+  /** Au moins une session a tourné NON ISOLÉE sur le poste hôte (ADR-006). */
+  readonly unsandboxed: boolean;
   readonly sessions: readonly SessionSummary[];
   readonly checkpoints: readonly {
     readonly sequence: number;
@@ -66,6 +70,7 @@ interface SessionEnd {
   readonly tokens?: unknown;
   readonly provenance?: unknown;
   readonly simulated?: unknown;
+  readonly isolation?: unknown;
 }
 
 export function buildReport(
@@ -107,6 +112,7 @@ export function buildReport(
       tokens: typeof end?.tokens === "number" ? end.tokens : null,
       provenance: typeof end?.provenance === "string" ? (end.provenance as UsageProvenance) : null,
       simulated: end?.simulated === true || record.adapterId === "fake",
+      isolation: typeof end?.isolation === "string" ? end.isolation : null,
       reservedTokens: reserved?.unit === "tokens" ? reserved.amount : null,
       reservationStatus: reservation?.status ?? null,
     });
@@ -157,6 +163,7 @@ export function buildReport(
       status: experiment.status,
     },
     simulated,
+    unsandboxed: sessions.some((s) => s.isolation === "host_unsandboxed"),
     sessions,
     checkpoints: checkpoints.map((c) => ({
       sequence: c.sequence,
@@ -185,7 +192,7 @@ export function buildReport(
 /** Rendu humain ; chaque texte issu d'un checkpoint tient sur une ligne. */
 export function formatReport(report: ExperimentReport): string {
   const line = (text: string): string => text.replace(/\s+/g, " ").trim();
-  const tag = report.simulated ? " [SIMULÉ]" : "";
+  const tag = `${report.simulated ? " [SIMULÉ]" : ""}${report.unsandboxed ? " [NON ISOLÉ]" : ""}`;
   const c = report.consumption;
   return [
     `Bilan${tag} — ${line(report.experiment.title)} (${report.experiment.status})`,
@@ -193,7 +200,7 @@ export function formatReport(report: ExperimentReport): string {
     `Sessions : ${String(report.sessions.length)}, checkpoints : ${String(report.checkpoints.length)}`,
     ...report.sessions.map(
       (s) =>
-        `  - ${s.sessionId} : ${s.outcome ?? "en cours"} (${line(s.reason ?? "—")}), ${String(s.tokens ?? "?")} tokens ${s.provenance ?? "inconnus"} / borne réservée ${String(s.reservedTokens ?? "?")}`,
+        `  - ${s.sessionId} : ${s.outcome ?? "en cours"} (${line(s.reason ?? "—")}), ${String(s.tokens ?? "?")} tokens ${s.provenance ?? "inconnus"} / borne réservée ${String(s.reservedTokens ?? "?")}${s.isolation === "host_unsandboxed" ? " — NON ISOLÉE (poste hôte)" : ""}`,
     ),
     "Produit :",
     ...report.produced.artifacts.map(

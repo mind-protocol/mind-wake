@@ -618,3 +618,93 @@ describe("voie abonnement : déclenchement avant remise à zéro (ADR-005)", () 
     });
   });
 });
+
+describe("réveils demandés par l'agent : échéance candidate, jamais une autorisation", () => {
+  function withRequest(dueAt: () => number | null, seed: SeedOptions = {}): void {
+    setup(seed, {
+      overrides: { wakeRequests: { nextRequestedWake: () => Promise.resolve(dueAt()) } },
+    });
+    store.uow.profiles.setNextWake(PROFILE, iso(THURSDAY_10H_PARIS + 6 * HOUR));
+  }
+
+  it("avance un réveil permis : évaluation et lancement avant l'échéance persistée", async () => {
+    withRequest(() => THURSDAY_10H_PARIS - MINUTE, { state: "hibernating" });
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+    expect(b.launcher.tickets).toHaveLength(1);
+  });
+
+  it("une demande à venir raccourcit seulement la veille", async () => {
+    withRequest(() => THURSDAY_10H_PARIS + HOUR, { state: "hibernating" });
+    expect(await tickFresh()).toEqual({
+      kind: "sleeping",
+      nextWakeAt: iso(THURSDAY_10H_PARIS + HOUR),
+    });
+    expect(b.launcher.tickets).toHaveLength(0);
+  });
+
+  it("demande due hors fenêtre ou sous priorité humaine : toujours refusée", async () => {
+    withRequest(() => 0, { state: "hibernating", schedule: { weeklyWindows: [] } });
+    expect(await tickFresh()).toMatchObject({
+      kind: "denied",
+      decision: { reason: "outside_window" },
+    });
+    expect(b.launcher.tickets).toHaveLength(0);
+    b.close();
+    created = false;
+    store.close();
+    dir.remove();
+    dir = tempDir();
+    store = openStore(dir.dbPath);
+    withRequest(() => 0, { state: "hibernating" });
+    b.priority.set(false, b.clock.now());
+    expect(await b.scheduler.tick()).toMatchObject({
+      kind: "denied",
+      decision: { reason: "user_priority" },
+    });
+    expect(b.launcher.tickets).toHaveLength(0);
+  });
+
+  it("pendant une pause ou après un arrêt d'urgence : sans effet", async () => {
+    let asked = 0;
+    setup(
+      { state: "paused" },
+      {
+        overrides: {
+          wakeRequests: {
+            nextRequestedWake: () => {
+              asked += 1;
+              return Promise.resolve(0);
+            },
+          },
+        },
+      },
+    );
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "paused" });
+    transitionTo("stopped");
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "stopped" });
+    expect(b.launcher.tickets).toHaveLength(0);
+    expect(asked).toBe(0);
+  });
+
+  it("une source en erreur vaut « aucune demande »", async () => {
+    setup(
+      { state: "hibernating" },
+      {
+        overrides: {
+          wakeRequests: { nextRequestedWake: () => Promise.reject(new Error("illisible")) },
+        },
+      },
+    );
+    store.uow.profiles.setNextWake(PROFILE, iso(THURSDAY_10H_PARIS + 6 * HOUR));
+    expect(await tickFresh()).toMatchObject({ kind: "sleeping" });
+  });
+});
+
+function transitionTo(to: ProfileState): void {
+  store.uow.profiles.transition(PROFILE, {
+    from: state(),
+    to,
+    reason: "banc",
+    at: iso(THURSDAY_10H_PARIS),
+  });
+}

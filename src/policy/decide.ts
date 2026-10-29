@@ -78,6 +78,14 @@ export function decideActivation(policies: PolicyRepository, profileId: ProfileI
   return allow(resolution.revision.id, "activation.allowed");
 }
 
+/**
+ * Mode non isolé consenti (ADR-006) : l'isolation système n'est plus exigée, ni au
+ * lancement ni pendant la session. Toutes les autres conditions restent vérifiées.
+ */
+export function hostUnsandboxedConsented(groups: PolicyGroups): boolean {
+  return (groups.runtime.hostUnsandboxedAcknowledged as unknown) === true;
+}
+
 function unreachable(): never {
   throw new Error("policy: état de résolution incohérent");
 }
@@ -187,8 +195,11 @@ export function decideLaunch(
       : billingDenial(id, groups, consent.grantedAt, facts.billing, facts.budget);
   if (billingDeny !== null) return billingDeny;
 
+  const isolationFacts = hostUnsandboxedConsented(groups)
+    ? []
+    : ([[facts.sandboxOperational, "sandbox", "sandbox_unavailable"]] as const);
   for (const [value, name, reason] of [
-    [facts.sandboxOperational, "sandbox", "sandbox_unavailable"],
+    ...isolationFacts,
     [facts.windowOpen, "window", "outside_window"],
   ] as const) {
     const d = factDenial(id, value, name, reason);
@@ -260,7 +271,7 @@ function adapterDenial(
   if (!capabilities.userPrioritySignal) {
     return deny(id, "adapter_incompatible", "adapter.no_user_priority_signal");
   }
-  if (!capabilities.isolationCompatible) {
+  if (!capabilities.isolationCompatible && !hostUnsandboxedConsented(groups)) {
     return deny(id, "sandbox_unavailable", "adapter.isolation_incompatible");
   }
   return null;
@@ -561,8 +572,10 @@ function sessionChecksDenial(
   }
   const priority = priorityDenial(id, revision.groups, checks.now, checks.userPriority);
   if (priority !== null) return priority;
-  const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");
-  if (sandbox !== null) return sandbox;
+  if (!hostUnsandboxedConsented(revision.groups)) {
+    const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");
+    if (sandbox !== null) return sandbox;
+  }
   if (checks.onSubscription === false) return null;
   if (checks.onSubscription !== true) {
     return deny(id, "unknown_condition", "subscription.session_mode_unknown");

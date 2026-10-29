@@ -52,6 +52,8 @@ export interface DemoPolicyOptions {
   readonly runtimeAdapterId?: string;
   /** Garde de quota d'abonnement (voie ADR-004/ADR-005) ; absente par défaut. */
   readonly subscriptionQuota?: SubscriptionQuotaGuard;
+  /** Consentement au mode non isolé (ADR-006). */
+  readonly hostUnsandboxed?: boolean;
 }
 
 /** Policy de la démo : adapter factice, aucune dépense, écriture sous `artifacts/`. */
@@ -75,6 +77,7 @@ export function demoPolicy(options: DemoPolicyOptions = {}): PolicyGroups {
     runtime: {
       ...base.runtime,
       adapterId: (options.runtimeAdapterId ?? base.runtime.adapterId) as AdapterId,
+      ...(options.hostUnsandboxed === true ? { hostUnsandboxedAcknowledged: true } : {}),
     },
     schedule: { ...base.schedule, minIntervalBetweenSessionsMs: options.minIntervalMs ?? 1_500 },
   };

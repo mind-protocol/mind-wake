@@ -23,6 +23,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { FAKE_ADAPTER_ID, emergenceScenario, type FakeScenario } from "../adapters/fake/index.js";
 import {
+  utf8TokenBound,
   loadWakeMemory,
   openRoot,
   publishCheckpoint,
@@ -91,6 +92,14 @@ import {
 } from "./paths.js";
 import { defaultRegistry, type AdapterRegistration, type AdapterRegistry } from "./registry.js";
 import { closeAbandonedRuns, recordDaemonEnd, recordDaemonStart } from "./runs.js";
+import {
+  composeWake,
+  loadWakeTemplates,
+  previousNudge,
+  recordWakePrompt,
+  type WakeTemplates,
+} from "./wake-prompt.js";
+import { AgentWakeups, type QuotaSource } from "./wakeups.js";
 
 export class DaemonError extends Error {
   override readonly name = "DaemonError";
@@ -129,6 +138,10 @@ export interface DaemonOptions {
   readonly registry?: AdapterRegistry;
   /** Isolation du mode réel ; ignorée en mode simulé. */
   readonly isolation?: DaemonIsolation;
+  /** Thème facultatif suggéré par l'humain (`{{theme}}`) ; sinon « none ». */
+  readonly theme?: string;
+  /** Dossier des prompts de réveil ; par défaut `prompts/wake/` du dépôt. */
+  readonly promptsDir?: string;
   /** Veille maximale du scheduler entre deux tours (≥ 1 000 ms). */
   readonly recheckIntervalMs?: number;
   /** Arrêt propre après ce nombre de sessions terminées (démo, tests). */
@@ -182,11 +195,14 @@ interface SessionContext {
   scenario: FakeScenario | undefined;
 }
 
-/** Mode réel : adapter enregistré, sandbox, autotest à exécuter au démarrage. */
+/**
+ * Mode réel : adapter enregistré, sandbox et autotest à exécuter au démarrage, ou
+ * `sandbox: null` en mode NON ISOLÉ consenti par la policy (ADR-006).
+ */
 interface RealMode {
   readonly registration: AdapterRegistration;
   readonly probe: ProbeResult;
-  readonly sandbox: Sandbox;
+  readonly sandbox: Sandbox | null;
   readonly selfTest: () => Promise<IsolationSelfTestReport>;
   readonly runtimeRoots: readonly string[];
 }
@@ -208,6 +224,9 @@ export class WakeDaemon implements SessionLauncher {
   #readiness: SandboxReadiness = { ok: false, detail: "autotest de refus non exécuté" };
   #stopReason = "arrêt demandé";
   #scheduler: Scheduler | null = null;
+  readonly #templates: WakeTemplates;
+  readonly #wakeups: AgentWakeups;
+  #quota: QuotaSource | undefined;
 
   private constructor(
     options: DaemonOptions,
@@ -226,11 +245,21 @@ export class WakeDaemon implements SessionLauncher {
     fs.mkdirSync(artifactsDirFor(options.dataDir), { recursive: true });
     this.#root = openRoot(artifactsDirFor(options.dataDir));
     const workspaceDir = workspaceDirFor(options.dataDir);
+    this.#templates = loadWakeTemplates(options.promptsDir);
+    this.#wakeups = new AgentWakeups({
+      uow: store.uow,
+      db: store.db,
+      profileId: options.profileId,
+      workspaceDir,
+      schemaText: this.#templates.wakeupSchema,
+    });
     this.#runner = new SessionRunner({
       uow: store.uow,
       profileId: options.profileId,
       supervisor,
-      ...(real === null ? {} : { sandbox: this.#runnerSandbox(real, workspaceDir) }),
+      ...(real?.sandbox == null
+        ? {}
+        : { sandbox: this.#runnerSandbox(real.sandbox, real, workspaceDir) }),
       stopFlag: new StopFlag(options.dataDir),
       adapter: (host) =>
         registration.create({
@@ -250,11 +279,11 @@ export class WakeDaemon implements SessionLauncher {
     });
   }
 
-  #runnerSandbox(real: RealMode, workspaceDir: string): RunnerSandbox {
+  #runnerSandbox(sandbox: Sandbox, real: RealMode, workspaceDir: string): RunnerSandbox {
     fs.mkdirSync(workspaceDir, { recursive: true });
     return {
       ready: () => this.#readiness,
-      launch: (spec) => real.sandbox.launch(spec),
+      launch: (spec) => sandbox.launch(spec),
       workspaceDir,
       runtimeRoots: real.runtimeRoots,
       // Base de contrôle et dossier de données : jamais dans une racine accordée.
@@ -319,7 +348,10 @@ export class WakeDaemon implements SessionLauncher {
         registration = fake;
       } else {
         registration = realRegistration(registry, wanted);
-        real = await realMode(options, registration, runtimeDir);
+        const hostUnsandboxed =
+          resolution.status === "active" &&
+          resolution.revision.groups.runtime.hostUnsandboxedAcknowledged === true;
+        real = await realMode(options, registration, runtimeDir, hostUnsandboxed);
       }
       const supervisor = new ProcessTreeSupervisor(runtimeDir);
       if (!supervisor.status.available) {
@@ -338,7 +370,9 @@ export class WakeDaemon implements SessionLauncher {
   }
 
   #log(line: string): void {
-    this.#o.log?.(this.#real === null ? `[SIMULÉ] ${line}` : line);
+    const prefix =
+      this.#real === null ? "[SIMULÉ] " : this.#real.sandbox === null ? "[NON ISOLÉ] " : "";
+    this.#o.log?.(`${prefix}${line}`);
   }
 
   /**
@@ -349,10 +383,20 @@ export class WakeDaemon implements SessionLauncher {
   async #prepareIsolation(real: RealMode): Promise<void> {
     const { db, uow } = this.#store;
     const at = utcNow();
+    const sandbox = real.sandbox;
+    if (sandbox === null) {
+      this.#readiness = {
+        ok: false,
+        detail:
+          "mode NON ISOLÉ (ADR-006) : runtimes réels sur le poste hôte, accès complet au compte Windows ; sandbox non utilisée",
+      };
+      this.#log(`ATTENTION : ${this.#readiness.detail}`);
+      return;
+    }
     let report: IsolationSelfTestReport;
     try {
-      const profile = real.sandbox.ensureProfile();
-      if (profile.created) this.#log(`profil AppContainer ${real.sandbox.profile} créé`);
+      const profile = sandbox.ensureProfile();
+      if (profile.created) this.#log(`profil AppContainer ${sandbox.profile} créé`);
       report = await real.selfTest();
     } catch (error) {
       this.#readiness = {
@@ -362,7 +406,7 @@ export class WakeDaemon implements SessionLauncher {
       this.#log(this.#readiness.detail);
       return;
     }
-    const digest = real.sandbox.status.available ? real.sandbox.status.sourceDigest : null;
+    const digest = sandbox.status.available ? sandbox.status.sourceDigest : null;
     const record = selfTestRecordFor(this.#o.profileId, report, sandboxSourceDigest(), at);
     recordSelfTest(db, record);
     this.#readiness = selfTestValidFor(record, digest);
@@ -424,7 +468,8 @@ export class WakeDaemon implements SessionLauncher {
           pid: process.pid,
           mode,
           adapterId,
-          isolation: real === null ? "job_only" : "sandbox",
+          isolation:
+            real === null ? "job_only" : real.sandbox === null ? "host_unsandboxed" : "sandbox",
           ...(real === null ? {} : { adapterVersion: real.probe.version }),
           abandonedRuns: abandoned.map((r) => r.id),
         },
@@ -445,20 +490,26 @@ export class WakeDaemon implements SessionLauncher {
     this.#reconcileArtifacts();
     if (real !== null) await this.#prepareIsolation(real);
 
+    this.#wakeups.prepare();
+    const environment =
+      real === null
+        ? new SimulatedEnvironment(this.#runner.adapter, this.#registration.runtime())
+        : new RuntimeEnvironment(
+            this.#runner.adapter,
+            this.#registration.runtime(),
+            this.#registration.billing(),
+            () => this.#readiness.ok,
+          );
+    this.#quota =
+      environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
     const scheduler = new Scheduler({
       profileId,
       uow: this.#store.uow,
       state: new SqliteSchedulerStateRepository(db),
       clock: { now: () => Date.now(), monotonic: () => performance.now() },
-      environment:
-        real === null
-          ? new SimulatedEnvironment(this.#runner.adapter, this.#registration.runtime())
-          : new RuntimeEnvironment(
-              this.#runner.adapter,
-              this.#registration.runtime(),
-              this.#registration.billing(),
-              () => this.#readiness.ok,
-            ),
+      environment,
+      // Réveils demandés par l'agent : échéances candidates, jamais des autorisations.
+      wakeRequests: { nextRequestedWake: (now) => this.#wakeups.nextDue(now, this.#quota) },
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -537,7 +588,13 @@ export class WakeDaemon implements SessionLauncher {
         ? tokens.amount
         : (uow.policies.getRevision(ticket.policyRevisionId)?.groups.budget.tokensPerSession ?? 0);
     const maxInputTokens = Math.max(1, Math.floor(sessionTokens / 2));
-    const memory = this.#memory(experimentId, maxInputTokens);
+    // La consigne de réveil occupe une part du contexte ; la mémoire prend le reste. Le
+    // factice ignore le contexte : sa mémoire garde toute l'enveloppe (démo inchangée).
+    const promptBound = utf8TokenBound(this.#templates.base) + 2_048;
+    const memory = this.#memory(
+      experimentId,
+      this.#real === null ? maxInputTokens : Math.max(1, maxInputTokens - promptBound),
+    );
     const scenario: FakeScenario | undefined =
       this.#real !== null
         ? undefined
@@ -549,6 +606,7 @@ export class WakeDaemon implements SessionLauncher {
             lastCheckpoint: memory?.checkpoint?.sequence ?? null,
           }));
     const billing: BillingFacts = this.#registration.billing();
+    const wake = await this.#composeWake(ticket, memory, billing);
     this.#sessions.set(ticket.sessionId, {
       revisionId: ticket.policyRevisionId,
       experimentId,
@@ -569,7 +627,7 @@ export class WakeDaemon implements SessionLauncher {
           revisionId: ticket.policyRevisionId,
           reason: "launch.allowed",
         },
-        context: memory?.text ?? "",
+        context: wake,
         maxInputTokens,
         sessionPrepared: true,
         onSubscription: billing.kind === "subscription_quota",
@@ -598,6 +656,49 @@ export class WakeDaemon implements SessionLauncher {
       this.requestStop(`${String(limit)} session(s) terminée(s) (--exit-after-sessions)`);
     }
     return reportFor(result);
+  }
+
+  /**
+   * Prompt de réveil : `base.md` rempli depuis la policy effective et la session, une
+   * relance (ou la note d'une demande de réveil de l'agent), puis le bloc de mémoire.
+   */
+  async #composeWake(
+    ticket: LaunchTicket,
+    memory: WakeMemory | null,
+    billing: BillingFacts,
+  ): Promise<string> {
+    const { uow, db } = this.#store;
+    const revision = uow.policies.getRevision(ticket.policyRevisionId);
+    if (revision === null) return memory?.text ?? "";
+    const agentWakeup = await this.#wakeups.takeDue(Date.now(), this.#quota);
+    const isolation =
+      this.#real === null
+        ? "job_only"
+        : revision.groups.runtime.hostUnsandboxedAcknowledged === true
+          ? "host_unsandboxed"
+          : "sandbox";
+    const composition = composeWake({
+      templates: this.#templates,
+      revision,
+      isolation,
+      onSubscription: billing.kind === "subscription_quota",
+      workspaceDir: workspaceDirFor(this.#o.dataDir),
+      wakeupsDir: this.#wakeups.dir,
+      wakeupsSchema: this.#wakeups.schemaPath,
+      sessionEnd: ticket.deadline,
+      theme: this.#o.theme ?? null,
+      memory: memory === null || memory.status === "empty" ? null : memory.text,
+      nextAction: memory?.included.find((i) => i.section === "next_action")?.text ?? null,
+      previousNudge: previousNudge(db, this.#o.profileId),
+      agentWakeup,
+    });
+    recordWakePrompt(db, this.#o.profileId, ticket.sessionId, composition, utcNow());
+    this.#log(
+      composition.agentWakeupId === null
+        ? `réveil : relance « ${composition.nudge ?? "—"} » (${composition.source})`
+        : `réveil : demande de l'agent « ${composition.agentWakeupId} » à la place de la relance`,
+    );
+    return composition.text;
   }
 
   #memory(experimentId: ExperimentId | null, maxInputTokens: number): WakeMemory | null {
@@ -731,6 +832,7 @@ async function realMode(
   options: DaemonOptions,
   registration: AdapterRegistration,
   runtimeDir: string,
+  hostUnsandboxed: boolean,
 ): Promise<RealMode> {
   // Adapter construit hors runner, pour le seul probe : aucun processus ne peut être lancé.
   const probeOnly: RuntimeAdapter = registration.create({
@@ -765,8 +867,9 @@ async function realMode(
     );
   }
   const isolation = options.isolation;
-  const sandbox = isolation?.sandbox ?? new Sandbox(runtimeDir);
-  if (!sandbox.status.available) {
+  // Mode non isolé consenti (ADR-006) : la sandbox reste disponible mais n'est pas exigée.
+  const sandbox = hostUnsandboxed ? null : (isolation?.sandbox ?? new Sandbox(runtimeDir));
+  if (sandbox !== null && !sandbox.status.available) {
     throw new DaemonError(
       "sandbox_unavailable",
       `isolation indisponible : ${sandbox.status.reason}`,

@@ -1136,3 +1136,67 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     });
   });
 });
+
+describe("mode non isolé consenti (ADR-006)", () => {
+  const hostDraft = () => withFields(validDraft(), { "runtime.hostUnsandboxedAcknowledged": true });
+  const noSandbox = (f: LaunchFacts): LaunchFacts => ({
+    ...f,
+    sandboxOperational: false,
+    adapter: { probe, capabilities: { ...capabilities, isolationCompatible: false }, runtime },
+  });
+
+  it("sans consentement : isolation exigée au lancement", () => {
+    const { store } = launchStore();
+    expect(decideLaunch(store.policies, PROFILE, noSandbox(favorableFacts()))).toMatchObject({
+      verdict: "deny",
+      reason: "sandbox_unavailable",
+    });
+  });
+
+  it("avec consentement : lancement sans sandbox, autres conditions toujours vérifiées", () => {
+    const { store } = launchStore(hostDraft());
+    expect(decideLaunch(store.policies, PROFILE, noSandbox(favorableFacts())).verdict).toBe(
+      "allow",
+    );
+    expect(
+      decideLaunch(store.policies, PROFILE, {
+        ...noSandbox(favorableFacts()),
+        userPriority: { favorable: false, observedAt: NOW },
+      }),
+    ).toMatchObject({ verdict: "deny", reason: "user_priority" });
+    expect(
+      decideLaunch(store.policies, PROFILE, { ...noSandbox(favorableFacts()), windowOpen: false }),
+    ).toMatchObject({ verdict: "deny", reason: "outside_window" });
+  });
+
+  it("en session : sandbox non exigée avec consentement, exigée sinon", () => {
+    for (const [draft, expected] of [
+      [hostDraft(), false],
+      [validDraft(), true],
+    ] as const) {
+      const s = memoryStore();
+      const revision = activate(s, draft);
+      const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
+      expect(
+        assessActiveSession(s.policies, RUNNING, session, {
+          ...CHECKS,
+          sandboxOperational: false,
+        }).interruptSession,
+      ).toBe(expected);
+    }
+  });
+
+  it("accorder le mode non isolé élargit (nouveau consentement), le retirer restreint", () => {
+    const s = memoryStore();
+    activate(s, validDraft());
+    const widened = proposeRevision(s, {
+      revisionId: revId(900),
+      profileId: PROFILE,
+      at: NOW,
+      draft: hostDraft(),
+    });
+    expect(widened).toMatchObject({
+      change: { kind: "widening", widened: ["runtime.hostUnsandboxedAcknowledged"] },
+    });
+  });
+});

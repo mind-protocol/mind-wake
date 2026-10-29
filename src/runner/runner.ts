@@ -222,7 +222,7 @@ interface ActiveSession {
   readonly reservation: Reservation;
   /** Borne de tokens réservée ; `null` sur la voie abonnement (garde de quota). */
   readonly maxTokens: number | null;
-  readonly confined: boolean;
+  readonly isolation: Exclude<SessionIsolationMode, "none">;
   readonly onSubscription: boolean;
   /** Dernière lecture de la jauge ; absente = inconnue, donc interruption. */
   quota: readonly ProviderQuotaSnapshot[] | undefined;
@@ -289,7 +289,7 @@ export class SessionRunner {
       isolation: (sessionId) => {
         const session = this.#active;
         if (session?.grant.sessionId !== sessionId) return "none";
-        return session.confined ? "sandbox" : "job_only";
+        return session.isolation;
       },
     };
     this.adapter = deps.adapter(this.host);
@@ -330,9 +330,17 @@ export class SessionRunner {
     if (!probe.available || probe.adapterId !== this.adapter.id) {
       throw new RunnerError("adapter_unavailable", "adapter indisponible ou non conforme");
     }
-    // Un adapter réel ne tourne que confiné, autotest de refus réussi (AGENTS §3.6).
-    const confined = !probe.simulated;
-    if (confined) {
+    // Un adapter réel tourne confiné, autotest de refus réussi (AGENTS §3.6), sauf
+    // consentement distinct au mode non isolé (ADR-006) : sur l'hôte, Job Object seul.
+    const hostConsent =
+      this.#uow.policies.getRevision(decision.revisionId)?.groups.runtime
+        .hostUnsandboxedAcknowledged === true;
+    const isolation: ActiveSession["isolation"] = probe.simulated
+      ? "job_only"
+      : hostConsent
+        ? "host_unsandboxed"
+        : "sandbox";
+    if (isolation === "sandbox") {
       if (this.#sandbox === undefined) {
         throw new RunnerError("sandbox_unavailable", "isolation requise pour un adapter réel");
       }
@@ -429,13 +437,17 @@ export class SessionRunner {
         sessionId: grant.sessionId,
         ...(grant.experimentId === null ? {} : { experimentId: grant.experimentId }),
         policyRevisionId: revision.id,
-        reason: probe.simulated ? "session SIMULÉE lancée" : "session lancée",
+        reason: probe.simulated
+          ? "session SIMULÉE lancée"
+          : isolation === "host_unsandboxed"
+            ? "session lancée NON ISOLÉE sur le poste hôte (ADR-006)"
+            : "session lancée dans la sandbox",
         metadata: {
           adapterId: this.adapter.id,
           simulated: probe.simulated,
           reservationId: reservation.id,
           maxTokens: tokens?.amount ?? null,
-          isolation: confined ? "sandbox" : "job_only",
+          isolation,
           onSubscription,
         },
       });
@@ -457,7 +469,7 @@ export class SessionRunner {
       revision: ready.revision,
       reservation: ready.reservation,
       maxTokens: ready.maxTokens,
-      confined,
+      isolation,
       onSubscription,
       quota: undefined,
       startSequence: ready.startSequence,
@@ -564,7 +576,8 @@ export class SessionRunner {
     if (session?.grant.sessionId !== sessionId || session.halted || session.process !== null) {
       throw new RunnerError("spawn_refused", "lancement de processus hors de la session active");
     }
-    if (command.unattended === true && !session.confined) {
+    // Mode sans approbation : dans la sandbox, ou sur l'hôte avec consentement (ADR-006).
+    if (command.unattended === true && session.isolation === "job_only") {
       this.#journal.record({
         type: "action_denied",
         at: utc(this.#nowMs()),
@@ -580,10 +593,10 @@ export class SessionRunner {
       });
       throw new RunnerError(
         "unattended_outside_sandbox",
-        "mode sans approbation refusé hors de la sandbox (ADR-005)",
+        "mode sans approbation refusé hors de la sandbox sans consentement au mode non isolé (ADR-005, ADR-006)",
       );
     }
-    if (session.confined) {
+    if (session.isolation === "sandbox") {
       const sandbox = this.#sandbox;
       const readiness = sandbox?.ready();
       if (sandbox === undefined || readiness?.ok !== true) {
@@ -963,7 +976,7 @@ export class SessionRunner {
     }
 
     const simulated = this.#probe?.simulated === true;
-    const isolation = session.confined ? "sandbox" : "job_only";
+    const isolation = session.isolation;
     const provenance: UsageProvenance =
       reconciled?.status === "confirmed"
         ? simulated

@@ -153,11 +153,28 @@ export function isolationCapability(
       };
 }
 
+/** Mode NON ISOLÉ consenti (ADR-006) : affiché tel quel, jamais comme une isolation. */
+function unsandboxedCapability(isolation: IsolationAssessment | undefined): Capability {
+  const sandbox =
+    isolation === undefined
+      ? "sandbox non vérifiée"
+      : isolation.passed
+        ? "sandbox vérifiée mais non utilisée"
+        : "sandbox en échec";
+  return {
+    id: "isolation",
+    availability: "experimental",
+    detail: `NON ISOLÉ (ADR-006, consentement distinct) : runtimes réels sur le poste hôte avec leurs options sans approbation, accès complet au compte Windows ; arrêt d'urgence (Job Object), pause, priorité humaine et garde de quota restent imposés (${sandbox})`,
+    blockers: [],
+  };
+}
+
 export function capabilities(
   persistence: Persistence | null,
   activePolicy: PolicyRevision | null,
   isolation?: IsolationAssessment,
 ): readonly Capability[] {
+  const hostUnsandboxed = activePolicy?.groups.runtime.hostUnsandboxedAcknowledged === true;
   const notImplemented = (id: CapabilityId, detail: string): Capability => ({
     id,
     availability: "not_implemented",
@@ -216,7 +233,7 @@ export function capabilities(
           blockers: [],
         }
       : notImplemented("daemon", "aucun daemon"),
-    isolationCapability(isolation),
+    hostUnsandboxed ? unsandboxedCapability(isolation) : isolationCapability(isolation),
     BUILD_COMPONENTS.simulatedAdapter
       ? {
           id: "simulated_adapter",
@@ -240,7 +257,7 @@ export function capabilities(
     notImplemented("api_key_path", "voie clé API (ADR-002) non implémentée"),
     subscriptionPath(activePolicy?.groups.budget.subscriptionQuota, {
       adapter: BUILD_COMPONENTS.runtimeAdapter,
-      isolation: isolation?.passed === true,
+      isolation: isolation?.passed === true || hostUnsandboxed,
     }),
   ];
 }

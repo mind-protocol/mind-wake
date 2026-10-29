@@ -293,6 +293,53 @@ describe.runIf(WINDOWS)("runner sous sandbox réelle (AppContainer + Job Object)
     expect(store.uow.sessions.listOpen(PROFILE)).toHaveLength(0);
   });
 
+  describe("mode non isolé consenti (ADR-006)", () => {
+    beforeEach(() => {
+      sandbox.deleteProfile();
+      store.close();
+      data.remove();
+      open({ runtime: { adapterId: PROBE_ID, hostUnsandboxedAcknowledged: true } });
+    });
+
+    it(
+      "lance sur l'hôte dans un Job Object, sans sandbox, mode sans approbation permis",
+      async () => {
+        const escape = path.join(outside, `host-${String(process.pid)}.txt`);
+        const r = runner(
+          { executable: probeExe, args: ["probe", `write:${escape}`], unattended: true },
+          { sandbox: false },
+        );
+        const result = await (await r.launch(reserve(store, TOKENS_AND_SESSION))).done;
+        expect(result).toMatchObject({ outcome: "completed", isolation: "host_unsandboxed" });
+        // Non isolé : l'écriture hors de l'espace d'exploration réussit (ADR-006).
+        expect(probeAdapter().op("write")).toMatchObject({ ok: true, code: 0 });
+        fs.rmSync(escape, { force: true });
+        const started = store.uow.journal.list(PROFILE).find((e) => e.type === "session_started");
+        expect(started?.reason).toMatch(/NON ISOLÉE/);
+        expect(started?.metadata).toMatchObject({ isolation: "host_unsandboxed" });
+      },
+      TIMEOUT,
+    );
+
+    it(
+      "arrêt d'urgence : l'arborescence hôte est terminée sans coopération",
+      async () => {
+        const r = runner(
+          { executable: probeExe, args: ["probe", "sleep:60000"], unattended: true },
+          { sandbox: false },
+        );
+        const running = await r.launch(reserve(store, TOKENS_AND_SESSION));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const stop = await r.stop();
+        expect(stop.termination).toMatchObject({ confirmed: true });
+        expect(stop.termination?.elapsedMs).toBeLessThan(1_000);
+        const result = await running.done;
+        expect(result).toMatchObject({ outcome: "interrupted", reason: "kill_switch" });
+      },
+      TIMEOUT,
+    );
+  });
+
   describe("voie abonnement : jauge relue pendant la session", () => {
     beforeEach(() => {
       // Remplace le banc par défaut : la policy porte la garde de quota.

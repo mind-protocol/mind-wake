@@ -51,6 +51,8 @@ export class ProbeAdapter implements RuntimeAdapter, QuotaReadable {
   readonly id = PROBE_ID;
   readonly lines: ProbeLine[] = [];
   process: SessionProcess | null = null;
+  /** Contexte reçu au lancement (prompt de réveil composé par le daemon). */
+  context: string | null = null;
 
   constructor(
     private readonly host: AdapterHost,
@@ -83,6 +85,7 @@ export class ProbeAdapter implements RuntimeAdapter, QuotaReadable {
   }
 
   start(request: StartRequest): Promise<SessionHandle> {
+    this.context = request.context;
     this.process = this.host.spawnContained(request.sessionId, {
       executable: this.o.executable,
       args: this.o.args,

@@ -6,9 +6,14 @@ Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câbla
 
 `RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Ce build n'enregistre que l'adapter factice (`defaultRegistry`) ; les adapters réels s'y ajoutent à leur fusion.
 
+## Prompt de réveil et réveils demandés par l'agent
+
+À chaque lancement, `wake-prompt.ts` compose `prompts/wake/base.md` (champs remplis depuis la révision effective et le ticket), une relance ou la note d'une demande de l'agent, et le bloc de mémoire ; le texte part dans `context`. `wakeups.ts` lit `workspace/wakeups/*.json` : validation fermée, confinement, archivage, échéances candidates transmises au scheduler (`wakeRequests`), jamais une autorisation. Règles détaillées : `prompts/wake/README.md`.
+
 ## Mode réel (`daemon run` sans `--simulated`)
 
-1. Policy active désignant un adapter **enregistré** et non simulé (sinon `real_adapter_missing` ou `runtime_mismatch`) ; `probe` disponible (sinon `adapter_unavailable`) ; lanceur confiné constructible (sinon `sandbox_unavailable`).
+1. Policy active désignant un adapter **enregistré** et non simulé (sinon `real_adapter_missing` ou `runtime_mismatch`) ; `probe` disponible (sinon `adapter_unavailable`) ; lanceur confiné constructible (sinon `sandbox_unavailable`), sauf en mode non isolé.
+   **Mode NON ISOLÉ (ADR-006)** : si la révision porte `runtime.hostUnsandboxedAcknowledged: true` (consentement distinct, accordé seulement par `enable` avec confirmation humaine et exposé du risque), ni sandbox ni autotest ne sont exigés ; les sessions tournent sur le poste hôte dans un Job Object (arrêt d'urgence), journal `isolation: "host_unsandboxed"`, sortie préfixée `[NON ISOLÉ]`, bilans marqués « NON ISOLÉ ».
 2. Au démarrage de `run` : profil AppContainer `mindwake.sandbox` créé s'il manque, puis **autotest de refus** complet (`runIsolationSelfTest`, ≈ 4 s), consigné dans `isolation_self_tests` (migration 4) et journalisé. L'isolation n'est prête que s'il réussit, nettoyage vérifié, pour l'empreinte du lanceur ; sinon le scheduler refuse (`sandbox_unavailable`, profil `blocked`).
 3. `RuntimeEnvironment` : faits de l'adapter, isolation prête, facturation de l'enregistrement, jauge officielle (`QuotaReadable.readQuota`) pour la voie abonnement. Le ticket est lancé avec `onSubscription` : le runner relit la jauge et interrompt au seuil d'arrêt.
 4. Sessions dans la sandbox (`src/runner/sandboxing.ts`), racines de la policy sous `<données>/workspace`, base de contrôle et dossier de données protégés.

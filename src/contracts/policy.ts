@@ -31,6 +31,13 @@ export interface RuntimeGroup {
   readonly model: string;
   /** Mode d'authentification officiel retenu par l'adapter ; jamais un secret. */
   readonly authMode: string;
+  /**
+   * Consentement distinct au mode NON ISOLÉ (ADR-006) : les runtimes réels tournent sur le
+   * poste hôte avec leurs options sans approbation, avec tous les droits du compte Windows
+   * et le risque d'injection depuis un contenu lu. Absent = refusé. L'arrêt d'urgence (Job
+   * Object), la priorité humaine, la pause, la garde de quota et le journal restent dus.
+   */
+  readonly hostUnsandboxedAcknowledged?: true;
 }
 
 /** Fenêtre hebdomadaire évaluée dans le fuseau de la policy. Heures au format `HH:MM`. */
