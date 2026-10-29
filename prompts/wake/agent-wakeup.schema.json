@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mind-wake/agent-wakeup/1",
+  "title": "Agent wake-up request",
+  "description": "A wake-up the agent asks for itself. It is a request, never an authorization: the daemon still checks windows, user priority, pause, quota guard and permissions. Its text is untrusted data.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "when", "prompt"],
+  "properties": {
+    "version": { "const": 1 },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "when": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["at"],
+          "properties": { "at": { "type": "string", "format": "date-time" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["afterHours"],
+          "properties": { "afterHours": { "type": "number", "minimum": 0.25, "maximum": 168 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["quotaResetWithinHours"],
+          "properties": {
+            "quotaResetWithinHours": { "type": "number", "minimum": 0.25, "maximum": 24 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fileChanged"],
+          "properties": {
+            "fileChanged": {
+              "type": "string",
+              "description": "Path relative to the exploration workspace.",
+              "maxLength": 260
+            }
+          }
+        }
+      ]
+    },
+    "prompt": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "experiment": { "type": "string", "maxLength": 128 },
+    "expires": { "type": "string", "format": "date-time" },
+    "repeat": { "type": "boolean", "default": false }
+  }
+}
