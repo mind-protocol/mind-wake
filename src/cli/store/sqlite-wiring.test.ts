@@ -26,8 +26,11 @@ afterEach(() => {
 
 async function run(...argv: string[]): Promise<{ code: number; json: Record<string, unknown> }> {
   const out: string[] = [];
+  // Sans autotest d'isolation : il crée un profil AppContainer réel et relève des tests de `src/sandbox/`.
+  const base = { ...processContext() };
+  Reflect.deleteProperty(base, "isolationSelfTest");
   const ctx: CliContext = {
-    ...processContext(),
+    ...base,
     stdout: (text) => out.push(text),
     stderr: () => undefined,
     env: {},
