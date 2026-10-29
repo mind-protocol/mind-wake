@@ -17,6 +17,8 @@
     "test": "vitest run",
     "demo:advice": "node --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts services/advice/demo/main.ts",
     "demo:wake": "node --experimental-transform-types --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts test/demo/demo-simulee.ts",
+    "desktop:ui": "tsc -p desktop/ui/tsconfig.json",
+    "desktop": "npm run build && npm run desktop:ui && cargo run --manifest-path desktop/src-tauri/Cargo.toml",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write ."
   },
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@tauri-apps/cli": "2.12.4",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "24.19.2",
     "eslint": "10.13.0",

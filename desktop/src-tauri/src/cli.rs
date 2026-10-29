@@ -1,0 +1,220 @@
+//! Appel des CLI locales : seul chemin du panneau vers Wake (`mind-wake`) et vers les fils
+//! privés de l'humain (`services/mcp/owner-main.ts`). Le panneau n'ouvre ni SQLite, ni
+//! port, ni pipe ; il exécute une sous-commande d'une liste fermée avec `--json` et rend
+//! la sortie telle quelle. Les permissions restent imposées par la CLI, le hub et le
+//! policy engine, pas par cette interface (SPEC §21.4, ADR-007).
+
+use std::ffi::OsString;
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
+
+/// Au-delà, la commande est terminée et le panneau affiche « état indisponible ».
+const TIMEOUT: Duration = Duration::from_secs(15);
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CliRun {
+    pub exit_code: i32,
+    pub stdout: String,
+}
+
+/// Sous-commandes `mind-wake` autorisées.
+#[derive(Clone, Copy)]
+pub enum Verb {
+    Status,
+    Journal,
+    Pause,
+    Resume,
+    Stop,
+    Wake,
+}
+
+impl Verb {
+    fn args(self) -> &'static [&'static str] {
+        match self {
+            Verb::Status => &["status"],
+            Verb::Journal => &["journal", "--limit", "1000"],
+            Verb::Pause => &["pause"],
+            Verb::Resume => &["resume"],
+            Verb::Stop => &["stop"],
+            Verb::Wake => &["wake"],
+        }
+    }
+}
+
+fn env_path(name: &str) -> Option<PathBuf> {
+    std::env::var_os(name).filter(|v| !v.is_empty()).map(PathBuf::from)
+}
+
+fn repo() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+/// `MIND_WAKE_NODE` (chemin absolu de node.exe) sinon `node` du PATH.
+fn node() -> PathBuf {
+    env_path("MIND_WAKE_NODE").unwrap_or_else(|| PathBuf::from("node"))
+}
+
+/// `MIND_WAKE_CLI` sinon `dist/cli/main.js` du dépôt. Défaut de développement seulement :
+/// le paquet distribué fixera ses chemins (F5).
+fn wake_script() -> PathBuf {
+    env_path("MIND_WAKE_CLI").unwrap_or_else(|| repo().join("dist/cli/main.js"))
+}
+
+/// `MIND_OWNER_CLI` sinon `services/mcp/owner-main.ts`, exécuté depuis les sources comme
+/// le hub (type stripping et hooks de résolution du dépôt).
+fn owner_command() -> Vec<OsString> {
+    let script = env_path("MIND_OWNER_CLI").unwrap_or_else(|| repo().join("services/mcp/owner-main.ts"));
+    let hooks = repo().join("test/fixtures/store-ledger/ts-hooks.ts");
+    let hooks_url = format!("file:///{}", hooks.to_string_lossy().replace('\\', "/").trim_start_matches('/'));
+    vec![
+        "--disable-warning=ExperimentalWarning".into(),
+        "--experimental-transform-types".into(),
+        "--import".into(),
+        hooks_url.into(),
+        script.into(),
+    ]
+}
+
+pub fn wake(verb: Verb) -> Result<CliRun, String> {
+    let script = wake_script();
+    if !script.is_file() {
+        return Err(format!(
+            "CLI introuvable ({}) : lancer `npm run build` ou définir MIND_WAKE_CLI",
+            script.display()
+        ));
+    }
+    let mut args: Vec<OsString> = vec![script.into()];
+    args.extend(verb.args().iter().map(OsString::from));
+    run(args, None)
+}
+
+/// Requête vers les fils de l'humain. Les identifiants viennent du webview : formats
+/// vérifiés ici, puis de nouveau par la CLI et le hub.
+pub enum OwnerRequest {
+    Threads,
+    Thread { thread_id: String },
+    Reply { thread_id: String, in_reply_to: Option<String>, idempotency_key: String, text: String },
+}
+
+fn opaque(value: &str, prefix: &str) -> bool {
+    let Some(rest) = value.strip_prefix(prefix) else { return false };
+    (8..=64).contains(&rest.len()) && rest.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+}
+
+fn idempotency_key(value: &str) -> bool {
+    (8..=128).contains(&value.len())
+        && value.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'_' | b'.' | b':' | b'-'))
+}
+
+pub fn owner(request: OwnerRequest) -> Result<CliRun, String> {
+    let mut args = owner_command();
+    let mut stdin = None;
+    match request {
+        OwnerRequest::Threads => args.push("threads".into()),
+        OwnerRequest::Thread { thread_id } => {
+            if !opaque(&thread_id, "thr_") {
+                return Err("identifiant de fil invalide".into());
+            }
+            args.extend(["thread".into(), "--thread".into(), thread_id.into()]);
+        }
+        OwnerRequest::Reply { thread_id, in_reply_to, idempotency_key: key, text } => {
+            if !opaque(&thread_id, "thr_") || !idempotency_key(&key) {
+                return Err("identifiant de fil ou clé d'idempotence invalide".into());
+            }
+            if in_reply_to.as_deref().is_some_and(|m| !opaque(m, "msg_")) {
+                return Err("message cité invalide".into());
+            }
+            args.extend([
+                "reply".into(),
+                "--thread".into(),
+                thread_id.into(),
+                "--idempotency-key".into(),
+                key.into(),
+            ]);
+            if let Some(cited) = in_reply_to {
+                args.extend(["--in-reply-to".into(), cited.into()]);
+            }
+            // Le texte passe par l'entrée standard, jamais en argument.
+            stdin = Some(text);
+        }
+    }
+    run(args, stdin)
+}
+
+fn run(mut args: Vec<OsString>, stdin: Option<String>) -> Result<CliRun, String> {
+    args.push("--json".into());
+    let mut command = Command::new(node());
+    command
+        .args(&args)
+        .stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() })
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    // MIND_WAKE_DATA_DIR, MIND_MCP_HUB_PIPE et MIND_MCP_LINK_KEY sont hérités tels quels.
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    let mut child = command.spawn().map_err(|e| format!("impossible de lancer node : {e}"))?;
+    if let Some(text) = stdin {
+        let mut pipe = child.stdin.take().ok_or("entrée de la CLI indisponible")?;
+        pipe.write_all(text.as_bytes()).map_err(|e| format!("écriture impossible : {e}"))?;
+    }
+    let mut stdout = child.stdout.take().ok_or("sortie de la CLI indisponible")?;
+    let reader = std::thread::spawn(move || {
+        let mut out = String::new();
+        stdout.read_to_string(&mut out).map(|_| out)
+    });
+
+    let started = Instant::now();
+    let status = loop {
+        match child.try_wait().map_err(|e| e.to_string())? {
+            Some(status) => break status,
+            None if started.elapsed() > TIMEOUT => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("la CLI n'a pas répondu en {} s", TIMEOUT.as_secs()));
+            }
+            None => std::thread::sleep(Duration::from_millis(20)),
+        }
+    };
+    let stdout = reader
+        .join()
+        .map_err(|_| "lecture de la sortie interrompue".to_string())?
+        .map_err(|e| format!("sortie illisible : {e}"))?;
+    if stdout.trim().is_empty() {
+        return Err(format!("la CLI n'a rien renvoyé (code {:?})", status.code()));
+    }
+    Ok(CliRun { exit_code: status.code().unwrap_or(-1), stdout })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn formats_d_identifiants() {
+        assert!(opaque("thr_abcdEFGH12", "thr_"));
+        assert!(!opaque("thr_abc", "thr_"));
+        assert!(!opaque("msg_abcdefgh12", "thr_"));
+        assert!(!opaque("thr_abcdefgh;rm", "thr_"));
+        assert!(idempotency_key("ui-1234-abcd"));
+        assert!(!idempotency_key("court"));
+        assert!(!idempotency_key("ui 1234 abcd"));
+    }
+
+    #[test]
+    fn reponse_refusee_avant_tout_lancement() {
+        let refused = owner(OwnerRequest::Reply {
+            thread_id: "thr_bad id!!".into(),
+            in_reply_to: None,
+            idempotency_key: "ui-12345678".into(),
+            text: "x".into(),
+        });
+        assert!(refused.is_err());
+    }
+}

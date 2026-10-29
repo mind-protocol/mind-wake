@@ -91,6 +91,17 @@ Ces modules ne sont pas inclus dans `npm run build` (qui ne compile que `src/`) 
    node --experimental-transform-types --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts services/mcp/hub-main.ts --config ../hub.json --dir ../mind-mcp-data --pipe \\.\pipe\mind-mcp
    ```
 
+## Fils de l'humain en ligne de commande
+
+`owner-main.ts` donne à la partie humaine les actions de l'application desktop (ADR-007, D3), sortie JSON versionnée `mind.owner.cli` :
+
+- `whoami` ;
+- `threads` : fils reçus, du plus récent au plus ancien ;
+- `thread --thread thr_…` : messages des deux sens ;
+- `reply --thread thr_… --idempotency-key K [--in-reply-to msg_…]` : texte lu sur l'entrée standard, jamais passé en argument.
+
+Mêmes variables `MIND_MCP_HUB_PIPE` et `MIND_MCP_LINK_KEY` que l'adaptateur. La clé n'apparaît dans aucune sortie. Recette : `test/mcp/owner.process.test.ts`.
+
 ## Brancher un client MCP
 
 Exemples **à adapter, non appliqués** : ce dépôt ne modifie aucune configuration réelle de l'utilisateur. Remplacer `<repo>` par le chemin absolu du dépôt et `<clé>` par la clé de liaison de la partie concernée (agent ou guide). `MIND_WAKE_DATA_DIR` est facultatif ; sans hub (`MIND_MCP_HUB_PIPE` absent), seules les lectures Wake répondent.

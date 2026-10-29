@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-owner-threads"
+description = "Enables the owner_threads command without any pre-configured scope."
+commands.allow = ["owner_threads"]
+
+[[permission]]
+identifier = "deny-owner-threads"
+description = "Denies the owner_threads command without any pre-configured scope."
+commands.deny = ["owner_threads"]

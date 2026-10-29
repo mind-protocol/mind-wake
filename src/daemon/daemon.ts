@@ -100,6 +100,7 @@ import {
   type WakeTemplates,
 } from "./wake-prompt.js";
 import { AgentWakeups, type QuotaSource } from "./wakeups.js";
+import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
 
 export class DaemonError extends Error {
   override readonly name = "DaemonError";
@@ -508,8 +509,15 @@ export class WakeDaemon implements SessionLauncher {
       state: new SqliteSchedulerStateRepository(db),
       clock: { now: () => Date.now(), monotonic: () => performance.now() },
       environment,
-      // Réveils demandés par l'agent : échéances candidates, jamais des autorisations.
-      wakeRequests: { nextRequestedWake: (now) => this.#wakeups.nextDue(now, this.#quota) },
+      // Réveils demandés par l'agent ou par l'humain (`wake`) : échéances candidates,
+      // jamais des autorisations.
+      wakeRequests: {
+        nextRequestedWake: async (now) => {
+          const agent = await this.#wakeups.nextDue(now, this.#quota);
+          const human = pendingHumanWake(this.#o.dataDir, now);
+          return agent === null ? human : human === null ? agent : Math.min(agent, human);
+        },
+      },
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -671,6 +679,10 @@ export class WakeDaemon implements SessionLauncher {
     const revision = uow.policies.getRevision(ticket.policyRevisionId);
     if (revision === null) return memory?.text ?? "";
     const agentWakeup = await this.#wakeups.takeDue(Date.now(), this.#quota);
+    if (pendingHumanWake(this.#o.dataDir, Date.now()) !== null) {
+      consumeHumanWake(this.#o.dataDir);
+      this.#log("réveil : demande de l'humain servie");
+    }
     const isolation =
       this.#real === null
         ? "job_only"

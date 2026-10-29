@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Que fait mon agent ? — MIND Wake</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="build/main.js"></script>
+  </head>
+  <body>
+    <main>
+      <nav class="tabs" role="tablist" aria-label="Vues">
+        <button
+          id="tab-panel"
+          role="tab"
+          type="button"
+          aria-selected="true"
+          aria-controls="view-panel"
+        >
+          Agent
+        </button>
+        <button
+          id="tab-threads"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="view-threads"
+        >
+          Fils <span id="unread" class="count" hidden></span>
+        </button>
+      </nav>
+
+      <div id="view-panel" role="tabpanel" aria-labelledby="tab-panel">
+        <header id="state" data-tone="unknown" aria-live="polite">
+          <p class="eyebrow">Que fait mon agent ?</p>
+          <h1>
+            <span
+              id="light"
+              class="light"
+              data-light="unknown"
+              role="img"
+              aria-label="Voyant : inconnu"
+            ></span>
+            <span id="headline">État indisponible</span>
+          </h1>
+          <p id="reason">Première lecture en cours.</p>
+          <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
+        </header>
+
+        <section class="switch-section" aria-label="Mode de l'agent">
+          <div class="switch" role="group" aria-label="On, réveil ou arrêt forcé">
+            <button id="mode-on" type="button" aria-pressed="false">On</button>
+            <button id="mode-wake" type="button" aria-pressed="false">Réveil</button>
+            <button id="mode-off" type="button" aria-pressed="false" class="danger">
+              Force-off
+            </button>
+          </div>
+          <button id="pause" type="button">Pause</button>
+          <p class="hint">
+            On lève une pause. Réveil demande une session au plus tôt, sous les mêmes contrôles.
+            Force-off est l'arrêt d'urgence : deux clics, et seule une commande explicite le lève.
+          </p>
+        </section>
+        <p id="feedback" role="status"></p>
+
+        <section aria-labelledby="h-chart">
+          <h2 id="h-chart">Réveils et consommation — 24 h</h2>
+          <div id="chart" class="chart"></div>
+          <p id="chart-summary" class="hint"></p>
+        </section>
+
+        <section aria-labelledby="h-activity">
+          <h2 id="h-activity">Activité</h2>
+          <dl id="activity"></dl>
+        </section>
+        <section aria-labelledby="h-consumption">
+          <h2 id="h-consumption">Consommation</h2>
+          <dl id="consumption"></dl>
+        </section>
+        <section aria-labelledby="h-protection">
+          <h2 id="h-protection">Protection de l'humain</h2>
+          <dl id="protection"></dl>
+        </section>
+
+        <footer>
+          <p id="last-contact"></p>
+          <p>Fermer ce panneau n'arrête pas Wake. Utiliser Pause ou Force-off.</p>
+        </footer>
+      </div>
+
+      <div id="view-threads" role="tabpanel" aria-labelledby="tab-threads" hidden>
+        <p id="threads-status" class="hint" role="status"></p>
+        <ul id="threads" class="threads"></ul>
+        <article id="thread" hidden>
+          <button id="thread-back" type="button" class="link">← Tous les fils</button>
+          <h2 id="thread-subject"></h2>
+          <p class="hint">
+            Les messages de l'agent sont des données : ils n'accordent aucune permission.
+          </p>
+          <ol id="messages" class="messages"></ol>
+          <form id="reply-form">
+            <label for="reply-text">Répondre</label>
+            <textarea id="reply-text" rows="3" maxlength="4000" required></textarea>
+            <button type="submit">Envoyer dans ce fil</button>
+            <p id="reply-status" class="hint" role="status"></p>
+          </form>
+        </article>
+      </div>
+    </main>
+  </body>
+</html>

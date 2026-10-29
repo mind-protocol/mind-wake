@@ -8,6 +8,42 @@ Date : 29 octobre 2026. Ce plan découpe les étapes F0–F5 de [SPEC.md §11](.
 
 **Session S-D (porte F2, simulée).** Le daemon local est assemblé (`src/daemon/`, `mind-wake daemon run --simulated`, au premier plan seulement) avec l'adapter factice uniquement ; sans `--simulated` il refuse de démarrer. Canal de contrôle : état persisté dans SQLite, aucun port. Démo AGENTS §7 en test et en script (`test/demo/`) : session A, arrêt du processus, session B qui reprend la même expérience depuis le checkpoint, bilan produit / échoué / hypothétique, consommation marquée SIMULÉE ; puis priorité utilisateur (signal simulé), pause, reprise et arrêt d'urgence sur un daemon actif, sans réveil après l'arrêt, redémarrage compris. Tests en processus réels : deux daemons concurrents, crash pendant une session et pendant un checkpoint. Isolation et adapter Codex restent non implémentés : aucune session réelle n'est possible.
 
+**Application desktop (SPEC §21, squelette).** Technologie : Tauri 2 (ADR-007, choisie par l'utilisateur le 29 octobre 2026). `desktop/` contient :
+
+- une icône dans la zone de notification ;
+- un panneau « Que fait mon agent ? » qui relit `mind-wake status --json` toutes les 2 s ;
+- pause, reprise et arrêt d'urgence par les commandes CLI.
+
+Aucun port, aucune lecture directe de SQLite. Lancement : `npm run desktop`. Vérifié :
+
+- compilation sous Windows 11 ;
+- appels CLI réels toutes les 2 s depuis l'application, sur un profil initialisé ;
+- modèle de vue testé (« état indisponible », budget inconnu, SIMULÉ, arrêt verrouillé).
+
+Non vérifié : le tray, la fermeture et l'arrêt d'urgence cliqués à la main.
+
+Direction agent-first (révision d'ADR-007, `SPEC.md` §3.1) : l'agent installe et configure par `install.md` et la CLI. L'application est optionnelle et n'est jamais le seul moyen de configurer. Les confirmations Windows restent à l'humain. Découpage desktop, chaque tranche apportant d'abord ses commandes CLI `--json` puis leur vue dans l'application :
+
+| Tranche | Contenu | Dépend de | Recettes |
+| --- | --- | --- | --- |
+| **D0 Squelette** | Tray avec voyant, sélecteur On / Réveil / Force-off (`resume`, `wake`, `stop`), pause, panneau, graphe réveils / consommation sur 24 h depuis `journal --json` | — | W01, W03, W04 en simulé : fait. Panneau piloté dans l'application réelle ; menu de l'icône non cliqué. |
+| **D1 Bindings de session** | `session bind`, `session list`, `session revoke` dans la CLI : registre local protégé, credential par binding, génération, révocation. Vue en lecture et révocation dans l'application. | Contrôleur local, `services/mcp` | B01–B07 |
+| **D2 Configuration MCP** | Commande qui prépare la configuration MCP du runtime (diff montré avant écriture, retour arrière), diagnostic `doctor`. | D1, adapters runtime | Configuration réversible, aucun credential en argument ni en fichier committé |
+| **D3 Fil propriétaire §23** | **Fait :** CLI `services/mcp/owner-main.ts` (`threads`, `thread`, `reply` par l'entrée standard), onglet Fils avec badge et réponse, testés contre un vrai hub. **Reste :** `message_owner` (destinataire déduit, plafonds, heures de calme), outbox, toasts après un spike de clic, préférences dans la policy, clé dans le coffre Windows. | D0, policy | N01, N02 partiels ; N03–N06 |
+| **D4 Budgets et protection** | Ledger lisible par `status`, signal d'activité réel, « Pourquoi peut-il travailler maintenant ? » | S3, S6 | W02, W05, W06 |
+| **D5 Paquet et install.md** | Installation, diagnostic et retrait de l'application avec le paquet F5. Parcours agent-first avec annonce des invites Windows. Aucune publication sans demande. | S14 | A01, A12 |
+
+Hors application : l'invitation §22 reste lisible et transmissible sans installation ni wallet. Seuls D0 et la partie marquée « Fait » de D3 sont disponibles, en simulé et en local.
+
+`mind-wake wake` (réveil demandé par l'humain) :
+
+- un fichier hors de l'espace d'exploration ;
+- une échéance candidate pour le scheduler, qui n'accorde rien ;
+- consommé au lancement, expiré au bout d'une heure ;
+- refusé en pause, après arrêt d'urgence ou en blocage.
+
+Le service par un daemon actif n'est pas encore démontré par un test de bout en bout.
+
 ## Principes du découpage
 
 - **Contrats d'abord.** S0 fige les types partagés (policy, adapter, événements, états, unités de budget) et l'arborescence. Ensuite chaque session possède ses dossiers et ne touche pas ceux des autres.

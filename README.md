@@ -65,6 +65,7 @@ node dist/cli/main.js doctor
 | `policy show`, `policy configure FICHIER.json` | Affiche la policy active ; propose une révision validée, sans effet avant `enable`                                                       |
 | `enable`                                       | Active une révision après confirmation humaine dans le terminal ; refusé tant que l'isolation et un adapter réel ne sont pas disponibles |
 | `pause`, `resume`, `stop`                      | Pause persistante, reprise, arrêt d'urgence verrouillé                                                                                   |
+| `wake`                                         | Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité, budgets revérifiés), refusé en pause, arrêt ou blocage               |
 | `export CHEMIN`, `purge`, `uninstall`          | Export expurgé, purge du journal expiré, désinstallation (`--dry-run` pour lister les effets)                                            |
 | `daemon run --simulated`                       | Daemon au premier plan avec l'adapter factice ; refusé sans `--simulated`                                                                |
 

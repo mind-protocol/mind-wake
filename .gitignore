@@ -19,3 +19,8 @@ coverage/
 
 # Kits de test locaux (clés de test, données)
 .local/
+
+# Application desktop : sorties de build
+desktop/ui/build/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/

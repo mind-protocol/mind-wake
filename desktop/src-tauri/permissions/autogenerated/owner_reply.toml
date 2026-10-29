@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-owner-reply"
+description = "Enables the owner_reply command without any pre-configured scope."
+commands.allow = ["owner_reply"]
+
+[[permission]]
+identifier = "deny-owner-reply"
+description = "Denies the owner_reply command without any pre-configured scope."
+commands.deny = ["owner_reply"]

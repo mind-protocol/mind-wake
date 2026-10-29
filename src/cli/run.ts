@@ -17,6 +17,7 @@ import { purge } from "./commands/purge.js";
 import { resume } from "./commands/resume.js";
 import { status } from "./commands/status.js";
 import { stop } from "./commands/stop.js";
+import { wake } from "./commands/wake.js";
 import { uninstall } from "./commands/uninstall.js";
 import type { CliContext } from "./context.js";
 import {
@@ -44,6 +45,8 @@ Commandes :
   pause         Plus aucun réveil ; la session en cours s'arrête après checkpoint
   resume        Lève une pause (refusée après un arrêt d'urgence)
   stop          Arrêt d'urgence : verrouille le profil, termine les processus
+  wake          Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité,
+                budgets revérifiés), refusé en pause, arrêt ou blocage
   policy configure FICHIER.json
                 Propose une révision validée, sans effet avant \`enable\`
   enable        Active la révision proposée après confirmation humaine : code saisi
@@ -166,6 +169,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         break;
       case "stop":
         result = stop(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "wake":
+        result = wake(ctx, dataDir) as CommandResult<unknown>;
         break;
       case "policy configure":
         result = policyConfigure(ctx, dataDir, argument ?? "") as CommandResult<unknown>;

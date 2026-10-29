@@ -1,0 +1,352 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fbfaf8;
+  --fg: #1c1b19;
+  --muted: #5f5b55;
+  --line: #e2ded8;
+  --active: #1f6f4a;
+  --idle: #35577d;
+  --attention: #8a5a00;
+  --stopped: #9b1c1c;
+  --unknown: #5f5b55;
+  font:
+    14px/1.45 "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1a18;
+    --fg: #f1efeb;
+    --muted: #a8a39b;
+    --line: #34322e;
+    --active: #6fcf9c;
+    --idle: #8db4e0;
+    --attention: #e7b45a;
+    --stopped: #f08a8a;
+    --unknown: #a8a39b;
+  }
+}
+
+/* `hidden` doit l'emporter sur les `display` des classes (badge SIMULÉ, sections vides). */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+main {
+  padding: 16px;
+}
+
+header {
+  border-left: 4px solid var(--unknown);
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+
+/* L'état se lit par son libellé ; la couleur ne fait que le doubler (W06). */
+header[data-tone="active"] {
+  border-color: var(--active);
+}
+header[data-tone="idle"] {
+  border-color: var(--idle);
+}
+header[data-tone="attention"] {
+  border-color: var(--attention);
+}
+header[data-tone="stopped"] {
+  border-color: var(--stopped);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+h1 {
+  margin: 2px 0 4px;
+  font-size: 20px;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#reason {
+  margin: 0;
+}
+
+.badge {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 2px 8px;
+  border: 1px solid var(--attention);
+  border-radius: 4px;
+  color: var(--attention);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+section {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--idle);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.danger {
+  border-color: var(--stopped);
+  color: var(--stopped);
+  font-weight: 600;
+}
+
+button.danger[data-armed="true"] {
+  background: var(--stopped);
+  color: var(--bg);
+}
+
+#feedback {
+  min-height: 1.4em;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+footer {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+footer p {
+  margin: 6px 0 0;
+}
+
+/* --- Voyant, sélecteur, graphe, fils ------------------------------------------------ */
+
+.light {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--unknown);
+}
+.light[data-light="awake"] {
+  background: var(--idle);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--idle) 25%, transparent);
+}
+.light[data-light="on"] {
+  background: var(--active);
+}
+.light[data-light="off"] {
+  background: var(--attention);
+}
+.light[data-light="forced_off"] {
+  background: var(--stopped);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.tabs button[aria-selected="true"] {
+  border-bottom-color: var(--idle);
+  font-weight: 600;
+}
+.count {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--idle);
+  color: var(--bg);
+  font-size: 11px;
+  text-align: center;
+}
+
+.switch-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.switch button {
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--line);
+}
+.switch button:last-child {
+  border-right: none;
+}
+.switch button[aria-pressed="true"] {
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+}
+.switch button.danger[aria-pressed="true"],
+.switch button.danger[data-armed="true"] {
+  background: var(--stopped);
+  color: var(--bg);
+}
+.hint {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.chart .axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.chart .tick {
+  fill: var(--muted);
+  font-size: 9px;
+  text-anchor: middle;
+}
+.chart .bar {
+  fill: var(--active);
+}
+.chart .bar.simulated {
+  fill: var(--attention);
+}
+.chart .bar.unknown {
+  fill: var(--line);
+}
+.chart .wake {
+  fill: var(--idle);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.threads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.threads button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin-bottom: 6px;
+  text-align: left;
+}
+.threads button[data-unread="true"] strong::before {
+  content: "● ";
+  color: var(--idle);
+}
+.threads span,
+.threads small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.messages {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+.messages li {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-width: 88%;
+}
+.messages li[data-self="true"] {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--idle) 12%, transparent);
+}
+.messages p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#reply-form {
+  display: grid;
+  gap: 6px;
+}
+textarea {
+  font: inherit;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+}
+.link {
+  border: none;
+  padding: 0;
+  color: var(--idle);
+}
