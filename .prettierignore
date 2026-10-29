@@ -1,0 +1,11 @@
+dist/
+node_modules/
+package-lock.json
+spikes/
+docs/feasibility/
+
+# Documents de direction : mise en forme maîtrisée à la main
+AGENTS.md
+CLAUDE.md
+SPEC.md
+docs/PLAN.md
