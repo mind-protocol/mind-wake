@@ -1,0 +1,1817 @@
+{
+  "startedAt": "2026-10-29T09:51:09.297Z",
+  "environment": {
+    "os": "Microsoft Windows [Version 10.0.26200.9711]",
+    "release": "10.0.26200",
+    "node": "v24.17.0",
+    "arch": "x64",
+    "elevated": false,
+    "preexistingSymlink": "impossible sans privilège ni mode développeur (EPERM)"
+  },
+  "runs": [
+    {
+      "kind": "plain",
+      "probes": [
+        {
+          "test": "fs.write.inside",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.read.inside",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 2
+          }
+        },
+        {
+          "test": "fs.write.outside",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.read.secret",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "fs.list.outside",
+          "outcome": "allowed",
+          "detail": {
+            "entries": 2
+          }
+        },
+        {
+          "test": "fs.write.userTemp",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.write.public",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "link.junction.preexisting.read",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "link.junction.preexisting.write",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "link.junction.create",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "link.junction.created.read",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "link.symlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.symlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.hardlink.create",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "link.hardlink.created.read",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "net.tcp.loopback",
+          "outcome": "allowed",
+          "detail": {
+            "connected": true
+          }
+        },
+        {
+          "test": "net.tcp.external",
+          "outcome": "allowed",
+          "detail": {
+            "connected": true
+          }
+        },
+        {
+          "test": "net.udp.external",
+          "outcome": "allowed",
+          "detail": {
+            "response": true
+          }
+        },
+        {
+          "test": "net.dns.lookup",
+          "outcome": "allowed",
+          "detail": {
+            "address": "2606:4700:10::6814:179a"
+          }
+        },
+        {
+          "test": "ipc.pipe.global",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "ipc.pipe.local",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "env.inherited",
+          "outcome": "denied",
+          "code": "ABSENT",
+          "errno": null,
+          "message": "absent; variables: LOCALAPPDATA,PATH,SystemRoot,TEMP,TMP,USERPROFILE; TEMP=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp; LOCALAPPDATA=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root"
+        },
+        {
+          "test": "env.registry.hkcu",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 9
+          }
+        },
+        {
+          "test": "reg.write.hkcu",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 1
+          }
+        },
+        {
+          "test": "broker.wsl.list",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0
+          }
+        },
+        {
+          "test": "broker.schtasks.query",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 408
+          }
+        },
+        {
+          "test": "proc.launcher.open",
+          "outcome": "allowed",
+          "detail": {
+            "pid": 23004,
+            "vmread": {
+              "opened": true,
+              "error": 0
+            },
+            "terminate": {
+              "opened": true,
+              "error": 0
+            },
+            "query_limited": {
+              "opened": true,
+              "error": 0
+            }
+          }
+        },
+        {
+          "test": "proc.harness.open",
+          "outcome": "allowed",
+          "detail": {
+            "pid": 30084,
+            "vmread": {
+              "opened": true,
+              "error": 0
+            },
+            "terminate": {
+              "opened": true,
+              "error": 0
+            },
+            "query_limited": {
+              "opened": true,
+              "error": 0
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "plain",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": null,
+          "profileCreated": false,
+          "lpac": false,
+          "capabilities": []
+        },
+        {
+          "event": "started",
+          "pid": 14668,
+          "launcherPid": 23004
+        },
+        {
+          "event": "process-new",
+          "pid": 14668
+        },
+        {
+          "event": "process-new",
+          "pid": 26988
+        },
+        {
+          "event": "process-new",
+          "pid": 19720
+        },
+        {
+          "event": "process-exit",
+          "pid": 19720
+        },
+        {
+          "event": "process-new",
+          "pid": 776
+        },
+        {
+          "event": "process-exit",
+          "pid": 776
+        },
+        {
+          "event": "process-new",
+          "pid": 15524
+        },
+        {
+          "event": "process-new",
+          "pid": 20900
+        },
+        {
+          "event": "process-exit",
+          "pid": 20900
+        },
+        {
+          "event": "process-exit",
+          "pid": 15524
+        },
+        {
+          "event": "process-new",
+          "pid": 19544
+        },
+        {
+          "event": "process-exit",
+          "pid": 19544
+        },
+        {
+          "event": "process-new",
+          "pid": 16312
+        },
+        {
+          "event": "process-exit",
+          "pid": 16312
+        },
+        {
+          "event": "process-new",
+          "pid": 17816
+        },
+        {
+          "event": "process-exit",
+          "pid": 17816
+        },
+        {
+          "event": "process-exit",
+          "pid": 14668
+        },
+        {
+          "event": "process-exit",
+          "pid": 26988
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": null,
+          "killToZeroMs": -1,
+          "totalProcesses": 9,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 2145
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    },
+    {
+      "kind": "lowil",
+      "probes": [
+        {
+          "test": "fs.write.inside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\inside.txt'"
+        },
+        {
+          "test": "fs.read.inside",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\inside.txt'"
+        },
+        {
+          "test": "fs.write.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned.txt'"
+        },
+        {
+          "test": "fs.read.secret",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "fs.list.outside",
+          "outcome": "allowed",
+          "detail": {
+            "entries": 1
+          }
+        },
+        {
+          "test": "fs.write.userTemp",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\AppData\\Local\\Temp\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "fs.write.public",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open 'C:\\Users\\Public\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.read",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 28
+          }
+        },
+        {
+          "test": "link.junction.preexisting.write",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\pwned-j.txt'"
+        },
+        {
+          "test": "link.junction.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2'"
+        },
+        {
+          "test": "link.junction.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2\\secret.txt'"
+        },
+        {
+          "test": "link.symlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.symlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.hardlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, link '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "link.hardlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "net.tcp.loopback",
+          "outcome": "allowed",
+          "detail": {
+            "connected": true
+          }
+        },
+        {
+          "test": "net.tcp.external",
+          "outcome": "allowed",
+          "detail": {
+            "connected": true
+          }
+        },
+        {
+          "test": "net.udp.external",
+          "outcome": "allowed",
+          "detail": {
+            "response": true
+          }
+        },
+        {
+          "test": "net.dns.lookup",
+          "outcome": "allowed",
+          "detail": {
+            "address": "2606:4700:10::6814:179a"
+          }
+        },
+        {
+          "test": "ipc.pipe.global",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "ipc.pipe.local",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "env.inherited",
+          "outcome": "denied",
+          "code": "ABSENT",
+          "errno": null,
+          "message": "absent; variables: LOCALAPPDATA,PATH,SystemRoot,TEMP,TMP,USERPROFILE; TEMP=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp; LOCALAPPDATA=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root"
+        },
+        {
+          "test": "env.registry.hkcu",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473105.txt'"
+        },
+        {
+          "test": "reg.write.hkcu",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473105.txt'"
+        },
+        {
+          "test": "broker.wsl.list",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473105.txt'"
+        },
+        {
+          "test": "broker.schtasks.query",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473105.txt'"
+        },
+        {
+          "test": "proc.launcher.open",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473106.txt'"
+        },
+        {
+          "test": "proc.harness.open",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\tmp\\out-32684-1793267473106.txt'"
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "lowil",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": null,
+          "profileCreated": false,
+          "lpac": false,
+          "capabilities": []
+        },
+        {
+          "event": "started",
+          "pid": 32684,
+          "launcherPid": 31360
+        },
+        {
+          "event": "process-new",
+          "pid": 32684
+        },
+        {
+          "event": "process-new",
+          "pid": 21024
+        },
+        {
+          "event": "process-exit",
+          "pid": 32684
+        },
+        {
+          "event": "process-exit",
+          "pid": 21024
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": null,
+          "killToZeroMs": -1,
+          "totalProcesses": 2,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 114
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    },
+    {
+      "kind": "appcontainer",
+      "probes": [
+        {
+          "test": "fs.write.inside",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.read.inside",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 2
+          }
+        },
+        {
+          "test": "fs.write.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned.txt'"
+        },
+        {
+          "test": "fs.read.secret",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt'"
+        },
+        {
+          "test": "fs.list.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, scandir '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside'"
+        },
+        {
+          "test": "fs.write.userTemp",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\AppData\\Local\\Temp\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "fs.write.public",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open 'C:\\Users\\Public\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.read",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\secret.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.write",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\pwned-j.txt'"
+        },
+        {
+          "test": "link.junction.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2'"
+        },
+        {
+          "test": "link.junction.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2\\secret.txt'"
+        },
+        {
+          "test": "link.symlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.symlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.hardlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, link '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "link.hardlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "net.tcp.loopback",
+          "outcome": "denied",
+          "code": "ETIMEDOUT",
+          "errno": -4039,
+          "message": "connect ETIMEDOUT 127.0.0.1:65356"
+        },
+        {
+          "test": "net.tcp.external",
+          "outcome": "denied",
+          "code": "EACCES",
+          "errno": -4092,
+          "message": "connect EACCES 1.1.1.1:443"
+        },
+        {
+          "test": "net.udp.external",
+          "outcome": "timeout",
+          "code": "ETIMEOUT",
+          "errno": null,
+          "message": "no response"
+        },
+        {
+          "test": "net.dns.lookup",
+          "outcome": "denied",
+          "code": "ENOTFOUND",
+          "errno": -3008,
+          "message": "getaddrinfo ENOTFOUND example.com"
+        },
+        {
+          "test": "ipc.pipe.global",
+          "outcome": "denied",
+          "code": "EADDRINUSE",
+          "errno": -4091,
+          "message": "listen EADDRINUSE: address already in use \\\\.\\pipe\\mindwake-s2-30096"
+        },
+        {
+          "test": "ipc.pipe.local",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "env.inherited",
+          "outcome": "denied",
+          "code": "ABSENT",
+          "errno": null,
+          "message": "absent; variables: LOCALAPPDATA,PATH,SystemRoot,TEMP,TMP,USERPROFILE; TEMP=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC\\Temp; LOCALAPPDATA=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC"
+        },
+        {
+          "test": "env.registry.hkcu",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 9
+          }
+        },
+        {
+          "test": "reg.write.hkcu",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "ERROR: Access is denied."
+        },
+        {
+          "test": "broker.wsl.list",
+          "outcome": "denied",
+          "code": "EXIT_4294967295",
+          "errno": null,
+          "message": "Access is denied. \r\nError code: Wsl/E_ACCESSDENIED"
+        },
+        {
+          "test": "broker.schtasks.query",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "ERROR: Class not registered"
+        },
+        {
+          "test": "proc.launcher.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":6204,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        },
+        {
+          "test": "proc.harness.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":30084,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "run",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": "S-1-15-2-3530502901-3804866852-1824152805-466774641-1758614076-654160733-2959849351",
+          "profileCreated": true,
+          "lpac": false,
+          "capabilities": []
+        },
+        {
+          "event": "started",
+          "pid": 30096,
+          "launcherPid": 6204
+        },
+        {
+          "event": "process-new",
+          "pid": 30096
+        },
+        {
+          "event": "process-new",
+          "pid": 17916
+        },
+        {
+          "event": "process-new",
+          "pid": 32844
+        },
+        {
+          "event": "process-exit",
+          "pid": 32844
+        },
+        {
+          "event": "process-new",
+          "pid": 1716
+        },
+        {
+          "event": "process-exit",
+          "pid": 1716
+        },
+        {
+          "event": "process-new",
+          "pid": 20888
+        },
+        {
+          "event": "process-new",
+          "pid": 28096
+        },
+        {
+          "event": "process-exit",
+          "pid": 28096
+        },
+        {
+          "event": "process-exit",
+          "pid": 20888
+        },
+        {
+          "event": "process-new",
+          "pid": 28136
+        },
+        {
+          "event": "process-exit",
+          "pid": 28136
+        },
+        {
+          "event": "process-new",
+          "pid": 27428
+        },
+        {
+          "event": "process-exit",
+          "pid": 27428
+        },
+        {
+          "event": "process-new",
+          "pid": 30712
+        },
+        {
+          "event": "process-exit",
+          "pid": 30712
+        },
+        {
+          "event": "process-exit",
+          "pid": 30096
+        },
+        {
+          "event": "process-exit",
+          "pid": 17916
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": null,
+          "killToZeroMs": -1,
+          "totalProcesses": 9,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 2724
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    },
+    {
+      "kind": "lpac",
+      "probes": [
+        {
+          "test": "fs.write.inside",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.read.inside",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 2
+          }
+        },
+        {
+          "test": "fs.write.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned.txt'"
+        },
+        {
+          "test": "fs.read.secret",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt'"
+        },
+        {
+          "test": "fs.list.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, scandir '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside'"
+        },
+        {
+          "test": "fs.write.userTemp",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\AppData\\Local\\Temp\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "fs.write.public",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open 'C:\\Users\\Public\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.read",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\secret.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.write",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\pwned-j.txt'"
+        },
+        {
+          "test": "link.junction.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2'"
+        },
+        {
+          "test": "link.junction.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2\\secret.txt'"
+        },
+        {
+          "test": "link.symlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.symlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.hardlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, link '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "link.hardlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "net.tcp.loopback",
+          "outcome": "denied",
+          "code": "EACCES",
+          "errno": -4092,
+          "message": "connect EACCES 127.0.0.1:65356 - Local (undefined:undefined)"
+        },
+        {
+          "test": "net.tcp.external",
+          "outcome": "denied",
+          "code": "EACCES",
+          "errno": -4092,
+          "message": "connect EACCES 1.1.1.1:443 - Local (undefined:undefined)"
+        },
+        {
+          "test": "net.udp.external",
+          "outcome": "denied",
+          "code": "EACCES",
+          "errno": -4092,
+          "message": "bind EACCES 0.0.0.0"
+        },
+        {
+          "test": "net.dns.lookup",
+          "outcome": "denied",
+          "code": "EAI_FAIL",
+          "errno": -3004,
+          "message": "getaddrinfo EAI_FAIL example.com"
+        },
+        {
+          "test": "ipc.pipe.global",
+          "outcome": "denied",
+          "code": "EADDRINUSE",
+          "errno": -4091,
+          "message": "listen EADDRINUSE: address already in use \\\\.\\pipe\\mindwake-s2-30208"
+        },
+        {
+          "test": "ipc.pipe.local",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "env.inherited",
+          "outcome": "denied",
+          "code": "ABSENT",
+          "errno": null,
+          "message": "absent; variables: LOCALAPPDATA,PATH,SystemRoot,TEMP,TMP,USERPROFILE; TEMP=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC\\Temp; LOCALAPPDATA=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC"
+        },
+        {
+          "test": "env.registry.hkcu",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 9
+          }
+        },
+        {
+          "test": "reg.write.hkcu",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "ERROR: Access is denied."
+        },
+        {
+          "test": "broker.wsl.list",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "Access is denied."
+        },
+        {
+          "test": "broker.schtasks.query",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "ERROR: Access is denied."
+        },
+        {
+          "test": "proc.launcher.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":17432,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        },
+        {
+          "test": "proc.harness.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":30084,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "run",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": "S-1-15-2-3530502901-3804866852-1824152805-466774641-1758614076-654160733-2959849351",
+          "profileCreated": true,
+          "lpac": true,
+          "capabilities": [
+            "name:registryRead"
+          ]
+        },
+        {
+          "event": "started",
+          "pid": 30208,
+          "launcherPid": 17432
+        },
+        {
+          "event": "process-new",
+          "pid": 30208
+        },
+        {
+          "event": "process-new",
+          "pid": 19572
+        },
+        {
+          "event": "process-new",
+          "pid": 31404
+        },
+        {
+          "event": "process-exit",
+          "pid": 31404
+        },
+        {
+          "event": "process-new",
+          "pid": 30788
+        },
+        {
+          "event": "process-exit",
+          "pid": 30788
+        },
+        {
+          "event": "process-new",
+          "pid": 31456
+        },
+        {
+          "event": "process-exit",
+          "pid": 31456
+        },
+        {
+          "event": "process-new",
+          "pid": 12556
+        },
+        {
+          "event": "process-exit",
+          "pid": 12556
+        },
+        {
+          "event": "process-new",
+          "pid": 32112
+        },
+        {
+          "event": "process-exit",
+          "pid": 32112
+        },
+        {
+          "event": "process-new",
+          "pid": 26180
+        },
+        {
+          "event": "process-exit",
+          "pid": 26180
+        },
+        {
+          "event": "process-exit",
+          "pid": 30208
+        },
+        {
+          "event": "process-exit",
+          "pid": 19572
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": null,
+          "killToZeroMs": -1,
+          "totalProcesses": 8,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 290
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    },
+    {
+      "kind": "appcontainer+internetClient",
+      "probes": [
+        {
+          "test": "fs.write.inside",
+          "outcome": "allowed",
+          "detail": null
+        },
+        {
+          "test": "fs.read.inside",
+          "outcome": "allowed",
+          "detail": {
+            "bytes": 2
+          }
+        },
+        {
+          "test": "fs.write.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned.txt'"
+        },
+        {
+          "test": "fs.read.secret",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt'"
+        },
+        {
+          "test": "fs.list.outside",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, scandir '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside'"
+        },
+        {
+          "test": "fs.write.userTemp",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\AppData\\Local\\Temp\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "fs.write.public",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open 'C:\\Users\\Public\\mindwake-s2-probe.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.read",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\secret.txt'"
+        },
+        {
+          "test": "link.junction.preexisting.write",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\escape-j\\pwned-j.txt'"
+        },
+        {
+          "test": "link.junction.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2'"
+        },
+        {
+          "test": "link.junction.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\j2\\secret.txt'"
+        },
+        {
+          "test": "link.symlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, symlink '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.symlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\s2'"
+        },
+        {
+          "test": "link.hardlink.create",
+          "outcome": "denied",
+          "code": "EPERM",
+          "errno": -4048,
+          "message": "EPERM: operation not permitted, link '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\secret.txt' -> '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "link.hardlink.created.read",
+          "outcome": "denied",
+          "code": "ENOENT",
+          "errno": -4058,
+          "message": "ENOENT: no such file or directory, open '%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\hl'"
+        },
+        {
+          "test": "net.tcp.loopback",
+          "outcome": "denied",
+          "code": "ETIMEDOUT",
+          "errno": -4039,
+          "message": "connect ETIMEDOUT 127.0.0.1:65356"
+        },
+        {
+          "test": "net.tcp.external",
+          "outcome": "allowed",
+          "detail": {
+            "connected": true
+          }
+        },
+        {
+          "test": "net.udp.external",
+          "outcome": "allowed",
+          "detail": {
+            "response": true
+          }
+        },
+        {
+          "test": "net.dns.lookup",
+          "outcome": "allowed",
+          "detail": {
+            "address": "2606:4700:10::6814:179a"
+          }
+        },
+        {
+          "test": "ipc.pipe.global",
+          "outcome": "denied",
+          "code": "EADDRINUSE",
+          "errno": -4091,
+          "message": "listen EADDRINUSE: address already in use \\\\.\\pipe\\mindwake-s2-6884"
+        },
+        {
+          "test": "ipc.pipe.local",
+          "outcome": "allowed",
+          "detail": {
+            "listening": true
+          }
+        },
+        {
+          "test": "env.inherited",
+          "outcome": "denied",
+          "code": "ABSENT",
+          "errno": null,
+          "message": "absent; variables: LOCALAPPDATA,PATH,SystemRoot,TEMP,TMP,USERPROFILE; TEMP=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC\\Temp; LOCALAPPDATA=%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\root\\Packages\\mindwake.spike.s2\\AC"
+        },
+        {
+          "test": "env.registry.hkcu",
+          "outcome": "allowed",
+          "detail": {
+            "status": 0,
+            "lines": 9
+          }
+        },
+        {
+          "test": "reg.write.hkcu",
+          "outcome": "denied",
+          "code": "EXIT_1",
+          "errno": null,
+          "message": "ERROR: Access is denied."
+        },
+        {
+          "test": "broker.wsl.list",
+          "outcome": "denied",
+          "code": "EXIT_4294967295",
+          "errno": null,
+          "message": "Access is denied. \r\nError code: Wsl/E_ACCESSDENIED"
+        },
+        {
+          "test": "broker.schtasks.query",
+          "outcome": "denied",
+          "code": "EXIT_3221226356",
+          "errno": null,
+          "message": ""
+        },
+        {
+          "test": "proc.launcher.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":33464,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        },
+        {
+          "test": "proc.harness.open",
+          "outcome": "denied",
+          "code": "ACCESS_DENIED",
+          "errno": null,
+          "message": "{\"pid\":30084,\"vmread\":{\"opened\":false,\"error\":5},\"terminate\":{\"opened\":false,\"error\":5},\"query_limited\":{\"opened\":false,\"error\":5}}"
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "run",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": "S-1-15-2-3530502901-3804866852-1824152805-466774641-1758614076-654160733-2959849351",
+          "profileCreated": true,
+          "lpac": false,
+          "capabilities": [
+            "internetClient"
+          ]
+        },
+        {
+          "event": "started",
+          "pid": 6884,
+          "launcherPid": 33464
+        },
+        {
+          "event": "process-new",
+          "pid": 6884
+        },
+        {
+          "event": "process-new",
+          "pid": 31768
+        },
+        {
+          "event": "process-new",
+          "pid": 20100
+        },
+        {
+          "event": "process-exit",
+          "pid": 20100
+        },
+        {
+          "event": "process-new",
+          "pid": 18076
+        },
+        {
+          "event": "process-exit",
+          "pid": 18076
+        },
+        {
+          "event": "process-new",
+          "pid": 29364
+        },
+        {
+          "event": "process-new",
+          "pid": 33448
+        },
+        {
+          "event": "process-exit",
+          "pid": 33448
+        },
+        {
+          "event": "process-exit",
+          "pid": 29364
+        },
+        {
+          "event": "process-new",
+          "pid": 23516
+        },
+        {
+          "event": "process-exit",
+          "pid": 23516
+        },
+        {
+          "event": "process-new",
+          "pid": 21040
+        },
+        {
+          "event": "process-exit",
+          "pid": 21040
+        },
+        {
+          "event": "process-new",
+          "pid": 31140
+        },
+        {
+          "event": "process-exit",
+          "pid": 31140
+        },
+        {
+          "event": "process-exit",
+          "pid": 6884
+        },
+        {
+          "event": "process-exit",
+          "pid": 31768
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": null,
+          "killToZeroMs": -1,
+          "totalProcesses": 9,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 1074
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    },
+    {
+      "kind": "appcontainer",
+      "probes": [
+        {
+          "test": "proc.spawn.limit",
+          "outcome": "denied",
+          "detail": {
+            "requested": 20,
+            "spawned": 4,
+            "errors": {
+              "UNKNOWN": 16
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "event": "identity",
+          "mode": "run",
+          "name": "mindwake.spike.s2",
+          "appContainerSid": "S-1-15-2-3530502901-3804866852-1824152805-466774641-1758614076-654160733-2959849351",
+          "profileCreated": true,
+          "lpac": false,
+          "capabilities": []
+        },
+        {
+          "event": "started",
+          "pid": 29180,
+          "launcherPid": 24428
+        },
+        {
+          "event": "process-new",
+          "pid": 29180
+        },
+        {
+          "event": "process-new",
+          "pid": 17364
+        },
+        {
+          "event": "process-new",
+          "pid": 31004
+        },
+        {
+          "event": "process-new",
+          "pid": 32808
+        },
+        {
+          "event": "process-new",
+          "pid": 15312
+        },
+        {
+          "event": "process-new",
+          "pid": 8524
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "active-process-limit"
+        },
+        {
+          "event": "kill-issued",
+          "reason": "command",
+          "ok": true
+        },
+        {
+          "event": "done",
+          "exitCode": 0,
+          "killReason": "command",
+          "killToZeroMs": 7.282,
+          "totalProcesses": 6,
+          "activeProcesses": 0,
+          "terminatedProcesses": 0,
+          "wallMs": 214
+        }
+      ],
+      "other": [],
+      "exitCode": 0
+    }
+  ],
+  "kill": [
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 1,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 0.963,
+      "killToZeroMs": 14.686,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 2,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.235,
+      "killToZeroMs": 8.562,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 3,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.222,
+      "killToZeroMs": 8.196,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 4,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.076,
+      "killToZeroMs": 9.411,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 5,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 0.918,
+      "killToZeroMs": 6.985,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 6,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 0.921,
+      "killToZeroMs": 7.644,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 7,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.227,
+      "killToZeroMs": 7.539,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 8,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 0.97,
+      "killToZeroMs": 8.049,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 9,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.241,
+      "killToZeroMs": 9.917,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "command",
+      "iteration": 10,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.121,
+      "killToZeroMs": 13.76,
+      "killReason": "command",
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "launcher-killed",
+      "iteration": 1,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 2.771,
+      "killToZeroMs": null,
+      "killReason": null,
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "launcher-killed",
+      "iteration": 2,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.836,
+      "killToZeroMs": null,
+      "killReason": null,
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "launcher-killed",
+      "iteration": 3,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 2.394,
+      "killToZeroMs": null,
+      "killReason": null,
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "launcher-killed",
+      "iteration": 4,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.815,
+      "killToZeroMs": null,
+      "killReason": null,
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "launcher-killed",
+      "iteration": 5,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 2.452,
+      "killToZeroMs": null,
+      "killReason": null,
+      "survivors": []
+    },
+    {
+      "kind": "appcontainer",
+      "how": "timeout",
+      "iteration": 1,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 2851.18,
+      "killToZeroMs": 11.575,
+      "killReason": "timeout",
+      "survivors": []
+    },
+    {
+      "kind": "lpac",
+      "how": "command",
+      "iteration": 1,
+      "pids": 7,
+      "aliveBefore": 7,
+      "observedMs": 1.012,
+      "killToZeroMs": 8.668,
+      "killReason": "command",
+      "survivors": []
+    }
+  ],
+  "cleanup": {
+    "removedProbeFiles": [
+      "%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned.txt",
+      "%USERPROFILE%\\mind-wake\\.claude\\worktrees\\s2-faisabilite-isolation-655a40\\spikes\\isolation\\.work\\outside\\pwned-j.txt",
+      "C:\\Users\\Public\\mindwake-s2-probe.txt",
+      "%USERPROFILE%\\AppData\\Local\\Temp\\mindwake-s2-probe.txt"
+    ],
+    "removedRegistryKey": true,
+    "profileDelete": "@@SANDBOX {\"event\":\"cleanup\",\"name\":\"mindwake.spike.s2\",\"hresult\":0}",
+    "workRemoved": true
+  },
+  "loopbackConnectionsAccepted": 2,
+  "finishedAt": "2026-10-29T09:51:27.085Z",
+  "killSummary": {
+    "command": {
+      "n": 11,
+      "observedMedianMs": 1.076,
+      "observedMaxMs": 1.241,
+      "kernelMedianMs": 8.562,
+      "kernelMaxMs": 14.686,
+      "survivors": 0
+    },
+    "launcherKilled": {
+      "n": 5,
+      "observedMedianMs": 2.394,
+      "observedMaxMs": 2.771,
+      "kernelMedianMs": null,
+      "kernelMaxMs": null,
+      "survivors": 0
+    },
+    "timeout": {
+      "n": 1,
+      "observedMedianMs": 2851.18,
+      "observedMaxMs": 2851.18,
+      "kernelMedianMs": 11.575,
+      "kernelMaxMs": 11.575,
+      "survivors": 0
+    }
+  }
+}
