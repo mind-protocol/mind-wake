@@ -110,6 +110,12 @@ export type ClaudeStreamItem =
       /** Texte d'erreur du CLI, utile seulement au diagnostic local (jamais journalisé tel quel). */
       readonly errors: readonly string[];
     }
+  /** Fin d'une compaction (`/compact`) : taille du contexte avant et après. */
+  | {
+      readonly kind: "compacted";
+      readonly preTokens: number | null;
+      readonly postTokens: number | null;
+    }
   | { readonly kind: "ignored"; readonly type: string }
   | { readonly kind: "malformed" };
 
@@ -182,11 +188,78 @@ function assistantSummary(message: Json): string | null {
   return `assistant${subagent} — ${parts.join(" ; ")}`;
 }
 
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** Décalage (ms) d'un fuseau IANA à un instant donné : local − UTC. */
+function zoneOffsetMs(timeZone: string, atMs: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(atMs));
+  const n = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return Date.UTC(n("year"), n("month") - 1, n("day"), n("hour"), n("minute"), n("second")) - atMs;
+}
+
+/**
+ * Compteurs du texte de `/usage`, ligne par ligne :
+ * « Current session: 76% used · resets Oct 29, 9:59pm (Europe/Paris) » → `session` ;
+ * « Current week (all models): … » → `weekly_all` ; « Current week (Fable): … » →
+ * `weekly_scoped` de portée `Fable`. Une ligne illisible est ignorée.
+ */
+export function usageTextLimits(message: Json, now: Date): ClaudeUsageLimitRow[] {
+  const content = object(message["message"])?.["content"];
+  if (!Array.isArray(content)) return [];
+  const body = content.map((c) => text(object(c)?.["text"]) ?? "").join("\n");
+  const rows: ClaudeUsageLimitRow[] = [];
+  const line =
+    /Current (session|week \(([^)]+)\)):\s*(\d+(?:\.\d+)?)% used.*?resets (\w{3}) (\d{1,2}), (\d{1,2})(?::(\d{2}))?\s*(am|pm) \(([^)]+)\)/gi;
+  for (const m of body.matchAll(line)) {
+    const [, label, scope, percent, mon, day, hour, minute, ampm, zone] = m;
+    const month = MONTHS.indexOf((mon ?? "").toLowerCase());
+    if (month < 0 || zone === undefined) continue;
+    let h = Number(hour) % 12;
+    if ((ampm ?? "").toLowerCase() === "pm") h += 12;
+    let resetsAt: string | null = null;
+    try {
+      for (const year of [now.getUTCFullYear(), now.getUTCFullYear() + 1]) {
+        const local = Date.UTC(year, month, Number(day), h, Number(minute ?? 0));
+        const utcMs = local - zoneOffsetMs(zone, local);
+        if (utcMs > now.getTime() - 86_400_000) {
+          resetsAt = new Date(utcMs).toISOString();
+          break;
+        }
+      }
+    } catch {
+      continue;
+    }
+    const session = (label ?? "").toLowerCase() === "session";
+    const all = (scope ?? "").toLowerCase() === "all models";
+    rows.push({
+      kind: session ? "session" : all ? "weekly_all" : "weekly_scoped",
+      percent: Number(percent),
+      resetsAt,
+      scope: session || all ? null : (scope ?? null),
+    });
+  }
+  return rows;
+}
+
 function usageReport(message: Json): ClaudeStreamItem | null {
   const report = object(message["usage_report"]);
   if (report === null) return null;
   const limits = object(report["rate_limits"])?.["limits"];
-  if (!Array.isArray(limits)) return { kind: "usage_report", limits: null };
+  if (!Array.isArray(limits)) {
+    // Observé le 2026-10-29 (2.1.308) : `rate_limits` absent par moments alors que le
+    // texte officiel de `/usage` affiche les mêmes compteurs. On lit alors ce texte.
+    const fromText = usageTextLimits(message, new Date());
+    return { kind: "usage_report", limits: fromText.length > 0 ? fromText : null };
+  }
   const rows: ClaudeUsageLimitRow[] = [];
   for (const raw of limits) {
     const row = object(raw);
@@ -242,6 +315,14 @@ export function parseStreamLine(line: string): ClaudeStreamItem {
       delayMs: count(message["retry_delay_ms"]),
       error: apiError(message["error"]),
       status: finite(message["error_status"]),
+    };
+  }
+  if (type === "system" && subtype === "compact_boundary") {
+    const meta = object(message["compact_metadata"]);
+    return {
+      kind: "compacted",
+      preTokens: finite(meta?.["pre_tokens"]),
+      postTokens: finite(meta?.["post_tokens"]),
     };
   }
   if (type === "system" && subtype === "permission_denied") {
