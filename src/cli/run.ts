@@ -14,6 +14,7 @@ import { pause } from "./commands/pause.js";
 import { policyConfigure } from "./commands/policy-configure.js";
 import { policyShow } from "./commands/policy.js";
 import { purge } from "./commands/purge.js";
+import { reactivate } from "./commands/reactivate.js";
 import { resume } from "./commands/resume.js";
 import { status } from "./commands/status.js";
 import { stop } from "./commands/stop.js";
@@ -45,6 +46,7 @@ Commandes :
   pause         Plus aucun réveil ; la session en cours s'arrête après checkpoint
   resume        Lève une pause (refusée après un arrêt d'urgence)
   stop          Arrêt d'urgence : verrouille le profil, termine les processus
+  reactivate    Lève un arrêt d'urgence (action de l'humain), policy revérifiée
   wake          Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité,
                 budgets revérifiés), refusé en pause, arrêt ou blocage
   policy configure FICHIER.json
@@ -169,6 +171,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         break;
       case "stop":
         result = stop(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "reactivate":
+        result = reactivate(ctx, dataDir) as CommandResult<unknown>;
         break;
       case "wake":
         result = wake(ctx, dataDir) as CommandResult<unknown>;

@@ -234,6 +234,83 @@ export function requestResume(ctx: ControlContext): ResumeResult {
   });
 }
 
+// ── Réactivation après arrêt d'urgence ────────────────────────────────────────────
+
+export type ReactivateStatus = "reactivated" | "not_stopped" | "refused";
+
+export interface ReactivateResult {
+  readonly status: ReactivateStatus;
+  readonly state: ProfileState | null;
+  readonly reason: string;
+  readonly detail: string;
+}
+
+const REACTIVATE_REASON = "réactivation explicite par l'humain après arrêt d'urgence";
+
+/**
+ * Action explicite dédiée de l'humain : `stopped → ready` (gardes `user_action` et
+ * `checks`), verrou levé dans la même transaction, après revérification de la policy
+ * consentie. Refusée tant qu'une session reste ouverte. Le marqueur de secours est
+ * retiré ensuite par l'appelant.
+ */
+export function requestReactivate(ctx: ControlContext): ReactivateResult {
+  return ctx.uow.transaction((tx) => {
+    const profile = tx.profiles.get(ctx.profileId);
+    if (profile === null) {
+      return {
+        status: "refused",
+        state: null,
+        reason: "unknown_profile",
+        detail: "profil inconnu",
+      };
+    }
+    if (profile.state !== "stopped" && !profile.emergencyStopLocked) {
+      return {
+        status: "not_stopped",
+        state: profile.state,
+        reason: "not_stopped",
+        detail: `aucun arrêt d'urgence à lever (état ${profile.state})`,
+      };
+    }
+    if (tx.sessions.listOpen(profile.id).length > 0) {
+      return {
+        status: "refused",
+        state: profile.state,
+        reason: "session_still_open",
+        detail: "une session est encore ouverte : attendre sa fin ou sa réconciliation",
+      };
+    }
+    const decision = decideActivation(tx.policies, profile.id);
+    if (decision.verdict === "deny") {
+      return {
+        status: "refused",
+        state: profile.state,
+        reason: decision.reason,
+        detail: `policy : ${decision.detail}`,
+      };
+    }
+    const at = utc(ctx.now());
+    tx.profiles.setEmergencyStopLocked(profile.id, false, at);
+    if (profile.state === "stopped") {
+      tx.profiles.transition(profile.id, {
+        from: "stopped",
+        to: "ready",
+        reason: REACTIVATE_REASON,
+        at,
+      });
+    }
+    recordStateChange(new JournalWriter(tx.journal), profile, "ready", REACTIVATE_REASON, at, {
+      policyRevisionId: decision.revisionId,
+    });
+    return {
+      status: "reactivated",
+      state: "ready",
+      reason: "reactivated",
+      detail: "arrêt d'urgence levé : réveils de nouveau permis",
+    };
+  });
+}
+
 // ── Arrêt d'urgence ───────────────────────────────────────────────────────────────
 
 /**

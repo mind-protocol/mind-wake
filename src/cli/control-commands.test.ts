@@ -146,6 +146,29 @@ describe("pause et reprise sans session", () => {
   });
 });
 
+describe("réactivation après arrêt d'urgence", () => {
+  it("stop verrouille ; resume reste refusée ; reactivate lève le verrou et rend le profil prêt", async () => {
+    openBench(dir.path, {}).close();
+    expect((await cli("stop")).code).toBe(EXIT_OK);
+    expect((await cli("resume")).code).toBe(EXIT_FAILURE);
+    const reactivated = await cli("reactivate", "--json");
+    expect(reactivated.code).toBe(EXIT_OK);
+    expect(reactivated.json).toMatchObject({
+      ok: true,
+      data: { status: "reactivated", state: "ready" },
+    });
+    withBench((b) => {
+      const profile = b.uow.profiles.get(PROFILE);
+      expect(profile?.state).toBe("ready");
+      expect(profile?.emergencyStopLocked).toBe(false);
+    });
+    expect(existsSync(join(dir.path, "emergency-stop.flag"))).toBe(false);
+    expect((await cli("reactivate", "--json")).json).toMatchObject({
+      data: { status: "not_stopped" },
+    });
+  });
+});
+
 describe("stop depuis un autre processus pendant une session", () => {
   it("termine l'arborescence par le nom du job ; le runner clôt la session en kill_switch", async () => {
     const bench = openBench(dir.path, {});
