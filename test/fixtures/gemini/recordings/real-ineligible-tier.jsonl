@@ -1,0 +1,4 @@
+#! stderr Error authenticating: IneligibleTierError: This client is no longer supported for Gemini Code Assist for individuals. To continue using Gemini, please migrate to the Antigravity suite of products: https://antigravity.google
+#! stderr   ineligibleTiers: [ { reasonCode: 'UNSUPPORTED_CLIENT', tierId: 'free-tier', tierName: 'Gemini Code Assist for individuals' } ]
+#! stderr Gemini CLI is not running in a trusted directory. To proceed, either use `--skip-trust`, set the `GEMINI_CLI_TRUST_WORKSPACE=true` environment variable, or trust this directory in interactive mode.
+#! exit 55
