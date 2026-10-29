@@ -408,6 +408,31 @@ describe.runIf(WINDOWS)("runner sous sandbox réelle (AppContainer + Job Object)
     );
 
     it(
+      "une lecture ratée garde la dernière lecture valide : la session continue",
+      async () => {
+        let mode: "ok" | "fail" | "full" = "ok";
+        const flaky = runner(
+          {
+            executable: probeExe,
+            args: ["probe", "sleep:60000"],
+            unattended: true,
+            quota: () => (mode === "fail" ? [] : [snapshot(mode === "ok" ? 2_000 : 8_000)]),
+          },
+          { runner: { quotaPollIntervalMs: 50, checkpointGraceMs: 200 } },
+        );
+        const running = await flaky.launch(reserve(store, [{ unit: "sessions", amount: 1 }], true));
+        mode = "fail";
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(flaky.activeSessionId).toBe(running.sessionId);
+        // Fin du test : une lecture valide au seuil d'arrêt termine la session.
+        mode = "full";
+        const result = await running.done;
+        expect(result.reason).toMatch(/budget_exhausted/);
+      },
+      TIMEOUT,
+    );
+
+    it(
       "interrompt sans lecture de jauge, jamais en aveugle",
       async () => {
         const absent = runner(

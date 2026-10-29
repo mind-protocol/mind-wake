@@ -710,15 +710,20 @@ export class ClaudeAdapter implements RuntimeAdapter {
     return Promise.resolve({ status: "confirmed", ended: true, usage, provenance: "measured" });
   }
 
+  #lastQuota: readonly ProviderQuotaSnapshot[] = [];
+
   /**
-   * Jauge pour la garde de quota (`QuotaReadable`) : relevés officiels, ou tableau vide si la
-   * lecture échoue (quota inconnu, donc lancement refusé par la policy).
+   * Une lecture échouée rend la dernière lecture réussie, avec son `observedAt` : la
+   * policy la refuse dès qu'elle dépasse `maxSnapshotAgeMs`. Évite qu'un `/usage`
+   * concurrent ou lent interrompe une session pour une jauge qui était lisible.
    */
   async readQuota(): Promise<readonly ProviderQuotaSnapshot[]> {
     try {
-      return (await this.readQuotaReading()).snapshots;
+      const { snapshots } = await this.readQuotaReading();
+      if (snapshots.length > 0) this.#lastQuota = snapshots;
+      return snapshots.length > 0 ? snapshots : this.#lastQuota;
     } catch {
-      return [];
+      return this.#lastQuota;
     }
   }
 

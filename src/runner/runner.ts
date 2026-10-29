@@ -1,3 +1,4 @@
+import type { WakeImage } from "../contracts/wake-image.js";
 /**
  * Runner de sessions (SPEC §5, §8.1 et §9 ; AGENTS §5 « Cycle de vie et continuité »).
  *
@@ -106,6 +107,7 @@ export interface LaunchGrant {
   readonly decision: PolicyDecision;
   /** Contexte borné transmis à l'agent ; aucun credential. */
   readonly context: string;
+  readonly wakeImage?: WakeImage;
   readonly maxInputTokens: number;
   /**
    * Session déjà créée par le scheduler (S6), dans la transaction qui a réservé
@@ -474,8 +476,10 @@ export class SessionRunner {
       quota: undefined,
       startSequence: ready.startSequence,
       startedAtMs: nowMs,
-      deadlineMs: ready.revision.groups.schedule.maxSessionDurationMs === 0
-        ? Number.POSITIVE_INFINITY : nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
+      deadlineMs:
+        ready.revision.groups.schedule.maxSessionDurationMs === 0
+          ? Number.POSITIVE_INFINITY
+          : nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
       handle: null,
       process: null,
       tokens: 0,
@@ -514,6 +518,7 @@ export class SessionRunner {
           reservationId: session.reservation.id,
           policy: session.revision,
           context: session.grant.context,
+          ...(session.grant.wakeImage === undefined ? {} : { wakeImage: session.grant.wakeImage }),
           maxInputTokens: session.grant.maxInputTokens,
           deadline: Number.isFinite(session.deadlineMs) ? utc(session.deadlineMs) : null,
         });
@@ -556,11 +561,15 @@ export class SessionRunner {
    */
   async #readQuota(session: ActiveSession): Promise<void> {
     if (!canReadQuota(this.adapter) || session.finishing) return;
+    let snapshots: readonly ProviderQuotaSnapshot[];
     try {
-      session.quota = await this.adapter.readQuota();
+      snapshots = await this.adapter.readQuota();
     } catch {
       return;
     }
+    // Une lecture vide est un échec : la dernière lecture valide reste en place et la
+    // policy juge sa fraîcheur (`maxSnapshotAgeMs`) ; elle ne devient pas « inconnue ».
+    if (snapshots.length > 0 || session.quota === undefined) session.quota = snapshots;
     this.#tick(session);
   }
 
