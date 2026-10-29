@@ -246,9 +246,28 @@ CREATE TABLE scheduler_state (
 ) STRICT;
 `;
 
+// Session S-D : exécutions du daemon au premier plan. Une ligne par démarrage ; une ligne
+// sans fin dont le processus a disparu signale un arrêt brutal. `mode` affiche sans
+// ambiguïté une exécution simulée (adapter factice) dans `status`.
+const DAEMON_RUNS = `
+CREATE TABLE daemon_runs (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  pid INTEGER NOT NULL CHECK (pid > 0),
+  mode TEXT NOT NULL CHECK (mode IN ('simulated', 'real')),
+  adapter_id TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at TEXT,
+  end_reason TEXT,
+  CHECK ((ended_at IS NULL) = (end_reason IS NULL))
+) STRICT;
+CREATE INDEX daemon_runs_profile ON daemon_runs (profile_id, started_at);
+`;
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "initial_schema", sql: INITIAL_SCHEMA },
   { version: 2, name: "scheduler_state", sql: SCHEDULER_STATE },
+  { version: 3, name: "daemon_runs", sql: DAEMON_RUNS },
 ];
 
 const MIGRATIONS_TABLE = `

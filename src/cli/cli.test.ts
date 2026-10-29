@@ -445,6 +445,15 @@ describe("sortie JSON versionnée", () => {
       hint: null,
       activeExperiment: null,
       openSessions: 0,
+      daemon: {
+        state: "never",
+        mode: null,
+        pid: null,
+        startedAt: null,
+        endedAt: null,
+        endReason: null,
+      },
+      lastSession: null,
       lastEvent: {
         sequence: 1,
         at,

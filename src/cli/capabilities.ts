@@ -31,7 +31,9 @@ export type CapabilityId =
   | "ledger"
   | "policy_engine"
   | "scheduler"
+  | "daemon"
   | "isolation"
+  | "simulated_adapter"
   | "runtime_adapter"
   | "api_key_path"
   | "subscription_path";
@@ -46,12 +48,26 @@ export interface Capability {
 
 /** Composants livrés dans ce build. À mettre à jour à chaque câblage réel. */
 export const BUILD_COMPONENTS: Readonly<
-  Record<"ledger" | "policyEngine" | "scheduler" | "isolation" | "runtimeAdapter", boolean>
+  Record<
+    | "ledger"
+    | "policyEngine"
+    | "scheduler"
+    | "daemon"
+    | "simulatedAdapter"
+    | "isolation"
+    | "runtimeAdapter",
+    boolean
+  >
 > = {
   ledger: true,
-  policyEngine: false,
-  scheduler: false,
+  policyEngine: true,
+  scheduler: true,
+  /** Daemon au premier plan (`daemon run`), sans service ni démarrage automatique. */
+  daemon: true,
+  /** Adapter factice : sessions SIMULÉES, jamais une preuve d'intégration réelle. */
+  simulatedAdapter: true,
   isolation: false,
+  /** Adapter réel (Codex, S11). */
   runtimeAdapter: false,
 };
 
@@ -113,14 +129,54 @@ export function capabilities(
           id: "ledger",
           availability: "present",
           detail:
-            "réservations atomiques et rapprochement idempotent (SQLite) ; aucune session ne le sollicite encore",
+            "réservations atomiques et rapprochement idempotent (SQLite) ; sollicité par le daemon, en sessions simulées seulement",
           blockers: [],
         }
       : notImplemented("ledger", "réservations et disponibilité budgétaire non câblées"),
-    notImplemented("policy_engine", "aucune décision d'autorisation n'est rendue"),
-    notImplemented("scheduler", "aucun daemon ni réveil planifié"),
-    notImplemented("isolation", "aucune sandbox : exécution autonome impossible"),
-    notImplemented("runtime_adapter", "aucun adapter, réel ou simulé : aucune session possible"),
+    persistence === "sqlite" && BUILD_COMPONENTS.policyEngine
+      ? {
+          id: "policy_engine",
+          availability: "present",
+          detail:
+            "décisions de lancement et d'action rendues avant chaque session et chaque action contrôlée",
+          blockers: [],
+        }
+      : notImplemented("policy_engine", "aucune décision d'autorisation n'est rendue"),
+    persistence === "sqlite" && BUILD_COMPONENTS.scheduler
+      ? {
+          id: "scheduler",
+          availability: "present",
+          detail:
+            "réveils, fenêtres, backoff et réservation atomique ; exécuté seulement par `daemon run`",
+          blockers: [],
+        }
+      : notImplemented("scheduler", "aucun réveil planifié"),
+    persistence === "sqlite" && BUILD_COMPONENTS.daemon
+      ? {
+          id: "daemon",
+          availability: "simulated",
+          detail:
+            "`daemon run --simulated` au premier plan, adapter factice seulement ; aucun service, tâche planifiée ni démarrage automatique",
+          blockers: [],
+        }
+      : notImplemented("daemon", "aucun daemon"),
+    notImplemented(
+      "isolation",
+      "aucune sandbox (fichiers, réseau, secrets) : seule l'arborescence de processus est contenue (Job Object) ; exécution autonome réelle impossible",
+    ),
+    BUILD_COMPONENTS.simulatedAdapter
+      ? {
+          id: "simulated_adapter",
+          availability: "simulated",
+          detail:
+            "adapter factice : agent scripté, aucun appel modèle, consommation SIMULÉE ; jamais une preuve d'intégration",
+          blockers: [],
+        }
+      : notImplemented("simulated_adapter", "aucun adapter factice"),
+    notImplemented(
+      "runtime_adapter",
+      "adapter Codex non implémenté : aucune session réelle possible",
+    ),
     notImplemented("api_key_path", "voie clé API (ADR-002) non implémentée"),
     subscriptionPath(activePolicy?.groups.budget.subscriptionQuota, {
       adapter: BUILD_COMPONENTS.runtimeAdapter,

@@ -10,6 +10,7 @@ import type { UnitOfWork } from "../../contracts/index.js";
 import {
   openStore as openSqliteStore,
   openStoreReadOnly as openSqliteStoreReadOnly,
+  type SqliteDatabase,
 } from "../../store/index.js";
 
 export type Persistence = "memory" | "sqlite";
@@ -31,6 +32,8 @@ export interface Store {
   readonly persistence: Persistence;
   /** Dossier de données servi par ce stockage. */
   readonly dataDir: string;
+  /** Connexion SQLite, pour les tables propres au daemon (`daemon_runs`) ; absente en mémoire. */
+  readonly db?: SqliteDatabase;
   close(): void;
 }
 
@@ -51,6 +54,7 @@ export function openStore(dataDir: string, access: StoreAccess): Store {
     uow: opened.uow,
     persistence: "sqlite",
     dataDir,
+    db: opened.db,
     close: () => {
       opened.close();
     },

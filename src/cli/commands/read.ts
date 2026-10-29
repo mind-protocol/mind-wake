@@ -7,11 +7,14 @@
 import type { UnitOfWork } from "../../contracts/index.js";
 import type { CliContext } from "../context.js";
 import { inspectDataDir, type DataDir } from "../paths.js";
+import type { SqliteDatabase } from "../../store/index.js";
 import type { Persistence } from "../store/index.js";
 
 export interface ReadScope {
   readonly uow: UnitOfWork | null;
   readonly persistence: Persistence | null;
+  /** Connexion SQLite en lecture seule, si le stockage en expose une. */
+  readonly db?: SqliteDatabase;
 }
 
 export function withReadStore<T>(
@@ -22,7 +25,11 @@ export function withReadStore<T>(
   if (inspectDataDir(dataDir.path).status !== "ok") return fn({ uow: null, persistence: null });
   const store = ctx.openStore(dataDir.path, "read");
   try {
-    return fn({ uow: store.uow, persistence: store.persistence });
+    return fn({
+      uow: store.uow,
+      persistence: store.persistence,
+      ...(store.db === undefined ? {} : { db: store.db }),
+    });
   } finally {
     store.close();
   }

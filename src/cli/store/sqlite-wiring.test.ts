@@ -96,7 +96,11 @@ describe("CLI câblée sur SQLite", () => {
     expect(availability).toMatchObject({
       persistence: "present",
       ledger: "present",
-      policy_engine: "not_implemented",
+      policy_engine: "present",
+      scheduler: "present",
+      daemon: "simulated",
+      simulated_adapter: "simulated",
+      isolation: "not_implemented",
       runtime_adapter: "not_implemented",
     });
   });

@@ -14,6 +14,7 @@ import {
   formatCapability,
   type Capability,
 } from "../capabilities.js";
+import { isProcessAlive, latestDaemonRun } from "../../daemon/runs.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_OK, orDash, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
@@ -82,6 +83,38 @@ function subscriptionQuotaStatus(revision: PolicyRevision): SubscriptionQuotaSta
   };
 }
 
+export interface DaemonStatus {
+  /**
+   * `running` : exécution en cours et processus présent ; `stopped` : arrêt propre ;
+   * `crashed` : exécution sans fin enregistrée dont le processus a disparu.
+   */
+  readonly state: "running" | "stopped" | "crashed" | "never";
+  readonly mode: "simulated" | "real" | null;
+  readonly pid: number | null;
+  readonly startedAt: string | null;
+  readonly endedAt: string | null;
+  readonly endReason: string | null;
+}
+
+export interface LastSessionStatus {
+  readonly sessionId: string;
+  readonly at: string;
+  readonly outcome: string;
+  readonly reason: string;
+  readonly tokens: number | null;
+  readonly provenance: string | null;
+  readonly simulated: boolean;
+}
+
+const NO_DAEMON: DaemonStatus = {
+  state: "never",
+  mode: null,
+  pid: null,
+  startedAt: null,
+  endedAt: null,
+  endReason: null,
+};
+
 export interface StatusData {
   readonly dataDir: string;
   readonly persistence: Persistence | null;
@@ -97,6 +130,8 @@ export interface StatusData {
   readonly hint: string | null;
   readonly activeExperiment: { readonly id: string; readonly title: string } | null;
   readonly openSessions: number;
+  readonly daemon: DaemonStatus;
+  readonly lastSession: LastSessionStatus | null;
   readonly lastEvent: {
     readonly sequence: number;
     readonly at: string;
@@ -115,7 +150,7 @@ const NO_BUDGET: BudgetStatus = {
 };
 
 export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusData> {
-  const data = withReadStore(ctx, dataDir, ({ uow, persistence }): StatusData => {
+  const data = withReadStore(ctx, dataDir, ({ uow, persistence, db }): StatusData => {
     const profile = uow?.profiles.get(DEFAULT_PROFILE_ID) ?? null;
     if (uow === null || profile === null) {
       return {
@@ -125,6 +160,8 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
         hint: NO_PROFILE_HINT,
         activeExperiment: null,
         openSessions: 0,
+        daemon: NO_DAEMON,
+        lastSession: null,
         lastEvent: null,
         budget: NO_BUDGET,
         capabilities: capabilities(persistence ?? ctx.storeBackend, null),
@@ -133,6 +170,33 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
     const experiment = uow.experiments.getActive(profile.id);
     const events = uow.journal.list(profile.id);
     const last = events.at(-1);
+    const run = db === undefined ? null : latestDaemonRun(db, profile.id);
+    const daemon: DaemonStatus =
+      run === null
+        ? NO_DAEMON
+        : {
+            state:
+              run.endedAt !== null ? "stopped" : isProcessAlive(run.pid) ? "running" : "crashed",
+            mode: run.mode,
+            pid: run.pid,
+            startedAt: run.startedAt,
+            endedAt: run.endedAt,
+            endReason: run.endReason,
+          };
+    const ended = events.findLast((e) => e.type === "session_ended");
+    const meta = (ended?.metadata ?? {}) as Record<string, unknown>;
+    const lastSession: LastSessionStatus | null =
+      ended?.sessionId === undefined
+        ? null
+        : {
+            sessionId: ended.sessionId,
+            at: ended.at,
+            outcome: typeof meta["outcome"] === "string" ? meta["outcome"] : "inconnu",
+            reason: ended.reason,
+            tokens: typeof meta["tokens"] === "number" ? meta["tokens"] : null,
+            provenance: typeof meta["provenance"] === "string" ? meta["provenance"] : null,
+            simulated: meta["simulated"] === true,
+          };
     const revision =
       profile.activePolicyRevisionId === null
         ? null
@@ -170,6 +234,8 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
       hint: null,
       activeExperiment: experiment === null ? null : { id: experiment.id, title: experiment.title },
       openSessions: uow.sessions.listOpen(profile.id).length,
+      daemon,
+      lastSession,
       lastEvent:
         last === undefined
           ? null
@@ -192,7 +258,9 @@ function formatStatus(data: StatusData): string {
     `Motif : ${p.stateReason}`,
     `Policy active : ${orDash(p.activePolicyRevisionId)}`,
     `Expérience active : ${data.activeExperiment === null ? "—" : `${data.activeExperiment.title} (${data.activeExperiment.id})`}`,
+    `Daemon : ${formatDaemon(data.daemon)}`,
     `Sessions ouvertes : ${String(data.openSessions)}`,
+    `Dernière session : ${formatLastSession(data.lastSession)}`,
     `Dernière activité : ${data.lastEvent === null ? "—" : `#${String(data.lastEvent.sequence)} ${data.lastEvent.at} ${data.lastEvent.type} — ${data.lastEvent.reason}`}`,
     `Budget disponible : inconnu (${data.budget.detail})`,
   ];
@@ -220,4 +288,32 @@ function formatStatus(data: StatusData): string {
     lines.push("Attention : stockage SQLite non câblé, état en mémoire uniquement.");
   }
   return lines.join("\n");
+}
+
+const DAEMON_LABEL: Record<DaemonStatus["state"], string> = {
+  running: "actif",
+  stopped: "arrêté",
+  crashed: "arrêté brutalement (exécution sans fin enregistrée)",
+  never: "jamais démarré",
+};
+
+function formatDaemon(d: DaemonStatus): string {
+  if (d.state === "never") return DAEMON_LABEL.never;
+  const mode = d.mode === "simulated" ? " — SIMULÉ (adapter factice, aucun appel modèle)" : "";
+  const since =
+    d.state === "running"
+      ? `, pid ${String(d.pid)} depuis ${orDash(d.startedAt)}`
+      : d.state === "stopped"
+        ? ` le ${orDash(d.endedAt)} (${orDash(d.endReason)})`
+        : `, pid ${String(d.pid)} disparu`;
+  return `${DAEMON_LABEL[d.state]}${since}${mode}`;
+}
+
+function formatLastSession(s: LastSessionStatus | null): string {
+  if (s === null) return "—";
+  const tokens =
+    s.tokens === null
+      ? "consommation inconnue"
+      : `${String(s.tokens)} tokens ${s.provenance === "simulated" ? "SIMULÉS" : (s.provenance ?? "de provenance inconnue")}`;
+  return `${s.at} — ${s.reason} (${tokens})${s.simulated ? " [SIMULÉ]" : ""}`;
 }

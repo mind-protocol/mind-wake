@@ -1,7 +1,7 @@
 /**
- * Désinstallation (AGENTS §6.8, SPEC §8.3). Ce build n'installe ni daemon, ni tâche
- * planifiée, ni clé de démarrage, ni service : il n'y a rien à arrêter ni à retirer, et
- * le plan le dit. Le seul effet possible est la suppression du dossier de données,
+ * Désinstallation (AGENTS §6.8, SPEC §8.3). Ce build n'installe ni service, ni tâche
+ * planifiée, ni clé de démarrage : le daemon ne tourne qu'au premier plan (`daemon run`),
+ * il n'y a rien à retirer, et le plan le dit. Le seul effet possible est la suppression du dossier de données,
  * après un choix explicite de l'humain.
  *
  * Confinement : rien n'est jamais touché hors du dossier de données. Les liens et
@@ -37,7 +37,8 @@ export interface UninstallPlan {
 /** Fichiers qu'un dossier de données MIND Wake contient forcément s'il est utilisé. */
 export const DATA_DIR_MARKERS: readonly string[] = ["control.sqlite"];
 
-export const NO_DAEMON = "aucun daemon n'existe dans ce build : aucun processus à arrêter";
+export const NO_DAEMON =
+  "aucun daemon installé : `daemon run` ne tourne qu'au premier plan, à arrêter (Ctrl+C) avant de désinstaller ; aucun service ni démarrage automatique à retirer";
 export const NO_LAUNCH_MECHANISM =
   "aucun mécanisme de lancement (tâche planifiée, clé Run, service) n'est installé par ce build : rien à retirer";
 export const PACKAGE_NOTE =

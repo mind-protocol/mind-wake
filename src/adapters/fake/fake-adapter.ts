@@ -38,6 +38,11 @@ export interface FakeAdapterOptions {
   readonly maxProcesses?: number;
   /** Expérience à laquelle rattacher les checkpoints candidats. */
   readonly experimentFor?: (sessionId: SessionId) => ExperimentId;
+  /**
+   * Proposition d'expérience émise par l'agent (SPEC §3.2), transmise telle quelle :
+   * contenu non fiable, à valider par le daemon. Hors du contrat `RuntimeAdapter`.
+   */
+  readonly onProposal?: (sessionId: SessionId, proposal: unknown) => void;
 }
 
 const DEFAULT_EXPERIMENT = "fake-experiment" as ExperimentId;
@@ -83,6 +88,7 @@ export class FakeAdapter implements RuntimeAdapter, CheckpointRequestable {
   readonly #scenario: FakeAdapterOptions["scenario"];
   readonly #maxProcesses: number | undefined;
   readonly #experimentFor: (sessionId: SessionId) => ExperimentId;
+  readonly #onProposal: FakeAdapterOptions["onProposal"];
   readonly #sessions = new Map<SessionId, FakeSession>();
 
   constructor(options: FakeAdapterOptions) {
@@ -90,6 +96,7 @@ export class FakeAdapter implements RuntimeAdapter, CheckpointRequestable {
     this.#scenario = options.scenario;
     this.#maxProcesses = options.maxProcesses;
     this.#experimentFor = options.experimentFor ?? (() => DEFAULT_EXPERIMENT);
+    this.#onProposal = options.onProposal;
   }
 
   probe(): Promise<ProbeResult> {
@@ -173,21 +180,34 @@ export class FakeAdapter implements RuntimeAdapter, CheckpointRequestable {
           break;
         }
         case "checkpoint": {
+          // Champs fournis par l'agent repris tels quels : le candidat reste non fiable
+          // et sera validé (forme, chemins, intégrité) avant toute publication.
+          const given = <T>(key: string, fallback: T): T =>
+            message[key] === undefined ? fallback : (message[key] as T);
           const candidate: CheckpointCandidate = {
             schemaVersion: CHECKPOINT_SCHEMA_VERSION,
             experimentId: this.#experimentFor(sessionId),
             sessionId,
             summary: String(message["summary"]),
-            observations: [{ text: "observation simulée", confidence: "observed" }],
-            failures: [],
-            artifacts: [],
-            incompleteWork: [],
-            nextAction: "reprendre depuis ce checkpoint (simulé)",
-            hibernationReason: "fin de session simulée",
+            observations: given<CheckpointCandidate["observations"]>("observations", [
+              { text: "observation simulée", confidence: "observed" },
+            ]),
+            failures: given<CheckpointCandidate["failures"]>("failures", []),
+            artifacts: given<CheckpointCandidate["artifacts"]>("artifacts", []),
+            incompleteWork: given<CheckpointCandidate["incompleteWork"]>("incompleteWork", []),
+            nextAction: given("nextAction", "reprendre depuis ce checkpoint (simulé)"),
+            hibernationReason: given("hibernationReason", "fin de session simulée"),
           };
           yield { type: "checkpoint_candidate", sessionId, at, candidate };
           break;
         }
+        case "proposal":
+          try {
+            this.#onProposal?.(sessionId, message["proposal"]);
+          } catch {
+            // Un consommateur défaillant ne doit pas interrompre le flux d'événements.
+          }
+          break;
         case "rate_limited": {
           const retry = message["retryAfterMs"];
           yield {

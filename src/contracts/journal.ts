@@ -40,6 +40,8 @@ export const JOURNAL_EVENT_TYPES = [
   "orphan_reconciled",
   "data_exported",
   "data_purged",
+  "daemon_started",
+  "daemon_stopped",
   "error",
 ] as const;
 

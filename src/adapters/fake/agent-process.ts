@@ -5,12 +5,14 @@
  *
  * Protocole, une ligne JSON par message :
  * - stdout → adapter : `started`, `activity`, `usage`, `action`, `checkpoint`,
- *   `rate_limited`, `error`, `ended` ;
+ *   `proposal`, `rate_limited`, `error`, `ended` ;
  * - stdin ← adapter : `verdict` (réponse à une action), `checkpoint_request`.
  */
 
 import { spawn } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { appendFileSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 
 interface Step {
@@ -30,6 +32,8 @@ const scenario = JSON.parse(
 const verdicts = new Map<number, (allowed: boolean) => void>();
 let checkpointRequested: (() => void) | null = null;
 let nextActionId = 1;
+/** Artefacts écrits par cette session, joints aux checkpoints `withArtifacts`. */
+const artifacts: { id: string; path: string; sha256: string; bytes: number }[] = [];
 
 function emit(message: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify(message)}\n`);
@@ -131,9 +135,41 @@ async function execute(step: Step): Promise<"next" | "stop"> {
       // Laisse aux petits-enfants le temps de démarrer et d'être enregistrés.
       await sleep(300);
       return "next";
-    case "checkpoint":
-      emit({ t: "checkpoint", summary: step["summary"] });
+    case "checkpoint": {
+      const fields: Record<string, unknown> = { ...step };
+      delete fields["do"];
+      delete fields["withArtifacts"];
+      emit({
+        t: "checkpoint",
+        ...fields,
+        ...(step["withArtifacts"] === true ? { artifacts: [...artifacts] } : {}),
+      });
       return "next";
+    }
+    case "propose":
+      emit({ t: "proposal", proposal: step["proposal"] });
+      return "next";
+    case "write_artifact": {
+      const allowed = await requestAction({ kind: "file_write", path: step["actionPath"] });
+      if (!allowed) {
+        emit({ t: "activity", summary: "écriture d'artefact refusée : rien n'est écrit" });
+        return "next";
+      }
+      const content = Buffer.from(String(step["content"]), "utf8");
+      const target = join(String(step["root"]), String(step["path"]));
+      mkdirSync(dirname(target), { recursive: true });
+      const tmp = `${target}.agent-tmp`;
+      writeFileSync(tmp, content);
+      renameSync(tmp, target);
+      artifacts.push({
+        id: String(step["id"]),
+        path: String(step["path"]),
+        sha256: createHash("sha256").update(content).digest("hex"),
+        bytes: content.length,
+      });
+      emit({ t: "activity", summary: `artefact écrit : ${String(step["path"])}` });
+      return "next";
+    }
     case "rate_limited":
       emit({ t: "rate_limited", retryAfterMs: step["retryAfterMs"] });
       return "next";

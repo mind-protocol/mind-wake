@@ -47,7 +47,8 @@ export interface DoctorData {
 const STATUS_LABEL: Record<CheckStatus, string> = { ok: "OK", warn: "ATTENTION", fail: "ÉCHEC" };
 
 export const DOCTOR_NOTES: readonly string[] = [
-  "Aucune commande de cette CLI n'active l'exploration, n'appelle de modèle, n'envoie de message ni n'installe de daemon.",
+  "Aucune commande de cette CLI n'active l'exploration, n'appelle de modèle, n'envoie de message ni n'installe de service ou de démarrage automatique.",
+  "Seul `daemon run --simulated` lance des sessions : au premier plan, avec l'adapter factice, tout marqué SIMULÉ.",
   "Voie abonnement : avant toute activation future, désactiver l'achat automatique de crédits du forfait (ADR-004) ; cette CLI ne le vérifie pas.",
 ];
 
@@ -161,7 +162,7 @@ function formatDoctor(data: DoctorData): string {
     "",
     ...data.notes,
     failed === 0
-      ? "Environnement sans échec bloquant. Ce build ne peut lancer aucune session : l'exploration reste désactivée."
+      ? "Environnement sans échec bloquant. Ce build ne peut lancer aucune session réelle : isolation et adapter Codex non implémentés."
       : `${String(failed)} vérification(s) d'environnement en échec.`,
   ].join("\n");
 }

@@ -93,6 +93,12 @@ export interface LaunchGrant {
   /** Contexte borné transmis à l'agent ; aucun credential. */
   readonly context: string;
   readonly maxInputTokens: number;
+  /**
+   * Session déjà créée par le scheduler (S6), dans la transaction qui a réservé
+   * l'enveloppe et placé le profil en `running`. Le runner revérifie alors cette
+   * session au lieu de la créer ; sinon il exige un profil `ready` et la crée.
+   */
+  readonly sessionPrepared?: boolean;
 }
 
 export interface SessionResult {
@@ -286,14 +292,30 @@ export class SessionRunner {
 
     const nowMs = this.#nowMs();
     const at = utc(nowMs);
-    const prepared = this.#uow.transaction((tx) => {
+    const prepared = grant.sessionPrepared === true;
+    const ready = this.#uow.transaction((tx) => {
       const profile = tx.profiles.get(grant.profileId);
       if (profile === null) throw new RunnerError("unknown_profile", "profil inconnu");
-      if (profile.emergencyStopLocked || profile.state !== "ready") {
+      const expected = prepared ? "running" : "ready";
+      if (profile.emergencyStopLocked || profile.state !== expected) {
         throw new RunnerError(
           "profile_not_ready",
           `profil en état ${profile.state}${profile.emergencyStopLocked ? " (arrêt d'urgence verrouillé)" : ""}`,
         );
+      }
+      if (prepared) {
+        const existing = tx.sessions.get(grant.sessionId);
+        if (
+          existing?.profileId !== grant.profileId ||
+          existing.outcome !== null ||
+          existing.reservationId !== grant.reservationId ||
+          existing.policyRevisionId !== decision.revisionId
+        ) {
+          throw new RunnerError(
+            "session_not_prepared",
+            "session préparée absente, close ou incohérente avec l'autorisation",
+          );
+        }
       }
       const reservation = tx.ledger.getReservation(grant.reservationId);
       if (reservation?.status !== "open" || reservation.sessionId !== grant.sessionId) {
@@ -310,26 +332,28 @@ export class SessionRunner {
       if (revision === null || tx.policies.listRevocations(revision.id).length > 0) {
         throw new RunnerError("policy_not_effective", "révision de policy inconnue ou révoquée");
       }
-      tx.sessions.create({
-        id: grant.sessionId,
-        profileId: grant.profileId,
-        experimentId: grant.experimentId,
-        adapterId: this.adapter.id,
-        policyRevisionId: revision.id,
-        reservationId: reservation.id,
-        startedAt: at,
-        endedAt: null,
-        outcome: null,
-        outcomeReason: null,
-      });
-      tx.profiles.transition(profile.id, {
-        from: "ready",
-        to: "running",
-        reason: "session lancée",
-        at,
-        sessionId: grant.sessionId,
-      });
-      this.#recordState(profile, "running", "session lancée", at, grant.sessionId);
+      if (!prepared) {
+        tx.sessions.create({
+          id: grant.sessionId,
+          profileId: grant.profileId,
+          experimentId: grant.experimentId,
+          adapterId: this.adapter.id,
+          policyRevisionId: revision.id,
+          reservationId: reservation.id,
+          startedAt: at,
+          endedAt: null,
+          outcome: null,
+          outcomeReason: null,
+        });
+        tx.profiles.transition(profile.id, {
+          from: "ready",
+          to: "running",
+          reason: "session lancée",
+          at,
+          sessionId: grant.sessionId,
+        });
+        this.#recordState(profile, "running", "session lancée", at, grant.sessionId);
+      }
       const started = this.#journal.record({
         type: "session_started",
         at,
@@ -353,14 +377,14 @@ export class SessionRunner {
       ref: {
         profileId: grant.profileId,
         sessionId: grant.sessionId,
-        policyRevisionId: prepared.revision.id,
+        policyRevisionId: ready.revision.id,
       },
-      revision: prepared.revision,
-      reservation: prepared.reservation,
-      maxTokens: prepared.maxTokens,
-      startSequence: prepared.startSequence,
+      revision: ready.revision,
+      reservation: ready.reservation,
+      maxTokens: ready.maxTokens,
+      startSequence: ready.startSequence,
       startedAtMs: nowMs,
-      deadlineMs: nowMs + prepared.revision.groups.schedule.maxSessionDurationMs,
+      deadlineMs: nowMs + ready.revision.groups.schedule.maxSessionDurationMs,
       handle: null,
       process: null,
       tokens: 0,
