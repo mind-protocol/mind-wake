@@ -1,0 +1,11 @@
+{
+  "extends": "common.json",
+  "on": {
+    "account/read": {
+      "result": {
+        "account": null,
+        "requiresOpenaiAuth": true
+      }
+    }
+  }
+}

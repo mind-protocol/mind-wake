@@ -1,0 +1,261 @@
+{
+  "version": "codex-cli 0.147.0",
+  "recordedAt": "2026-10-29T12:35:35.575Z",
+  "on": {
+    "initialize": {
+      "result": {
+        "userAgent": "mind_wake/0.147.0 (Windows 10.0.26200; x86_64) unknown (mind_wake; 0.1.0)",
+        "codexHome": "<HOME>\\.codex",
+        "platformFamily": "windows",
+        "platformOs": "windows"
+      },
+      "then": [
+        {
+          "notify": "remoteControl/status/changed",
+          "params": {
+            "status": "disabled",
+            "serverName": "<redacted>",
+            "installationId": "<redacted>",
+            "environmentId": null
+          }
+        }
+      ]
+    },
+    "account/read": {
+      "result": {
+        "account": {
+          "type": "chatgpt",
+          "email": "<redacted>",
+          "planType": "pro"
+        },
+        "requiresOpenaiAuth": true
+      },
+      "then": []
+    },
+    "thread/start": {
+      "result": {
+        "thread": {
+          "id": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+          "extra": null,
+          "sessionId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+          "forkedFromId": null,
+          "parentThreadId": null,
+          "preview": "",
+          "ephemeral": true,
+          "section": null,
+          "sectionEnteredAt": null,
+          "historyMode": "legacy",
+          "modelProvider": "openai",
+          "createdAt": 1793277332,
+          "updatedAt": 1793277332,
+          "recencyAt": 1793277332,
+          "status": {
+            "type": "idle"
+          },
+          "path": null,
+          "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-jCCiHh",
+          "cliVersion": "0.147.0",
+          "source": "vscode",
+          "canAcceptDirectInput": true,
+          "threadSource": null,
+          "agentNickname": null,
+          "agentRole": null,
+          "gitInfo": null,
+          "name": null,
+          "turns": []
+        },
+        "model": "gpt-6.1-sol",
+        "modelProvider": "openai",
+        "serviceTier": null,
+        "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-jCCiHh",
+        "runtimeWorkspaceRoots": ["<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-jCCiHh"],
+        "instructionSources": [],
+        "approvalPolicy": "never",
+        "approvalsReviewer": "user",
+        "sandbox": {
+          "type": "readOnly",
+          "networkAccess": false
+        },
+        "activePermissionProfile": null,
+        "reasoningEffort": "medium",
+        "multiAgentMode": "explicitRequestOnly"
+      },
+      "then": [
+        {
+          "notify": "thread/started",
+          "params": {
+            "thread": {
+              "id": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+              "extra": null,
+              "sessionId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+              "forkedFromId": null,
+              "parentThreadId": null,
+              "preview": "",
+              "ephemeral": true,
+              "section": null,
+              "sectionEnteredAt": null,
+              "historyMode": "legacy",
+              "modelProvider": "openai",
+              "createdAt": 1793277332,
+              "updatedAt": 1793277332,
+              "recencyAt": 1793277332,
+              "status": {
+                "type": "idle"
+              },
+              "path": null,
+              "cwd": "<HOME>\\AppData\\Local\\Temp\\mindwake-codex-smoke-jCCiHh",
+              "cliVersion": "0.147.0",
+              "source": "vscode",
+              "canAcceptDirectInput": true,
+              "threadSource": null,
+              "agentNickname": null,
+              "agentRole": null,
+              "gitInfo": null,
+              "name": null,
+              "turns": []
+            }
+          }
+        },
+        {
+          "notify": "warning",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "message": "Configured service tier `priority` is not advertised as supported for model `gpt-6.1-sol` and will be omitted from requests."
+          }
+        }
+      ]
+    },
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "01a187a8-8d8e-70f1-afc2-1249d50837f1",
+          "items": [],
+          "itemsView": "notLoaded",
+          "status": "inProgress",
+          "error": null,
+          "startedAt": null,
+          "completedAt": null,
+          "durationMs": null
+        }
+      },
+      "then": [
+        {
+          "notify": "warning",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "message": "Model metadata for `gpt-6.1-sol` not found. Defaulting to fallback metadata; this can degrade performance and cause issues."
+          }
+        },
+        {
+          "notify": "thread/status/changed",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "status": {
+              "type": "active",
+              "activeFlags": []
+            }
+          }
+        },
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "turn": {
+              "id": "01a187a8-8d8e-70f1-afc2-1249d50837f1",
+              "items": [],
+              "itemsView": "notLoaded",
+              "status": "inProgress",
+              "error": null,
+              "startedAt": 1793277332,
+              "completedAt": null,
+              "durationMs": null
+            }
+          }
+        },
+        {
+          "notify": "item/started",
+          "params": {
+            "item": {
+              "type": "userMessage",
+              "id": "01a187a8-9178-7193-bee8-d6278a974c41",
+              "clientId": null,
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Réponds seulement OK",
+                  "text_elements": []
+                }
+              ]
+            },
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "turnId": "01a187a8-8d8e-70f1-afc2-1249d50837f1",
+            "startedAtMs": 1793277333880
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "item": {
+              "type": "userMessage",
+              "id": "01a187a8-9178-7193-bee8-d6278a974c41",
+              "clientId": null,
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Réponds seulement OK",
+                  "text_elements": []
+                }
+              ]
+            },
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "turnId": "01a187a8-8d8e-70f1-afc2-1249d50837f1",
+            "completedAtMs": 1793277333880
+          }
+        },
+        {
+          "notify": "thread/status/changed",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "status": {
+              "type": "systemError"
+            }
+          }
+        },
+        {
+          "notify": "error",
+          "params": {
+            "error": {
+              "message": "{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.\",\"code\":\"model_not_found\"}}",
+              "codexErrorInfo": "other",
+              "additionalDetails": null
+            },
+            "willRetry": false,
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "turnId": "01a187a8-8d8e-70f1-afc2-1249d50837f1"
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "01a187a8-8c1f-7052-a573-4fd350bcc25d",
+            "turn": {
+              "id": "01a187a8-8d8e-70f1-afc2-1249d50837f1",
+              "items": [],
+              "itemsView": "notLoaded",
+              "status": "failed",
+              "error": {
+                "message": "{\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.\",\"code\":\"model_not_found\"}}",
+                "codexErrorInfo": "other",
+                "additionalDetails": null
+              },
+              "startedAt": 1793277332,
+              "completedAt": 1793277334,
+              "durationMs": 1512
+            }
+          }
+        }
+      ]
+    }
+  },
+  "note": "Flux réel enregistré le 29 octobre 2026 (codex-cli 0.147.0, compte ChatGPT), expurgé : email, solde, nom du poste, identifiant d installation, chemins du profil."
+}

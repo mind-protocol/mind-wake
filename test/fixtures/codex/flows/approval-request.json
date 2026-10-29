@@ -1,0 +1,50 @@
+{
+  "extends": "common.json",
+  "on": {
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "turn_1",
+          "status": "inProgress",
+          "items": [],
+          "error": null
+        }
+      },
+      "then": [
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "inProgress",
+              "items": []
+            }
+          }
+        },
+        {
+          "request": "item/commandExecution/requestApproval",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "itemId": "i1"
+          }
+        },
+        {
+          "sleepMs": 100
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "completed",
+              "items": []
+            }
+          }
+        }
+      ]
+    }
+  }
+}

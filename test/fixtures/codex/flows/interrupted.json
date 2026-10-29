@@ -1,0 +1,74 @@
+{
+  "extends": "common.json",
+  "on": {
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "turn_1",
+          "status": "inProgress",
+          "items": [],
+          "error": null
+        }
+      },
+      "then": [
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "inProgress",
+              "items": []
+            }
+          }
+        },
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "tokenUsage": {
+              "last": {
+                "inputTokens": 100,
+                "cachedInputTokens": 0,
+                "outputTokens": 50,
+                "reasoningOutputTokens": 0,
+                "totalTokens": 150
+              },
+              "total": {
+                "inputTokens": 100,
+                "cachedInputTokens": 0,
+                "outputTokens": 50,
+                "reasoningOutputTokens": 0,
+                "totalTokens": 150
+              },
+              "modelContextWindow": 272000
+            }
+          }
+        },
+        {
+          "hang": true
+        }
+      ]
+    },
+    "turn/interrupt": {
+      "result": {},
+      "then": [
+        {
+          "sleepMs": 10
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "interrupted",
+              "items": []
+            }
+          }
+        }
+      ]
+    }
+  }
+}
