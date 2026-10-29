@@ -83,6 +83,9 @@ CREATE TABLE experiments (
 ) STRICT;
 CREATE UNIQUE INDEX experiments_one_active ON experiments (profile_id) WHERE status = 'active';
 
+-- Colonne \`qualifier\` des tables du ledger : devise pour \`money\`, clé de fenêtre pour
+-- \`provider_quota_bp\`, vide sinon. Deux qualifiants différents ne s'additionnent jamais.
+
 -- Périodes de budget : bornes calculées dans le fuseau, persistées en UTC.
 CREATE TABLE budget_periods (
   id TEXT PRIMARY KEY,
@@ -98,11 +101,11 @@ CREATE TABLE budget_periods (
 
 CREATE TABLE period_limits (
   period_id TEXT NOT NULL REFERENCES budget_periods (id),
-  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money')),
-  currency TEXT NOT NULL CHECK ((unit = 'money') = (currency <> '')),
+  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money', 'provider_quota_bp')),
+  qualifier TEXT NOT NULL CHECK ((unit IN ('money', 'provider_quota_bp')) = (qualifier <> '')),
   cap INTEGER NOT NULL CHECK (cap >= 0),
   user_reserve INTEGER NOT NULL CHECK (user_reserve >= 0),
-  PRIMARY KEY (period_id, unit)
+  PRIMARY KEY (period_id, unit, qualifier)
 ) STRICT, WITHOUT ROWID;
 
 -- Instant le plus récent observé par profil : un recul d'horloge ne ramène jamais le
@@ -132,34 +135,34 @@ CREATE INDEX reservation_periods_by_period ON reservation_periods (period_id);
 
 CREATE TABLE reservation_maxima (
   reservation_id TEXT NOT NULL REFERENCES reservations (id),
-  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money')),
-  currency TEXT NOT NULL CHECK ((unit = 'money') = (currency <> '')),
+  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money', 'provider_quota_bp')),
+  qualifier TEXT NOT NULL CHECK ((unit IN ('money', 'provider_quota_bp')) = (qualifier <> '')),
   amount INTEGER NOT NULL CHECK (amount >= 0),
-  PRIMARY KEY (reservation_id, unit, currency)
+  PRIMARY KEY (reservation_id, unit, qualifier)
 ) STRICT, WITHOUT ROWID;
 
 -- Usage rapporté, avec sa provenance. Un enregistrement rejoué à l'identique est ignoré.
 CREATE TABLE usage_records (
   seq INTEGER PRIMARY KEY,
   reservation_id TEXT NOT NULL REFERENCES reservations (id),
-  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money')),
-  currency TEXT NOT NULL CHECK ((unit = 'money') = (currency <> '')),
+  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money', 'provider_quota_bp')),
+  qualifier TEXT NOT NULL CHECK ((unit IN ('money', 'provider_quota_bp')) = (qualifier <> '')),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   provenance TEXT NOT NULL CHECK (provenance IN ('measured', 'estimated', 'simulated', 'unknown')),
   token_breakdown_json TEXT CHECK (token_breakdown_json IS NULL OR json_valid(token_breakdown_json)),
   recorded_at TEXT NOT NULL,
-  UNIQUE (reservation_id, unit, currency, provenance, recorded_at, amount)
+  UNIQUE (reservation_id, unit, qualifier, provenance, recorded_at, amount)
 ) STRICT;
 
 -- Consommation imputée au rapprochement : écrite dans la même transaction que la
 -- clôture de la réservation, une ligne par unité.
 CREATE TABLE reservation_charges (
   reservation_id TEXT NOT NULL REFERENCES reservations (id),
-  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money')),
-  currency TEXT NOT NULL CHECK ((unit = 'money') = (currency <> '')),
+  unit TEXT NOT NULL CHECK (unit IN ('tokens', 'sessions', 'duration_ms', 'money', 'provider_quota_bp')),
+  qualifier TEXT NOT NULL CHECK ((unit IN ('money', 'provider_quota_bp')) = (qualifier <> '')),
   amount INTEGER NOT NULL CHECK (amount >= 0),
   provenance TEXT NOT NULL CHECK (provenance IN ('measured', 'estimated', 'simulated', 'unknown')),
-  PRIMARY KEY (reservation_id, unit, currency)
+  PRIMARY KEY (reservation_id, unit, qualifier)
 ) STRICT, WITHOUT ROWID;
 CREATE TRIGGER reservation_charges_no_update BEFORE UPDATE ON reservation_charges
 BEGIN SELECT RAISE(ABORT, 'reservation_charges est en ajout seul'); END;

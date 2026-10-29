@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DAY_PARIS,
   LIMITS,
-  PARIS,
   PROFILE,
+  authorize,
   createProfile,
+  policyGroups,
   tempDir,
   ts,
   type TempDir,
 } from "../../test/fixtures/store-ledger/setup.js";
 import type {
   AdapterId,
-  AgentId,
   ArtifactId,
   Checkpoint,
   CheckpointId,
@@ -19,7 +19,6 @@ import type {
   ConsentId,
   ExperimentId,
   ExperimentRecord,
-  PolicyGroups,
   PolicyRevision,
   PolicyRevisionId,
   ReservationId,
@@ -45,49 +44,6 @@ afterEach(() => {
 
 const NOW = ts("2026-10-29T12:00:00Z");
 
-function groups(): PolicyGroups {
-  return {
-    identity: { profileId: PROFILE, agentId: "agent-1" as AgentId },
-    runtime: { adapterId: "fake" as AdapterId, provider: "none", model: "none", authMode: "none" },
-    schedule: {
-      timeZone: PARIS,
-      weeklyWindows: [{ day: 1, start: "09:00", end: "17:00" }],
-      minIntervalBetweenSessionsMs: 60_000,
-      maxSessionDurationMs: 600_000,
-    },
-    humanPriority: {
-      activitySignal: "idle",
-      idleThresholdMs: 60_000,
-      maxSignalAgeMs: 10_000,
-      maxInterruptLatencyMs: 5_000,
-      maxTerminationLatencyMs: 10_000,
-    },
-    budget: {
-      period: DAY_PARIS,
-      tokensPerSession: 3_000,
-      tokensPerPeriod: 10_000,
-      sessionsPerPeriod: 3,
-      userReserveTokens: 2_000,
-      checkpointTokens: 500,
-      paidApi: { authorized: false },
-    },
-    filesAndTools: {
-      readRoots: [],
-      writeRoots: [],
-      allowedExecutables: [],
-      maxProcesses: 4,
-      maxStorageBytes: 1_000_000,
-    },
-    network: { explorationDestinations: [], providerTransportDestinations: [] },
-    data: {
-      eventRetentionDays: 30,
-      localStorageCapBytes: 1_000_000,
-      purge: "manual",
-      exportPaths: [],
-    },
-  };
-}
-
 function revision(id: string, previous: string | null): PolicyRevision {
   return {
     schemaVersion: POLICY_SCHEMA_VERSION,
@@ -95,12 +51,15 @@ function revision(id: string, previous: string | null): PolicyRevision {
     profileId: PROFILE,
     previousRevisionId: previous as PolicyRevisionId | null,
     createdAt: NOW,
-    groups: groups(),
+    groups: policyGroups(),
   };
 }
 
 /** Réservation + session ouverte, prérequis des sessions et checkpoints. */
 function openSession(id: string): SessionId {
+  if (store.uow.policies.getRevision("rev-1" as PolicyRevisionId) === null) {
+    authorize(store.uow, "rev-1");
+  }
   const periodId = store.uow.ledger.ensurePeriod(PROFILE, DAY_PARIS, NOW, LIMITS).id;
   const reserved = store.uow.ledger.reserve({
     id: `res-${id}` as ReservationId,
@@ -111,9 +70,6 @@ function openSession(id: string): SessionId {
     at: NOW,
   });
   expect(reserved.status).toBe("reserved");
-  if (store.uow.policies.getRevision("rev-1" as PolicyRevisionId) === null) {
-    store.uow.policies.appendRevision(revision("rev-1", null));
-  }
   store.uow.sessions.create({
     id: id as SessionId,
     profileId: PROFILE,
@@ -183,7 +139,7 @@ describe("ouverture et migrations", () => {
 
   it("applique les clés étrangères", () => {
     expect(() => {
-      store.uow.ledger.ensurePeriod("inconnu" as typeof PROFILE, DAY_PARIS, NOW, LIMITS);
+      store.uow.ledger.ensurePeriod("inconnu" as typeof PROFILE, DAY_PARIS, NOW, []);
     }).toThrow(/FOREIGN KEY/);
   });
 });

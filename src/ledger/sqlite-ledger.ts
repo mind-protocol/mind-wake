@@ -1,17 +1,25 @@
 /**
- * Ledger de budget sur SQLite (SPEC §6).
+ * Ledger de ressources sur SQLite (SPEC §6). Ce n'est ni un escrow ni une preuve de
+ * fonds (TRANSACTIONS.md §7.1) : il compte des tokens, sessions, durées, centimes d'API
+ * autorisée et parts de fenêtre de quota, sans rien verrouiller chez un tiers.
  *
- * Pour une période et une unité :
+ * Pour une période, une unité et son qualifiant (devise ou fenêtre de quota) :
  * `disponible = plafond − rapproché − réservations ouvertes − réserve utilisateur`.
  *
+ * - Plafond et réserve effectifs : ceux de la période, bornés par la révision de policy
+ *   consentie et effective du profil (voir `authorization.ts`). Sans révision effective,
+ *   la disponibilité est inconnue.
  * - Les réservations `open` et `uncertain` comptent à leur borne maximale, ou à l'usage
  *   déjà rapporté s'il la dépasse.
  * - Le rapprochement écrit la consommation imputée et clôt la réservation dans la même
  *   transaction : la réservation cesse de compter au moment exact où son usage compte.
- * - Une réservation couvre chaque période qu'elle cite ; son usage rapproché y est
- *   imputé en entier (borne prudente, faute de répartition fiable entre périodes).
- * - Les unités ne sont jamais converties ; une devise différente de celle du plafond
- *   rend la disponibilité monétaire inconnue.
+ * - Une période compte chaque réservation liée à une période du profil qui la chevauche
+ *   dans le temps, une seule fois chacune ; son usage rapproché y est imputé en entier
+ *   (borne prudente, faute de répartition fiable entre périodes).
+ * - Les unités ne sont jamais converties ; une autre devise que celle du plafond rend la
+ *   disponibilité monétaire inconnue, et chaque fenêtre de quota a son propre compte.
+ * - Une même clé (réservation, rapprochement, usage) rejouée avec un contenu différent
+ *   lève un conflit ; rejouée à l'identique, elle ne change rien.
  */
 
 import { randomUUID } from "node:crypto";
@@ -24,6 +32,7 @@ import type {
   BudgetUnit,
   LedgerRepository,
   PeriodLimit,
+  PolicyGroups,
   ProfileId,
   Reservation,
   ReservationId,
@@ -44,12 +53,20 @@ import {
   assertProvenance,
   assertQuantity,
   assertUnit,
+  assertWindowKey,
   computeCharges,
   makeQuantity,
   quantityAmount,
-  quantityCurrency,
+  quantityQualifier,
   unitKey,
 } from "./accounting.js";
+import {
+  ceilingFromPolicy,
+  restrictCeiling,
+  sameDefinition,
+  unitCeiling,
+  type AuthorizedCeiling,
+} from "./authorization.js";
 import { DEFAULT_WEEK_STARTS_ON, periodBoundsAt, periodBoundsCovering } from "./periods.js";
 import { normalizeUtcTimestamp, parseUtcTimestamp, toUtcTimestamp } from "./time.js";
 
@@ -65,7 +82,7 @@ interface PeriodRow {
 
 interface LimitRow {
   readonly unit: BudgetUnit;
-  readonly currency: string;
+  readonly qualifier: string;
   readonly cap: number;
   readonly user_reserve: number;
 }
@@ -81,7 +98,7 @@ interface ReservationRow {
 
 interface QuantityRow {
   readonly unit: BudgetUnit;
-  readonly currency: string;
+  readonly qualifier: string;
   readonly amount: number;
 }
 
@@ -91,10 +108,10 @@ interface UsageRow extends QuantityRow {
   readonly recorded_at: string;
 }
 
-interface TotalRow {
-  readonly currency: string;
-  readonly provenance: UsageProvenance;
-  readonly total: number;
+interface RevisionAuthorityRow {
+  readonly groups_json: string;
+  readonly consented: number;
+  readonly revoked: number;
 }
 
 const ZERO_BY_PROVENANCE: Readonly<Record<UsageProvenance, number>> = {
@@ -104,15 +121,24 @@ const ZERO_BY_PROVENANCE: Readonly<Record<UsageProvenance, number>> = {
   unknown: 0,
 };
 
+/** Valeurs admises à l'exécution : les données peuvent venir d'un JSON non typé. */
+const PERIOD_KINDS: readonly string[] = ["day", "week", "month"];
+
+/** Réservations comptées dans une période : liées à une période qui la chevauche. */
+const RESERVATIONS_IN_SCOPE = `
+  SELECT DISTINCT rp.reservation_id AS id
+    FROM budget_periods p
+    JOIN budget_periods q
+      ON q.profile_id = p.profile_id AND q.starts_at < p.ends_at AND q.ends_at > p.starts_at
+    JOIN reservation_periods rp ON rp.period_id = q.id
+   WHERE p.id = :period`;
+
 function denied(
   reason: "budget_exhausted" | "budget_unknown" | "session_already_active",
   detail: string,
 ): ReservationResult {
   return { status: "denied", reason, detail };
 }
-
-/** Valeurs admises à l'exécution : les données peuvent venir d'un JSON non typé. */
-const PERIOD_KINDS: readonly string[] = ["day", "week", "month"];
 
 function normalizeDefinition(definition: BudgetPeriodDefinition): BudgetPeriodDefinition {
   if (!PERIOD_KINDS.includes(definition.kind)) {
@@ -128,25 +154,54 @@ function normalizeDefinition(definition: BudgetPeriodDefinition): BudgetPeriodDe
   return { kind: definition.kind, timeZone: definition.timeZone };
 }
 
+function limitQualifier(limit: PeriodLimit): string {
+  return limit.currency ?? limit.windowKey ?? "";
+}
+
 function validateLimits(limits: readonly PeriodLimit[]): void {
-  const seen = new Set<BudgetUnit>();
+  const seen = new Set<string>();
   for (const limit of limits) {
     assertUnit(limit.unit);
-    if (seen.has(limit.unit)) {
-      throw new RangeError(`plafond en double pour l'unité ${limit.unit}`);
-    }
-    seen.add(limit.unit);
     assertAmount(limit.cap, `plafond ${limit.unit}`);
     assertAmount(limit.userReserve, `réserve utilisateur ${limit.unit}`);
     if (limit.unit === "money") {
-      if (limit.currency === undefined) {
+      if (limit.currency === undefined)
         throw new RangeError("un plafond monétaire exige une devise");
-      }
       assertCurrency(limit.currency);
     } else if (limit.currency !== undefined) {
       throw new RangeError(`l'unité ${limit.unit} ne porte pas de devise`);
     }
+    if (limit.unit === "provider_quota_bp") {
+      if (limit.windowKey === undefined) {
+        throw new RangeError("un plafond de quota exige une clé de fenêtre");
+      }
+      assertWindowKey(limit.windowKey);
+    } else if (limit.windowKey !== undefined) {
+      throw new RangeError(`l'unité ${limit.unit} ne porte pas de clé de fenêtre`);
+    }
+    // Une seule devise par période ; un plafond par fenêtre de quota.
+    const key = limit.unit === "money" ? "money" : unitKey(limit.unit, limitQualifier(limit));
+    if (seen.has(key)) throw new RangeError(`plafond en double pour ${key}`);
+    seen.add(key);
   }
+}
+
+function quantityKey(quantity: BudgetQuantity): string {
+  return `${unitKey(quantity.unit, quantityQualifier(quantity))}=${String(quantityAmount(quantity))}`;
+}
+
+function usageKey(record: UsageRecord): string {
+  return [
+    quantityKey(record.quantity),
+    record.provenance,
+    normalizeUtcTimestamp(record.recordedAt),
+  ].join("|");
+}
+
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  const left = [...new Set(a)].sort();
+  const right = [...new Set(b)].sort();
+  return left.length === right.length && left.every((value, i) => value === right[i]);
 }
 
 export class SqliteLedgerRepository implements LedgerRepository {
@@ -156,6 +211,11 @@ export class SqliteLedgerRepository implements LedgerRepository {
     this.#db = db;
   }
 
+  /**
+   * Crée ou retrouve la période et remplace ses plafonds. Refuse (`not_authorized`)
+   * tout plafond non nul sans révision consentie et effective, au-delà de celle-ci, ou
+   * avec une réserve humaine inférieure, ainsi qu'une définition de période différente.
+   */
   ensurePeriod(
     profileId: ProfileId,
     definition: BudgetPeriodDefinition,
@@ -165,6 +225,7 @@ export class SqliteLedgerRepository implements LedgerRepository {
     const normalized = normalizeDefinition(definition);
     validateLimits(limits);
     return immediate(this.#db, () => {
+      this.#authorizeLimits(profileId, normalized, limits);
       const effectiveMs = this.#advanceClock(profileId, at);
       return this.#ensurePeriodAt(profileId, normalized, effectiveMs, limits);
     });
@@ -185,6 +246,7 @@ export class SqliteLedgerRepository implements LedgerRepository {
     const normalized = normalizeDefinition(definition);
     validateLimits(limits);
     return immediate(this.#db, () => {
+      this.#authorizeLimits(profileId, normalized, limits);
       const effectiveMs = this.#advanceClock(profileId, at);
       return periodBoundsCovering(normalized, effectiveMs, maxDurationMs).map((bounds) =>
         this.#ensurePeriodAt(profileId, normalized, bounds.startsAtMs, limits),
@@ -202,7 +264,7 @@ export class SqliteLedgerRepository implements LedgerRepository {
     const keys = new Set<string>();
     for (const quantity of request.maxima) {
       assertQuantity(quantity);
-      const key = unitKey(quantity.unit, quantityCurrency(quantity));
+      const key = unitKey(quantity.unit, quantityQualifier(quantity));
       if (keys.has(key)) {
         throw new StoreError("invalid_input", `borne en double pour ${key}`);
       }
@@ -214,16 +276,19 @@ export class SqliteLedgerRepository implements LedgerRepository {
     return immediate(this.#db, (): ReservationResult => {
       const existing = this.#reservationRow(request.id);
       if (existing !== undefined) {
-        if (
-          existing.session_id !== request.sessionId ||
-          existing.profile_id !== request.profileId
-        ) {
+        const reservation = this.#load(existing);
+        const same =
+          existing.session_id === request.sessionId &&
+          existing.profile_id === request.profileId &&
+          sameSet(reservation.periodIds, periodIds) &&
+          sameSet(reservation.maxima.map(quantityKey), request.maxima.map(quantityKey));
+        if (!same) {
           throw new StoreError(
             "conflict",
-            `réservation ${request.id} déjà attribuée à une autre session`,
+            `réservation ${request.id} déjà enregistrée avec un autre contenu`,
           );
         }
-        return { status: "reserved", reservation: this.#load(existing) };
+        return { status: "reserved", reservation };
       }
 
       const effectiveMs = this.#advanceClock(request.profileId, createdAt);
@@ -259,17 +324,24 @@ export class SqliteLedgerRepository implements LedgerRepository {
         );
       }
 
+      const ceiling = this.#ceiling(request.profileId);
       for (const period of periods) {
         for (const quantity of request.maxima) {
-          const availability = this.#availability(period.id as BudgetPeriodId, quantity.unit);
-          const label = `${quantity.unit} sur la période ${period.id}`;
+          const qualifier = quantityQualifier(quantity);
+          const availability = this.#availability(
+            period,
+            quantity.unit,
+            quantity.unit === "provider_quota_bp" ? qualifier : undefined,
+            ceiling,
+          );
+          const label = `${unitKey(quantity.unit, qualifier)} sur la période ${period.id}`;
           if (availability.available === null) {
             return denied("budget_unknown", `disponibilité inconnue pour ${label}`);
           }
           if (quantity.unit === "money" && availability.currency !== quantity.currency) {
             return denied(
               "budget_unknown",
-              `devise ${quantity.currency} différente du plafond (${String(availability.currency)}) pour ${label}`,
+              `devise différente du plafond (${String(availability.currency)}) pour ${label}`,
             );
           }
           const amount = quantityAmount(quantity);
@@ -292,29 +364,30 @@ export class SqliteLedgerRepository implements LedgerRepository {
       );
       for (const id of periodIds) linkPeriod.run(request.id, id);
       const addMaximum = this.#db.prepare(
-        "INSERT INTO reservation_maxima (reservation_id, unit, currency, amount) VALUES (?, ?, ?, ?)",
+        "INSERT INTO reservation_maxima (reservation_id, unit, qualifier, amount) VALUES (?, ?, ?, ?)",
       );
       for (const quantity of request.maxima) {
         addMaximum.run(
           request.id,
           quantity.unit,
-          quantityCurrency(quantity),
+          quantityQualifier(quantity),
           quantityAmount(quantity),
         );
       }
-      const reservation = this.getReservation(request.id);
-      if (reservation === null) {
-        throw new StoreError("not_found", `réservation ${request.id} introuvable après écriture`);
-      }
-      return { status: "reserved", reservation };
+      return { status: "reserved", reservation: this.#load(this.#requireReservation(request.id)) };
     });
   }
 
+  /**
+   * Enregistre un incrément d'usage. Rejoué à l'identique, il est ignoré, y compris
+   * après rapprochement ; un usage nouveau sur une réservation rapprochée est refusé.
+   */
   recordUsage(usage: UsageRecord): void {
     this.#validateUsage(usage);
     immediate(this.#db, () => {
       const row = this.#requireReservation(usage.reservationId);
       if (row.status === "reconciled") {
+        if (this.#hasUsage(usage)) return;
         throw new StoreError(
           "closed",
           `réservation ${row.id} déjà rapprochée : usage tardif à traiter explicitement`,
@@ -324,6 +397,10 @@ export class SqliteLedgerRepository implements LedgerRepository {
     });
   }
 
+  /**
+   * Rapproche et clôt la réservation. Rejoué avec un usage déjà enregistré, il ne
+   * change rien ; rejoué avec un usage nouveau, il lève un conflit.
+   */
   reconcile(id: ReservationId, usage: readonly UsageRecord[], at: UtcTimestamp): Reservation {
     for (const record of usage) {
       if (record.reservationId !== id) {
@@ -338,17 +415,18 @@ export class SqliteLedgerRepository implements LedgerRepository {
     return immediate(this.#db, () => {
       const row = this.#requireReservation(id);
       if (row.status === "reconciled") {
-        // Rejeu : la consommation a déjà été imputée une fois, rien ne change.
+        if (!usage.every((record) => this.#hasUsage(record))) {
+          throw new StoreError("conflict", `réservation ${id} déjà rapprochée avec un autre usage`);
+        }
         return this.#load(row);
       }
       for (const record of usage) this.#insertUsage(record);
       const reservation = this.#load(row);
-      const recorded = this.#usage(id);
       const insertCharge = this.#db.prepare(
-        "INSERT INTO reservation_charges (reservation_id, unit, currency, amount, provenance) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO reservation_charges (reservation_id, unit, qualifier, amount, provenance) VALUES (?, ?, ?, ?, ?)",
       );
-      for (const charge of computeCharges(reservation.maxima, recorded)) {
-        insertCharge.run(id, charge.unit, charge.currency, charge.amount, charge.provenance);
+      for (const charge of computeCharges(reservation.maxima, this.#usage(id))) {
+        insertCharge.run(id, charge.unit, charge.qualifier, charge.amount, charge.provenance);
       }
       const closed = this.#db
         .prepare(
@@ -403,84 +481,113 @@ export class SqliteLedgerRepository implements LedgerRepository {
     return row === undefined ? null : this.#toPeriod(row);
   }
 
-  availability(periodId: BudgetPeriodId, unit: BudgetUnit): BudgetAvailability {
+  availability(periodId: BudgetPeriodId, unit: BudgetUnit, windowKey?: string): BudgetAvailability {
     assertUnit(unit);
-    if (this.#periodRow(periodId) === undefined) {
+    if (unit === "provider_quota_bp") {
+      if (windowKey === undefined) {
+        throw new StoreError("invalid_input", "la disponibilité d'un quota exige sa fenêtre");
+      }
+      assertWindowKey(windowKey);
+    }
+    const period = this.#periodRow(periodId);
+    if (period === undefined) {
       throw new StoreError("not_found", `période ${periodId} inconnue`);
     }
-    return this.#availability(periodId, unit);
+    return this.#availability(
+      period,
+      unit,
+      unit === "provider_quota_bp" ? windowKey : undefined,
+      this.#ceiling(period.profile_id as ProfileId),
+    );
   }
 
-  #availability(periodId: BudgetPeriodId, unit: BudgetUnit): BudgetAvailability {
-    const limit = this.#db
-      .prepare<[string, string], LimitRow>(
-        "SELECT unit, currency, cap, user_reserve FROM period_limits WHERE period_id = ? AND unit = ?",
-      )
-      .get(periodId, unit);
+  #availability(
+    period: PeriodRow,
+    unit: BudgetUnit,
+    windowKey: string | undefined,
+    ceiling: AuthorizedCeiling | null,
+  ): BudgetAvailability {
+    const limit =
+      unit === "provider_quota_bp"
+        ? this.#db
+            .prepare<[string, string, string], LimitRow>(
+              "SELECT unit, qualifier, cap, user_reserve FROM period_limits WHERE period_id = ? AND unit = ? AND qualifier = ?",
+            )
+            .get(period.id, unit, windowKey ?? "")
+        : this.#db
+            .prepare<[string, string], LimitRow>(
+              "SELECT unit, qualifier, cap, user_reserve FROM period_limits WHERE period_id = ? AND unit = ?",
+            )
+            .get(period.id, unit);
+    const qualifier = unit === "provider_quota_bp" ? (windowKey ?? "") : (limit?.qualifier ?? "");
 
     const reconciledRows = this.#db
-      .prepare<[string, string], TotalRow>(
-        `SELECT c.currency, c.provenance, SUM(c.amount) AS total
+      .prepare<
+        { period: string; unit: string },
+        { qualifier: string; provenance: UsageProvenance; total: number }
+      >(
+        `SELECT c.qualifier, c.provenance, SUM(c.amount) AS total
            FROM reservation_charges c
-           JOIN reservation_periods rp ON rp.reservation_id = c.reservation_id
            JOIN reservations r ON r.id = c.reservation_id
-          WHERE rp.period_id = ? AND c.unit = ? AND r.status = 'reconciled'
-          GROUP BY c.currency, c.provenance`,
+          WHERE c.reservation_id IN (${RESERVATIONS_IN_SCOPE})
+            AND c.unit = :unit AND r.status = 'reconciled'
+          GROUP BY c.qualifier, c.provenance`,
       )
-      .all(periodId, unit);
+      .all({ period: period.id, unit });
 
     const openRows = this.#db
-      .prepare<{ period: string; unit: string }, { currency: string; total: number }>(
+      .prepare<{ period: string; unit: string }, { qualifier: string; total: number }>(
         `WITH open_reservations AS (
-           SELECT r.id FROM reservations r
-             JOIN reservation_periods rp ON rp.reservation_id = r.id
-            WHERE rp.period_id = :period AND r.status IN ('open', 'uncertain')
+           SELECT id FROM reservations
+            WHERE id IN (${RESERVATIONS_IN_SCOPE}) AND status IN ('open', 'uncertain')
          ),
          parts AS (
-           SELECT reservation_id, currency, amount AS bound, 0 AS used
+           SELECT reservation_id, qualifier, amount AS bound, 0 AS used
              FROM reservation_maxima
             WHERE unit = :unit AND reservation_id IN (SELECT id FROM open_reservations)
            UNION ALL
-           SELECT reservation_id, currency, 0, amount
+           SELECT reservation_id, qualifier, 0, amount
              FROM usage_records
             WHERE unit = :unit AND reservation_id IN (SELECT id FROM open_reservations)
          ),
          exposure AS (
-           SELECT currency, MAX(SUM(bound), SUM(used)) AS amount
-             FROM parts GROUP BY reservation_id, currency
+           SELECT qualifier, MAX(SUM(bound), SUM(used)) AS amount
+             FROM parts GROUP BY reservation_id, qualifier
          )
-         SELECT currency, SUM(amount) AS total FROM exposure GROUP BY currency`,
+         SELECT qualifier, SUM(amount) AS total FROM exposure GROUP BY qualifier`,
       )
-      .all({ period: periodId, unit });
+      .all({ period: period.id, unit });
 
-    const currency = limit?.currency ?? "";
     const byProvenance: Record<UsageProvenance, number> = { ...ZERO_BY_PROVENANCE };
     let reconciled = 0;
+    let openReservations = 0;
     let foreignCurrency = false;
     for (const row of reconciledRows) {
-      if (row.currency !== currency) {
-        foreignCurrency = true;
+      if (row.qualifier !== qualifier) {
+        // Une autre fenêtre de quota est un autre compte ; une autre devise rend inconnu.
+        if (unit === "money") foreignCurrency = true;
         continue;
       }
       reconciled += row.total;
       byProvenance[row.provenance] += row.total;
     }
-    let openReservations = 0;
     for (const row of openRows) {
-      if (row.currency !== currency) {
-        foreignCurrency = true;
+      if (row.qualifier !== qualifier) {
+        if (unit === "money") foreignCurrency = true;
         continue;
       }
       openReservations += row.total;
     }
 
-    const cap = limit?.cap ?? 0;
-    const userReserve = limit?.user_reserve ?? 0;
-    const known = limit !== undefined && !foreignCurrency;
+    const authorized = ceiling === null ? null : unitCeiling(ceiling, unit, qualifier);
+    const cap = Math.min(limit?.cap ?? 0, authorized?.cap ?? 0);
+    const userReserve = Math.max(limit?.user_reserve ?? 0, authorized?.minUserReserve ?? 0);
+    const known = limit !== undefined && authorized !== null && !foreignCurrency;
     return {
-      periodId,
+      periodId: period.id as BudgetPeriodId,
       unit,
-      ...optional("currency", unit === "money" && currency !== "" ? currency : null),
+      ...optional("currency", unit === "money" && qualifier !== "" ? qualifier : null),
+      ...optional("windowKey", unit === "provider_quota_bp" ? qualifier : null),
       cap,
       reconciled,
       openReservations,
@@ -488,6 +595,86 @@ export class SqliteLedgerRepository implements LedgerRepository {
       available: known ? cap - reconciled - openReservations - userReserve : null,
       reconciledByProvenance: byProvenance,
     };
+  }
+
+  /**
+   * Plafonds autorisés : ceux de la dernière révision consentie, restreints par les
+   * révisions ultérieures non consenties. `null` si aucune révision consentie, si elle
+   * est révoquée ou si une révision est illisible.
+   */
+  #ceiling(profileId: ProfileId): AuthorizedCeiling | null {
+    const rows = this.#db
+      .prepare<[string], RevisionAuthorityRow>(
+        `SELECT r.groups_json,
+                EXISTS (SELECT 1 FROM policy_consents c WHERE c.revision_id = r.id) AS consented,
+                EXISTS (SELECT 1 FROM permission_revocations v WHERE v.revision_id = r.id) AS revoked
+           FROM policy_revisions r WHERE r.profile_id = ? ORDER BY r.rowid`,
+      )
+      .all(profileId);
+    let effectiveIndex = -1;
+    rows.forEach((row, i) => {
+      if (row.consented === 1) effectiveIndex = i;
+    });
+    const effective = rows[effectiveIndex];
+    if (effective === undefined || effective.revoked === 1) return null;
+    try {
+      let ceiling = ceilingFromPolicy(JSON.parse(effective.groups_json) as PolicyGroups);
+      for (const later of rows.slice(effectiveIndex + 1)) {
+        ceiling = restrictCeiling(
+          ceiling,
+          ceilingFromPolicy(JSON.parse(later.groups_json) as PolicyGroups),
+        );
+      }
+      for (const unit of [ceiling.tokens, ceiling.sessions, ceiling.durationMs]) {
+        assertAmount(unit.cap, "plafond de policy");
+        assertAmount(unit.minUserReserve, "réserve de policy");
+      }
+      if (ceiling.money !== null) assertAmount(ceiling.money.cap, "plafond monétaire de policy");
+      if (ceiling.providerQuota !== null) {
+        assertAmount(ceiling.providerQuota.cap, "plafond de quota de policy");
+      }
+      return ceiling;
+    } catch {
+      return null;
+    }
+  }
+
+  #authorizeLimits(
+    profileId: ProfileId,
+    definition: BudgetPeriodDefinition,
+    limits: readonly PeriodLimit[],
+  ): void {
+    const granted = limits.filter((limit) => limit.cap > 0);
+    if (granted.length === 0) return;
+    const ceiling = this.#ceiling(profileId);
+    if (ceiling === null) {
+      throw new StoreError(
+        "not_authorized",
+        "aucune révision de policy consentie et effective n'autorise de plafond",
+      );
+    }
+    if (!sameDefinition(definition, ceiling.definition)) {
+      throw new StoreError(
+        "not_authorized",
+        "définition de période différente de celle de la policy effective",
+      );
+    }
+    for (const limit of granted) {
+      const authorized = unitCeiling(ceiling, limit.unit, limitQualifier(limit));
+      const label = unitKey(limit.unit, limitQualifier(limit));
+      if (limit.cap > authorized.cap) {
+        throw new StoreError(
+          "not_authorized",
+          `plafond ${String(limit.cap)} au-delà de la policy effective (${String(authorized.cap)}) pour ${label}`,
+        );
+      }
+      if (limit.userReserve < authorized.minUserReserve) {
+        throw new StoreError(
+          "not_authorized",
+          `réserve utilisateur ${String(limit.userReserve)} sous la policy effective (${String(authorized.minUserReserve)}) pour ${label}`,
+        );
+      }
+    }
   }
 
   /** Avance l'horloge du ledger ; retourne l'instant effectif (jamais en recul). */
@@ -546,10 +733,10 @@ export class SqliteLedgerRepository implements LedgerRepository {
     }
     this.#db.prepare("DELETE FROM period_limits WHERE period_id = ?").run(row.id);
     const insertLimit = this.#db.prepare(
-      "INSERT INTO period_limits (period_id, unit, currency, cap, user_reserve) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO period_limits (period_id, unit, qualifier, cap, user_reserve) VALUES (?, ?, ?, ?, ?)",
     );
     for (const limit of limits) {
-      insertLimit.run(row.id, limit.unit, limit.currency ?? "", limit.cap, limit.userReserve);
+      insertLimit.run(row.id, limit.unit, limitQualifier(limit), limit.cap, limit.userReserve);
     }
     return this.#toPeriod(row);
   }
@@ -565,14 +752,15 @@ export class SqliteLedgerRepository implements LedgerRepository {
         : { kind: row.kind, timeZone: row.time_zone as BudgetPeriodDefinition["timeZone"] };
     const limits = this.#db
       .prepare<[string], LimitRow>(
-        "SELECT unit, currency, cap, user_reserve FROM period_limits WHERE period_id = ? ORDER BY unit",
+        "SELECT unit, qualifier, cap, user_reserve FROM period_limits WHERE period_id = ? ORDER BY unit, qualifier",
       )
       .all(row.id)
       .map((limit): PeriodLimit => ({
         unit: limit.unit,
         cap: limit.cap,
         userReserve: limit.user_reserve,
-        ...optional("currency", limit.currency === "" ? null : limit.currency),
+        ...optional("currency", limit.unit === "money" ? limit.qualifier : null),
+        ...optional("windowKey", limit.unit === "provider_quota_bp" ? limit.qualifier : null),
       }));
     return {
       id: row.id as BudgetPeriodId,
@@ -612,10 +800,10 @@ export class SqliteLedgerRepository implements LedgerRepository {
       .map((link) => link.period_id as BudgetPeriodId);
     const maxima = this.#db
       .prepare<[string], QuantityRow>(
-        "SELECT unit, currency, amount FROM reservation_maxima WHERE reservation_id = ? ORDER BY unit, currency",
+        "SELECT unit, qualifier, amount FROM reservation_maxima WHERE reservation_id = ? ORDER BY unit, qualifier",
       )
       .all(row.id)
-      .map((q): BudgetQuantity => makeQuantity(q.unit, q.amount, q.currency));
+      .map((q): BudgetQuantity => makeQuantity(q.unit, q.amount, q.qualifier));
     return {
       id: row.id as ReservationId,
       sessionId: row.session_id as SessionId,
@@ -630,13 +818,13 @@ export class SqliteLedgerRepository implements LedgerRepository {
   #usage(id: ReservationId): readonly UsageRecord[] {
     return this.#db
       .prepare<[string], UsageRow>(
-        `SELECT unit, currency, amount, provenance, token_breakdown_json, recorded_at
+        `SELECT unit, qualifier, amount, provenance, token_breakdown_json, recorded_at
            FROM usage_records WHERE reservation_id = ? ORDER BY seq`,
       )
       .all(id)
       .map((row): UsageRecord => ({
         reservationId: id,
-        quantity: makeQuantity(row.unit, row.amount, row.currency),
+        quantity: makeQuantity(row.unit, row.amount, row.qualifier),
         provenance: row.provenance,
         ...optional(
           "tokenBreakdown",
@@ -646,6 +834,19 @@ export class SqliteLedgerRepository implements LedgerRepository {
         ),
         recordedAt: row.recorded_at as UtcTimestamp,
       }));
+  }
+
+  /** Vrai si exactement cet usage (détail par catégorie compris) est déjà enregistré. */
+  #hasUsage(usage: UsageRecord): boolean {
+    const key = usageKey(usage);
+    const breakdown =
+      usage.tokenBreakdown === undefined ? null : JSON.stringify(usage.tokenBreakdown);
+    return this.#usage(usage.reservationId).some(
+      (stored) =>
+        usageKey(stored) === key &&
+        (stored.tokenBreakdown === undefined ? null : JSON.stringify(stored.tokenBreakdown)) ===
+          breakdown,
+    );
   }
 
   #validateUsage(usage: UsageRecord): void {
@@ -666,21 +867,24 @@ export class SqliteLedgerRepository implements LedgerRepository {
   }
 
   #insertUsage(usage: UsageRecord): void {
-    this.#db
+    const inserted = this.#db
       .prepare(
         `INSERT INTO usage_records
-           (reservation_id, unit, currency, amount, provenance, token_breakdown_json, recorded_at)
+           (reservation_id, unit, qualifier, amount, provenance, token_breakdown_json, recorded_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT (reservation_id, unit, currency, provenance, recorded_at, amount) DO NOTHING`,
+         ON CONFLICT (reservation_id, unit, qualifier, provenance, recorded_at, amount) DO NOTHING`,
       )
       .run(
         usage.reservationId,
         usage.quantity.unit,
-        quantityCurrency(usage.quantity),
+        quantityQualifier(usage.quantity),
         quantityAmount(usage.quantity),
         usage.provenance,
         usage.tokenBreakdown === undefined ? null : JSON.stringify(usage.tokenBreakdown),
         normalizeUtcTimestamp(usage.recordedAt),
       );
+    if (inserted.changes === 0 && !this.#hasUsage(usage)) {
+      throw new StoreError("conflict", "usage déjà enregistré avec un autre détail par catégorie");
+    }
   }
 }

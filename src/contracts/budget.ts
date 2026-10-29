@@ -95,7 +95,8 @@ export interface BudgetPeriodDefinition {
  * Plafond d'une unité pour une période, issu de la policy consentie en vigueur.
  * `cap` et `userReserve` sont des entiers dans l'unité (unités mineures pour la
  * monnaie, qui porte alors sa devise). Une unité sans plafond est inconnue, donc non
- * réservable.
+ * réservable. Le ledger refuse tout plafond au-delà de la révision de policy consentie
+ * et effective du profil.
  */
 export interface PeriodLimit {
   readonly unit: BudgetUnit;
@@ -103,6 +104,8 @@ export interface PeriodLimit {
   readonly userReserve: number;
   /** Obligatoire pour `money`, absent sinon. */
   readonly currency?: CurrencyCode;
+  /** Obligatoire pour `provider_quota_bp` (un plafond par fenêtre), absent sinon. */
+  readonly windowKey?: string;
 }
 
 /** Instance persistée d'une période : intervalle semi-ouvert [startsAt, endsAt). */
@@ -160,6 +163,8 @@ export interface BudgetAvailability {
   readonly periodId: BudgetPeriodId;
   readonly unit: BudgetUnit;
   readonly currency?: CurrencyCode;
+  /** Fenêtre de quota concernée, pour `provider_quota_bp`. */
+  readonly windowKey?: string;
   readonly cap: number;
   readonly reconciled: number;
   readonly openReservations: number;

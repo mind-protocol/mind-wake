@@ -12,6 +12,7 @@ import type { ChildArgs } from "../../test/fixtures/store-ledger/ledger-child.js
 import {
   DAY_PARIS,
   PROFILE,
+  authorize,
   createProfile,
   tempDir,
   ts,
@@ -32,6 +33,7 @@ beforeEach(() => {
   dir = tempDir();
   const store = openStore(dir.dbPath);
   createProfile(store.uow);
+  authorize(store.uow, "rev-1", { tokensPerPeriod: 100_000, userReserveTokens: 0 });
   periodId = store.uow.ledger.ensurePeriod(PROFILE, DAY_PARIS, ts(AT), [
     { unit: "tokens", cap: 100_000, userReserve: 0 },
     { unit: "sessions", cap: 3, userReserve: 0 },

@@ -107,7 +107,8 @@ export interface LedgerRepository {
   /** Conserve la borne maximale jusqu'à rapprochement fiable. */
   markUncertain(id: ReservationId, at: UtcTimestamp): Reservation;
   getReservation(id: ReservationId): Reservation | null;
-  availability(periodId: BudgetPeriodId, unit: BudgetUnit): BudgetAvailability;
+  /** `windowKey` est obligatoire pour `provider_quota_bp`, ignoré sinon. */
+  availability(periodId: BudgetPeriodId, unit: BudgetUnit, windowKey?: string): BudgetAvailability;
 }
 
 export interface JournalRepository {

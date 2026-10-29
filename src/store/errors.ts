@@ -9,6 +9,7 @@ export type StoreErrorCode =
   | "immutable"
   | "invalid_transition"
   | "invalid_input"
+  | "not_authorized"
   | "closed"
   | "schema_mismatch"
   | "async_transaction";

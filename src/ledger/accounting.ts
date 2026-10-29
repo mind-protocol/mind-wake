@@ -17,15 +17,33 @@ export function quantityAmount(quantity: BudgetQuantity): number {
   return quantity.unit === "money" ? quantity.amountMinor : quantity.amount;
 }
 
-/** Devise d'une quantité monétaire ; chaîne vide pour les autres unités. */
-export function quantityCurrency(quantity: BudgetQuantity): string {
-  return quantity.unit === "money" ? quantity.currency : "";
+/**
+ * Qualifiant d'une quantité : devise pour la monnaie, fenêtre de quota pour
+ * `provider_quota_bp`, chaîne vide sinon. Deux qualifiants ne s'additionnent jamais.
+ */
+export function quantityQualifier(quantity: BudgetQuantity): string {
+  switch (quantity.unit) {
+    case "money":
+      return quantity.currency;
+    case "provider_quota_bp":
+      return quantity.windowKey;
+    case "tokens":
+    case "sessions":
+    case "duration_ms":
+      return "";
+  }
 }
 
-export function makeQuantity(unit: BudgetUnit, amount: number, currency: string): BudgetQuantity {
+export function isQualifiedUnit(unit: BudgetUnit): boolean {
+  return unit === "money" || unit === "provider_quota_bp";
+}
+
+export function makeQuantity(unit: BudgetUnit, amount: number, qualifier: string): BudgetQuantity {
   switch (unit) {
     case "money":
-      return { unit, amountMinor: amount, currency };
+      return { unit, amountMinor: amount, currency: qualifier };
+    case "provider_quota_bp":
+      return { unit, amount, windowKey: qualifier };
     case "tokens":
     case "sessions":
     case "duration_ms":
@@ -36,13 +54,23 @@ export function makeQuantity(unit: BudgetUnit, amount: number, currency: string)
 const CURRENCY = /^[A-Z]{3}$/;
 
 export function assertCurrency(currency: CurrencyCode): void {
-  if (!CURRENCY.test(currency)) {
-    throw new RangeError(`devise ISO 4217 invalide : ${currency}`);
+  if (typeof currency !== "string" || !CURRENCY.test(currency)) {
+    throw new RangeError(`devise ISO 4217 invalide : ${JSON.stringify(currency)}`);
   }
 }
 
+const WINDOW_KEY = /^[!-~]{1,128}$/;
+
+/** Clé de fenêtre fournisseur : 1 à 128 caractères ASCII visibles. */
+export function assertWindowKey(windowKey: string): void {
+  if (typeof windowKey !== "string" || !WINDOW_KEY.test(windowKey)) {
+    throw new RangeError(`clé de fenêtre de quota invalide : ${JSON.stringify(windowKey)}`);
+  }
+}
+
+/** Entier sûr positif ou nul : refuse négatifs, décimaux, NaN, Infinity et non-nombres. */
 export function assertAmount(amount: number, label: string): void {
-  if (!Number.isSafeInteger(amount) || amount < 0) {
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount < 0) {
     throw new RangeError(`${label} doit être un entier positif ou nul : ${String(amount)}`);
   }
 }
@@ -63,16 +91,17 @@ export function assertQuantity(quantity: BudgetQuantity): void {
   assertUnit(quantity.unit);
   assertAmount(quantityAmount(quantity), `quantité ${quantity.unit}`);
   if (quantity.unit === "money") assertCurrency(quantity.currency);
+  if (quantity.unit === "provider_quota_bp") assertWindowKey(quantity.windowKey);
 }
 
-/** Clé d'agrégation : une unité, et pour la monnaie une devise. Jamais de conversion. */
-export function unitKey(unit: BudgetUnit, currency: string): string {
-  return `${unit}:${currency}`;
+/** Clé d'agrégation : une unité et son qualifiant. Jamais de conversion. */
+export function unitKey(unit: BudgetUnit, qualifier: string): string {
+  return `${unit}:${qualifier}`;
 }
 
 export interface Charge {
   readonly unit: BudgetUnit;
-  readonly currency: string;
+  readonly qualifier: string;
   readonly amount: number;
   readonly provenance: UsageProvenance;
 }
@@ -91,33 +120,33 @@ export function computeCharges(
 ): readonly Charge[] {
   interface Bucket {
     unit: BudgetUnit;
-    currency: string;
+    qualifier: string;
     bound: number;
     reported: number;
     provenances: Set<UsageProvenance>;
   }
   const buckets = new Map<string, Bucket>();
-  const bucketFor = (unit: BudgetUnit, currency: string): Bucket => {
-    const key = unitKey(unit, currency);
+  const bucketFor = (unit: BudgetUnit, qualifier: string): Bucket => {
+    const key = unitKey(unit, qualifier);
     let bucket = buckets.get(key);
     if (bucket === undefined) {
-      bucket = { unit, currency, bound: 0, reported: 0, provenances: new Set() };
+      bucket = { unit, qualifier, bound: 0, reported: 0, provenances: new Set() };
       buckets.set(key, bucket);
     }
     return bucket;
   };
   for (const quantity of maxima) {
-    bucketFor(quantity.unit, quantityCurrency(quantity)).bound += quantityAmount(quantity);
+    bucketFor(quantity.unit, quantityQualifier(quantity)).bound += quantityAmount(quantity);
   }
   for (const record of usage) {
-    const bucket = bucketFor(record.quantity.unit, quantityCurrency(record.quantity));
+    const bucket = bucketFor(record.quantity.unit, quantityQualifier(record.quantity));
     bucket.reported += quantityAmount(record.quantity);
     bucket.provenances.add(record.provenance);
   }
 
   const charges: Charge[] = [];
   for (const bucket of buckets.values()) {
-    const { unit, currency, bound, reported, provenances } = bucket;
+    const { unit, qualifier, bound, reported, provenances } = bucket;
     let amount: number;
     let provenance: UsageProvenance;
     if (provenances.size === 0) {
@@ -130,7 +159,7 @@ export function computeCharges(
       amount = reported;
       provenance = provenances.has("simulated") ? "simulated" : "measured";
     }
-    charges.push({ unit, currency, amount, provenance });
+    charges.push({ unit, qualifier, amount, provenance });
   }
   return charges;
 }

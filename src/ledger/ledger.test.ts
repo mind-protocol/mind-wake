@@ -3,6 +3,7 @@ import {
   DAY_PARIS,
   LIMITS,
   PROFILE,
+  authorize,
   createProfile,
   tempDir,
   ts,
@@ -10,6 +11,9 @@ import {
 } from "../../test/fixtures/store-ledger/setup.js";
 import type {
   BudgetPeriodId,
+  ConsentId,
+  PeriodLimit,
+  PolicyRevisionId,
   BudgetQuantity,
   ReservationId,
   ReservationRequest,
@@ -27,6 +31,7 @@ beforeEach(() => {
   dir = tempDir();
   store = openStore(dir.dbPath);
   createProfile(store.uow);
+  authorize(store.uow, "rev-1");
 });
 
 afterEach(() => {
@@ -196,13 +201,7 @@ describe("rapprochement", () => {
       records,
       ts("2026-10-29T13:00:00Z"),
     );
-    const third = store.uow.ledger.reconcile(
-      "r1" as ReservationId,
-      [usage("r1", { unit: "tokens", amount: 9_999 })],
-      NOON,
-    );
     expect(second).toEqual(first);
-    expect(third).toEqual(first);
     expect(store.uow.ledger.availability(p, "tokens").reconciled).toBe(1_200);
     expect(store.uow.ledger.listUsage("r1" as ReservationId)).toHaveLength(1);
   });
@@ -218,6 +217,11 @@ describe("rapprochement", () => {
   });
 
   it("sépare mesuré, estimé, simulé et inconnu, l'incertain à sa borne maximale", () => {
+    authorize(store.uow, "rev-2", {
+      tokensPerPeriod: 1_000_000,
+      sessionsPerPeriod: 10,
+      userReserveTokens: 0,
+    });
     const p = period(NOON, [
       { unit: "tokens", cap: 1_000_000, userReserve: 0 },
       { unit: "sessions", cap: 10, userReserve: 0 },
@@ -389,11 +393,18 @@ describe("périodes et horloge", () => {
       [usage("r1", { unit: "tokens", amount: 3_000 })],
       NOON,
     );
-    period(NOON, [{ unit: "tokens", cap: 2_500, userReserve: 0 }]);
+    // Révision restrictive, pas encore consentie : elle s'applique sans attendre.
+    authorize(store.uow, "rev-2", { tokensPerPeriod: 2_500, userReserveTokens: 0 }, false);
+    expect(store.uow.ledger.availability(p, "tokens")).toMatchObject({
+      cap: 2_500,
+      userReserve: 2_000,
+      available: -2_500,
+    });
+    period(NOON, [{ unit: "tokens", cap: 2_500, userReserve: 2_000 }]);
     expect(store.uow.ledger.availability(p, "tokens")).toMatchObject({
       cap: 2_500,
       reconciled: 3_000,
-      available: -500,
+      available: -2_500,
     });
     expect(
       store.uow.ledger.reserve(request("r2", [p], [{ unit: "tokens", amount: 1 }])),
@@ -409,7 +420,39 @@ describe("périodes et horloge", () => {
         { unit: "tokens", cap: 2, userReserve: 0 },
       ]),
     ).toThrow(/double/);
-    expect(() => period(NOON, [{ unit: "tokens", cap: -1, userReserve: 0 }])).toThrow(/entier/);
+    const bads = [
+      -1,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      2 ** 53,
+      "10" as unknown as number,
+    ];
+    for (const bad of bads) {
+      expect(() => period(NOON, [{ unit: "tokens", cap: bad, userReserve: 2_000 }])).toThrow(
+        /entier/,
+      );
+      expect(() =>
+        store.uow.ledger.reserve(
+          request(`bad-${String(bad)}`, [period()], [{ unit: "tokens", amount: bad }]),
+        ),
+      ).toThrow(/entier/);
+    }
+    expect(() =>
+      period(NOON, [{ unit: "money", cap: 1, userReserve: 0, currency: "eur" }]),
+    ).toThrow(/devise/);
+    expect(() =>
+      period(NOON, [{ unit: "tokens", cap: 1, userReserve: 2_000, currency: "EUR" }]),
+    ).toThrow(/devise/);
+    expect(() =>
+      period(NOON, [
+        { unit: "money", cap: 1, userReserve: 0, currency: "EUR" },
+        { unit: "money", cap: 1, userReserve: 0, currency: "USD" },
+      ]),
+    ).toThrow(/double/);
+    expect(() => period(NOON, [{ unit: "provider_quota_bp", cap: 0, userReserve: 0 }])).toThrow(
+      /fenêtre/,
+    );
   });
 });
 
@@ -429,5 +472,276 @@ describe("concurrence entre connexions", () => {
     } finally {
       other.close();
     }
+  });
+});
+
+describe("plafonds bornés par la policy consentie", () => {
+  it("refuse tout plafond non nul sans révision consentie et effective", () => {
+    store.close();
+    dir.remove();
+    dir = tempDir();
+    store = openStore(dir.dbPath);
+    createProfile(store.uow);
+    expect(() => period()).toThrow(/aucune révision de policy consentie/);
+    authorize(store.uow, "rev-1", {}, false);
+    expect(() => period()).toThrow(/aucune révision de policy consentie/);
+    // Des plafonds nuls restent possibles : rien n'est alors réservable.
+    const p = period(NOON, [{ unit: "tokens", cap: 0, userReserve: 0 }]);
+    expect(
+      store.uow.ledger.reserve(request("r1", [p], [{ unit: "tokens", amount: 1 }])),
+    ).toMatchObject({ status: "denied", reason: "budget_unknown" });
+  });
+
+  it("refuse les plafonds d'une révision ancienne plus large", () => {
+    authorize(store.uow, "rev-2", { tokensPerPeriod: 5_000 });
+    expect(() => period()).toThrow(/au-delà de la policy effective \(5000\)/);
+    const p = period(NOON, [{ unit: "tokens", cap: 5_000, userReserve: 2_000 }]);
+    expect(available(p)).toBe(3_000);
+  });
+
+  it("refuse un relèvement sans consentement et ne l'applique pas", () => {
+    const p = period();
+    authorize(store.uow, "rev-2", { tokensPerPeriod: 50_000, userReserveTokens: 0 }, false);
+    expect(() => period(NOON, [{ unit: "tokens", cap: 50_000, userReserve: 0 }])).toThrow(
+      /au-delà de la policy effective/,
+    );
+    expect(() => period(NOON, [{ unit: "tokens", cap: 10_000, userReserve: 0 }])).toThrow(
+      /réserve utilisateur 0 sous la policy effective/,
+    );
+    expect(store.uow.ledger.availability(p, "tokens")).toMatchObject({
+      cap: 10_000,
+      available: 8_000,
+    });
+    // Une fois consentie, la révision élargie devient effective.
+    store.uow.policies.recordConsent({
+      id: "consent-rev-2" as ConsentId,
+      revisionId: "rev-2" as PolicyRevisionId,
+      grantedAt: NOON,
+      channel: "local_cli",
+      proof: "test",
+    });
+    period(NOON, [{ unit: "tokens", cap: 50_000, userReserve: 0 }]);
+    expect(available(p)).toBe(50_000);
+  });
+
+  it("borne un plafond déjà persisté par la policy effective courante", () => {
+    const p = period();
+    authorize(store.uow, "rev-2", { tokensPerPeriod: 4_000 });
+    expect(store.uow.ledger.availability(p, "tokens")).toMatchObject({
+      cap: 4_000,
+      available: 2_000,
+    });
+  });
+
+  it("rend tout inconnu après révocation de la révision effective", () => {
+    const p = period();
+    store.uow.policies.recordRevocation({
+      revisionId: "rev-1" as PolicyRevisionId,
+      revokedAt: NOON,
+      reason: "test",
+    });
+    expect(available(p)).toBeNull();
+    expect(store.uow.ledger.reserve(request("r1", [p]))).toMatchObject({
+      status: "denied",
+      reason: "budget_unknown",
+    });
+  });
+
+  it("refuse une définition de période différente de la policy", () => {
+    expect(() =>
+      store.uow.ledger.ensurePeriod(
+        PROFILE,
+        { kind: "week", timeZone: DAY_PARIS.timeZone },
+        NOON,
+        LIMITS,
+      ),
+    ).toThrow(/définition de période/);
+  });
+
+  it("refuse la monnaie sans API payante autorisée", () => {
+    authorize(store.uow, "rev-2", { paidApi: { authorized: false } });
+    expect(() => period()).toThrow(/money:EUR/);
+  });
+});
+
+describe("conflits d'idempotence", () => {
+  it("refuse une même clé de réservation avec un autre contenu", () => {
+    const p = period();
+    store.uow.ledger.reserve(request("r1", [p]));
+    expect(() =>
+      store.uow.ledger.reserve(request("r1", [p], [{ unit: "tokens", amount: 2_999 }])),
+    ).toThrow(/autre contenu/);
+    expect(() =>
+      store.uow.ledger.reserve({ ...request("r1", [p]), sessionId: "autre" as SessionId }),
+    ).toThrow(/autre contenu/);
+    expect(store.uow.ledger.availability(p, "tokens").openReservations).toBe(3_000);
+  });
+
+  it("refuse un rapprochement rejoué avec un autre usage", () => {
+    const p = period();
+    store.uow.ledger.reserve(request("r1", [p]));
+    const records = [usage("r1", { unit: "tokens", amount: 1_200 })];
+    store.uow.ledger.reconcile("r1" as ReservationId, records, NOON);
+    expect(store.uow.ledger.reconcile("r1" as ReservationId, records, NOON).status).toBe(
+      "reconciled",
+    );
+    expect(() =>
+      store.uow.ledger.reconcile(
+        "r1" as ReservationId,
+        [usage("r1", { unit: "tokens", amount: 9_999 })],
+        NOON,
+      ),
+    ).toThrow(/autre usage/);
+    expect(store.uow.ledger.availability(p, "tokens").reconciled).toBe(1_200);
+  });
+
+  it("refuse un usage rejoué avec un autre détail par catégorie", () => {
+    const p = period();
+    store.uow.ledger.reserve(request("r1", [p]));
+    const base = usage("r1", { unit: "tokens", amount: 100 });
+    store.uow.ledger.recordUsage({ ...base, tokenBreakdown: { input: 60, output: 40 } });
+    store.uow.ledger.recordUsage({ ...base, tokenBreakdown: { input: 60, output: 40 } });
+    expect(() => {
+      store.uow.ledger.recordUsage({ ...base, tokenBreakdown: { input: 100 } });
+    }).toThrow(/autre détail/);
+  });
+});
+
+describe("périodes chevauchantes", () => {
+  it("compte une fois dans la semaine une réservation liée à deux jours", () => {
+    const start = ts("2026-10-29T22:30:00Z");
+    const days = store.uow.ledger.ensurePeriodsCovering(
+      PROFILE,
+      DAY_PARIS,
+      start,
+      7_200_000,
+      LIMITS,
+    );
+    store.uow.ledger.reserve(
+      request(
+        "r1",
+        days.map((d) => d.id),
+        [{ unit: "tokens", amount: 3_000 }],
+        start,
+      ),
+    );
+    // Changement consenti de définition : une période hebdomadaire chevauche les jours.
+    const weekly = { kind: "week" as const, timeZone: DAY_PARIS.timeZone };
+    authorize(store.uow, "rev-2", { period: weekly });
+    const week = store.uow.ledger.ensurePeriod(PROFILE, weekly, start, LIMITS);
+    expect(store.uow.ledger.availability(week.id, "tokens").openReservations).toBe(3_000);
+    store.uow.ledger.reconcile(
+      "r1" as ReservationId,
+      [usage("r1", { unit: "tokens", amount: 900 })],
+      start,
+    );
+    expect(store.uow.ledger.availability(week.id, "tokens")).toMatchObject({
+      reconciled: 900,
+      openReservations: 0,
+    });
+  });
+});
+
+describe("unité provider_quota_bp", () => {
+  const SHORT = "codex:primary";
+  const WEEKLY = "codex:secondary";
+  const guard = {
+    enabled: true as const,
+    accountRiskAcknowledged: true as const,
+    startBelowBasisPoints: 5_000,
+    stopAtBasisPoints: 7_000,
+    userReserveBasisPoints: 2_000,
+    overshootBoundBasisPoints: 500,
+    maxSnapshotAgeMs: 60_000,
+  };
+  const quotaLimits = (cap: number): PeriodLimit[] => [
+    ...LIMITS,
+    { unit: "provider_quota_bp", cap, userReserve: 0, windowKey: SHORT },
+    { unit: "provider_quota_bp", cap, userReserve: 0, windowKey: WEEKLY },
+  ];
+
+  it("n'autorise aucun plafond sans garde consentie ou avec un dépassement non mesuré", () => {
+    expect(() => period(NOON, quotaLimits(1_000))).toThrow(/provider_quota_bp/);
+    authorize(store.uow, "rev-2", {
+      subscriptionQuota: { ...guard, overshootBoundBasisPoints: null },
+    });
+    expect(() => period(NOON, quotaLimits(1_000))).toThrow(/provider_quota_bp/);
+  });
+
+  it("réserve et rapproche par fenêtre, sans conversion en tokens", () => {
+    authorize(store.uow, "rev-2", { subscriptionQuota: guard });
+    expect(() => period(NOON, quotaLimits(7_501))).toThrow(/au-delà/);
+    const p = period(NOON, quotaLimits(7_500));
+    expect(() => store.uow.ledger.availability(p, "provider_quota_bp")).toThrow(/fenêtre/);
+    const result = store.uow.ledger.reserve(
+      request(
+        "r1",
+        [p],
+        [
+          { unit: "provider_quota_bp", amount: 1_500, windowKey: SHORT },
+          { unit: "tokens", amount: 100 },
+        ],
+      ),
+    );
+    expect(result.status).toBe("reserved");
+    expect(store.uow.ledger.availability(p, "provider_quota_bp", SHORT)).toMatchObject({
+      windowKey: SHORT,
+      cap: 7_500,
+      openReservations: 1_500,
+      available: 6_000,
+    });
+    expect(store.uow.ledger.availability(p, "provider_quota_bp", WEEKLY).available).toBe(7_500);
+    expect(store.uow.ledger.availability(p, "tokens").openReservations).toBe(100);
+
+    store.uow.ledger.reconcile(
+      "r1" as ReservationId,
+      [
+        usage("r1", { unit: "provider_quota_bp", amount: 300, windowKey: SHORT }, "measured"),
+        usage("r1", { unit: "tokens", amount: 80 }),
+      ],
+      NOON,
+    );
+    expect(store.uow.ledger.availability(p, "provider_quota_bp", SHORT)).toMatchObject({
+      reconciled: 300,
+      available: 7_200,
+    });
+    expect(store.uow.ledger.availability(p, "tokens").reconciled).toBe(80);
+    expect(store.uow.ledger.getReservation("r1" as ReservationId)?.maxima).toContainEqual({
+      unit: "provider_quota_bp",
+      amount: 1_500,
+      windowKey: SHORT,
+    });
+  });
+
+  it("garde une consommation de quota inconnue à la borne réservée", () => {
+    authorize(store.uow, "rev-2", { subscriptionQuota: guard });
+    const p = period(NOON, quotaLimits(7_500));
+    store.uow.ledger.reserve(
+      request("r1", [p], [{ unit: "provider_quota_bp", amount: 2_000, windowKey: WEEKLY }]),
+    );
+    store.uow.ledger.reconcile(
+      "r1" as ReservationId,
+      [usage("r1", { unit: "provider_quota_bp", amount: 10, windowKey: WEEKLY }, "unknown")],
+      NOON,
+    );
+    expect(store.uow.ledger.availability(p, "provider_quota_bp", WEEKLY)).toMatchObject({
+      reconciled: 2_000,
+      reconciledByProvenance: { measured: 0, estimated: 0, simulated: 0, unknown: 2_000 },
+    });
+  });
+
+  it("refuse une fenêtre sans plafond et une clé de fenêtre invalide", () => {
+    authorize(store.uow, "rev-2", { subscriptionQuota: guard });
+    const p = period(NOON, quotaLimits(7_500));
+    expect(
+      store.uow.ledger.reserve(
+        request("r1", [p], [{ unit: "provider_quota_bp", amount: 1, windowKey: "codex:other" }]),
+      ),
+    ).toMatchObject({ status: "denied", reason: "budget_unknown" });
+    expect(() =>
+      store.uow.ledger.reserve(
+        request("r2", [p], [{ unit: "provider_quota_bp", amount: 1, windowKey: "" }]),
+      ),
+    ).toThrow(/clé de fenêtre/);
   });
 });
