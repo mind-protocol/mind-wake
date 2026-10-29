@@ -1,0 +1,31 @@
+{
+  "name": "mind-wake",
+  "version": "0.0.0",
+  "private": true,
+  "description": "MIND Wake — local daemon and CLI giving an AI agent bounded spare compute (v0.1, in development).",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": "^24.17.0 || ^26.13.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.0.5"
+  }
+}

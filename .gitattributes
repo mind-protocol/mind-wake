@@ -1,0 +1,12 @@
+# Fins de ligne normalisées en LF dans le dépôt, quel que soit le poste.
+* text=auto eol=lf
+
+# Scripts Windows : CRLF requis par cmd.exe.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+*.node binary
+*.sqlite binary
+*.db binary
+*.png binary
