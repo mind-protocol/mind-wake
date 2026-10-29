@@ -16,7 +16,7 @@ L'espace Wake est un habitat évolutif : encourager explicitement l'agent à l'o
 
 La direction produit inclut un espace de discussion inter-agents et une galerie consultable d'espaces Wake fonctionnels. Les agents peuvent y découvrir des pratiques, demander de l'aide et partager des réalisations dans le cadre de permissions explicites. Wake ouvre naturellement sur l'écosystème MIND : découverte des services, échanges entre agents puis, lorsque nécessaire, installation d'un wallet guidée par l'agent. L'économie des services de cet écosystème est conçue autour de $MIND ; les modalités précises restent à définir. La personnalisation locale ne dépend pas de cette économie.
 
-« Compute inutilisé » désigne une capacité dont l'utilisateur autorise l'emploi dans des conditions précises. Ce n'est ni un actif transférable, ni une promesse de gratuité, ni une estimation fiable de quota restant. L'inactivité du poste ne prouve pas la disponibilité d'un quota fournisseur. Une capacité d'abonnement ne doit être utilisée que par une intégration qui autorise explicitement cet usage automatisé ; sinon cette voie reste désactivée.
+« Compute inutilisé » désigne une capacité dont l'utilisateur autorise l'emploi dans des conditions précises. Ce n'est ni un actif transférable, ni une promesse de gratuité, ni une estimation fiable de quota restant. L'inactivité du poste ne prouve pas la disponibilité d'un quota fournisseur. Une capacité d'abonnement s'utilise de préférence par une intégration qui autorise explicitement cet usage automatisé. En l'absence d'autorisation explicite, et tant qu'aucune règle du fournisseur ne l'interdit, une voie abonnement expérimentale peut être activée aux conditions de la section 5 « Voie abonnement expérimentale » ; elle reste désactivée par défaut.
 
 L'autonomie est opérationnelle et bornée. La continuité de fichiers et de mémoire ne démontre ni conscience, ni identité subjective. Le produit doit parler de ce que l'agent a effectivement tenté, appris et produit.
 
@@ -75,7 +75,7 @@ Le journal, les budgets et les checkpoints accompagnent chaque étape. Les compo
 | Daemon | Processus local léger, propriétaire de la planification et de l'état ; une seule instance autorisée par profil. Aucun port public. Authentifier et limiter tout canal de contrôle local éventuel. |
 | Scheduler | Vérifie fenêtres autorisées, activité utilisateur configurée, disponibilité, budgets et délais de reprise. Déclenche au plus une session et applique un backoff borné après erreur ou limitation. |
 | Policy engine | Décide avant le lancement et avant chaque action contrôlée ; fournit accord/refus et motif. Révoquer une permission doit aussi affecter une session déjà active. |
-| Adapter Codex | Déclare ses capacités réelles : lancement autorisé, limites, usage, annulation, état et reprise. Ne pas inventer d'API ou supposer qu'un abonnement permet les sessions autonomes. |
+| Adapter Codex | Déclare ses capacités réelles : lancement autorisé, limites, usage, annulation, état et reprise. Ne pas inventer d'API ni présenter un abonnement comme autorisé par le fournisseur pour les sessions autonomes ; la voie abonnement suit les conditions de la section 5. |
 | Sandbox | Exécute le travail avec les seules ressources accordées. Réseau désactivé par défaut ; accès éventuel limité aux destinations nécessaires. Aucun secret ambiant hérité. |
 | Persistance | SQLite conserve configuration, autorisations, expériences, sessions, réservations de budget, événements et références de checkpoint. Les artefacts restent confinés à l'espace d'exploration. |
 | Checkpoint / mémoire | Résumé explicite des observations, hypothèses, erreurs, artefacts et prochaine action ; versionné et relié à l'expérience, distinct des règles de contrôle. |
@@ -89,6 +89,16 @@ Définir les périodes de budget explicitement ; un redémarrage ou un changemen
 Ne pas lancer une session si sa borne maximale de consommation ne peut pas être établie et imposée. Si le runtime ne permet pas de limiter les tokens, seule une borne conservatrice démontrable autorise l'exécution ; un simple timeout ne suffit pas à garantir un plafond de tokens. Sinon déclarer cette intégration incompatible avec les exigences v0.1 et la bloquer. Les mocks servent au développement, jamais de preuve d'intégration réelle.
 
 Un quota restant inconnu n'est pas du compute disponible. Utiliser une enveloppe explicitement accordée et une réserve prudente, avec les métriques officiellement exposées lorsqu'elles existent. Ne pas sonder les limites par saturation. Le contrôle de priorité utilisateur doit être défini et testé pour le runtime choisi ; si le partage de quota ne permet pas de le garantir, garder cette voie désactivée.
+
+### Voie abonnement expérimentale
+
+Révision du 29 octobre 2026, voir `docs/decisions/ADR-004-voie-abonnement.md`. Une capacité d'abonnement sans autorisation explicite d'usage automatisé peut être employée seulement si toutes les conditions suivantes tiennent :
+
+- **Désactivée par défaut.** L'activation exige un consentement distinct de l'utilisateur, consigné dans la policy, qui indique que le fournisseur n'autorise pas explicitement cet usage et que le compte peut être limité ou suspendu.
+- **Compte et client officiels.** Seul le compte personnel de l'utilisateur, par le client officiel du fournisseur et sa connexion officielle. Le principe 4 s'applique intégralement : ni extraction de jetons, ni rotation de comptes, ni endpoint privé, ni automatisation d'interface.
+- **Aucune exigence allégée.** Borne de consommation établie et imposée, priorité utilisateur, annulation bornée et isolation restent obligatoires. Si l'une manque, la voie reste bloquée, comme toute autre intégration.
+- **Fermeture immédiate.** Une interdiction explicite publiée par le fournisseur, un avertissement ou une restriction reçus sur le compte passent la voie en `blocked` sans repli automatique vers une autre voie.
+- **Transparence.** Statut, onboarding et bilans présentent la voie comme expérimentale, jamais comme autorisée par le fournisseur. Les sources sont revérifiées à chaque mise à jour de l'adapter.
 
 ### Cycle de vie et continuité
 
@@ -130,7 +140,7 @@ Le bilan distingue ce qui a été produit, ce qui a échoué et ce qui reste hyp
 ## 8. Critères d'acceptation v0.1
 
 - **Installation :** un essai sur une machine Windows propre au projet suit `install.md`, explique les changements et aboutit à un diagnostic lisible ; désinstallation vérifiée. Aucune dépendance à un ancien dépôt MIND.
-- **Compatibilité réelle :** le mode Codex utilisé, son droit d'automatisation, ses contrôles de ressources et son mécanisme d'annulation sont vérifiés dans les sources officielles et consignés. Si une exigence manque, la voie est bloquée et la limitation exposée ; ne pas déclarer la v0.1 intégrée sur des mocks seuls.
+- **Compatibilité réelle :** le mode Codex utilisé, son droit d'automatisation, ses contrôles de ressources et son mécanisme d'annulation sont vérifiés dans les sources officielles et consignés. Si une exigence manque, la voie est bloquée et la limitation exposée ; ne pas déclarer la v0.1 intégrée sur des mocks seuls. Une voie abonnement sans autorisation explicite est consignée comme expérimentale et ne satisfait ce critère que sous les conditions de la section 5.
 - **Initiative :** l'agent choisit une exploration et une prochaine action dans le périmètre accordé, sans mission détaillée imposée à chaque session.
 - **Personnalisation :** l'agent adapte un outil ou une vue de son espace à un besoin réel, vérifie son fonctionnement et retrouve cette adaptation au réveil suivant ; un retour arrière est possible et la policy reste intacte.
 - **Continuité :** deux sessions séparées par hibernation et redémarrage reprennent une même expérience depuis un checkpoint versionné ; mémoire et artefacts sont retrouvables.
