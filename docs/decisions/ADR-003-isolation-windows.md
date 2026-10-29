@@ -54,3 +54,11 @@ Revoir cette décision si l'un des cas suivants survient :
 4. La cible s'élargit à des éditions Pro/Enterprise ou à un usage élevé, où Windows Sandbox, Hyper-V ou WFP deviennent disponibles.
 5. Une évolution de Windows ou de la documentation Microsoft change le comportement d'AppContainer, des Job Objects ou des ACL par défaut (`ALL APPLICATION PACKAGES` sur HKCU notamment).
 6. Les mesures de terminaison en recette dépassent la borne retenue à G1.
+
+## Suivi S10 (29 octobre 2026)
+
+Implémentation de production dans [`src/sandbox`](../../src/sandbox/README.md), sans changer la décision. Forme retenue : C# 5 compilé depuis les sources du dépôt par le `csc.exe` livré avec Windows (aucun binaire téléchargé). Profil AppContainer dédié sans aucune capacité, ACE posées par lancement et retirées à la sortie, Job Object nommé (limites de processus et de mémoire), environnement explicite.
+
+Point non démontré par S2 désormais démontré : **canal broker restreint au seul conteneur** (critère de révision 3). Un pipe nommé créé hors du conteneur, avec ACE pour le SID du conteneur et étiquette d'intégrité basse, est joignable depuis le conteneur ; un pipe à DACL par défaut, le loopback et Internet restent refusés. Aucun droit administrateur ni règle pare-feu. Le relais fournisseur derrière ce canal reste à construire.
+
+Restent non démontrés : Codex réel confiné, traversée d'un symlink préexistant (création impossible sans privilège sur le poste), évasions WMI/COM, comportement sous charge. L'exécution autonome reste bloquée tant que le runner ne lance pas via cette couche et que l'autotest de refus n'a pas réussi sur le poste.

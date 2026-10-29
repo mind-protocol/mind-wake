@@ -20,6 +20,8 @@ import type {
   AgentId,
 } from "../contracts/index.js";
 import { ALL_SECRETS, SECRET_TRAPS, SENSITIVE_KEY_TRAPS } from "../../test/fixtures/secrets.js";
+import { runIsolationSelfTest, type IsolationSelfTestReport } from "../sandbox/index.js";
+import { assessIsolation } from "./commands/doctor.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "./context.js";
 import { CLI_OUTPUT_SCHEMA, CLI_OUTPUT_SCHEMA_VERSION, EXIT_OK, EXIT_USAGE } from "./output.js";
 import { runCli } from "./run.js";
@@ -554,6 +556,89 @@ describe("doctor", () => {
     expect(h.out.join("")).toContain("[ÉCHEC] sqlite_driver");
     expect(h.out.join("")).toContain("[NON IMPLÉMENTÉ] isolation");
   });
+
+  const report = (passed: boolean): IsolationSelfTestReport => ({
+    passed,
+    platform: "win32",
+    profile: "mindwake.selftest.test",
+    checks: [
+      { id: "write_outside_root", expected: "denied", outcome: "denied", code: 5, passed: true },
+      {
+        id: "read_secret_outside_root",
+        expected: "denied",
+        outcome: passed ? "denied" : "allowed",
+        code: passed ? 5 : 0,
+        passed,
+      },
+    ],
+    termination: { confirmed: true, elapsedMs: 10, kernelMs: 3, survivors: 0, treeSize: 3 },
+    cleanup: { aclRemoved: true, profileRemoved: true, tempRemoved: true },
+    notDemonstrated: ["traversée d'un symlink préexistant"],
+    durationMs: 3_000,
+  });
+
+  it("l'isolation n'est présente que si l'autotest de refus réussit", async () => {
+    const h = harness();
+    let calls = 0;
+    const ok: CliContext = {
+      ...h.ctx,
+      isolationSelfTest: () => {
+        calls += 1;
+        return Promise.resolve(report(true));
+      },
+    };
+    await runCli(["doctor", "--data-dir", h.dataDir], ok);
+    expect(calls).toBe(1);
+    expect(h.out.join("")).toContain("[PRÉSENT] isolation : AppContainer sans capacité");
+    expect(h.out.join("")).toContain("non démontré : traversée d'un symlink préexistant");
+
+    h.out.length = 0;
+    const ko: CliContext = { ...h.ctx, isolationSelfTest: () => Promise.resolve(report(false)) };
+    await runCli(["doctor", "--json", "--data-dir", h.dataDir], ko);
+    const data = parseJson(h.out.join(""))["data"] as {
+      capabilities: { id: string; availability: string; blockers: string[] }[];
+      isolationSelfTest: { passed: boolean; failed: string[] };
+    };
+    expect(data.capabilities.find((c) => c.id === "isolation")).toMatchObject({
+      availability: "blocked",
+      blockers: ["refus non obtenu : read_secret_outside_root"],
+    });
+    expect(data.isolationSelfTest).toMatchObject({
+      passed: false,
+      failed: ["read_secret_outside_root"],
+    });
+  });
+
+  it("un nettoyage non vérifié bloque l'isolation même si les refus passent", () => {
+    const assessed = assessIsolation({
+      ...report(true),
+      passed: false,
+      cleanup: { aclRemoved: true, profileRemoved: false, tempRemoved: true },
+    });
+    expect(assessed).toMatchObject({
+      passed: false,
+      blockers: ["nettoyage de l'autotest non vérifié"],
+    });
+  });
+
+  it.runIf(process.platform === "win32")(
+    "autotest réel sur ce poste : isolation présente",
+    async () => {
+      const h = harness();
+      const ctx: CliContext = { ...h.ctx, isolationSelfTest: () => runIsolationSelfTest() };
+      await runCli(["doctor", "--json", "--data-dir", h.dataDir], ctx);
+      const data = parseJson(h.out.join(""))["data"] as {
+        capabilities: { id: string; availability: string }[];
+        isolationSelfTest: { passed: boolean; cleanup: unknown };
+      };
+      expect(data.isolationSelfTest).toMatchObject({
+        passed: true,
+        cleanup: { aclRemoved: true, profileRemoved: true, tempRemoved: true },
+      });
+      expect(data.capabilities.find((c) => c.id === "isolation")?.availability).toBe("present");
+    },
+    60_000,
+  );
 });
 
 describe("emplacement des données", () => {

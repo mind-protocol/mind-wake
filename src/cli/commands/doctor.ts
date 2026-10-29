@@ -1,11 +1,22 @@
 /**
  * `doctor` : diagnostic local. Aucun appel modèle, aucun accès réseau, aucune écriture
- * (le pilote SQLite est testé sur une base `:memory:`, le stockage n'est ouvert que si
- * le dossier de données existe). Sépare l'environnement (`checks`) de la disponibilité
- * réelle des composants (`capabilities`).
+ * dans le dossier de données (le pilote SQLite est testé sur une base `:memory:`, le
+ * stockage n'est ouvert que si le dossier de données existe). Sépare l'environnement
+ * (`checks`) de la disponibilité réelle des composants (`capabilities`).
+ *
+ * L'isolation n'est « présente » que si l'autotest de refus réussit sur le poste
+ * (`src/sandbox/self-test.ts`) : il crée un profil AppContainer et des ACE temporaires
+ * dans le dossier temporaire, les retire, et vérifie ce retrait. Ses seules connexions
+ * sont locales (loopback et pipes nommés du test) et doivent être refusées au conteneur.
  */
 
-import { capabilities, formatCapability, type Capability } from "../capabilities.js";
+import type { IsolationSelfTestReport } from "../../sandbox/index.js";
+import {
+  capabilities,
+  formatCapability,
+  type Capability,
+  type IsolationAssessment,
+} from "../capabilities.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, type CommandResult } from "../output.js";
 import { inspectDataDir, type DataDir } from "../paths.js";
@@ -41,7 +52,59 @@ export interface DoctorData {
   readonly networkAccess: "none";
   readonly checks: readonly DoctorCheck[];
   readonly capabilities: readonly Capability[];
+  /** Résumé de l'autotest de refus ; absent s'il n'a pas été exécuté. */
+  readonly isolationSelfTest?: IsolationSelfTestSummary;
   readonly notes: readonly string[];
+}
+
+export interface IsolationSelfTestSummary {
+  readonly passed: boolean;
+  readonly checks: number;
+  readonly failed: readonly string[];
+  readonly notDemonstrated: readonly string[];
+  readonly terminationMs: number | null;
+  readonly cleanup: IsolationSelfTestReport["cleanup"];
+  readonly durationMs: number;
+  readonly error?: string;
+}
+
+/** Verdict d'isolation dérivé de l'autotest : « présente » seulement si tout a passé. */
+export function assessIsolation(report: IsolationSelfTestReport): IsolationAssessment {
+  const termination =
+    report.termination === null
+      ? ""
+      : `, arborescence terminée en ${report.termination.elapsedMs.toFixed(1)} ms`;
+  if (report.passed) {
+    return {
+      passed: true,
+      detail: `AppContainer sans capacité + Job Object : ${String(report.checks.length)} refus système vérifiés sur ce poste${termination}, nettoyage vérifié`,
+      blockers: [],
+    };
+  }
+  const blockers = report.checks.filter((c) => !c.passed).map((c) => `refus non obtenu : ${c.id}`);
+  if (report.error !== undefined) blockers.push(report.error);
+  const cleanup = report.cleanup;
+  if (cleanup !== null && !(cleanup.aclRemoved && cleanup.profileRemoved && cleanup.tempRemoved)) {
+    blockers.push("nettoyage de l'autotest non vérifié");
+  }
+  return {
+    passed: false,
+    detail: "autotest de refus en échec : exécution autonome impossible",
+    blockers: blockers.length === 0 ? ["autotest de refus en échec"] : blockers,
+  };
+}
+
+function summarize(report: IsolationSelfTestReport): IsolationSelfTestSummary {
+  return {
+    passed: report.passed,
+    checks: report.checks.length,
+    failed: report.checks.filter((c) => !c.passed).map((c) => c.id),
+    notDemonstrated: report.notDemonstrated,
+    terminationMs: report.termination?.elapsedMs ?? null,
+    cleanup: report.cleanup,
+    durationMs: report.durationMs,
+    ...(report.error === undefined ? {} : { error: report.error }),
+  };
 }
 
 const STATUS_LABEL: Record<CheckStatus, string> = { ok: "OK", warn: "ATTENTION", fail: "ÉCHEC" };
@@ -116,13 +179,15 @@ export async function doctor(
       break;
   }
 
+  const selfTest = ctx.isolationSelfTest === undefined ? undefined : await ctx.isolationSelfTest();
+  const isolation = selfTest === undefined ? undefined : assessIsolation(selfTest);
   const caps = withReadStore(ctx, dataDir, ({ uow, persistence }) => {
     const profile = uow?.profiles.get(DEFAULT_PROFILE_ID) ?? null;
     const policy =
       profile?.activePolicyRevisionId == null
         ? null
         : (uow?.policies.getRevision(profile.activePolicyRevisionId) ?? null);
-    return capabilities(persistence ?? ctx.storeBackend, policy);
+    return capabilities(persistence ?? ctx.storeBackend, policy, isolation);
   });
 
   const failed = checks.some((check) => check.status === "fail");
@@ -134,6 +199,7 @@ export async function doctor(
       networkAccess: "none",
       checks,
       capabilities: caps,
+      ...(selfTest === undefined ? {} : { isolationSelfTest: summarize(selfTest) }),
       notes: DOCTOR_NOTES,
     },
     human: formatDoctor,
@@ -159,10 +225,28 @@ function formatDoctor(data: DoctorData): string {
     "",
     "Composants (présent, simulé, expérimental, bloqué, non implémenté) :",
     ...data.capabilities.map(formatCapability),
+    ...formatSelfTest(data.isolationSelfTest),
     "",
     ...data.notes,
     failed === 0
       ? "Environnement sans échec bloquant. Ce build ne peut lancer aucune session réelle : isolation et adapter Codex non implémentés."
       : `${String(failed)} vérification(s) d'environnement en échec.`,
   ].join("\n");
+}
+
+function formatSelfTest(summary: IsolationSelfTestSummary | undefined): string[] {
+  if (summary === undefined) return [];
+  const lines = [
+    "",
+    `Autotest d'isolation : ${summary.passed ? "réussi" : "ÉCHEC"} (${String(summary.checks)} vérifications, ${(summary.durationMs / 1000).toFixed(1)} s)`,
+  ];
+  if (summary.failed.length > 0) lines.push(`  refus non obtenus : ${summary.failed.join(", ")}`);
+  if (summary.error !== undefined) lines.push(`  erreur : ${summary.error}`);
+  for (const item of summary.notDemonstrated) lines.push(`  non démontré : ${item}`);
+  const cleanup = summary.cleanup;
+  if (cleanup !== null) {
+    const ok = cleanup.aclRemoved && cleanup.profileRemoved && cleanup.tempRemoved;
+    lines.push(`  nettoyage (ACE, profil, dossiers temporaires) : ${ok ? "vérifié" : "INCOMPLET"}`);
+  }
+  return lines;
 }
