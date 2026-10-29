@@ -48,6 +48,25 @@ Règle de borne : `seuil d'arrêt + dépassement mesuré ≤ 10 000 − réserve
 
 Réserves : `app-server` est déclaré expérimental ; la jauge inclut l'usage de l'humain et s'exprime en pourcentage, sans tokens ; l'achat automatique de crédits du forfait doit être désactivé par l'utilisateur, ce que `doctor` doit rappeler ou vérifier.
 
+## Complément : parcours officiel « Sign in with ChatGPT » pour apps open source (29 octobre 2026)
+
+Relecture des sources signalées par la revue de coordination (`docs/REVIEW-2026-10-29.md`). OpenAI documente un parcours, en préversion, qui permet à une app **open source ou hébergée localement** d'utiliser le forfait ChatGPT de l'utilisateur :
+
+- **Éligibilité :** les pages indiquent que l'usage du forfait est ouvert aux partenaires open source ; une app payante ou hébergée à distance passe par un formulaire d'intérêt ; un identifiant client OAuth se demande via « Request a client ID ». Les critères exacts d'éligibilité ne sont pas détaillés.
+- **Mécanisme :** connexion OAuth avec consentement dans le navigateur au premier lancement, puis requêtes vers l'API Responses publique (`POST /v1/responses`) avec le jeton OAuth en `Bearer`, `store: false`, `stream: true`. Les endpoints `backend-api` de ChatGPT sont explicitement à éviter. Le jeton ne donne accès ni aux conversations ni à la clé API de l'utilisateur.
+- **Codex :** `codex app-server` peut être lancé comme processus enfant avec le jeton dans `ACCESS_TOKEN` et un fournisseur Responses ; l'app renouvelle le jeton puis reprend le fil (`thread/resume`).
+- **Hôtes :** un poste portable ou une VM autohébergée est un hôte valide, chacun avec un `ext_agent_host_id` stable.
+- **Limites de la préversion :** `max_output_tokens`, `max_tool_calls`, `background` et plusieurs autres champs ne sont **pas acceptés** ; outils hébergés (recherche de fichiers, Code Interpreter, MCP hébergé…) non supportés. Une limite d'usage peut survenir en plein flux (`response.failed` avec `subscription_sharing_usage_limit_exceeded` ou `subscription_sharing_usage_unavailable`).
+- **Non traité par ces pages :** usage automatisé, planifié ou sans humain (ni autorisé ni interdit explicitement), lecture du quota restant, objet `usage` par requête, annulation.
+
+Conséquences :
+
+1. La voie abonnement dispose d'un **mécanisme officiel**, ce qui remplace avantageusement la connexion ChatGPT de l'utilisateur dans Codex : Wake obtiendrait son propre jeton OAuth, scopé, révocable dans les paramètres ChatGPT. Le statut reste **expérimental** tant que l'usage sans humain n'est pas explicitement couvert et que l'éligibilité de MIND n'est pas confirmée.
+2. Comme Wake détient le jeton et que les requêtes passent en HTTP vers l'API Responses, **la passerelle locale d'ADR-002 redevient possible** pour cette voie : elle détient seule le jeton, connaît l'entrée avant envoi, compte la sortie sur le flux et coupe la connexion au-delà de l'enveloppe. Sans `max_output_tokens`, la borne de sortie repose sur cette coupure : le résidu entre seuil et coupure effective reste **à mesurer**, comme le dépassement de la jauge de quota. Ni la télémétrie ni la coupure ne sont des bornes démontrées avant mesure.
+3. **Action externe requise, réservée à l'utilisateur :** demander un identifiant client OAuth (et, si besoin, confirmer l'éligibilité de MIND). Aucune demande n'a été faite.
+
+Pages consultées le 29 octobre 2026 : `https://developers.openai.com/siwc/quickstart`, `/siwc/website`, `/siwc/token-sharing-open-source`, `/siwc/token-sharing-open-source/models-and-inference`, `/siwc/token-sharing-open-source/codex-app-server`, `/siwc/token-sharing-open-source/preview-limitations`. Non encore lues : `token-reference`, `errors-and-recovery`, `profiles-and-sessions`, `self-hosted-vms`.
+
 ## Critères de révision
 
 - Texte officiel OpenAI autorisant explicitement cet usage (la voie devient standard) ou l'interdisant (la voie est supprimée).
@@ -56,4 +75,4 @@ Réserves : `app-server` est déclaré expérimental ; la jauge inclut l'usage d
 
 ## Sources consultées
 
-Celles de `docs/feasibility/codex.md` (session S1, 29 octobre 2026). Aucune nouvelle source consultée pour cette révision.
+Celles de `docs/feasibility/codex.md` (session S1, 29 octobre 2026), plus les pages « Sign in with ChatGPT » listées dans le complément ci-dessus.

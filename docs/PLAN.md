@@ -2,6 +2,10 @@
 
 Date : 29 octobre 2026. Ce plan découpe les étapes F0–F5 de [SPEC.md §11](../SPEC.md) en sessions de travail indépendantes. [AGENTS.md](../AGENTS.md) reste la source de vérité ; en cas de conflit, il prévaut. Les dossiers et commandes cités ici sont à créer, pas existants.
 
+## Statut de développement
+
+**Spécification et socle technique en cours ; aucun service public opérationnel.** Fusionnés dans `main` : socle et contrats (S0), faisabilité Codex et isolation (S1, S2, ADR proposés sous conditions), policy engine (S4) et journal + CLI de consultation (S5), testés unitairement. En cours : S3 (SQLite + ledger). Rien n'est câblé de bout en bout : la CLI travaille en mémoire, aucune session d'exploration, réelle ou simulée, ne peut être lancée. Aucun paiement, wallet, canal de messagerie ni service distant n'existe. La voie abonnement est retenue comme expérimentale (ADR-004) et reste bloquée tant qu'un dépassement borné n'est pas mesuré.
+
 ## Principes du découpage
 
 - **Contrats d'abord.** S0 fige les types partagés (policy, adapter, événements, états, unités de budget) et l'arborescence. Ensuite chaque session possède ses dossiers et ne touche pas ceux des autres.
@@ -69,6 +73,20 @@ docs/feasibility/  docs/decisions/  test/acceptance/  spikes/
 ## Vague 5 — Validation v0.1
 
 **S15** : A01–A12 sur un Windows propre au projet ; rapport environnement, version, policy, latences, consommation, défauts connus.
+
+## Chemin vers une démo de conseil distant (F7 simulé)
+
+Les documents de direction décrivent désormais deux parcours distincts : **Wake local** (exploration de son propre agent, vagues 0 à 5 ci-dessus) et **conseil guest distant** (SPEC.md §14–18, TRANSACTIONS.md) : l'agent reste exécuté chez lui, converse avec un guide humain via un canal MCP, et rémunère ce guide selon les échanges accomplis. La CLI locale `mind-wake` n'est pas l'interface de ce second parcours ; aucun guest ne tourne sur le PC du guide.
+
+Une démo **entièrement simulée** de ce parcours ne dépend ni de Codex, ni de l'isolation réelle, ni d'un wallet. Elle peut donc avancer en parallèle de la vague 2, dans des dossiers séparés (`services/advice/`, `skills/advice-mediator/`, `test/advice/`), avec les contrats de S0 comme socle commun pour les identifiants et la journalisation :
+
+| Session | Objet | Recettes visées |
+|---|---|---|
+| **G1 Service de séances simulé** | Contrat immuable de séance, machine à états (`offered` → `settled`, sorties `cancelled`/`expired`/`disputed`), comptage d'échanges (une contribution humaine + une réponse de l'agent ; messages techniques non payables), mandat borné, ledger **fictif** distinct du ledger de ressources, adapter de règlement déterministe marqué « SIMULÉ », idempotence et reprise après crash | T04, T05 et P03, P05–P09, P13, P19, P20 en fonds fictifs |
+| **G2 Canal de conversation guest** | Serveur MCP de conversation (opérations nommées seulement), skill de médiation côté guide, agent guest factice dans un processus séparé ; minimisation : ni mémoire, ni credential, ni route réseau du guest exposés | T01–T03, T06, G01–G05 (section 15.5) |
+| **G3 Démo une phrase** | « Faisons une session de conseil MIND » → matching factice, réservation fictive, cinq échanges maximum, arrêt anticipé, reçu marqué simulé | H01–H06 (section 17.8) |
+
+Cette piste n'autorise aucun argent réel, réseau public, bot Telegram/WhatsApp, wallet ou publication : chacun reste soumis aux portes de TRANSACTIONS.md §19 et à une autorisation distincte. Le choix de lancer G1–G3 maintenant, après la v0.1 locale, ou d'en changer l'ordre **reste à l'utilisateur** ; ce plan n'en présume pas.
 
 ## Chemin critique
 

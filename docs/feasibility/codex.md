@@ -129,3 +129,7 @@ Session S1, 29 octobre 2026. Recherche documentaire uniquement : aucune installa
 - Éligibilité MXC sur le poste cible (révision exacte du build 26200) et comportement de lecture des secrets dans chaque mode de sandbox.
 - Position officielle d'OpenAI sur un daemon tiers qui planifie des sessions Codex avec un forfait personnel (question à poser au support ou à suivre dans la documentation).
 - Stabilisation éventuelle de `features.rollout_budget` et sémantique exacte des catégories comptées.
+
+## Mise à jour du 29 octobre 2026 : parcours « Sign in with ChatGPT » open source
+
+Un parcours officiel en préversion permet à une app open source ou hébergée localement d'utiliser le forfait ChatGPT de l'utilisateur par OAuth, via l'API Responses publique ou `codex app-server` (jeton dans `ACCESS_TOKEN`). Il ne traite pas l'usage sans humain, n'accepte pas `max_output_tokens` et exige un identifiant client OAuth. Analyse et conséquences : `docs/decisions/ADR-004-voie-abonnement.md`, section « Parcours officiel Sign in with ChatGPT ».
