@@ -480,3 +480,141 @@ describe("boucle", () => {
     }
   });
 });
+
+describe("voie abonnement : déclenchement avant remise à zéro (ADR-005)", () => {
+  const GUARD = {
+    enabled: true,
+    accountRiskAcknowledged: true,
+    startBelowBasisPoints: 6_000,
+    stopAtBasisPoints: 8_000,
+    userReserveBasisPoints: 1_000,
+    overshootBoundBasisPoints: 500,
+    maxSnapshotAgeMs: 60_000,
+    launchWhenResetWithinMs: 6 * HOUR,
+  } as const;
+
+  /** Jauge lue « maintenant » sur l'horloge simulée. */
+  function gauge(windows: readonly { key: string; used: number; resetsAt: number }[]): void {
+    b.environment.quota = () =>
+      windows.map((w) => ({
+        windowKey: w.key,
+        windowDurationMs: 5 * HOUR,
+        usedBasisPoints: w.used,
+        resetsAt: iso(w.resetsAt),
+        observedAt: iso(b.clock.now()),
+        provenance: "measured" as const,
+      }));
+  }
+
+  function subscriptionSetup(): void {
+    setup({ budget: { subscriptionQuota: GUARD } });
+    b.environment.billingFacts = { kind: "subscription_quota" };
+    const facts = b.environment.adapterFacts;
+    if (typeof facts !== "object") throw new Error("faits d'adapter attendus");
+    b.environment.adapterFacts = {
+      ...facts,
+      capabilities: {
+        ...facts.capabilities,
+        tokenCapEnforcement: "provider_quota_guard",
+        providerQuotaReading: "official",
+      },
+    };
+  }
+
+  it("remise à zéro trop lointaine : hibernation, réveil quand elle entre dans le délai", async () => {
+    subscriptionSetup();
+    gauge([{ key: "primary", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 10 * HOUR }]);
+    expect(await tickFresh()).toMatchObject({
+      kind: "denied",
+      decision: {
+        reason: "outside_window",
+        detail: expect.stringContaining("reset_not_within") as unknown,
+      },
+    });
+    expect(state()).toBe("hibernating");
+    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 4 * HOUR));
+    expect(b.launcher.tickets).toHaveLength(0);
+
+    b.clock.setWall(THURSDAY_10H_PARIS + 4 * HOUR);
+    const launched = await tickFresh();
+    expect(launched.kind).toBe("launched");
+    // Aucune enveloppe de tokens propre à Wake : la garde de quota borne la session.
+    expect(b.launcher.tickets[0]?.maxima).toEqual([{ unit: "sessions", amount: 1 }]);
+  });
+
+  it("toutes les fenêtres lues doivent se remettre à zéro dans le délai", async () => {
+    subscriptionSetup();
+    gauge([
+      { key: "primary", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 2 * HOUR },
+      { key: "weekly", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 7 * HOUR },
+    ]);
+    expect(await tickFresh()).toMatchObject({
+      decision: { detail: expect.stringContaining("reset_not_within: weekly") as unknown },
+    });
+    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + HOUR));
+  });
+
+  it("seuil de départ atteint : réveil à la remise à zéro de cette fenêtre", async () => {
+    subscriptionSetup();
+    gauge([
+      { key: "primary", used: 6_000, resetsAt: THURSDAY_10H_PARIS + 3 * HOUR },
+      { key: "weekly", used: 1_000, resetsAt: THURSDAY_10H_PARIS + 5 * HOUR },
+    ]);
+    expect(await tickFresh()).toMatchObject({
+      decision: {
+        reason: "budget_exhausted",
+        detail: expect.stringContaining(": primary") as unknown,
+      },
+    });
+    expect(state()).toBe("hibernating");
+    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 3 * HOUR));
+  });
+
+  it("lecture absente ou périmée : runtime bloqué avec motif, rien n'est réservé", async () => {
+    subscriptionSetup();
+    expect(await tickFresh()).toMatchObject({
+      kind: "denied",
+      state: "blocked",
+      decision: { reason: "budget_unknown", detail: "subscription.quota_unknown" },
+    });
+    expect(b.launcher.tickets).toHaveLength(0);
+    expect(b.events("budget_reserved")).toHaveLength(0);
+  });
+
+  it("lecture trop ancienne : bloqué", async () => {
+    subscriptionSetup();
+    const observed = b.clock.now() - 2 * MINUTE;
+    b.environment.quota = () => [
+      {
+        windowKey: "primary",
+        windowDurationMs: 5 * HOUR,
+        usedBasisPoints: 1_000,
+        resetsAt: iso(THURSDAY_10H_PARIS + HOUR),
+        observedAt: iso(observed),
+        provenance: "measured",
+      },
+    ];
+    expect(await tickFresh()).toMatchObject({
+      state: "blocked",
+      decision: { reason: "budget_unknown", detail: "subscription.snapshot_stale: primary" },
+    });
+  });
+
+  it("sans lecture officielle de la jauge : bloqué en mode autonome", async () => {
+    subscriptionSetup();
+    const facts = b.environment.adapterFacts;
+    if (typeof facts !== "object") throw new Error("faits d'adapter attendus");
+    b.environment.adapterFacts = {
+      ...facts,
+      capabilities: { ...facts.capabilities, providerQuotaReading: "none" },
+    };
+    gauge([{ key: "primary", used: 1_000, resetsAt: THURSDAY_10H_PARIS + HOUR }]);
+    expect(await tickFresh()).toMatchObject({
+      state: "blocked",
+      decision: {
+        reason: "bound_not_enforceable",
+        detail: "subscription.no_official_quota_reading",
+      },
+    });
+  });
+});

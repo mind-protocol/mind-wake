@@ -16,8 +16,16 @@ export type {
   ResumeResult,
   ResumeStatus,
 } from "./controls.js";
-export { canRequestCheckpoint } from "./host.js";
-export type { AdapterHost, AuthorizationVerdict, CheckpointRequestable } from "./host.js";
+export { canReadQuota, canRequestCheckpoint } from "./host.js";
+export type {
+  AdapterHost,
+  AuthorizationVerdict,
+  CheckpointRequestable,
+  QuotaReadable,
+  SessionIsolationMode,
+} from "./host.js";
+export { BROKER_PIPE_ENV, SandboxLaunchError, sandboxSpecFor } from "./sandboxing.js";
+export type { ConfinedLaunch, RunnerSandbox, SandboxReadiness } from "./sandboxing.js";
 export { runtimeDirFor } from "./paths.js";
 export {
   ContainedProcess,
@@ -32,6 +40,7 @@ export type {
   JobQuery,
   LauncherStatus,
   NamedTermination,
+  SessionProcess,
   TreeTermination,
 } from "./process-tree.js";
 export { DEFAULT_RUNNER_OPTIONS, RunnerError, SessionRunner } from "./runner.js";

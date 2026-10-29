@@ -81,10 +81,10 @@ Code Windows rapporté par la sonde depuis le conteneur (`5` = `ERROR_ACCESS_DEN
 - `HKCU\Environment` et une partie de `HKCU\Software` restent lisibles (S2) : règle produit, aucun secret dans les variables utilisateur.
 - Mesures sur poste au repos ; ni charge, ni E/S noyau bloquées.
 
-## À brancher (S-D ou session suivante)
+## Branchement (câblage des runtimes, ADR-005)
 
-- **Runner** : `AdapterHost.spawnContained` renvoie la classe `ContainedProcess` (champs privés `#`, donc nominale). Extraire une interface commune (`started`, `exited`, `hasExited`, `readLine`, `send`, `terminateTree`) que `SandboxedProcess` satisfait déjà, puis construire `Sandbox.launch({ jobName: jobNameFor(profileId, sessionId), readWriteRoots: policy.filesAndTools…, readOnlyRoots: [runtime], protectedPaths: [dataDir], maxProcesses: filesAndTools.maxProcesses, … })`. Le nom de job identique permet à `ProcessTreeSupervisor.terminate/query` (CLI `stop`, réconciliation) de terminer aussi un job confiné.
-- **`liveChecks.sandboxOperational`** et `ScheduledLaunchPort.sandboxOperational()` : `sandbox.health().operational` (profil présent, lanceur construit), et refuser tout lancement tant que l'autotest de refus n'a pas réussi sur le poste depuis la dernière mise à jour du binaire (mémoriser `sourceDigest` + horodatage).
-- **Activation / désinstallation** : `new Sandbox(runtimeDirFor(dataDir)).ensureProfile()` à l'activation ; `deleteProfile()` (vérifier `exists === false`) à la désinstallation (A01).
-- **Runtime** : préparer une racine `ReadAndExecute` avec une copie de `node.exe` (l'ACL MSI de Program Files n'accorde rien aux AppContainers) ; Node confiné exige `--preserve-symlinks-main --preserve-symlinks` et des sous-processus sans pipes stdio (S2).
-- **`BUILD_COMPONENTS.isolation`** (`src/cli/capabilities.ts`) et `enable` restent à `false` : à passer quand le runner lance réellement via cette couche.
+- **Runner** : fait. Interface commune `SessionProcess` (`src/runner/process-tree.ts`) ; un adapter réel est lancé par `Sandbox.launch` (`src/runner/sandboxing.ts`), même nom de job que `jobNameFor`.
+- **Autotest avant lancement** : fait. Le daemon en mode réel exécute `runIsolationSelfTest()` au démarrage et le consigne (migration `isolation_self_tests`, avec `sourceDigest`) ; `sandboxOperational` et `RunnerSandbox.ready()` ne valent `true` que si cet autotest a réussi, nettoyage vérifié, pour l'empreinte du lanceur en service. `status` affiche le dernier autotest sans l'exécuter.
+- **`BUILD_COMPONENTS.isolation`** : `true`. L'isolation n'est « présente » que sur preuve (`doctor`, ou dernier autotest du daemon valable), sinon « bloquée ».
+- **Profil de production** : `daemon run` (mode réel) crée `mindwake.sandbox` s'il manque. Reste à faire : `deleteProfile()` à la désinstallation (A01, `src/export/uninstall.ts`).
+- **Runtime** : reste à faire par adapter. Préparer une racine `ReadAndExecute` (`AdapterRegistration.runtimeRoots`) avec une copie du CLI et de `node.exe` (l'ACL MSI de Program Files n'accorde rien aux AppContainers) ; Node confiné exige `--preserve-symlinks-main --preserve-symlinks` et des sous-processus sans pipes stdio (S2).

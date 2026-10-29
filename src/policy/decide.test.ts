@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { AdapterCapabilities, ProbeResult } from "../contracts/adapter.js";
 import type { BudgetAvailability, ProviderQuotaSnapshot } from "../contracts/budget.js";
-import type { AdapterId, BudgetPeriodId } from "../contracts/common.js";
-import type { RuntimeGroup } from "../contracts/policy.js";
+import type { AdapterId, BudgetPeriodId, UtcTimestamp } from "../contracts/common.js";
+import type { PolicyDecision, RuntimeGroup } from "../contracts/policy.js";
 import {
   CHECKS,
   NOW,
@@ -872,6 +872,7 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
+    launchWhenResetWithinMs: 21_600_000,
   };
   const snapshot = (used: number, extra: Partial<ProviderQuotaSnapshot> = {}) =>
     ({
@@ -1001,11 +1002,37 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
       "user_priority.unfavorable",
     ],
     [
-      "budget de tokens toujours exigé",
+      "budget de sessions toujours exigé",
       guard,
-      { budget: { sessions: availability("sessions", 2) } },
+      { budget: { tokens: availability("tokens", 50_000) } },
       "budget_unknown",
-      "tokens.availability_unknown",
+      "sessions.availability_unknown",
+    ],
+    [
+      "remise à zéro trop lointaine (une fenêtre)",
+      guard,
+      {
+        quotaSnapshots: [
+          snapshot(1_000),
+          snapshot(1_000, { windowKey: "weekly", resetsAt: ts("2026-11-02T00:00:00Z") }),
+        ],
+      },
+      "outside_window",
+      "subscription.reset_not_within: weekly",
+    ],
+    [
+      "remise à zéro déjà passée",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { resetsAt: ts("2026-10-29T10:29:00Z") })] },
+      "budget_unknown",
+      "subscription.snapshot_reset_passed: primary",
+    ],
+    [
+      "remise à zéro illisible",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { resetsAt: "demain" as UtcTimestamp })] },
+      "budget_unknown",
+      "subscription.snapshot_invalid: primary",
     ],
   ];
 
@@ -1015,6 +1042,37 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     if (decision.verdict !== "deny") return;
     expect(decision.reason).toBe(reason);
     expect(decision.detail.startsWith(detail)).toBe(true);
+  });
+
+  it("n'exige aucun plafond de tokens propre à Wake quand la garde est active", () => {
+    const decision = decideLaunch(
+      store(guard).policies,
+      PROFILE,
+      subFacts({ budget: { sessions: availability("sessions", 2) } }),
+    );
+    expect(decision).toMatchObject({ verdict: "allow" });
+  });
+
+  it("déclenche selon l'heure de remise à zéro (horloge simulée)", () => {
+    const policies = store(guard).policies;
+    const at = (now: string, resetsAt: string): PolicyDecision =>
+      decideLaunch(
+        policies,
+        PROFILE,
+        subFacts({
+          now: ts(now),
+          userPriority: { favorable: true, observedAt: ts(now) },
+          quotaSnapshots: [snapshot(1_000, { observedAt: ts(now), resetsAt: ts(resetsAt) })],
+        }),
+      );
+    // Délai consenti : 6 h. 6 h 00 min 01 s avant la remise à zéro : attente.
+    expect(at("2026-10-29T08:59:59Z", "2026-10-29T15:00:00Z")).toMatchObject({
+      verdict: "deny",
+      reason: "outside_window",
+      detail: "subscription.reset_not_within: primary resets_in_ms=21601000",
+    });
+    expect(at("2026-10-29T09:00:00Z", "2026-10-29T15:00:00Z").verdict).toBe("allow");
+    expect(at("2026-10-29T14:59:59Z", "2026-10-29T15:00:00Z").verdict).toBe("allow");
   });
 
   it("interrompt la session au seuil d'arrêt, la laisse continuer en dessous", () => {

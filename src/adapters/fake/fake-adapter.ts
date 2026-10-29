@@ -25,7 +25,7 @@ import type {
 } from "../../contracts/index.js";
 import { CHECKPOINT_SCHEMA_VERSION } from "../../contracts/index.js";
 import type { AdapterHost, CheckpointRequestable } from "../../runner/host.js";
-import type { ContainedProcess } from "../../runner/process-tree.js";
+import type { SessionProcess } from "../../runner/process-tree.js";
 import type { FakeScenario } from "./scenarios.js";
 
 export const FAKE_ADAPTER_ID = "fake" as AdapterId;
@@ -48,7 +48,7 @@ export interface FakeAdapterOptions {
 const DEFAULT_EXPERIMENT = "fake-experiment" as ExperimentId;
 
 interface FakeSession {
-  readonly process: ContainedProcess;
+  readonly process: SessionProcess;
   tokens: number;
   ended: boolean;
 }

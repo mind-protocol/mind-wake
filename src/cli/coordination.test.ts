@@ -85,6 +85,7 @@ const ENABLED_GUARD: SubscriptionQuotaGuard = {
   userReserveBasisPoints: 1_500,
   overshootBoundBasisPoints: 250,
   maxSnapshotAgeMs: 60_000,
+  launchWhenResetWithinMs: 21_600_000,
 };
 
 function revisionWithGuard(guard: SubscriptionQuotaGuard | undefined): PolicyRevision {
@@ -173,7 +174,7 @@ describe("disponibilité des composants", () => {
         policy_engine: "not_implemented",
         scheduler: "not_implemented",
         daemon: "not_implemented",
-        isolation: "not_implemented",
+        isolation: "blocked",
         simulated_adapter: "simulated",
         runtime_adapter: "not_implemented",
         api_key_path: "not_implemented",
@@ -221,8 +222,8 @@ describe("voie abonnement", () => {
       subscriptionPath({ ...ENABLED_GUARD, overshootBoundBasisPoints: 900 }, all).blockers.join(),
     ).toContain("réserve humaine");
     expect(subscriptionPath(ENABLED_GUARD, { adapter: false, isolation: false }).blockers).toEqual([
-      "adapter Codex non implémenté",
-      "isolation non implémentée",
+      "aucun adapter réel enregistré dans ce build",
+      "isolation non vérifiée sur ce poste (autotest de refus)",
     ]);
   });
 

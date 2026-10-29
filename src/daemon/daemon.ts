@@ -12,19 +12,16 @@
  * 50 ms pendant une session, le scheduler à chaque tour. `stop` termine aussi le Job
  * Object de la session par son nom, sans passer par le daemon.
  *
- * Ce build n'a qu'un adapter : l'adapter factice. Le daemon refuse de démarrer sans
- * `simulated: true`, et tout ce qu'il produit est marqué SIMULÉ.
+ * Le runtime est celui que désigne la policy, pris dans le registre d'adapters
+ * (`registry.ts`), sans repli. Mode simulé (`simulated: true`) : adapter factice, Job
+ * Object seul, tout est marqué SIMULÉ. Mode réel : adapter enregistré et disponible
+ * selon `probe`, sessions lancées dans la sandbox AppContainer + Job Object seulement
+ * après un autotest de refus réussi au démarrage du daemon (ADR-003, ADR-005).
  */
 
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
-import {
-  FAKE_ADAPTER_ID,
-  FakeAdapter,
-  emergenceScenario,
-  fakeScenario,
-  type FakeScenario,
-} from "../adapters/fake/index.js";
+import { FAKE_ADAPTER_ID, emergenceScenario, type FakeScenario } from "../adapters/fake/index.js";
 import {
   loadWakeMemory,
   openRoot,
@@ -34,23 +31,35 @@ import {
   type WakeMemory,
 } from "../checkpoint/index.js";
 import type {
+  AdapterId,
   CheckpointCandidate,
   ExperimentId,
   PolicyRevisionId,
+  ProbeResult,
   ProfileId,
+  RuntimeAdapter,
   SessionId,
   SessionRecord,
   UtcTimestamp,
 } from "../contracts/index.js";
 import { prepareJournalEvent } from "../journal/index.js";
 import { decideAction, decisionJournalEvent, resolvePolicy } from "../policy/index.js";
+import type { BillingFacts, SessionChecks } from "../policy/index.js";
 import {
   ProcessTreeSupervisor,
   SessionRunner,
   StopFlag,
   runtimeDirFor,
+  type RunnerSandbox,
+  type SandboxReadiness,
   type SessionResult,
 } from "../runner/index.js";
+import {
+  Sandbox,
+  runIsolationSelfTest,
+  sandboxSourceDigest,
+  type IsolationSelfTestReport,
+} from "../sandbox/index.js";
 import {
   InstanceLockError,
   Scheduler,
@@ -65,18 +74,22 @@ import {
 } from "../scheduler/index.js";
 import { openStore, type Store } from "../store/index.js";
 import {
-  SIMULATED_RUNTIME,
+  RuntimeEnvironment,
   SimulatedActivitySignal,
   SimulatedEnvironment,
+  runtimeLiveChecks,
   simulatedLiveChecks,
 } from "./environment.js";
 import { registerProposal } from "./experiments.js";
+import { recordSelfTest, selfTestRecordFor, selfTestValidFor } from "./isolation.js";
 import {
   ARTIFACTS_SEGMENT,
   artifactsDirFor,
   controlDbPath,
   simulatedActivityFlagFor,
+  workspaceDirFor,
 } from "./paths.js";
+import { defaultRegistry, type AdapterRegistration, type AdapterRegistry } from "./registry.js";
 import { closeAbandonedRuns, recordDaemonEnd, recordDaemonStart } from "./runs.js";
 
 export class DaemonError extends Error {
@@ -84,6 +97,8 @@ export class DaemonError extends Error {
   constructor(
     readonly code:
       | "real_adapter_missing"
+      | "adapter_unavailable"
+      | "sandbox_unavailable"
       | "no_profile"
       | "already_running"
       | "runtime_mismatch"
@@ -94,11 +109,26 @@ export class DaemonError extends Error {
   }
 }
 
+/**
+ * Isolation du mode réel. Par défaut : profil AppContainer de production
+ * (`mindwake.sandbox`, créé s'il manque) et autotest de refus complet au démarrage.
+ */
+export interface DaemonIsolation {
+  readonly sandbox: Sandbox;
+  readonly selfTest?: () => Promise<IsolationSelfTestReport>;
+  /** Racines runtime supplémentaires en lecture et exécution (tests). */
+  readonly runtimeRoots?: readonly string[];
+}
+
 export interface DaemonOptions {
   readonly dataDir: string;
   readonly profileId: ProfileId;
-  /** Seul mode disponible : adapter factice, tout est marqué SIMULÉ. */
+  /** Adapter factice, tout est marqué SIMULÉ ; sinon l'adapter réel de la policy. */
   readonly simulated: boolean;
+  /** Registre d'adapters ; par défaut celui de ce build. */
+  readonly registry?: AdapterRegistry;
+  /** Isolation du mode réel ; ignorée en mode simulé. */
+  readonly isolation?: DaemonIsolation;
   /** Veille maximale du scheduler entre deux tours (≥ 1 000 ms). */
   readonly recheckIntervalMs?: number;
   /** Arrêt propre après ce nombre de sessions terminées (démo, tests). */
@@ -149,7 +179,16 @@ export function reportFor(result: SessionResult): SessionReport {
 interface SessionContext {
   readonly revisionId: PolicyRevisionId;
   experimentId: ExperimentId | null;
-  scenario: FakeScenario;
+  scenario: FakeScenario | undefined;
+}
+
+/** Mode réel : adapter enregistré, sandbox, autotest à exécuter au démarrage. */
+interface RealMode {
+  readonly registration: AdapterRegistration;
+  readonly probe: ProbeResult;
+  readonly sandbox: Sandbox;
+  readonly selfTest: () => Promise<IsolationSelfTestReport>;
+  readonly runtimeRoots: readonly string[];
 }
 
 export class WakeDaemon implements SessionLauncher {
@@ -163,6 +202,10 @@ export class WakeDaemon implements SessionLauncher {
   readonly #sessions = new Map<SessionId, SessionContext>();
   readonly #results: SessionResult[] = [];
   readonly #abort = new AbortController();
+  readonly #registration: AdapterRegistration;
+  readonly #real: RealMode | null;
+  /** Isolation prête : autotest de refus réussi pour ce lanceur (mode réel). */
+  #readiness: SandboxReadiness = { ok: false, detail: "autotest de refus non exécuté" };
   #stopReason = "arrêt demandé";
   #scheduler: Scheduler | null = null;
 
@@ -171,48 +214,71 @@ export class WakeDaemon implements SessionLauncher {
     store: Store,
     lock: InstanceLock,
     supervisor: ProcessTreeSupervisor,
+    registration: AdapterRegistration,
+    real: RealMode | null,
   ) {
     this.#o = options;
     this.#store = store;
     this.#lock = lock;
+    this.#registration = registration;
+    this.#real = real;
     this.#signal = new SimulatedActivitySignal(simulatedActivityFlagFor(options.dataDir));
     fs.mkdirSync(artifactsDirFor(options.dataDir), { recursive: true });
     this.#root = openRoot(artifactsDirFor(options.dataDir));
+    const workspaceDir = workspaceDirFor(options.dataDir);
     this.#runner = new SessionRunner({
       uow: store.uow,
       profileId: options.profileId,
       supervisor,
+      ...(real === null ? {} : { sandbox: this.#runnerSandbox(real, workspaceDir) }),
       stopFlag: new StopFlag(options.dataDir),
       adapter: (host) =>
-        new FakeAdapter({
+        registration.create({
           host,
-          scenario: (sessionId) =>
-            this.#sessions.get(sessionId)?.scenario ?? fakeScenario("success"),
-          experimentFor: (sessionId) =>
-            this.#sessions.get(sessionId)?.experimentId ?? ("exp-inconnue" as ExperimentId),
+          dataDir: options.dataDir,
+          workspaceDir,
+          experimentFor: (sessionId) => this.#sessions.get(sessionId)?.experimentId ?? null,
           onProposal: (sessionId, proposal) => {
             this.#onProposal(sessionId, proposal);
           },
+          fakeScenario: (sessionId) => this.#sessions.get(sessionId)?.scenario,
         }),
-      liveChecks: () => simulatedLiveChecks(this.#signal),
+      liveChecks: () => this.#liveChecks(),
       onCheckpointCandidate: (candidate) => {
         this.#onCheckpoint(candidate);
       },
     });
   }
 
+  #runnerSandbox(real: RealMode, workspaceDir: string): RunnerSandbox {
+    fs.mkdirSync(workspaceDir, { recursive: true });
+    return {
+      ready: () => this.#readiness,
+      launch: (spec) => real.sandbox.launch(spec),
+      workspaceDir,
+      runtimeRoots: real.runtimeRoots,
+      // Base de contrôle et dossier de données : jamais dans une racine accordée.
+      protectedPaths: [controlDbPath(this.#o.dataDir), this.#o.dataDir],
+    };
+  }
+
+  #liveChecks(): Omit<SessionChecks, "now"> {
+    return this.#real === null
+      ? simulatedLiveChecks(this.#signal)
+      : runtimeLiveChecks(this.#signal, () => this.#readiness.ok);
+  }
+
+  get simulated(): boolean {
+    return this.#real === null;
+  }
+
   /**
-   * Prépare le daemon sans rien lancer. Lève `DaemonError` si le mode réel est demandé,
-   * si le profil est absent, si un autre daemon tient le verrou ou si la policy ne
-   * désigne pas l'adapter factice.
+   * Prépare le daemon sans rien lancer. Lève `DaemonError` si le profil est absent, si un
+   * autre daemon tient le verrou, si le mode demandé ne correspond pas à l'adapter de la
+   * policy, ou, en mode réel, si cet adapter n'est pas enregistré, si `probe` le dit
+   * indisponible ou si le lanceur confiné ne peut pas être construit.
    */
-  static open(options: DaemonOptions): WakeDaemon {
-    if (!options.simulated) {
-      throw new DaemonError(
-        "real_adapter_missing",
-        "adapter réel (Codex) non implémenté dans ce build : relancer avec --simulated pour l'adapter factice, tout sera marqué SIMULÉ",
-      );
-    }
+  static async open(options: DaemonOptions): Promise<WakeDaemon> {
     const dbPath = controlDbPath(options.dataDir);
     if (!fs.existsSync(dbPath)) {
       throw new DaemonError("no_profile", "aucune base de contrôle : lancer `mind-wake init`");
@@ -234,23 +300,32 @@ export class WakeDaemon implements SessionLauncher {
         }
         throw error;
       }
+      const registry = options.registry ?? defaultRegistry();
       const resolution = resolvePolicy(store.uow.policies, options.profileId);
-      if (
-        resolution.status === "active" &&
-        resolution.revision.groups.runtime.adapterId !== FAKE_ADAPTER_ID
-      ) {
-        throw new DaemonError(
-          "runtime_mismatch",
-          `la policy désigne l'adapter « ${resolution.revision.groups.runtime.adapterId} » : le mode simulé n'exécute que l'adapter factice`,
-        );
+      const wanted: AdapterId | null =
+        resolution.status === "active" ? resolution.revision.groups.runtime.adapterId : null;
+      const runtimeDir = options.runtimeDir ?? runtimeDirFor(options.dataDir);
+      let registration: AdapterRegistration;
+      let real: RealMode | null = null;
+      if (options.simulated) {
+        if (wanted !== null && wanted !== FAKE_ADAPTER_ID) {
+          throw new DaemonError(
+            "runtime_mismatch",
+            `la policy désigne l'adapter « ${wanted} » : le mode simulé n'exécute que l'adapter factice`,
+          );
+        }
+        const fake = registry.get(FAKE_ADAPTER_ID);
+        if (fake === null) throw new DaemonError("real_adapter_missing", "adapter factice absent");
+        registration = fake;
+      } else {
+        registration = realRegistration(registry, wanted);
+        real = await realMode(options, registration, runtimeDir);
       }
-      const supervisor = new ProcessTreeSupervisor(
-        options.runtimeDir ?? runtimeDirFor(options.dataDir),
-      );
+      const supervisor = new ProcessTreeSupervisor(runtimeDir);
       if (!supervisor.status.available) {
         throw new DaemonError("termination_unavailable", supervisor.status.reason);
       }
-      return new WakeDaemon(options, store, lock, supervisor);
+      return new WakeDaemon(options, store, lock, supervisor, registration, real);
     } catch (error) {
       lock?.release();
       store.close();
@@ -263,7 +338,52 @@ export class WakeDaemon implements SessionLauncher {
   }
 
   #log(line: string): void {
-    this.#o.log?.(`[SIMULÉ] ${line}`);
+    this.#o.log?.(this.#real === null ? `[SIMULÉ] ${line}` : line);
+  }
+
+  /**
+   * Mode réel : profil AppContainer présent (créé s'il manque), puis autotest de refus.
+   * L'isolation n'est prête que si l'autotest réussit, nettoyage vérifié, pour
+   * l'empreinte du lanceur en service ; sinon tout lancement est refusé avec motif.
+   */
+  async #prepareIsolation(real: RealMode): Promise<void> {
+    const { db, uow } = this.#store;
+    const at = utcNow();
+    let report: IsolationSelfTestReport;
+    try {
+      const profile = real.sandbox.ensureProfile();
+      if (profile.created) this.#log(`profil AppContainer ${real.sandbox.profile} créé`);
+      report = await real.selfTest();
+    } catch (error) {
+      this.#readiness = {
+        ok: false,
+        detail: `isolation indisponible : ${error instanceof Error ? error.message : String(error)}`,
+      };
+      this.#log(this.#readiness.detail);
+      return;
+    }
+    const digest = real.sandbox.status.available ? real.sandbox.status.sourceDigest : null;
+    const record = selfTestRecordFor(this.#o.profileId, report, sandboxSourceDigest(), at);
+    recordSelfTest(db, record);
+    this.#readiness = selfTestValidFor(record, digest);
+    uow.journal.append(
+      prepareJournalEvent({
+        type: record.passed ? "action_allowed" : "action_denied",
+        at,
+        profileId: this.#o.profileId,
+        reason: record.passed ? "isolation.self_test_passed" : "sandbox_unavailable",
+        metadata: {
+          action: "isolation_self_test",
+          passed: record.passed,
+          checks: record.checks,
+          failed: [...record.failed],
+          cleanupVerified: record.cleanupVerified,
+          sourceDigest: record.sourceDigest,
+          terminationMs: record.terminationMs,
+        },
+      }),
+    );
+    this.#log(this.#readiness.detail);
   }
 
   /** Arrêt propre : plus aucun réveil ; la session en cours, s'il y en a une, se termine. */
@@ -276,13 +396,16 @@ export class WakeDaemon implements SessionLauncher {
     const { uow, db } = this.#store;
     const { profileId } = this.#o;
     const at = utcNow();
+    const real = this.#real;
+    const mode = real === null ? "simulated" : "real";
+    const adapterId = this.#registration.id;
     const abandoned = closeAbandonedRuns(db, profileId, at);
     recordDaemonStart(db, {
       id: this.runId,
       profileId,
       pid: process.pid,
-      mode: "simulated",
-      adapterId: FAKE_ADAPTER_ID,
+      mode,
+      adapterId,
       startedAt: at,
       endedAt: null,
       endReason: null,
@@ -292,13 +415,17 @@ export class WakeDaemon implements SessionLauncher {
         type: "daemon_started",
         at,
         profileId,
-        reason: "daemon démarré au premier plan (SIMULÉ : adapter factice, aucun appel modèle)",
+        reason:
+          real === null
+            ? "daemon démarré au premier plan (SIMULÉ : adapter factice, aucun appel modèle)"
+            : `daemon démarré au premier plan (adapter réel « ${adapterId} », sessions confinées)`,
         metadata: {
           runId: this.runId,
           pid: process.pid,
-          mode: "simulated",
-          adapterId: FAKE_ADAPTER_ID,
-          isolation: "not_implemented",
+          mode,
+          adapterId,
+          isolation: real === null ? "job_only" : "sandbox",
+          ...(real === null ? {} : { adapterVersion: real.probe.version }),
           abandonedRuns: abandoned.map((r) => r.id),
         },
       }),
@@ -316,16 +443,22 @@ export class WakeDaemon implements SessionLauncher {
       );
     }
     this.#reconcileArtifacts();
+    if (real !== null) await this.#prepareIsolation(real);
 
     const scheduler = new Scheduler({
       profileId,
       uow: this.#store.uow,
       state: new SqliteSchedulerStateRepository(db),
       clock: { now: () => Date.now(), monotonic: () => performance.now() },
-      environment: new SimulatedEnvironment(this.#runner.adapter, {
-        adapterId: FAKE_ADAPTER_ID,
-        ...SIMULATED_RUNTIME,
-      }),
+      environment:
+        real === null
+          ? new SimulatedEnvironment(this.#runner.adapter, this.#registration.runtime())
+          : new RuntimeEnvironment(
+              this.#runner.adapter,
+              this.#registration.runtime(),
+              this.#registration.billing(),
+              () => this.#readiness.ok,
+            ),
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -350,7 +483,11 @@ export class WakeDaemon implements SessionLauncher {
           at,
           profileId: this.#o.profileId,
           reason: `daemon arrêté : ${this.#stopReason}`,
-          metadata: { runId: this.runId, sessions: this.#results.length, mode: "simulated" },
+          metadata: {
+            runId: this.runId,
+            sessions: this.#results.length,
+            mode: this.#real === null ? "simulated" : "real",
+          },
         }),
       );
     } finally {
@@ -392,27 +529,33 @@ export class WakeDaemon implements SessionLauncher {
     const { uow } = this.#store;
     const record = uow.sessions.get(ticket.sessionId);
     const experimentId = record?.experimentId ?? null;
+    // Contexte borné à la moitié de l'enveloppe ; sur abonnement (aucune enveloppe de
+    // tokens), à la moitié du plafond de session de la policy, simple borne de contexte.
     const tokens = ticket.maxima.find((q) => q.unit === "tokens");
-    const maxInputTokens = Math.max(
-      1,
-      Math.floor((tokens?.unit === "tokens" ? tokens.amount : 0) / 2),
-    );
+    const sessionTokens =
+      tokens?.unit === "tokens"
+        ? tokens.amount
+        : (uow.policies.getRevision(ticket.policyRevisionId)?.groups.budget.tokensPerSession ?? 0);
+    const maxInputTokens = Math.max(1, Math.floor(sessionTokens / 2));
     const memory = this.#memory(experimentId, maxInputTokens);
-    const scenario =
-      this.#o.scenario ??
-      emergenceScenario({
-        artifactRoot: this.#root.real,
-        artifactsSegment: ARTIFACTS_SEGMENT,
-        memory: memory?.included ?? [],
-        lastCheckpoint: memory?.checkpoint?.sequence ?? null,
-      });
+    const scenario: FakeScenario | undefined =
+      this.#real !== null
+        ? undefined
+        : (this.#o.scenario ??
+          emergenceScenario({
+            artifactRoot: this.#root.real,
+            artifactsSegment: ARTIFACTS_SEGMENT,
+            memory: memory?.included ?? [],
+            lastCheckpoint: memory?.checkpoint?.sequence ?? null,
+          }));
+    const billing: BillingFacts = this.#registration.billing();
     this.#sessions.set(ticket.sessionId, {
       revisionId: ticket.policyRevisionId,
       experimentId,
       scenario,
     });
     this.#log(
-      `session ${ticket.sessionId} lancée (scénario ${scenario.name}, mémoire ${memory?.status ?? "aucune expérience"}${memory?.interruption == null ? "" : ` — ${memory.interruption}`})`,
+      `session ${ticket.sessionId} lancée (${scenario === undefined ? `adapter ${this.#registration.id}` : `scénario ${scenario.name}`}, mémoire ${memory?.status ?? "aucune expérience"}${memory?.interruption == null ? "" : ` — ${memory.interruption}`})`,
     );
     let result: SessionResult;
     try {
@@ -429,6 +572,7 @@ export class WakeDaemon implements SessionLauncher {
         context: memory?.text ?? "",
         maxInputTokens,
         sessionPrepared: true,
+        onSubscription: billing.kind === "subscription_quota",
       });
       result = await running.done;
     } catch (error) {
@@ -485,7 +629,7 @@ export class WakeDaemon implements SessionLauncher {
         sessionId,
         revision,
         now: utcNow,
-        simulated: true,
+        simulated: this.#real === null,
       },
       proposal,
     );
@@ -514,7 +658,7 @@ export class WakeDaemon implements SessionLauncher {
         sessionId: candidate.sessionId,
         policyRevisionId: context.revisionId,
       },
-      { ...simulatedLiveChecks(this.#signal), now: at },
+      { ...this.#liveChecks(), onSubscription: false, now: at },
       action,
     );
     uow.journal.append(
@@ -552,4 +696,87 @@ export class WakeDaemon implements SessionLauncher {
   get scheduler(): Scheduler | null {
     return this.#scheduler;
   }
+}
+
+/** Adapter réel désigné par la policy : enregistré, jamais un repli, jamais simulé. */
+function realRegistration(
+  registry: AdapterRegistry,
+  wanted: AdapterId | null,
+): AdapterRegistration {
+  if (wanted === null) {
+    throw new DaemonError(
+      "runtime_mismatch",
+      "aucune policy active ne désigne de runtime : activer une policy avant le mode réel",
+    );
+  }
+  const registration = registry.get(wanted);
+  if (registration === null) {
+    const known = registry.realIds();
+    throw new DaemonError(
+      "real_adapter_missing",
+      `adapter « ${wanted} » non enregistré dans ce build (adapters réels enregistrés : ${known.length === 0 ? "aucun" : known.join(", ")}) ; aucun repli vers un autre runtime`,
+    );
+  }
+  if (registration.simulated) {
+    throw new DaemonError(
+      "runtime_mismatch",
+      `la policy désigne l'adapter simulé « ${wanted} » : relancer avec --simulated, tout sera marqué SIMULÉ`,
+    );
+  }
+  return registration;
+}
+
+/** Probe de l'adapter réel et lanceur confiné ; l'autotest a lieu au démarrage de `run`. */
+async function realMode(
+  options: DaemonOptions,
+  registration: AdapterRegistration,
+  runtimeDir: string,
+): Promise<RealMode> {
+  // Adapter construit hors runner, pour le seul probe : aucun processus ne peut être lancé.
+  const probeOnly: RuntimeAdapter = registration.create({
+    host: {
+      spawnContained: () => {
+        throw new DaemonError("adapter_unavailable", "probe : aucun lancement");
+      },
+      authorize: () => ({ allowed: false, reason: "probe", interruptSession: true }),
+      isolation: () => "none",
+    },
+    dataDir: options.dataDir,
+    workspaceDir: workspaceDirFor(options.dataDir),
+    experimentFor: () => null,
+    onProposal: () => undefined,
+    fakeScenario: () => undefined,
+  });
+  let probe: ProbeResult;
+  try {
+    probe = await probeOnly.probe();
+  } catch (error) {
+    throw new DaemonError(
+      "adapter_unavailable",
+      `probe de l'adapter « ${registration.id} » en échec : ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  if (!probe.available || probe.simulated || probe.adapterId !== registration.id) {
+    const why =
+      probe.unavailableReason ?? (probe.simulated ? "adapter simulé" : "probe non conforme");
+    throw new DaemonError(
+      "adapter_unavailable",
+      `adapter « ${registration.id} » indisponible : ${why}`,
+    );
+  }
+  const isolation = options.isolation;
+  const sandbox = isolation?.sandbox ?? new Sandbox(runtimeDir);
+  if (!sandbox.status.available) {
+    throw new DaemonError(
+      "sandbox_unavailable",
+      `isolation indisponible : ${sandbox.status.reason}`,
+    );
+  }
+  return {
+    registration,
+    probe,
+    sandbox,
+    selfTest: isolation?.selfTest ?? (() => runIsolationSelfTest()),
+    runtimeRoots: [...(registration.runtimeRoots?.() ?? []), ...(isolation?.runtimeRoots ?? [])],
+  };
 }

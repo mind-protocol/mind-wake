@@ -653,6 +653,7 @@ describe("unité provider_quota_bp", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
+    launchWhenResetWithinMs: 21_600_000,
   };
   const quotaLimits = (cap: number): PeriodLimit[] => [
     ...LIMITS,

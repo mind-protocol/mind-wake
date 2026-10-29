@@ -1,6 +1,6 @@
 # src/runner
 
-Session S7. Runner de sessions, contrôles humains (pause, reprise, arrêt d'urgence) et réconciliation des sessions orphelines (AGENTS §5 « Cycle de vie et continuité », SPEC §5, §8.1, §9). Aucun appel modèle réel : seul l'adapter factice (`src/adapters/fake/`) est branché.
+Session S7, puis câblage des runtimes (ADR-005). Runner de sessions, contrôles humains (pause, reprise, arrêt d'urgence) et réconciliation des sessions orphelines (AGENTS §5 « Cycle de vie et continuité », SPEC §5, §8.1, §9). Un adapter réel est lancé dans la sandbox AppContainer + Job Object de `src/sandbox/` ; l'adapter factice garde le Job Object seul, marqué SIMULÉ. Aucun appel modèle dans ce dépôt.
 
 ## Modules
 
@@ -10,7 +10,8 @@ Session S7. Runner de sessions, contrôles humains (pause, reprise, arrêt d'urg
 | `controls.ts`            | `requestPause`, `requestResume`, `persistEmergencyStop`, `StopFlag` : état de contrôle persisté, partagé par le runner et la CLI.                                      |
 | `process-tree.ts`        | `ProcessTreeSupervisor`, `ContainedProcess` : arborescence de processus dans un Job Object Windows nommé.                                                              |
 | `job-launcher-source.ts` | Source C# du lanceur natif, compilé à la demande par le `csc.exe` de .NET Framework 4.x livré avec Windows.                                                            |
-| `host.ts`                | `AdapterHost` (lancer un processus contenu, faire autoriser une action) et `CheckpointRequestable`, offerts à l'adapter hors du contrat `RuntimeAdapter`.              |
+| `host.ts`                | `AdapterHost` (lancer un processus contenu, faire autoriser une action, connaître le confinement), `CheckpointRequestable`, `QuotaReadable` (jauge officielle).        |
+| `sandboxing.ts`          | `RunnerSandbox` (fourni par le daemon) et `sandboxSpecFor` : racines de la policy sous l'espace d'exploration, racines runtime, chemins protégés, broker, filet.       |
 | `paths.ts`               | `runtimeDirFor(dataDir)` : binaires du runner dans le dossier de contrôle.                                                                                             |
 
 ## Port de lancement (pour S6)
@@ -35,6 +36,10 @@ const result = await running.done; // SessionResult : outcome, reason, profileSt
 Au démarrage du daemon, appeler `runner.reconcileAtStartup()` avant tout lancement.
 
 ## Règles retenues
+
+- **Confinement (S10 → runner)** : `probe.simulated === false` ⇒ `launch` exige `deps.sandbox` et `sandbox.ready().ok` (autotest de refus réussi pour ce lanceur), sinon `RunnerError sandbox_unavailable`. `spawnContained` lance alors via `Sandbox.launch` : racines d'écriture et de lecture de la policy résolues sous `workspaceDir` (créées au besoin), racines runtime en lecture/exécution, base de contrôle et dossier de données protégés, `maxProcesses` de la policy, filet de durée du lanceur (`maxSessionDurationMs` + grâce + 2 × borne de terminaison), réseau fermé sauf broker (`command.broker`, chemin du pipe dans `MIND_WAKE_BROKER_PIPE`). Même nom de job (`jobNameFor`) : `stop` et la réconciliation terminent aussi un job confiné. `session_started` / `session_ended` journalisent `isolation` et `aclRevoked`.
+- **Mode sans approbation** (`command.unattended`) : refusé hors sandbox (`RunnerError unattended_outside_sandbox`, `action_denied` `runner.unattended_outside_sandbox`) ; `host.isolation(sessionId)` dit à l'adapter s'il peut passer l'option.
+- **Voie abonnement** (`grant.onSubscription`) : l'adapter doit implémenter `QuotaReadable` et déclarer `providerQuotaReading: "official"` et `tokenCapEnforcement: "provider_quota_guard"` (sinon `quota_unreadable`). La réservation peut n'avoir aucune borne de tokens si la révision active la garde ; sinon `reservation_unbounded`. La jauge est lue avant `start`, puis toutes les `quotaPollIntervalMs` (15 s) ; chaque tick et chaque action évaluent `onSubscription: true` et la dernière lecture : seuil d'arrêt → interruption (`budget_exhausted`, checkpoint permis, `hibernating`) ; lecture absente, non mesurée ou plus vieille que `maxSnapshotAgeMs` → interruption (`budget_unknown`). Un échec de lecture garde la précédente, qui se périme.
 
 - **Actions contrôlées** : l'adapter appelle `host.authorize(sessionId, action)` ; le runner évalue `decideAction` avec les conditions vivantes (`liveChecks` : priorité humaine, sandbox), journalise `action_allowed`/`action_denied`, et interrompt si `interruptSession`. Les signaux sont lus avant l'horloge du daemon : un signal ne peut pas sembler postérieur à `now`.
 - **Surveillance** toutes les 50 ms (`watchdogIntervalMs`) : profil `stopped`, verrouillé ou marqueur de secours → arrêt immédiat ; profil passé en `checkpointing` par un autre processus → pause ; `assessActiveSession` (révocation, restriction, priorité humaine, sandbox) → interruption, avec checkpoint seulement si le policy engine le permet.
@@ -66,7 +71,7 @@ Hors Windows, aucun mécanisme équivalent n'est démontré : `ProcessTreeSuperv
 
 ## Limites restantes
 
-- **Pas de confinement** des fichiers, du réseau ni des secrets : seul le contrôle de l'arborescence est en place. Le processus agent tourne avec les droits de l'utilisateur ; un processus hostile du même utilisateur pourrait ouvrir le job par son nom (et, par exemple, autoriser le breakaway) ou créer des processus hors job via WMI/COM. L'AppContainer et ses tests de refus restent à S10.
+- **Adapter factice non confiné** : il tourne avec les droits de l'utilisateur, Job Object seul (SIMULÉ). Les adapters réels sont confinés ; restent non testées les évasions WMI/COM (voir `src/sandbox/README.md`).
 - Mesures sur poste au repos avec de petits processus ; ni charge, ni E/S noyau bloquées, ni Codex réel.
 - Le lanceur est compilé à la première utilisation dans `<dataDir>/runtime/` (≈ 1 s) ; binaire non signé, `csc.exe` de .NET Framework requis. Le binaire de production (S10) reste à construire, signer et versionner.
 - La sortie d'erreur de l'agent est jetée (NUL) pour que le canal d'événements du lanceur ne puisse pas être imité ; aucun diagnostic de l'agent n'est conservé.

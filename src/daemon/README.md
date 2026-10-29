@@ -1,10 +1,21 @@
 # src/daemon
 
-Session S-D : assemblage du daemon Wake local avec l'**adapter factice uniquement** (porte F2, SPEC §11). Tout ce que ce daemon produit est marqué **SIMULÉ** : sortie, journal (`simulated: true`, provenance `simulated`), `status`, bilan. Aucun appel modèle, aucun port réseau, aucune modification système persistante.
+Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câblage des runtimes (ADR-005). En mode simulé, tout ce que le daemon produit est marqué **SIMULÉ** : sortie, journal (`simulated: true`, provenance `simulated`), `status`, bilan. Aucun port réseau.
+
+## Registre d'adapters (`registry.ts`)
+
+`RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Ce build n'enregistre que l'adapter factice (`defaultRegistry`) ; les adapters réels s'y ajoutent à leur fusion.
+
+## Mode réel (`daemon run` sans `--simulated`)
+
+1. Policy active désignant un adapter **enregistré** et non simulé (sinon `real_adapter_missing` ou `runtime_mismatch`) ; `probe` disponible (sinon `adapter_unavailable`) ; lanceur confiné constructible (sinon `sandbox_unavailable`).
+2. Au démarrage de `run` : profil AppContainer `mindwake.sandbox` créé s'il manque, puis **autotest de refus** complet (`runIsolationSelfTest`, ≈ 4 s), consigné dans `isolation_self_tests` (migration 4) et journalisé. L'isolation n'est prête que s'il réussit, nettoyage vérifié, pour l'empreinte du lanceur ; sinon le scheduler refuse (`sandbox_unavailable`, profil `blocked`).
+3. `RuntimeEnvironment` : faits de l'adapter, isolation prête, facturation de l'enregistrement, jauge officielle (`QuotaReadable.readQuota`) pour la voie abonnement. Le ticket est lancé avec `onSubscription` : le runner relit la jauge et interrompt au seuil d'arrêt.
+4. Sessions dans la sandbox (`src/runner/sandboxing.ts`), racines de la policy sous `<données>/workspace`, base de contrôle et dossier de données protégés.
 
 ## Commande
 
-`mind-wake daemon run --simulated [--recheck-ms N] [--exit-after-sessions N]` — au premier plan seulement : ni service Windows, ni tâche planifiée, ni démarrage automatique. Ctrl+C : plus aucun réveil, la session en cours se termine, puis arrêt ; un second Ctrl+C arrête aussitôt (la session est alors réconciliée comme orpheline au démarrage suivant). Sans `--simulated`, refus (`real_adapter_missing`) : aucun adapter réel n'existe dans ce build. Le daemon refuse aussi si la policy active ne désigne pas l'adapter `fake` (`runtime_mismatch`), si un autre daemon tient le verrou du profil (`already_running`) ou si la terminaison d'arborescence est indisponible.
+`mind-wake daemon run [--simulated] [--recheck-ms N] [--exit-after-sessions N]` — au premier plan seulement : ni service Windows, ni tâche planifiée, ni démarrage automatique. Ctrl+C : plus aucun réveil, la session en cours se termine, puis arrêt ; un second Ctrl+C arrête aussitôt (la session est alors réconciliée comme orpheline au démarrage suivant). `--simulated` exige une policy sur l'adapter `fake` (`runtime_mismatch`) ; sans `--simulated`, voir « Mode réel » (dans ce build, aucun adapter réel n'est enregistré : `real_adapter_missing`). Le daemon refuse aussi si un autre daemon tient le verrou du profil (`already_running`) ou si la terminaison d'arborescence est indisponible.
 
 Variables réservées au développement et aux tests : `MIND_WAKE_RUNTIME_DIR` (lanceur Job Object déjà compilé), `MIND_WAKE_FAKE_SCENARIO` (scénario factice imposé à toutes les sessions : `slow`, `stubborn`…).
 
@@ -31,7 +42,8 @@ Voir le rapport de session S-D dans `docs/PLAN.md`. Bornes documentées (ADR-003
 
 ## Limites
 
-- **Isolation non implémentée** : seule l'arborescence de processus est contenue (Job Object) ; l'agent factice pourrait écrire hors de l'espace. `sandboxOperational` est déclaré `true` pour le seul adapter factice.
+- **Adapter factice non confiné** : seule son arborescence de processus est contenue (Job Object) ; il pourrait écrire hors de l'espace. `sandboxOperational` est déclaré `true` pour le seul mode simulé. Les adapters réels sont confinés (mode réel).
+- **Désinstallation** : le profil AppContainer `mindwake.sandbox` créé par le mode réel n'est pas encore supprimé par `uninstall`.
 - **Signal d'activité simulé** (fichier) ; `GetLastInputInfo` (S6) n'est pas câblé.
 - Aucune commande de réactivation après arrêt d'urgence : `resume` et `enable` refusent ; le profil reste `stopped` (aucun réveil, vérifié).
 - `--exit-after-sessions` et l'arrêt par Ctrl+C attendent la fin de la session en cours (au plus la durée maximale de session).

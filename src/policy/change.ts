@@ -219,13 +219,15 @@ function compareSubscriptionQuota(
     aOn.stopAtBasisPoints > bOn.stopAtBasisPoints ||
     aOn.userReserveBasisPoints < bOn.userReserveBasisPoints ||
     overshoot(aOn.overshootBoundBasisPoints) > overshoot(bOn.overshootBoundBasisPoints) ||
-    aOn.maxSnapshotAgeMs > bOn.maxSnapshotAgeMs;
+    aOn.maxSnapshotAgeMs > bOn.maxSnapshotAgeMs ||
+    aOn.launchWhenResetWithinMs > bOn.launchWhenResetWithinMs;
   const narrower =
     aOn.startBelowBasisPoints < bOn.startBelowBasisPoints ||
     aOn.stopAtBasisPoints < bOn.stopAtBasisPoints ||
     aOn.userReserveBasisPoints > bOn.userReserveBasisPoints ||
     overshoot(aOn.overshootBoundBasisPoints) < overshoot(bOn.overshootBoundBasisPoints) ||
-    aOn.maxSnapshotAgeMs < bOn.maxSnapshotAgeMs;
+    aOn.maxSnapshotAgeMs < bOn.maxSnapshotAgeMs ||
+    aOn.launchWhenResetWithinMs < bOn.launchWhenResetWithinMs;
   if (wider) widened.push(path);
   if (narrower) restricted.push(path);
 }

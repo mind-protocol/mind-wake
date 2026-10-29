@@ -264,10 +264,32 @@ CREATE TABLE daemon_runs (
 CREATE INDEX daemon_runs_profile ON daemon_runs (profile_id, started_at);
 `;
 
+/**
+ * Autotests de refus de l'isolation exécutés par le daemon avant un lancement réel
+ * (S10 → runner). Une session réelle n'est lancée que si le dernier autotest a réussi
+ * pour l'empreinte du lanceur en service ; `status` en affiche le résultat.
+ */
+const ISOLATION_SELF_TESTS = `
+CREATE TABLE isolation_self_tests (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  ran_at TEXT NOT NULL,
+  source_digest TEXT,
+  passed INTEGER NOT NULL CHECK (passed IN (0, 1)),
+  checks INTEGER NOT NULL CHECK (checks >= 0),
+  failed TEXT NOT NULL,
+  cleanup_verified INTEGER NOT NULL CHECK (cleanup_verified IN (0, 1)),
+  termination_ms REAL,
+  duration_ms REAL NOT NULL
+) STRICT;
+CREATE INDEX isolation_self_tests_profile ON isolation_self_tests (profile_id, ran_at);
+`;
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "initial_schema", sql: INITIAL_SCHEMA },
   { version: 2, name: "scheduler_state", sql: SCHEDULER_STATE },
   { version: 3, name: "daemon_runs", sql: DAEMON_RUNS },
+  { version: 4, name: "isolation_self_tests", sql: ISOLATION_SELF_TESTS },
 ];
 
 const MIGRATIONS_TABLE = `

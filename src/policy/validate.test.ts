@@ -126,6 +126,7 @@ describe("validation d'un brouillon de policy", () => {
     userReserveBasisPoints: 2_000,
     overshootBoundBasisPoints: 500,
     maxSnapshotAgeMs: 60_000,
+    launchWhenResetWithinMs: 21_600_000,
   };
   const quota = "budget.subscriptionQuota";
   const invalidQuota: readonly [string, unknown][] = [
@@ -136,6 +137,8 @@ describe("validation d'un brouillon de policy", () => {
     ["points de base > 10 000", { ...guard, stopAtBasisPoints: 10_001 }],
     ["dépassement négatif", { ...guard, overshootBoundBasisPoints: -1 }],
     ["âge maximal nul", { ...guard, maxSnapshotAgeMs: 0 }],
+    ["délai avant remise à zéro absent", { ...guard, launchWhenResetWithinMs: undefined }],
+    ["délai avant remise à zéro nul", { ...guard, launchWhenResetWithinMs: 0 }],
     ["champ inconnu", { ...guard, tokensPerPercent: 1_000 }],
     ["voie désactivée avec seuils", { enabled: false, stopAtBasisPoints: 7_000 }],
     ["enabled ambigu", { enabled: "yes" }],

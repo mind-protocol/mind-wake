@@ -57,17 +57,18 @@ La sandbox et les checkpoints (S8, S10) doivent donc :
 
 Aucune fonction de ce module ne fournit de garantie système.
 
-## Voie abonnement (`budget.subscriptionQuota`, ADR-004)
+## Voie abonnement (`budget.subscriptionQuota`, ADR-004, ADR-005)
 
-La voie est absente ou désactivée par défaut. Son activation dans une révision consentie exige `accountRiskAcknowledged: true` et des seuils cohérents : `stopAt + overshoot ≤ 10 000 − userReserve`, avec `start < stop`.
+La voie est absente ou désactivée par défaut. Son activation dans une révision consentie exige `accountRiskAcknowledged: true`, des seuils cohérents (`stopAt + overshoot ≤ 10 000 − userReserve`, avec `start < stop`) et un délai maximal avant remise à zéro `launchWhenResetWithinMs` (entier > 0 ; l'augmenter élargit, le réduire restreint).
 
 Le lancement exige en plus :
 
 - `billing.kind === "subscription_quota"`, sans quoi la jauge de quota ne compte pas comme borne ;
 - un `overshootBoundBasisPoints` non nul ;
 - `providerQuotaReading: "official"` ;
-- au moins une lecture de fenêtre ; chaque lecture doit être `measured`, plus récente que `maxSnapshotAgeMs` et sous `startBelowBasisPoints`.
+- au moins une lecture de fenêtre ; chaque lecture doit être `measured`, plus récente que `maxSnapshotAgeMs` et sous `startBelowBasisPoints` ;
+- **déclenchement avant remise à zéro (ADR-005)** : chaque fenêtre lue doit avoir un `resetsAt` futur à moins de `launchWhenResetWithinMs` (`outside_window`, `subscription.reset_not_within: <fenêtre> resets_in_ms=…`, attente) ; une remise à zéro déjà passée rend la lecture périmée (`budget_unknown`). Toutes les fenêtres sont exigées, y compris une fenêtre hebdomadaire : Wake ne consomme que ce qui serait perdu de toute façon.
 
-La voie ne lève aucune autre condition : isolation, priorité humaine, annulation, budget de tokens et sessions restent exigés. En session, une fenêtre qui atteint `stopAtBasisPoints`, ou une lecture absente, ancienne ou non mesurée, exige l'interruption. Aucun pourcentage n'est converti en tokens.
+Sur cette voie, la garde de quota est la borne : aucun plafond de tokens propre à Wake n'est exigé (`tokens.availability` n'est pas vérifiée ; les champs de tokens restent obligatoires dans le schéma mais ne bornent pas la session). La voie ne lève aucune autre condition : isolation, priorité humaine, annulation et sessions restent exigés. En session, une fenêtre qui atteint `stopAtBasisPoints`, ou une lecture absente, ancienne ou non mesurée, exige l'interruption. Aucun pourcentage n'est converti en tokens.
 
 Limite : le moteur traite une valeur non nulle de `overshootBoundBasisPoints` comme une borne consentie. Il ne peut pas vérifier que cette valeur vient d'une mesure validée, car le contrat ne porte aucune référence de mesure.

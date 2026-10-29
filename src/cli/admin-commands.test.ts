@@ -134,7 +134,7 @@ describe("enable", () => {
       refusal: { code: "components_missing" },
     });
     expect((result.json.data["refusal"] as { detail: string }).detail).toMatch(
-      /isolation non livrée.*adapter runtime non livré/,
+      /adapter runtime non livré/,
     );
     readDb((s) => {
       expect(s.uow.policies.getConsent(revisionId as PolicyRevisionId)).toBeNull();

@@ -652,6 +652,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     "userReserveBasisPoints",
     "overshootBoundBasisPoints",
     "maxSnapshotAgeMs",
+    "launchWhenResetWithinMs",
   ];
   if (Object.keys(value).some((k) => !keys.includes(k))) {
     c.add(path, "unknown_field", "champ inconnu dans subscriptionQuota");
@@ -666,9 +667,14 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   const reserve = own(value, "userReserveBasisPoints");
   const overshoot = own(value, "overshootBoundBasisPoints");
   const maxAge = own(value, "maxSnapshotAgeMs");
+  const resetWithin = own(value, "launchWhenResetWithinMs");
   const bp = (v: unknown, min: number): v is number => isInt(v, min) && v <= BASIS_POINTS_MAX;
   if (!bp(start, 1) || !bp(stop, 1) || !bp(reserve, 0) || !isInt(maxAge, 1)) {
     c.add(path, "invalid", "seuils entiers en points de base (0..10 000) et âge > 0 requis");
+    return undefined;
+  }
+  if (!isInt(resetWithin, 1)) {
+    c.add(path, "invalid", "délai maximal avant remise à zéro (ms, entier > 0) requis");
     return undefined;
   }
   if (overshoot !== null && !bp(overshoot, 0)) {
@@ -691,6 +697,7 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     userReserveBasisPoints: reserve,
     overshootBoundBasisPoints: overshoot,
     maxSnapshotAgeMs: maxAge,
+    launchWhenResetWithinMs: resetWithin,
   };
 }
 

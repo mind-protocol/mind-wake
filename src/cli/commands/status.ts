@@ -13,8 +13,12 @@ import {
   capabilities,
   formatCapability,
   type Capability,
+  type IsolationAssessment,
 } from "../capabilities.js";
+import { latestSelfTest, selfTestValidFor } from "../../daemon/isolation.js";
 import { isProcessAlive, latestDaemonRun } from "../../daemon/runs.js";
+import { sandboxSourceDigest } from "../../sandbox/index.js";
+import type { SqliteDatabase } from "../../store/index.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_OK, orDash, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
@@ -149,6 +153,36 @@ const NO_BUDGET: BudgetStatus = {
   subscriptionQuota: null,
 };
 
+/**
+ * Isolation vue par `status`, sans rien exécuter : dernier autotest de refus mené par le
+ * daemon en mode réel, valable seulement pour l'empreinte du lanceur de ce build.
+ */
+function isolationFromLastSelfTest(
+  db: SqliteDatabase | undefined,
+  profileId: Parameters<typeof latestSelfTest>[1],
+): IsolationAssessment | undefined {
+  if (db === undefined) return undefined;
+  let record: ReturnType<typeof latestSelfTest>;
+  try {
+    record = latestSelfTest(db, profileId);
+  } catch {
+    return undefined;
+  }
+  if (record === null) return undefined;
+  const valid = selfTestValidFor(record, sandboxSourceDigest());
+  return valid.ok
+    ? {
+        passed: true,
+        detail: `AppContainer sans capacité + Job Object : ${valid.detail}`,
+        blockers: [],
+      }
+    : {
+        passed: false,
+        detail: "dernier autotest de refus non valable : exécution autonome impossible",
+        blockers: [valid.detail],
+      };
+}
+
 export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusData> {
   const data = withReadStore(ctx, dataDir, ({ uow, persistence, db }): StatusData => {
     const profile = uow?.profiles.get(DEFAULT_PROFILE_ID) ?? null;
@@ -241,7 +275,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
           ? null
           : { sequence: last.sequence, at: last.at, type: last.type, reason: last.reason },
       budget,
-      capabilities: capabilities(persistence, revision),
+      capabilities: capabilities(persistence, revision, isolationFromLastSelfTest(db, profile.id)),
     };
   });
   return { exitCode: EXIT_OK, data, human: formatStatus };
