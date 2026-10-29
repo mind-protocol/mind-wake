@@ -71,6 +71,7 @@ describe("configuration", () => {
       "gemini-2.5-pro",
       "--approval-mode",
       "default",
+      "--skip-trust",
       "--resume",
       "8f1c2b7e-4d3a-4f6b-9a21-0c5e7d9b1a33",
       "--prompt=bonjour",

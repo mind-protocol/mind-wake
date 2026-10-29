@@ -1,6 +1,21 @@
 # src/adapters/gemini
 
-Adapter Gemini CLI (ADR-005), conforme à `src/contracts/adapter.ts`. Aucun appel modèle réel n'a été fait : les tests rejouent des sorties **synthétiques** par un faux exécutable (`test/fixtures/gemini/fake-gemini.ts`).
+Adapter Gemini CLI (ADR-005), conforme à `src/contracts/adapter.ts`. Les tests rejouent des sorties par un faux exécutable (`test/fixtures/gemini/fake-gemini.ts`) : synthétiques, sauf `real-*` (sortie réelle expurgée).
+
+## Test de fumée réel (29 octobre 2026)
+
+Opt-in : `MIND_WAKE_REAL_SMOKE=1` (`real-smoke.test.ts`, ignoré par `npm test`). Exécuté **une fois**, après feu vert de l'utilisateur, sur l'hôte, avec sa connexion existante (aucun credential lu), sans mode sans approbation, dossier temporaire vide :
+
+```
+node %APPDATA%\npm\node_modules\@google\gemini-cli\bundle\gemini.js --output-format stream-json --model flash --approval-mode default "--prompt=Réponds uniquement par le mot OK. N'utilise aucun outil." --extensions none --allowed-mcp-server-names mindwake-aucun
+```
+
+Résultat : code **55**, stdout vide, **aucune requête modèle** (échec à la configuration du compte), donc aucun usage ni quota exposé. Stderr (fixture `real-ineligible-tier.jsonl`) :
+
+- `IneligibleTierError`, `reasonCode: 'UNSUPPORTED_CLIENT'`, `tierId: 'free-tier'`, « Gemini Code Assist for individuals » : ce client n'est plus pris en charge pour ce niveau, l'utilisateur est invité à migrer vers les produits Antigravity ;
+- dossier non approuvé : en non interactif, la CLI exige `--skip-trust`, `GEMINI_CLI_TRUST_WORKSPACE=true` ou une approbation interactive. **Corrigé** : l'adapter passe désormais `--skip-trust`.
+
+Conséquence : avec ce compte (niveau gratuit Code Assist pour particuliers), Gemini CLI est **inutilisable** ; le runtime reste bloqué même en lancement manuel. Pas de nouvel essai : l'erreur d'éligibilité se reproduirait. Un compte Google AI Pro/Ultra ou une clé Gemini API n'ont pas été testés.
 
 ## Statut
 
@@ -55,7 +70,7 @@ Aucun. `GeminiProcess` reprend la forme commune à `ContainedProcess` et `Sandbo
 1. Gemini CLI dans l'AppContainer : Node confiné (`--preserve-symlinks`), relance de la CLI dans un processus enfant, écriture dans `GEMINI_CLI_HOME`, `realpath`.
 2. Le transport : la CLI n'atteint que le pipe du broker ; le moyen de lui faire emprunter ce pipe (proxy) et l'authentification sans que le relais touche au jeton OAuth restent à concevoir avec le relais.
 3. `--resume <UUID>` combiné à `--prompt`.
-4. Approbation de l'espace de travail (`folderTrust`) en mode non interactif ; comportement de `yolo` dans un dossier non approuvé ; prise en compte de `.gemini/settings.json` de l'espace par la CLI.
+4. Avec `--skip-trust`, la CLI lit le `.gemini/settings.json` de l'espace, modifiable par l'agent : vérifier qu'il ne lève pas les exclusions d'outils et que la politique utilisateur de Wake garde le dernier mot (les politiques d'espace sont sans effet d'après la doc).
 5. Primauté effective d'une règle utilisateur `deny` sur l'accord général de `yolo`.
 6. Forme réelle des erreurs d'authentification et de quota en `stream-json` (événement `result` en échec ou seulement stderr), bascule de modèle éventuelle et nouvelles tentatives internes de la CLI après un 429.
 7. Écart entre `total_tokens` et entrée + sortie (rangé en `unexposed`).

@@ -231,7 +231,12 @@ export function classifyExitCode(exitCode: number): {
     case GEMINI_EXIT_CODES.config:
       return { code: "incompatible", reason: "configuration refusée par la CLI" };
     case GEMINI_EXIT_CODES.untrustedWorkspace:
-      return { code: "incompatible", reason: "espace de travail non approuvé par la CLI" };
+      // Constaté en réel aussi après un refus d'éligibilité du compte (`IneligibleTierError`),
+      // visible seulement sur stderr.
+      return {
+        code: "incompatible",
+        reason: "espace non approuvé ou compte inéligible (code 55, détail sur stderr)",
+      };
     case GEMINI_EXIT_CODES.sandbox:
       return { code: "fatal", reason: "erreur de la sandbox propre à la CLI" };
     case GEMINI_EXIT_CODES.toolExecution:

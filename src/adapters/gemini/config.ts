@@ -4,7 +4,8 @@
  * 29 octobre 2026, CLI 0.52.0 installée) :
  *
  * - `--prompt` (non interactif), `--output-format stream-json`, `--model`,
- *   `--approval-mode default|yolo` (`--yolo` est déprécié), `--resume <id>` ;
+ *   `--approval-mode default|yolo` (`--yolo` est déprécié), `--resume <id>`,
+ *   `--skip-trust` (approbation du dossier pour cette session seulement) ;
  * - `GEMINI_CLI_HOME` : racine de la configuration utilisateur et du stockage (sessions
  *   dans `.gemini/tmp/<hash>/chats/`). Wake y pointe un dossier qui lui est propre :
  *   la CLI ne lit ni `~/.gemini` ni les credentials de l'utilisateur ;
@@ -73,6 +74,11 @@ export function buildArgs(options: {
     options.model,
     "--approval-mode",
     options.approvalMode,
+    // Sans approbation du dossier, la CLI non interactive s'arrête en code 55 (constaté
+    // le 29 octobre 2026). Les réglages de l'espace deviennent alors lisibles par la CLI :
+    // l'autorité reste la politique utilisateur de Wake (les politiques d'espace sont
+    // sans effet d'après la documentation).
+    "--skip-trust",
   ];
   if (options.resumeSessionId !== undefined) {
     if (!GEMINI_SESSION_ID.test(options.resumeSessionId)) {

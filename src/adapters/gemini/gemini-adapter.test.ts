@@ -300,6 +300,7 @@ describe("GeminiAdapter : lancement", () => {
       "gemini-2.5-flash",
       "--approval-mode",
       "default",
+      "--skip-trust",
       "--prompt=-commence par relire la mémoire",
     ]);
     expect(seen.envKeys).not.toContain("MINDWAKE_TEST_SECRET_TOKEN");
@@ -423,6 +424,16 @@ describe("GeminiAdapter : événements et rapprochement", () => {
     const events = await collect(gemini.events(handle));
     expect(events.map((event) => event.type)).toEqual(["error", "ended"]);
     expect(events[0]).toMatchObject({ code: "auth_failed" });
+    expect(await gemini.reconcile(handle.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+
+  it("rejoue la sortie réelle expurgée du 29 octobre 2026 : compte inéligible, code 55", async () => {
+    const gemini = adapter({ launch: port("real-ineligible-tier") });
+    const handle = await gemini.start(request("s-1"));
+    const events = await collect(gemini.events(handle));
+    expect(events.map((event) => event.type)).toEqual(["error", "ended"]);
+    expect(events[0]).toMatchObject({ code: "incompatible" });
+    expect(events.at(-1)).toMatchObject({ exitReason: "exit_55" });
     expect(await gemini.reconcile(handle.sessionId)).toMatchObject({ status: "uncertain" });
   });
 

@@ -2,7 +2,8 @@
  * Faux exécutable `gemini` pour les tests de l'adapter : rejoue une sortie `stream-json`
  * enregistrée, sans aucun appel modèle ni réseau. Les enregistrements de `recordings/`
  * sont SYNTHÉTIQUES : écrits d'après le schéma de la source officielle
- * (`packages/core/src/output/types.ts`), pas capturés sur un compte réel.
+ * (`packages/core/src/output/types.ts`), pas capturés sur un compte réel. Exception : les
+ * fichiers préfixés `real-` sont des sorties réelles expurgées (fumée du 29 octobre 2026).
  *
  * Scénario : variable `FAKE_GEMINI_SCENARIO` (nom d'un fichier de `recordings/`, sans
  * extension). Directives de rejeu, une par ligne, préfixées par `#!` :
