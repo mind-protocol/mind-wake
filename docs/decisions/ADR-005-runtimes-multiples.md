@@ -43,6 +43,14 @@ Exclu : modes sans approbation sur le poste hôte, repli automatique d'un runtim
 - Le dépassement après le seuil d'arrêt reste à mesurer (ADR-004). En attendant, l'humain fixe le seuil d'arrêt avec une marge.
 - Les premiers appels réels consomment le quota d'abonnement de l'utilisateur : ils restent soumis à son feu vert explicite.
 
+## Complément : Claude Code (29 octobre 2026)
+
+Vérification de la documentation officielle par la session d'adapter (détail dans `src/adapters/claude/README.md`) :
+
+- **Lecture officielle de la jauge : oui.** `/usage` envoyé comme prompt à `claude -p --output-format stream-json` renvoie `usage_report.rate_limits.limits[]` (`kind`, `percent`, `resets_at`), type déclaré expérimental, présent seulement avec une connexion claude.ai. L'adapter déclare `providerQuotaReading: "official"`. En session, `rate_limit_event` signale avertissement et refus avec `resetsAt`.
+- **Conditions d'usage.** Les limites Pro/Max supposent un usage « ordinaire et individuel » ; un tiers ne peut ni intermédier, ni collecter, ni stocker des identifiants ou jetons claude.ai. Un utilisateur peut se connecter lui-même au binaire officiel non modifié. Aucun texte ne traite des sessions planifiées sans humain : voie expérimentale (AGENTS §5).
+- **Conséquence pour le relais fournisseur.** Pour Claude avec abonnement, le relais ne doit **pas** détenir ni injecter le jeton : l'humain se connecte par `/login` dans un `CLAUDE_CONFIG_DIR` dédié, le CLI confiné s'authentifie lui-même, le relais ne fait que transporter vers les destinations autorisées. L'hypothèse « le broker détient seul le credential » reste valable pour une clé API.
+
 ## Critères de révision
 
 - Un fournisseur interdit l'usage automatisé de son CLI avec un abonnement, ou n'expose aucune lecture officielle de quota.
