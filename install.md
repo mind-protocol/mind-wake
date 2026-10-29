@@ -20,6 +20,21 @@ Propose le mode Codex natif : outils, skills et MCP du compte local restent disp
 
 ## 1. Préparer le poste
 
+### Installation guidée qui télécharge vraiment
+
+Le script `npm run setup` sert à connecter des fichiers déjà installés ; il ne télécharge pas Wake. Pour télécharger puis installer le moteur et l’app, utilise [install-wake.ps1](./install-wake.ps1) :
+
+```powershell
+$wakeInstaller = Join-Path $env:TEMP ('install-wake-' + [guid]::NewGuid() + '.ps1')
+Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/install-wake.ps1' -OutFile $wakeInstaller -UseBasicParsing -ErrorAction Stop
+Get-Content -LiteralPath $wakeInstaller
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File $wakeInstaller -Destination (Join-Path $env:USERPROFILE 'mind-wake')
+```
+
+L’agent lit le script avant de le lancer. Le script affiche les octets téléchargés et le dossier final, vérifie SHA-256, extrait l’archive, installe les dépendances, construit le moteur, branche le MCP et ouvre le panneau. Il n’active aucun réveil. Node et Codex doivent être disponibles pour les étapes après extraction. Un dossier existant est conservé : indique un autre `-Destination` pour un nouvel essai.
+
+Ajoute `-DownloadOnly` pour seulement télécharger et extraire les fichiers, ou `-NoOpen` pour installer sans ouvrir le panneau. En cas d’échec, le script affiche l’erreur et renvoie un code non nul ; le dossier téléchargé reste disponible. Après installation, passe à la section 4 pour préparer l’autonomie. Les sections 1 à 3 détaillent le parcours manuel.
+
 Il faut Windows x64, Node/npm, Codex CLI connecté au compte de cette personne et WebView2. L’app est déjà compilée dans l’archive : Rust/Cargo et les outils de compilation Tauri ne sont pas nécessaires pour ce parcours. Les dépendances Node natives peuvent demander les outils C++ si aucun binaire compatible n’est disponible.
 
 Dans PowerShell :
@@ -28,9 +43,10 @@ Dans PowerShell :
 node --version
 npm --version
 codex --version
+where.exe codex.exe
 ```
 
-Vérifie package.json : il demande actuellement Node ^24.17.0 ou ^26.13.0. Ce build valide Codex CLI **0.165.0** ; une autre version est refusée par l’adapter. L’humain se connecte au fournisseur dans le client officiel ; ses identifiants ne passent pas dans le chat.
+Vérifie package.json : il demande actuellement Node ^24.17.0 ou ^26.13.0. Ce build valide Codex CLI **0.165.0**, avec codex.exe disponible dans le PATH ; une autre version est refusée par l’adapter. L’humain se connecte au fournisseur dans le client officiel ; ses identifiants ne passent pas dans le chat.
 
 Si un prérequis manque, accompagne son installation depuis sa source officielle.
 
@@ -43,8 +59,8 @@ $wakeDownload = Join-Path $env:TEMP ('mind-wake-download-' + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $wakeDownload | Out-Null
 $wakeZip = Join-Path $wakeDownload 'mind-wake.zip'
 $wakeChecksumFile = Join-Path $wakeDownload 'mind-wake.sha256'
-Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.zip' -OutFile $wakeZip
-Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.sha256' -OutFile $wakeChecksumFile
+Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.zip' -OutFile $wakeZip -UseBasicParsing -ErrorAction Stop
+Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.sha256' -OutFile $wakeChecksumFile -UseBasicParsing -ErrorAction Stop
 $wakeExpected = ((Get-Content $wakeChecksumFile -Raw).Trim() -split '\s+')[0]
 if ((Get-FileHash $wakeZip -Algorithm SHA256).Hash -ne $wakeExpected) { throw 'Somme SHA-256 incorrecte : ne pas extraire.' }
 $wakeDestination = Join-Path $env:USERPROFILE 'mind-wake'
@@ -83,6 +99,8 @@ npm run setup -- --apply --data-dir "$wakeData"
 Le script prépare SQLite, crée les identités locales humain/agent, lance le hub local, vérifie l'authentification MCP et le statut Wake, enregistre mind-wake dans Codex et ouvre l'app sur ce profil. Une configuration MCP existante et différente est refusée : ne l'écrase pas pour faire passer l'installation.
 
 Vérifie le compte rendu et installation/last-setup.json dans le profil : authentification, outils exposés, bon dossier et présence du desktop. Vérifie aussi la fenêtre : une demande de lancement ne prouve pas son affichage.
+
+Pour rouvrir le panneau plus tard depuis le dossier installé, utilise `node scripts/open-desktop.mjs --data-dir "$wakeData"`. Ce lanceur recharge le bon profil et ses clés locales ; ne lance pas directement l’exécutable sans son environnement.
 
 **Ouvre une nouvelle session Codex pour charger le MCP.** Dans celle-ci, appelle réellement whoami et wake_status si exposés. Compare l'identité et le profil avec l'installation. Le nouveau profil reste désactivé à cette étape.
 

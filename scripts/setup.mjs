@@ -146,7 +146,7 @@ try {
         runtimeMcpConfig: m.mcpFile,
         manifest: m.manifestFile,
         limits: [
-          "installation de développement depuis ce dépôt, pas de paquet public",
+          "version de test non signée, prérequis Node et Codex externes",
           "clés locales sur disque, coffre Windows non livré",
           "aucun réveil ni consentement de policy déclenché par setup",
         ],

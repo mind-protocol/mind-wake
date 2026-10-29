@@ -4,7 +4,7 @@
 
 MIND Wake laisse votre agent IA explorer de lui-même pendant les moments où vous l'y autorisez : il choisit une expérience, travaille dans un espace isolé, conserve ses découvertes, hiberne, puis reprend plus tard là où il s'était arrêté. Vous fixez une fois le budget, les fenêtres horaires et les permissions ; vous gardez la priorité, la pause et l'arrêt d'urgence.
 
-**Statut : prototype en développement, aucun service public opérationnel.** Le daemon tourne aujourd'hui uniquement avec un agent **factice** : aucun appel à un modèle réel, aucune dépense, aucun paiement. Voir [État actuel](#état-actuel).
+**Statut : version de test Windows avec runtimes réels.** Le moteur et l’app portable sont disponibles dans l’[archive publique et son tutoriel agent-first](https://mind-wake-intro.immnfest.chatgpt.site/install.md). Le parcours recommandé utilise Codex ; les exemples simulés restent disponibles pour tester sans appel modèle. Aucun service public de paiement ou de relais inter-PC n’est livré.
 
 ## Principes
 
@@ -68,7 +68,7 @@ node dist/cli/main.js doctor
 | `wake`                                         | Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité, budgets revérifiés), refusé en pause, arrêt ou blocage                |
 | `messages`, `reply`                            | Fil avec ton agent : sa note de travail et tes réponses (texte sur l'entrée standard) ; n'accorde rien (l'app enchaîne `wake` par défaut) |
 | `export CHEMIN`, `purge`, `uninstall`          | Export expurgé, purge du journal expiré, désinstallation (`--dry-run` pour lister les effets)                                             |
-| `daemon run --simulated`                       | Daemon au premier plan avec l'adapter factice ; refusé sans `--simulated`                                                                 |
+| `daemon run`, `daemon run --simulated`         | Runtime réel autorisé par la configuration active ; avec --simulated, démonstration sans appel modèle                                   |
 
 Chaque commande accepte `--json` pour une sortie structurée versionnée. Aucune commande ne fait de paiement ni n'installe de service ou de démarrage automatique.
 
@@ -77,11 +77,11 @@ Chaque commande accepte `--json` pour une sortie structurée versionnée. Aucune
 | Composant                                                      | État                                                                                                                                                                              |
 | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Store SQLite, ledger de budget, policy engine, journal expurgé | Présents et testés                                                                                                                                                                |
-| Scheduler, runner, checkpoints et mémoire, daemon              | Présents, exécutés avec l'adapter factice uniquement                                                                                                                              |
-| Isolation Windows (AppContainer + Job Object)                  | En cours d'intégration ; prototype dans `spikes/isolation/`                                                                                                                       |
-| Adapter Codex                                                  | Non implémenté. Voie abonnement ChatGPT expérimentale retenue ([ADR-004](docs/decisions/ADR-004-voie-abonnement.md)), bloquée tant qu'une borne de consommation n'est pas mesurée |
+| Scheduler, runner, checkpoints et mémoire, daemon              | Présents ; runtimes réels et démonstration simulée disponibles                                                                                                                     |
+| Isolation Windows (AppContainer + Job Object)                  | Présente selon les capacités du profil ; le parcours Codex natif du tutoriel s’exécute sur l’hôte après autorisation, sans sandbox OS                                               |
+| Adapter Codex                                                  | Implémenté, version CLI prise en charge : 0.165.0 ; disponibilité du modèle et quotas vérifiés au lancement                                                                          |
 | Conseil guest distant                                          | Démo simulée locale seulement : pas de serveur public, de wallet, de $MIND ni de canal de messagerie                                                                              |
-| Skill agent et `install.md`                                    | Non livrés                                                                                                                                                                        |
+| Parcours agent-first et `install.md`                           | Tutoriel public, archive des sources et app Windows portable non signée ; installation MCP locale                                                                                  |
 
 Le plan de développement et l'avancement sont dans [docs/PLAN.md](docs/PLAN.md) ; les décisions dans [docs/decisions/](docs/decisions/).
 
@@ -115,11 +115,11 @@ npm run lint
 
 ## Installation produit : un parcours, trois composants
 
-L’installation Wake comprend le moteur local, la connexion MCP côté agent et l’application desktop côté humain. Le desktop est requis pour le parcours produit : recevoir les messages, répondre et contrôler l’agent. L’agent habituel guide l’installation de l’ensemble depuis `install.md` ; l’humain autorise les changements et les confirmations Windows nécessaires. La CLI reste utilisable pour l’administration et les tests, et fermer la fenêtre n’arrête pas le moteur. Ce parcours unifié est une cible : aucun paquet ou installeur public n’est livré à ce jour.
+L’installation Wake comprend le moteur local, la connexion MCP côté agent et l’application desktop côté humain. Le desktop reçoit les messages et permet de répondre et contrôler l’agent. L’agent habituel guide l’installation depuis [install.md](./install.md). La CLI reste utilisable pour l’administration et les tests ; fermer la fenêtre n’arrête pas le moteur. L’archive publique contient les sources et l’app portable compilée, non signée, sans données ni comptes personnels.
 
 ### Essayer l’installation locale unifiée
 
-Voir [install.md](./install.md). `npm run setup -- --apply --data-dir "C:\Users\reyno\AppData\Local\mind-wake-essai"` prépare le moteur et ses migrations, vérifie et enregistre le MCP dans Codex, puis ouvre le desktop sur ce profil. Le desktop doit avoir été compilé. Une nouvelle session Codex charge le MCP. Le setup préserve les permissions, n’active aucun profil et n’installe aucun démarrage automatique. Pas encore de paquet public ni de désinstallation unifiée complète.
+Voir [install.md](./install.md). Après téléchargement, npm ci et npm run build, le script npm run setup prépare le profil, vérifie et enregistre le MCP dans Codex, puis ouvre le desktop fourni dans bin/. Une nouvelle session Codex charge le MCP. Le setup préserve les permissions, n’active aucun profil et n’installe aucun démarrage automatique. La désinstallation unifiée complète reste à terminer.
 
 ### Capture au réveil (option Windows)
 
