@@ -17,7 +17,8 @@ import { openSqlite, type AdviceDatabase } from "./db.js";
 import { SIMULATION_LABEL } from "./types.js";
 
 export interface TransferPayload {
-  readonly simulated: true;
+  /** `true` pour le service de séances SIMULÉ ; un adapter réel refuse un payload simulé. */
+  readonly simulated: boolean;
   readonly settlementId: string;
   readonly contractId: string;
   readonly contractDigest: string;
@@ -30,7 +31,8 @@ export interface TransferPayload {
 }
 
 export interface SettlementAdapterCapabilities {
-  readonly simulated: true;
+  /** `false` seulement pour un adapter d'intégration de test (devnet), jamais accepté par le service. */
+  readonly simulated: boolean;
   readonly label: string;
   /** Durée pendant laquelle une clé reste recherchable et dédupliquée. */
   readonly lookupRetentionMs: number;
@@ -41,7 +43,13 @@ export type SubmitResult =
   | { readonly status: "accepted"; readonly externalRef: string }
   | {
       readonly status: "rejected";
-      readonly reason: "stale_fencing_token" | "payload_conflict" | "invalid_payload";
+      readonly reason:
+        | "stale_fencing_token"
+        | "payload_conflict"
+        | "invalid_payload"
+        | "fee_changed"
+        | "recipient_unresolved"
+        | "rail_refused";
     };
 
 export type LookupResult =
@@ -62,7 +70,10 @@ export class SettlementUnavailableError extends Error {
   override readonly name = "SettlementUnavailableError";
 }
 
-/** Contrat d'un adapter de règlement ; seule une implémentation simulée existe. */
+/**
+ * Contrat d'un adapter de règlement. Le service de séances n'accepte que l'implémentation
+ * simulée ; l'adapter devnet (`services/advice/rail-solana-devnet`) est une intégration de test.
+ */
 export interface SettlementAdapter {
   capabilities(): SettlementAdapterCapabilities;
   submit(key: string, payload: TransferPayload, fencingToken: number): Promise<SubmitResult>;
