@@ -12,7 +12,7 @@ const stage = path.resolve(values.stage), archive=path.resolve(values.archive);
 if(fs.existsSync(stage)||fs.existsSync(archive)) throw Error('Stage and archive must not already exist');
 const root=path.join(stage,'mind-wake');
 const top=new Set(['.gitattributes','.gitignore','.prettierignore','.prettierrc.json','AGENTS.md','CLAUDE.md','README.md','SPEC.md','TRANSACTIONS.md','LICENSE','package.json','package-lock.json','eslint.config.js','tsconfig.build.json','tsconfig.json','vitest.config.ts','install.md']);
-const dirs=new Set(['src','services','scripts','desktop','test','docs','prompts','skills','spikes']);
+const dirs=new Set(['src','services','scripts','desktop','test','docs','prompts','skills']);
 const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{cwd:repo,encoding:'utf8'}).split('\0').filter(Boolean);
 const selected=files.filter(file=>top.has(file)||dirs.has(file.split('/')[0]));
 fs.mkdirSync(root,{recursive:true});
