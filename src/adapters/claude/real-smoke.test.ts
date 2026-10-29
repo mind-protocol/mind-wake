@@ -192,6 +192,7 @@ describe.skipIf(!ENABLED)("adapter Claude Code : fumée réelle (opt-in)", () =>
           return tap(contained, (line) => raw.push({ call: current, line })) as never;
         },
         authorize: () => ({ allowed: false, reason: "fumée", interruptSession: false }),
+        isolation: () => "host_unsandboxed",
       };
       const inner = hostClaudeLauncher(host);
       launcher = {

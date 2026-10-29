@@ -625,6 +625,7 @@ describe("adapter Claude Code : briques", () => {
         return {} as ContainedProcess;
       },
       authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
+      isolation: () => "job_only",
     };
     const launcher = hostClaudeLauncher(host, 4);
     expect(launcher.isolation().kind).toBe("host_job");
