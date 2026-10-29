@@ -1,9 +1,13 @@
 /**
- * Adapter Gemini CLI (ADR-005), conforme à `RuntimeAdapter`. Il lance la CLI officielle
- * en mode non interactif (`--prompt`, `--output-format stream-json`) dans l'espace
- * d'exploration, avec une configuration propre à Wake (`GEMINI_CLI_HOME`) et un
- * environnement minimal sans secret hérité. Le réseau passe par le port de transport que
- * fournira le relais fournisseur ; sans lui, la sandbox reste fermée.
+ * Adapter Gemini CLI (ADR-005, ADR-006), conforme à `RuntimeAdapter`. Il lance la CLI
+ * officielle en mode non interactif (`--prompt`, `--output-format stream-json`) dans
+ * l'espace d'exploration, avec une configuration propre à Wake (`GEMINI_CLI_HOME`) et un
+ * environnement explicite sans secret hérité, toujours dans un Job Object pour que l'arrêt
+ * d'urgence termine toute l'arborescence.
+ *
+ * Deux lancements : dans la sandbox AppContainer (réseau par le relais, suspendu), ou sur
+ * le poste hôte, NON ISOLÉ, avec le réseau de l'hôte (ADR-006). Sur l'hôte, `--approval-mode
+ * yolo` et l'autonomie exigent le consentement distinct `hostUnsandboxedAcknowledged`.
  *
  * Aucune lecture officielle du quota restant n'existe pour Gemini CLI : le runtime est
  * refusé en mode autonome (`providerQuotaReading: "none"`) et reste réservé au lancement
@@ -19,6 +23,7 @@ import type {
   AdapterId,
   CancelResult,
   DurationMs,
+  PolicyRevision,
   ProbeResult,
   ReconcileResult,
   RuntimeAdapter,
@@ -39,6 +44,7 @@ import {
   GeminiLaunchRefused,
   type GeminiLaunchPort,
   type GeminiProcess,
+  type LaunchIsolation,
   type LaunchMode,
   type ProviderTransportLease,
   type ProviderTransportPort,
@@ -72,11 +78,19 @@ export interface GeminiCommand {
 export interface GeminiAdapterOptions {
   readonly command: GeminiCommand;
   readonly launch: GeminiLaunchPort;
-  /** Canal du relais fournisseur ; absent = aucun accès réseau fourni. */
+  /** Canal du relais fournisseur, sandbox seulement ; ignoré sur l'hôte (ADR-006). */
   readonly transport?: ProviderTransportPort;
   readonly mode: LaunchMode;
-  /** `yolo` n'est accepté que dans la sandbox vérifiée. Défaut : `default`. */
+  /**
+   * `yolo` exige la sandbox vérifiée, ou sur l'hôte le consentement au mode non isolé.
+   * Défaut : `default`.
+   */
   readonly approvalMode?: ApprovalMode;
+  /**
+   * Lecture du consentement distinct au mode non isolé dans la policy
+   * (`hostUnsandboxedAcknowledged`, ADR-006). Absent = pas de consentement.
+   */
+  readonly hostUnsandboxedAcknowledged?: (policy: PolicyRevision) => boolean;
   /** Modèle ; défaut : `policy.groups.runtime.model`. */
   readonly model?: string;
   /** Espace d'exploration de la session (doit exister). */
@@ -109,6 +123,7 @@ interface SessionRecord {
 
 interface LiveSession {
   readonly process: GeminiProcess;
+  readonly isolation: LaunchIsolation;
   readonly lease: ProviderTransportLease | null;
   readonly record: SessionRecord;
   cancelled: boolean;
@@ -141,7 +156,11 @@ export class GeminiAdapter implements RuntimeAdapter {
   async probe(): Promise<ProbeResult> {
     const base = {
       adapterId: GEMINI_ADAPTER_ID,
-      executionMechanism: GEMINI_EXECUTION_MECHANISM,
+      executionMechanism: `${GEMINI_EXECUTION_MECHANISM} — ${
+        this.#options.launch.kind === "host"
+          ? "NON ISOLÉ : poste hôte, Job Object seul (ADR-006)"
+          : "sandbox AppContainer + Job Object"
+      }`,
       simulated: false,
     };
     try {
@@ -197,6 +216,7 @@ export class GeminiAdapter implements RuntimeAdapter {
       approvalMode: options.approvalMode ?? "default",
       portKind: options.launch.kind,
       isolation: await options.launch.isolationVerified(),
+      hostUnsandboxedConsent: options.hostUnsandboxedAcknowledged?.(request.policy) === true,
       providerQuotaReading: "none",
     });
     if (!decision.allowed) throw new GeminiLaunchRefused(decision.refusal, decision.reason);
@@ -226,8 +246,11 @@ export class GeminiAdapter implements RuntimeAdapter {
       ...(options.coreTools === undefined ? {} : { coreTools: options.coreTools }),
     });
 
+    // Sur l'hôte, la CLI emploie le réseau de l'hôte : aucun relais (ADR-006).
     const lease =
-      options.transport === undefined ? null : await options.transport.open(request.sessionId);
+      options.transport === undefined || decision.isolation !== "sandbox"
+        ? null
+        : await options.transport.open(request.sessionId);
     const env: Record<string, string> = { ...(lease?.env ?? {}) };
     if ("GEMINI_CLI_HOME" in env) {
       await lease?.close();
@@ -264,6 +287,7 @@ export class GeminiAdapter implements RuntimeAdapter {
     };
     this.#sessions.set(request.sessionId, {
       process: process_,
+      isolation: decision.isolation,
       lease,
       record,
       cancelled: false,
@@ -291,6 +315,14 @@ export class GeminiAdapter implements RuntimeAdapter {
     };
 
     try {
+      if (session.isolation === "unsandboxed") {
+        yield {
+          type: "activity",
+          sessionId,
+          at: nowUtc(),
+          summary: "mode NON ISOLÉ : poste hôte, accès complet au compte (ADR-006)",
+        };
+      }
       for (;;) {
         const line = await session.process.readLine();
         if (line === null) break;

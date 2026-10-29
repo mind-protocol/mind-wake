@@ -1,7 +1,7 @@
 /**
  * Ports de lancement de l'adapter Gemini : où tourne le processus (sandbox AppContainer
  * ou simple Job Object sur l'hôte), par quel canal il joint le fournisseur, et la règle
- * qui décide si un lancement est permis (ADR-005).
+ * qui décide si un lancement est permis (ADR-005, ADR-006).
  */
 
 import type { DurationMs, SessionId } from "../../contracts/index.js";
@@ -49,9 +49,10 @@ export interface GeminiLaunchPort {
 }
 
 /**
- * Canal fournisseur, fourni par le relais (non implémenté ici). Le relais détient seul le
- * credential ; la bail ne transmet que le point d'accès broker et des variables sans nom
- * de secret (proxy, point d'entrée), revérifiées par la sandbox.
+ * Canal fournisseur du relais, pour la seule sandbox. Le relais est suspendu (ADR-006) :
+ * sur l'hôte, la CLI joint le fournisseur par le réseau de l'hôte et ce port est ignoré.
+ * La bail ne transmet que le point d'accès broker et des variables sans nom de secret ;
+ * avec un compte Google, le relais ne détient ni ne réinjecte le jeton OAuth de la CLI.
  */
 export interface ProviderTransportLease {
   readonly broker: BrokerEndpoint | null;
@@ -117,24 +118,50 @@ export function sandboxLaunchPort(options: {
 }
 
 /**
- * Lancement sur l'hôte dans l'arborescence contenue du runner : terminaison garantie,
- * mais aucune isolation de fichiers ni de réseau. Réservé au lancement manuel, sans mode
- * sans approbation.
+ * Variables de l'hôte transmises en mode non isolé (ADR-006) : de quoi trouver le profil,
+ * les dossiers temporaires et les outils du système. Aucun nom de secret.
  */
-export function hostLaunchPort(host: AdapterHost): GeminiLaunchPort {
+export const HOST_PASSTHROUGH_ENV: readonly string[] = [
+  "PATH",
+  "Path",
+  "PATHEXT",
+  "ComSpec",
+  "TEMP",
+  "TMP",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "USERPROFILE",
+  "HOMEDRIVE",
+  "HOMEPATH",
+];
+
+/**
+ * Lancement sur l'hôte dans l'arborescence contenue du runner : l'arrêt d'urgence termine
+ * toute la descendance (Job Object), mais aucune isolation de fichiers ni de réseau.
+ * Le réseau de l'hôte sert de transport (ADR-006) : aucun broker.
+ */
+export function hostLaunchPort(
+  host: AdapterHost,
+  source: Readonly<Record<string, string | undefined>> = process.env,
+): GeminiLaunchPort {
   return {
     kind: "host",
     isolationVerified() {
       return Promise.resolve({
         verified: false,
-        detail: "lancement hôte : Job Object seul, aucune isolation de fichiers ni de réseau",
+        detail: "non isolé : Job Object seul, aucune isolation de fichiers ni de réseau",
       });
     },
     launch(spec) {
+      const env: Record<string, string> = {};
+      for (const key of HOST_PASSTHROUGH_ENV) {
+        const value = source[key];
+        if (value !== undefined) env[key] = value;
+      }
       return host.spawnContained(spec.sessionId, {
         executable: spec.executable,
         args: spec.args,
-        env: spec.env,
+        env: { ...env, ...spec.env },
         cwd: spec.workspace,
         ...(spec.maxProcesses === undefined ? {} : { maxProcesses: spec.maxProcesses }),
       });
@@ -146,48 +173,67 @@ export function hostLaunchPort(host: AdapterHost): GeminiLaunchPort {
 export type LaunchMode = "autonomous" | "manual";
 
 export type LaunchRefusal =
-  "approval_outside_sandbox" | "isolation_unverified" | "no_quota_reading";
+  | "approval_outside_sandbox"
+  | "unsandboxed_consent_missing"
+  | "isolation_unverified"
+  | "no_quota_reading";
+
+/** `sandbox` : AppContainer vérifié ; `unsandboxed` : poste hôte, non isolé (ADR-006). */
+export type LaunchIsolation = "sandbox" | "unsandboxed";
 
 export type LaunchDecision =
-  | { readonly allowed: true; readonly approvalMode: ApprovalMode }
+  | {
+      readonly allowed: true;
+      readonly approvalMode: ApprovalMode;
+      readonly isolation: LaunchIsolation;
+    }
   | { readonly allowed: false; readonly refusal: LaunchRefusal; readonly reason: string };
 
 /**
- * Règle d'ADR-005 : le mode sans approbation exige la sandbox avec autotest réussi ;
- * l'autonomie exige en plus une lecture officielle de la jauge de quota.
+ * Règles d'ADR-005 et ADR-006. Le mode sans approbation et l'autonomie exigent soit la
+ * sandbox avec autotest réussi, soit, sur l'hôte, le consentement distinct au mode non
+ * isolé consigné dans la policy. L'autonomie exige en plus une lecture officielle de la
+ * jauge de quota (garde maintenue par ADR-006).
  */
 export function decideLaunch(input: {
   readonly mode: LaunchMode;
   readonly approvalMode: ApprovalMode;
   readonly portKind: GeminiLaunchPort["kind"];
   readonly isolation: IsolationVerdict;
+  /** `hostUnsandboxedAcknowledged` de la policy (ADR-006). */
+  readonly hostUnsandboxedConsent: boolean;
   readonly providerQuotaReading: "official" | "none";
 }): LaunchDecision {
-  const isolated = input.portKind === "sandbox" && input.isolation.verified;
-  if (input.approvalMode === "yolo" && !isolated) {
+  const sandboxed = input.portKind === "sandbox" && input.isolation.verified;
+  const unsandboxedAllowed = input.portKind === "host" && input.hostUnsandboxedConsent;
+  const unattended = input.approvalMode === "yolo" || input.mode === "autonomous";
+  if (unattended && !sandboxed && !unsandboxedAllowed) {
+    const what = input.mode === "autonomous" ? "mode autonome" : "mode sans approbation";
+    return input.portKind === "host"
+      ? {
+          allowed: false,
+          refusal: "unsandboxed_consent_missing",
+          reason: `${what} refusé sur l'hôte : consentement distinct au mode non isolé absent de la policy (ADR-006)`,
+        }
+      : {
+          allowed: false,
+          refusal:
+            input.approvalMode === "yolo" ? "approval_outside_sandbox" : "isolation_unverified",
+          reason: `${what} refusé sans isolation vérifiée (${input.isolation.detail})`,
+        };
+  }
+  if (input.mode === "autonomous" && input.providerQuotaReading !== "official") {
     return {
       allowed: false,
-      refusal: "approval_outside_sandbox",
-      reason: `mode sans approbation refusé hors sandbox vérifiée (${input.isolation.detail})`,
+      refusal: "no_quota_reading",
+      reason: "mode autonome refusé : aucune lecture officielle du quota Gemini (ADR-005, ADR-006)",
     };
   }
-  if (input.mode === "autonomous") {
-    if (!isolated) {
-      return {
-        allowed: false,
-        refusal: "isolation_unverified",
-        reason: `mode autonome refusé sans isolation vérifiée (${input.isolation.detail})`,
-      };
-    }
-    if (input.providerQuotaReading !== "official") {
-      return {
-        allowed: false,
-        refusal: "no_quota_reading",
-        reason: "mode autonome refusé : aucune lecture officielle du quota Gemini (ADR-005)",
-      };
-    }
-  }
-  return { allowed: true, approvalMode: input.approvalMode };
+  return {
+    allowed: true,
+    approvalMode: input.approvalMode,
+    isolation: sandboxed ? "sandbox" : "unsandboxed",
+  };
 }
 
 export class GeminiLaunchRefused extends Error {

@@ -99,52 +99,76 @@ describe("configuration", () => {
 describe("decideLaunch", () => {
   const verified = { verified: true, detail: "ok" };
   const unverified = { verified: false, detail: "non" };
+  type Input = Parameters<typeof decideLaunch>[0];
+  const decide = (input: Partial<Input>) =>
+    decideLaunch({
+      mode: "manual",
+      approvalMode: "default",
+      portKind: "host",
+      isolation: unverified,
+      hostUnsandboxedConsent: false,
+      providerQuotaReading: "none",
+      ...input,
+    });
 
-  it("n'autorise le lancement manuel sans approbation qu'en sandbox vérifiée", () => {
+  it("sans approbation : sandbox vérifiée, ou hôte avec consentement au mode non isolé", () => {
+    expect(decide({ approvalMode: "yolo", portKind: "sandbox", isolation: verified })).toEqual({
+      allowed: true,
+      approvalMode: "yolo",
+      isolation: "sandbox",
+    });
+    expect(decide({ approvalMode: "yolo", hostUnsandboxedConsent: true })).toEqual({
+      allowed: true,
+      approvalMode: "yolo",
+      isolation: "unsandboxed",
+    });
+    expect(decide({ approvalMode: "yolo" })).toMatchObject({
+      allowed: false,
+      refusal: "unsandboxed_consent_missing",
+    });
+    expect(decide({ approvalMode: "yolo", portKind: "sandbox" })).toMatchObject({
+      allowed: false,
+      refusal: "approval_outside_sandbox",
+    });
+    // Le consentement à l'hôte ne vaut pas pour une sandbox non vérifiée.
     expect(
-      decideLaunch({
-        mode: "manual",
-        approvalMode: "yolo",
-        portKind: "sandbox",
-        isolation: verified,
-        providerQuotaReading: "none",
-      }),
-    ).toEqual({ allowed: true, approvalMode: "yolo" });
-    expect(
-      decideLaunch({
-        mode: "manual",
-        approvalMode: "yolo",
-        portKind: "host",
-        isolation: verified,
-        providerQuotaReading: "none",
-      }),
-    ).toMatchObject({ allowed: false, refusal: "approval_outside_sandbox" });
-    expect(
-      decideLaunch({
-        mode: "manual",
-        approvalMode: "default",
-        portKind: "host",
-        isolation: unverified,
-        providerQuotaReading: "none",
-      }),
-    ).toEqual({ allowed: true, approvalMode: "default" });
+      decide({ approvalMode: "yolo", portKind: "sandbox", hostUnsandboxedConsent: true }),
+    ).toMatchObject({ allowed: false });
+    // Lancement manuel avec approbations : permis sur l'hôte, marqué non isolé.
+    expect(decide({})).toEqual({
+      allowed: true,
+      approvalMode: "default",
+      isolation: "unsandboxed",
+    });
   });
 
-  it("n'autorise l'autonomie qu'avec isolation vérifiée et lecture officielle du quota", () => {
-    const base = { mode: "autonomous", approvalMode: "yolo", portKind: "sandbox" } as const;
+  it("autonomie : isolation ou consentement, puis lecture officielle du quota", () => {
+    const autonomous = { mode: "autonomous", approvalMode: "yolo" } as const;
+    expect(decide({ ...autonomous, providerQuotaReading: "official" })).toMatchObject({
+      allowed: false,
+      refusal: "unsandboxed_consent_missing",
+    });
+    expect(decide({ ...autonomous, hostUnsandboxedConsent: true })).toMatchObject({
+      allowed: false,
+      refusal: "no_quota_reading",
+    });
     expect(
-      decideLaunch({ ...base, isolation: verified, providerQuotaReading: "none" }),
-    ).toMatchObject({ allowed: false, refusal: "no_quota_reading" });
+      decide({ ...autonomous, hostUnsandboxedConsent: true, providerQuotaReading: "official" }),
+    ).toEqual({ allowed: true, approvalMode: "yolo", isolation: "unsandboxed" });
     expect(
-      decideLaunch({
-        ...base,
-        approvalMode: "default",
-        isolation: unverified,
+      decide({
+        mode: "autonomous",
+        portKind: "sandbox",
         providerQuotaReading: "official",
       }),
     ).toMatchObject({ allowed: false, refusal: "isolation_unverified" });
     expect(
-      decideLaunch({ ...base, isolation: verified, providerQuotaReading: "official" }),
-    ).toEqual({ allowed: true, approvalMode: "yolo" });
+      decide({
+        ...autonomous,
+        portKind: "sandbox",
+        isolation: verified,
+        providerQuotaReading: "official",
+      }),
+    ).toEqual({ allowed: true, approvalMode: "yolo", isolation: "sandbox" });
   });
 });

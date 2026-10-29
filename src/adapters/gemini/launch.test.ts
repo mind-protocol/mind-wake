@@ -99,7 +99,7 @@ describe("hostLaunchPort", () => {
       },
       authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
     } as unknown as AdapterHost;
-    const launchPort = hostLaunchPort(host);
+    const launchPort = hostLaunchPort(host, { PATH: "C:/bin", MINDWAKE_SECRET_TOKEN: "x" });
     expect(launchPort.kind).toBe("host");
     expect((await launchPort.isolationVerified()).verified).toBe(false);
     launchPort.launch(SPEC);
@@ -109,7 +109,7 @@ describe("hostLaunchPort", () => {
         command: {
           executable: SPEC.executable,
           args: SPEC.args,
-          env: SPEC.env,
+          env: { PATH: "C:/bin", ...SPEC.env },
           cwd: SPEC.workspace,
         },
       },

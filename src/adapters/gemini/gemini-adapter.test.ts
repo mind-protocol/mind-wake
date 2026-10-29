@@ -165,7 +165,18 @@ function request(sessionId: string, context = "Reprends l'expérience.") {
   };
 }
 
+function isUnsandboxedMarker(event: AdapterEvent | undefined): boolean {
+  return event?.type === "activity" && event.summary.startsWith("mode NON ISOLÉ");
+}
+
+/** Événements de la session, sans la marque « non isolé » des lancements sur l'hôte. */
 async function collect(events: AsyncIterable<AdapterEvent>): Promise<AdapterEvent[]> {
+  const all: AdapterEvent[] = [];
+  for await (const event of events) if (!isUnsandboxedMarker(event)) all.push(event);
+  return all;
+}
+
+async function collectAll(events: AsyncIterable<AdapterEvent>): Promise<AdapterEvent[]> {
   const all: AdapterEvent[] = [];
   for await (const event of events) all.push(event);
   return all;
@@ -224,13 +235,70 @@ describe("GeminiAdapter : probe et capacités", () => {
   });
 });
 
-describe("GeminiAdapter : règle de lancement (ADR-005)", () => {
-  it("refuse le mode autonome hors sandbox", async () => {
+describe("GeminiAdapter : règle de lancement (ADR-005, ADR-006)", () => {
+  it("refuse le mode autonome sur l'hôte sans consentement au mode non isolé", async () => {
     const gemini = adapter({ launch: port("success"), mode: "autonomous" });
     await expect(gemini.start(request("s-auto"))).rejects.toMatchObject({
-      refusal: "isolation_unverified",
+      refusal: "unsandboxed_consent_missing",
     });
     expect(bench.launched).toHaveLength(0);
+  });
+
+  it("refuse le mode autonome sur l'hôte même avec consentement : aucune lecture du quota", async () => {
+    const gemini = adapter({
+      launch: port("success"),
+      mode: "autonomous",
+      approvalMode: "yolo",
+      hostUnsandboxedAcknowledged: () => true,
+    });
+    await expect(gemini.start(request("s-auto"))).rejects.toMatchObject({
+      refusal: "no_quota_reading",
+    });
+    expect(bench.launched).toHaveLength(0);
+  });
+
+  it("lit le consentement dans la policy de la session", async () => {
+    const seen: unknown[] = [];
+    const gemini = adapter({
+      launch: port("success"),
+      approvalMode: "yolo",
+      hostUnsandboxedAcknowledged: (policy) => {
+        seen.push(policy.groups.runtime.model);
+        return false;
+      },
+    });
+    await expect(gemini.start(request("s-1"))).rejects.toMatchObject({
+      refusal: "unsandboxed_consent_missing",
+    });
+    expect(seen).toEqual(["gemini-2.5-pro"]);
+  });
+
+  it("passe yolo sur l'hôte avec consentement, sans relais, et marque la session non isolée", async () => {
+    let opened = 0;
+    const gemini = adapter({
+      launch: port("success"),
+      approvalMode: "yolo",
+      hostUnsandboxedAcknowledged: () => true,
+      transport: {
+        open: () => {
+          opened += 1;
+          return Promise.resolve({ broker: null, env: {}, close: () => Promise.resolve() });
+        },
+      },
+    });
+    expect((await gemini.probe()).executionMechanism).toMatch(/NON ISOLÉ/);
+    const events = await collectAll(gemini.events(await gemini.start(request("s-1"))));
+    expect(isUnsandboxedMarker(events[0])).toBe(true);
+    expect(invocation().argv).toContain("yolo");
+    expect(bench.launched[0]?.broker).toBeNull();
+    expect(opened).toBe(0);
+  });
+
+  it("ne marque pas « non isolé » une session dans la sandbox vérifiée", async () => {
+    const gemini = adapter({ launch: port("success", "sandbox", SANDBOX_OK) });
+    expect((await gemini.probe()).executionMechanism).toMatch(/sandbox AppContainer/);
+    const events = await collectAll(gemini.events(await gemini.start(request("s-1"))));
+    expect(events.some(isUnsandboxedMarker)).toBe(false);
   });
 
   it("refuse le mode autonome même en sandbox vérifiée : aucune lecture officielle du quota", async () => {
@@ -241,16 +309,20 @@ describe("GeminiAdapter : règle de lancement (ADR-005)", () => {
     expect(bench.launched).toHaveLength(0);
   });
 
-  it("refuse --approval-mode yolo hors sandbox ou sans autotest réussi", async () => {
-    for (const launch of [
-      port("success"),
-      port("success", "sandbox", { verified: false, detail: "autotest en échec" }),
-    ]) {
-      const gemini = adapter({ launch, approvalMode: "yolo" });
-      await expect(gemini.start(request("s-yolo"))).rejects.toMatchObject({
-        refusal: "approval_outside_sandbox",
-      });
-    }
+  it("refuse --approval-mode yolo sans consentement sur l'hôte ou sans autotest réussi", async () => {
+    const host = adapter({ launch: port("success"), approvalMode: "yolo" });
+    await expect(host.start(request("s-yolo"))).rejects.toMatchObject({
+      refusal: "unsandboxed_consent_missing",
+    });
+    // Le consentement au mode non isolé ne couvre pas une sandbox dont l'autotest échoue.
+    const sandbox = adapter({
+      launch: port("success", "sandbox", { verified: false, detail: "autotest en échec" }),
+      approvalMode: "yolo",
+      hostUnsandboxedAcknowledged: () => true,
+    });
+    await expect(sandbox.start(request("s-yolo"))).rejects.toMatchObject({
+      refusal: "approval_outside_sandbox",
+    });
     expect(bench.launched).toHaveLength(0);
   });
 
@@ -338,7 +410,7 @@ describe("GeminiAdapter : lancement", () => {
   it("refuse un transport qui redéfinit GEMINI_CLI_HOME et libère la bail", async () => {
     let closed = 0;
     const gemini = adapter({
-      launch: port("success"),
+      launch: port("success", "sandbox", SANDBOX_OK),
       transport: {
         open: () =>
           Promise.resolve({
@@ -460,6 +532,7 @@ describe("GeminiAdapter : événements et rapprochement", () => {
     const gemini = adapter({ launch: port("hang") });
     const handle = await gemini.start(request("s-1"));
     const iterator = gemini.events(handle)[Symbol.asyncIterator]();
+    expect(isUnsandboxedMarker((await iterator.next()).value as AdapterEvent)).toBe(true);
     expect((await iterator.next()).value).toMatchObject({ type: "started" });
     expect(await gemini.reconcile(handle.sessionId)).toMatchObject({ status: "uncertain" });
     const result = await gemini.cancel(handle, 2_000);
