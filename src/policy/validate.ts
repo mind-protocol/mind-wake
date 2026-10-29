@@ -73,6 +73,7 @@ const GROUP_FIELDS: { readonly [G in keyof PolicyGroups]: readonly (keyof Policy
     "userReserveTokens",
     "checkpointTokens",
     "paidApi",
+    "subscriptionQuota",
   ],
   filesAndTools: [
     "readRoots",
@@ -339,6 +340,10 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
   const userReserve = intField(c, budget, "budget", "userReserveTokens", 0);
   const checkpointTokens = intField(c, budget, "budget", "checkpointTokens", 1);
   const paidApi = validatePaidApi(c, field(c, budget, "budget", "paidApi"));
+  const subscriptionQuota = validateSubscriptionQuota(
+    c,
+    field(c, budget, "budget", "subscriptionQuota"),
+  );
   if (
     tokensPerSession !== undefined &&
     tokensPerPeriod !== undefined &&
@@ -473,6 +478,7 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
       userReserveTokens: userReserve,
       checkpointTokens,
       paidApi,
+      ...(subscriptionQuota === undefined ? {} : { subscriptionQuota }),
     } as PolicyGroups["budget"],
     filesAndTools: {
       readRoots,
@@ -608,6 +614,83 @@ function validatePaidApi(c: Collector, value: unknown): unknown {
     currency,
     perSessionCapMinor: perSession,
     perPeriodCapMinor: perPeriod,
+  };
+}
+
+export const BASIS_POINTS_MAX = 10_000;
+
+/**
+ * Voie abonnement expérimentale (ADR-004). Absente = désactivée. L'activation exige la
+ * reconnaissance du risque de compte et des seuils cohérents :
+ * `stopAt + overshoot ≤ 10 000 − userReserve`. Un dépassement `null` (non mesuré) reste
+ * valide dans la révision mais bloque tout lancement (voir `decideLaunch`).
+ */
+function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
+  const path = "budget.subscriptionQuota";
+  if (value === undefined) return undefined;
+  if (!isPlainObject(value)) {
+    c.add(path, "invalid", "garde de quota attendue");
+    return undefined;
+  }
+  const enabled = own(value, "enabled");
+  if (enabled === false) {
+    if (Object.keys(value).length !== 1) {
+      c.add(path, "invalid", "aucun seuil attendu pour une voie désactivée");
+      return undefined;
+    }
+    return { enabled: false };
+  }
+  if (enabled !== true) {
+    c.add(path, "invalid", "enabled doit être true ou false");
+    return undefined;
+  }
+  const keys = [
+    "enabled",
+    "accountRiskAcknowledged",
+    "startBelowBasisPoints",
+    "stopAtBasisPoints",
+    "userReserveBasisPoints",
+    "overshootBoundBasisPoints",
+    "maxSnapshotAgeMs",
+  ];
+  if (Object.keys(value).some((k) => !keys.includes(k))) {
+    c.add(path, "unknown_field", "champ inconnu dans subscriptionQuota");
+    return undefined;
+  }
+  if (own(value, "accountRiskAcknowledged") !== true) {
+    c.add(path, "invalid", "reconnaissance explicite du risque de compte requise");
+    return undefined;
+  }
+  const start = own(value, "startBelowBasisPoints");
+  const stop = own(value, "stopAtBasisPoints");
+  const reserve = own(value, "userReserveBasisPoints");
+  const overshoot = own(value, "overshootBoundBasisPoints");
+  const maxAge = own(value, "maxSnapshotAgeMs");
+  const bp = (v: unknown, min: number): v is number => isInt(v, min) && v <= BASIS_POINTS_MAX;
+  if (!bp(start, 1) || !bp(stop, 1) || !bp(reserve, 0) || !isInt(maxAge, 1)) {
+    c.add(path, "invalid", "seuils entiers en points de base (0..10 000) et âge > 0 requis");
+    return undefined;
+  }
+  if (overshoot !== null && !bp(overshoot, 0)) {
+    c.add(path, "invalid", "dépassement en points de base ou null (non mesuré)");
+    return undefined;
+  }
+  if (start >= stop) {
+    c.add(path, "inconsistent", "startBelowBasisPoints doit être < stopAtBasisPoints");
+    return undefined;
+  }
+  if (stop + (overshoot ?? 0) > BASIS_POINTS_MAX - reserve) {
+    c.add(path, "inconsistent", "stopAt + overshoot doit être ≤ 10 000 − userReserve");
+    return undefined;
+  }
+  return {
+    enabled: true,
+    accountRiskAcknowledged: true,
+    startBelowBasisPoints: start,
+    stopAtBasisPoints: stop,
+    userReserveBasisPoints: reserve,
+    overshootBoundBasisPoints: overshoot,
+    maxSnapshotAgeMs: maxAge,
   };
 }
 

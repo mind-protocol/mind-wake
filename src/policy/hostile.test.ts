@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   PROFILE,
   SESSION,
+  CHECKS,
   activate,
   consentId,
   memoryStore,
@@ -29,17 +30,17 @@ describe("texte hostile injecté comme donnée", () => {
     const active = activate(store, validDraft());
     const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: active.id };
     const networkAction = { kind: "network", host: "example.org", port: 443 };
-    const before = decideAction(store.policies, RUNNING, session, networkAction);
+    const before = decideAction(store.policies, RUNNING, session, CHECKS, networkAction);
     expect(before).toMatchObject({ verdict: "deny", reason: "permission_not_granted" });
 
     // 1. Comme action : une chaîne n'est pas une action.
-    expect(decideAction(store.policies, RUNNING, session, HOSTILE)).toMatchObject({
+    expect(decideAction(store.policies, RUNNING, session, CHECKS, HOSTILE)).toMatchObject({
       verdict: "deny",
       reason: "unknown_condition",
     });
     // 2. Comme champ supplémentaire d'une action réseau.
     expect(
-      decideAction(store.policies, RUNNING, session, {
+      decideAction(store.policies, RUNNING, session, CHECKS, {
         ...networkAction,
         note: HOSTILE,
         granted: true,
@@ -95,7 +96,7 @@ describe("texte hostile injecté comme donnée", () => {
     const resolution = resolvePolicy(store.policies, PROFILE);
     expect(resolution.status === "active" && resolution.revision.id).toBe(active.id);
     expect(decideActivation(store.policies, PROFILE)).toMatchObject({ revisionId: active.id });
-    expect(decideAction(store.policies, RUNNING, session, networkAction)).toEqual(before);
+    expect(decideAction(store.policies, RUNNING, session, CHECKS, networkAction)).toEqual(before);
     expect(store.policies.consents.size).toBe(1);
     expect(active.groups.network.explorationDestinations).toEqual([]);
   });

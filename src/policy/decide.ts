@@ -6,7 +6,11 @@
  */
 
 import type { AdapterCapabilities, ProbeResult } from "../contracts/adapter.js";
-import type { BudgetAvailability, CurrencyCode } from "../contracts/budget.js";
+import type {
+  BudgetAvailability,
+  CurrencyCode,
+  ProviderQuotaSnapshot,
+} from "../contracts/budget.js";
 import type { PolicyRevisionId, ProfileId, SessionId, UtcTimestamp } from "../contracts/common.js";
 import type { JournalEventInput } from "../contracts/journal.js";
 import type { ProfileState } from "../contracts/lifecycle.js";
@@ -16,12 +20,13 @@ import type {
   PolicyGroups,
   PolicyRevision,
   RuntimeGroup,
+  SubscriptionQuotaGuard,
 } from "../contracts/policy.js";
 import type { PolicyRepository } from "../contracts/repositories.js";
 import type { JsonObject } from "../contracts/common.js";
 import { classifyChange } from "./change.js";
 import { isUtcTimestamp, resolvePolicy, type PolicyResolution } from "./revisions.js";
-import { isConfinedPath, isValidHost } from "./validate.js";
+import { BASIS_POINTS_MAX, isConfinedPath, isValidHost } from "./validate.js";
 
 export interface ProfileFacts {
   readonly state: ProfileState;
@@ -89,7 +94,18 @@ export type BillingFacts =
       readonly pricingEffectiveSince: UtcTimestamp;
       /** Coût maximal d'une session à cette tarification ; `null` si non établi. */
       readonly maxSessionCostMinor: number | null;
-    };
+    }
+  /**
+   * Voie abonnement expérimentale (ADR-004) : consommation du quota d'un forfait,
+   * bornée par la jauge officielle du fournisseur. Jamais convertie en tokens ou monnaie.
+   */
+  | { readonly kind: "subscription_quota" };
+
+/** Signal de priorité humaine horodaté : trop ancien, il vaut condition inconnue. */
+export interface PrioritySignal {
+  readonly favorable: boolean;
+  readonly observedAt: UtcTimestamp;
+}
 
 /** Faits fournis par le scheduler, l'adapter, la sandbox et le ledger avant un lancement. */
 export interface LaunchFacts {
@@ -100,10 +116,14 @@ export interface LaunchFacts {
     /** Runtime réellement configuré dans l'adapter ; aucune substitution tolérée. */
     readonly runtime: RuntimeGroup;
   };
+  /** Horloge du daemon (UTC) ; sert à juger l'âge des signaux et des lectures de quota. */
+  readonly now?: UtcTimestamp;
   readonly billing?: BillingFacts;
+  /** Lectures officielles des fenêtres de quota, pour la voie abonnement. */
+  readonly quotaSnapshots?: readonly ProviderQuotaSnapshot[];
   readonly sandboxOperational?: boolean;
   readonly windowOpen?: boolean;
-  readonly userPriorityFavorable?: boolean;
+  readonly userPriority?: PrioritySignal;
   readonly backoffExpired?: boolean;
   readonly openSessionCount?: number;
   readonly budget?: {
@@ -155,21 +175,29 @@ export function decideLaunch(
   const id = revision.id;
   const groups = revision.groups;
 
-  const adapterDeny = adapterDenial(id, groups, facts.adapter);
+  if (!isUtcTimestamp(facts.now)) return deny(id, "unknown_condition", "clock.unknown");
+  const now = facts.now;
+
+  const adapterDeny = adapterDenial(id, groups, facts.adapter, facts.billing);
   if (adapterDeny !== null) return adapterDeny;
 
-  const billingDeny = billingDenial(id, groups, consent.grantedAt, facts.billing, facts.budget);
+  const billingDeny =
+    facts.billing?.kind === "subscription_quota"
+      ? subscriptionLaunchDenial(id, groups, now, facts)
+      : billingDenial(id, groups, consent.grantedAt, facts.billing, facts.budget);
   if (billingDeny !== null) return billingDeny;
 
   for (const [value, name, reason] of [
     [facts.sandboxOperational, "sandbox", "sandbox_unavailable"],
     [facts.windowOpen, "window", "outside_window"],
-    [facts.userPriorityFavorable, "user_priority", "user_priority"],
-    [facts.backoffExpired, "backoff", "backoff_active"],
   ] as const) {
     const d = factDenial(id, value, name, reason);
     if (d !== null) return d;
   }
+  const priority = priorityDenial(id, groups, now, facts.userPriority);
+  if (priority !== null) return priority;
+  const backoff = factDenial(id, facts.backoffExpired, "backoff", "backoff_active");
+  if (backoff !== null) return backoff;
 
   if (facts.openSessionCount === undefined || !Number.isSafeInteger(facts.openSessionCount)) {
     return deny(id, "unknown_condition", "sessions.open_count_unknown");
@@ -195,6 +223,7 @@ function adapterDenial(
   id: PolicyRevisionId,
   groups: PolicyGroups,
   adapter: LaunchFacts["adapter"],
+  billing: BillingFacts | undefined,
 ): PolicyDecision | null {
   if (adapter === undefined) return deny(id, "unknown_condition", "adapter.unknown");
   const { probe, capabilities, runtime } = adapter;
@@ -213,10 +242,12 @@ function adapterDenial(
   if (probe.adapterId !== groups.runtime.adapterId) {
     return deny(id, "not_consented", "runtime.adapterId_mismatch");
   }
-  if (
-    capabilities.tokenCapEnforcement !== "native" &&
-    capabilities.tokenCapEnforcement !== "conservative_bound"
-  ) {
+  // La jauge de quota ne borne que la voie abonnement ; elle ne remplace jamais un
+  // plafond de tokens pour une autre voie.
+  const enforcement = capabilities.tokenCapEnforcement;
+  const quotaGuardBound =
+    enforcement === "provider_quota_guard" && billing?.kind === "subscription_quota";
+  if (enforcement !== "native" && enforcement !== "conservative_bound" && !quotaGuardBound) {
     return deny(id, "bound_not_enforceable", "adapter.token_cap_not_enforceable");
   }
   if (capabilities.cancellation === "none") {
@@ -245,8 +276,7 @@ function billingDenial(
 ): PolicyDecision | null {
   if (billing === undefined) return deny(id, "unknown_condition", "billing.unknown");
   if (billing.kind === "no_charge") return null;
-  if ((billing.kind as string) !== "paid_api")
-    return deny(id, "unknown_condition", "billing.unknown_kind");
+  if (billing.kind !== "paid_api") return deny(id, "unknown_condition", "billing.unknown_kind");
   const paid = groups.budget.paidApi;
   if (!paid.authorized) return deny(id, "permission_not_granted", "spend.paid_api_not_authorized");
   if (billing.provider !== paid.provider || billing.currency !== paid.currency) {
@@ -269,6 +299,106 @@ function billingDenial(
     return deny(id, "budget_unknown", "money.currency_mismatch");
   }
   return availabilityDenial(id, money, "money", billing.maxSessionCostMinor);
+}
+
+/** Âge d'un horodatage par rapport à `now` ; `null` si invalide ou dans le futur. */
+function ageMs(now: UtcTimestamp, at: unknown): number | null {
+  if (!isUtcTimestamp(at)) return null;
+  const age = Date.parse(now) - Date.parse(at);
+  return age >= 0 ? age : null;
+}
+
+/** Priorité humaine : absente, mal formée ou plus ancienne que `maxSignalAgeMs` → refus. */
+function priorityDenial(
+  id: PolicyRevisionId,
+  groups: PolicyGroups,
+  now: UtcTimestamp,
+  signal: PrioritySignal | undefined,
+): PolicyDecision | null {
+  if (signal === undefined) return deny(id, "unknown_condition", "user_priority.unknown");
+  const age = ageMs(now, signal.observedAt);
+  if (age === null) return deny(id, "unknown_condition", "user_priority.unknown");
+  if (age > groups.humanPriority.maxSignalAgeMs) {
+    return deny(id, "unknown_condition", `user_priority.stale: age_ms=${String(age)}`);
+  }
+  return factDenial(id, signal.favorable, "user_priority", "user_priority");
+}
+
+type EnabledGuard = Extract<SubscriptionQuotaGuard, { enabled: true }>;
+
+function enabledGuard(groups: PolicyGroups): EnabledGuard | null {
+  const guard = groups.budget.subscriptionQuota;
+  return guard?.enabled === true && (guard.accountRiskAcknowledged as unknown) === true
+    ? guard
+    : null;
+}
+
+/**
+ * Voie abonnement (ADR-004) : elle ne lève aucune autre condition (isolation, priorité,
+ * annulation, sessions, tokens restent vérifiés par `decideLaunch`). La reconnaissance du
+ * risque de compte ne suffit pas : il faut un dépassement consenti non nul, une lecture
+ * officielle de la jauge, et chaque fenêtre lue `measured`, récente et sous le seuil de
+ * départ.
+ */
+function subscriptionLaunchDenial(
+  id: PolicyRevisionId,
+  groups: PolicyGroups,
+  now: UtcTimestamp,
+  facts: LaunchFacts,
+): PolicyDecision | null {
+  const guard = enabledGuard(groups);
+  if (guard === null) return deny(id, "permission_not_granted", "subscription.not_enabled");
+  const overshoot = guard.overshootBoundBasisPoints;
+  if (overshoot === null || !Number.isSafeInteger(overshoot) || overshoot < 0) {
+    return deny(id, "bound_not_enforceable", "subscription.overshoot_not_measured");
+  }
+  if (guard.stopAtBasisPoints + overshoot > BASIS_POINTS_MAX - guard.userReserveBasisPoints) {
+    return deny(id, "bound_not_enforceable", "subscription.bound_exceeds_user_reserve");
+  }
+  if (facts.adapter?.capabilities.providerQuotaReading !== "official") {
+    return deny(id, "bound_not_enforceable", "subscription.no_official_quota_reading");
+  }
+  return quotaDenial(id, guard, now, facts.quotaSnapshots, "start");
+}
+
+/**
+ * Lectures de quota : au moins une, toutes `measured`, récentes, cohérentes, et sous le
+ * seuil de départ (`start`) ou d'arrêt (`stop`). Les points de base ne sont jamais
+ * convertis en tokens.
+ */
+function quotaDenial(
+  id: PolicyRevisionId,
+  guard: EnabledGuard,
+  now: UtcTimestamp,
+  snapshots: readonly ProviderQuotaSnapshot[] | undefined,
+  phase: "start" | "stop",
+): PolicyDecision | null {
+  if (snapshots === undefined || snapshots.length === 0) {
+    return deny(id, "budget_unknown", "subscription.quota_unknown");
+  }
+  const threshold = phase === "start" ? guard.startBelowBasisPoints : guard.stopAtBasisPoints;
+  for (const snapshot of snapshots) {
+    const key = snapshot.windowKey;
+    if (snapshot.provenance !== "measured") {
+      return deny(id, "budget_unknown", `subscription.snapshot_not_measured: ${key}`);
+    }
+    const age = ageMs(now, snapshot.observedAt);
+    if (age === null || age > guard.maxSnapshotAgeMs) {
+      return deny(id, "budget_unknown", `subscription.snapshot_stale: ${key}`);
+    }
+    const used = snapshot.usedBasisPoints;
+    if (!Number.isSafeInteger(used) || used < 0 || used > BASIS_POINTS_MAX) {
+      return deny(id, "budget_unknown", `subscription.snapshot_invalid: ${key}`);
+    }
+    if (used >= threshold) {
+      return deny(
+        id,
+        "budget_exhausted",
+        `subscription.${phase}_threshold_reached: ${key} used_bp=${String(used)}`,
+      );
+    }
+  }
+  return null;
 }
 
 function availabilityDenial(
@@ -300,6 +430,16 @@ export interface ActiveSessionRef {
   readonly policyRevisionId: PolicyRevisionId;
 }
 
+/** Contrôles revérifiés avant chaque action d'une session active. */
+export interface SessionChecks {
+  readonly now: UtcTimestamp;
+  readonly userPriority?: PrioritySignal;
+  readonly sandboxOperational?: boolean;
+  /** `true` si la session consomme un quota d'abonnement (voie ADR-004). */
+  readonly onSubscription?: boolean;
+  readonly quotaSnapshots?: readonly ProviderQuotaSnapshot[];
+}
+
 export type SessionAssessment =
   | {
       readonly interruptSession: false;
@@ -324,6 +464,7 @@ export function assessActiveSession(
   policies: PolicyRepository,
   profile: ProfileFacts,
   session: ActiveSessionRef,
+  checks: SessionChecks,
 ): SessionAssessment {
   const interrupt = (
     revisionId: PolicyRevisionId | null,
@@ -341,7 +482,9 @@ export function assessActiveSession(
   if (profile.emergencyStopLocked || profile.state === "stopped") {
     return interrupt(null, "stopped", "profile.stopped", false);
   }
-  if (profile.state === "paused") return interrupt(null, "paused", "profile.paused", true);
+  if (profile.state === "paused") {
+    return interrupt(session.policyRevisionId, "paused", "profile.paused", true);
+  }
 
   const resolution = resolvePolicy(policies, session.profileId);
   const denial = resolutionDenial(resolution);
@@ -362,18 +505,45 @@ export function assessActiveSession(
   if (policies.listRevocations(own.id).length > 0) {
     return interrupt(own.id, "revoked", "session.revision_revoked", false);
   }
-  if (own.id === resolution.revision.id) return { interruptSession: false, governing: own };
+  if (own.id !== resolution.revision.id) {
+    const change = classifyChange(own.groups, resolution.revision.groups);
+    if (change.restricted.length > 0) {
+      return interrupt(
+        resolution.revision.id,
+        "permission_not_granted",
+        `policy.restricted_during_session: ${change.restricted.join(", ")}`,
+        true,
+      );
+    }
+  }
 
-  const change = classifyChange(own.groups, resolution.revision.groups);
-  if (change.restricted.length > 0) {
-    return interrupt(
-      resolution.revision.id,
-      "permission_not_granted",
-      `policy.restricted_during_session: ${change.restricted.join(", ")}`,
-      true,
-    );
+  // Conditions vivantes : revérifiées à chaque action, pas seulement au lancement.
+  const live = sessionChecksDenial(own, checks);
+  if (live !== null && live.verdict === "deny") {
+    return interrupt(own.id, live.reason, live.detail, live.reason !== "sandbox_unavailable");
   }
   return { interruptSession: false, governing: own };
+}
+
+function sessionChecksDenial(
+  revision: PolicyRevision,
+  checks: SessionChecks | undefined,
+): PolicyDecision | null {
+  const id = revision.id;
+  if (checks === undefined || !isUtcTimestamp(checks.now)) {
+    return deny(id, "unknown_condition", "clock.unknown");
+  }
+  const priority = priorityDenial(id, revision.groups, checks.now, checks.userPriority);
+  if (priority !== null) return priority;
+  const sandbox = factDenial(id, checks.sandboxOperational, "sandbox", "sandbox_unavailable");
+  if (sandbox !== null) return sandbox;
+  if (checks.onSubscription === false) return null;
+  if (checks.onSubscription !== true) {
+    return deny(id, "unknown_condition", "subscription.session_mode_unknown");
+  }
+  const guard = enabledGuard(revision.groups);
+  if (guard === null) return deny(id, "permission_not_granted", "subscription.not_enabled");
+  return quotaDenial(id, guard, checks.now, checks.quotaSnapshots, "stop");
 }
 
 /** Cumul de dépense déjà engagé, fourni par le ledger. */
@@ -403,10 +573,11 @@ export function decideAction(
   policies: PolicyRepository,
   profile: ProfileFacts,
   session: ActiveSessionRef,
+  checks: SessionChecks,
   action: unknown,
   spend?: SpendFacts,
 ): ActionDecision {
-  const assessment = assessActiveSession(policies, profile, session);
+  const assessment = assessActiveSession(policies, profile, session, checks);
   const kind = isObject(action) ? action["kind"] : undefined;
 
   if (assessment.interruptSession) {

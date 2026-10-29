@@ -23,6 +23,7 @@ import {
   openTrustedUserChannel,
   proposeRevision,
   type PolicyStore,
+  type SessionChecks,
 } from "../../src/policy/index.js";
 
 export class MemoryPolicyRepository implements PolicyRepository {
@@ -84,6 +85,17 @@ export const PROFILE = "profile-1" as ProfileId;
 export const SESSION = "session-1" as SessionId;
 
 export const ts = (iso: string): UtcTimestamp => iso as UtcTimestamp;
+
+/** Horloge des tests, postérieure aux consentements de `activate`. */
+export const NOW = ts("2026-10-29T10:30:00Z");
+
+/** Contrôles de session favorables, hors voie abonnement. */
+export const CHECKS: SessionChecks = {
+  now: NOW,
+  userPriority: { favorable: true, observedAt: NOW },
+  sandboxOperational: true,
+  onSubscription: false,
+};
 export const revId = (n: number): PolicyRevisionId => `rev-${String(n)}` as PolicyRevisionId;
 export const consentId = (n: number): ConsentId => `consent-${String(n)}` as ConsentId;
 

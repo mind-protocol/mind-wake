@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { AdapterCapabilities, ProbeResult } from "../contracts/adapter.js";
-import type { BudgetAvailability } from "../contracts/budget.js";
+import type { BudgetAvailability, ProviderQuotaSnapshot } from "../contracts/budget.js";
 import type { AdapterId, BudgetPeriodId } from "../contracts/common.js";
 import type { RuntimeGroup } from "../contracts/policy.js";
 import {
+  CHECKS,
+  NOW,
   PROFILE,
   SESSION,
   activate,
   memoryStore,
+  revId,
   ts,
   validDraft,
   withFields,
@@ -19,8 +22,9 @@ import {
   decisionJournalEvent,
   type LaunchFacts,
   type ProfileFacts,
+  type SessionChecks,
 } from "./decide.js";
-import { revokePermissions } from "./revisions.js";
+import { proposeRevision, revokePermissions } from "./revisions.js";
 
 const RUNNING: ProfileFacts = { state: "running", emergencyStopLocked: false };
 
@@ -52,6 +56,7 @@ const capabilities: AdapterCapabilities = {
   residualUsageBound: null,
   isolationCompatible: true,
   userPrioritySignal: true,
+  providerQuotaReading: "none",
   resumeModes: ["fresh_process_from_memory"],
 };
 
@@ -76,7 +81,8 @@ function favorableFacts(): LaunchFacts {
     billing: { kind: "no_charge" },
     sandboxOperational: true,
     windowOpen: true,
-    userPriorityFavorable: true,
+    now: NOW,
+    userPriority: { favorable: true, observedAt: NOW },
     backoffExpired: true,
     openSessionCount: 0,
     budget: { tokens: availability("tokens", 40_000), sessions: availability("sessions", 2) },
@@ -217,19 +223,22 @@ describe("décision de lancement : matrice de refus", () => {
     ["fenêtre inconnue", (f) => without(f, "windowOpen"), "unknown_condition", "window.unknown"],
     [
       "humain actif",
-      (f) => ({ ...f, userPriorityFavorable: false }),
+      (f) => ({ ...f, userPriority: { favorable: false, observedAt: NOW } }),
       "user_priority",
       "user_priority.unfavorable",
     ],
     [
       "signal humain inconnu",
-      (f) => without(f, "userPriorityFavorable"),
+      (f) => without(f, "userPriority"),
       "unknown_condition",
       "user_priority.unknown",
     ],
     [
       "signal non booléen",
-      (f) => ({ ...f, userPriorityFavorable: "yes" as unknown as boolean }),
+      (f) => ({
+        ...f,
+        userPriority: { favorable: "yes" as unknown as boolean, observedAt: NOW },
+      }),
       "unknown_condition",
       "user_priority.unknown",
     ],
@@ -505,6 +514,7 @@ describe("actions contrôlées en session : matrice de refus", () => {
       store.policies,
       RUNNING,
       { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id },
+      CHECKS,
       action,
       spend,
     );
@@ -518,7 +528,7 @@ describe("actions contrôlées en session : matrice de refus", () => {
     const revision = activate(store, draft);
     const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
     const action = { kind: "spend", provider: "simulated", amountMinor: 1, currency: "EUR" };
-    expect(decideAction(store.policies, RUNNING, session, action)).toMatchObject({
+    expect(decideAction(store.policies, RUNNING, session, CHECKS, action)).toMatchObject({
       reason: "budget_unknown",
     });
     const free = activate(store, validDraft());
@@ -527,6 +537,7 @@ describe("actions contrôlées en session : matrice de refus", () => {
         store.policies,
         RUNNING,
         { ...session, policyRevisionId: free.id },
+        CHECKS,
         action,
         spend,
       ),
@@ -540,6 +551,7 @@ describe("actions contrôlées en session : matrice de refus", () => {
       store.policies,
       { state: "ready", emergencyStopLocked: false },
       { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id },
+      CHECKS,
       { kind: "file_read", path: "memory/a" },
     );
     expect(decision).toMatchObject({ verdict: "deny", reason: "unknown_condition" });
@@ -556,25 +568,28 @@ describe("session active face aux restrictions, élargissements et révocations"
     const launched = activate(store, networkDraft);
     const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
     const net = { kind: "network", host: "example.org", port: 443 };
-    expect(decideAction(store.policies, RUNNING, session, net).verdict).toBe("allow");
+    expect(decideAction(store.policies, RUNNING, session, CHECKS, net).verdict).toBe("allow");
 
     activate(store, validDraft());
-    const assessment = assessActiveSession(store.policies, RUNNING, session);
+    const assessment = assessActiveSession(store.policies, RUNNING, session, CHECKS);
     expect(assessment).toMatchObject({
       interruptSession: true,
       reason: "permission_not_granted",
       checkpointAllowed: true,
     });
-    expect(decideAction(store.policies, RUNNING, session, net)).toMatchObject({
+    expect(decideAction(store.policies, RUNNING, session, CHECKS, net)).toMatchObject({
       verdict: "deny",
       reason: "permission_not_granted",
       interruptSession: true,
     });
     expect(
-      decideAction(store.policies, RUNNING, session, { kind: "file_read", path: "memory/a" }),
+      decideAction(store.policies, RUNNING, session, CHECKS, {
+        kind: "file_read",
+        path: "memory/a",
+      }),
     ).toMatchObject({ verdict: "deny", interruptSession: true });
     expect(
-      decideAction(store.policies, RUNNING, session, { kind: "publish_checkpoint" }),
+      decideAction(store.policies, RUNNING, session, CHECKS, { kind: "publish_checkpoint" }),
     ).toMatchObject({ verdict: "allow", interruptSession: true });
   });
 
@@ -583,9 +598,11 @@ describe("session active face aux restrictions, élargissements et révocations"
     const launched = activate(store, validDraft());
     activate(store, networkDraft);
     const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
-    expect(assessActiveSession(store.policies, RUNNING, session).interruptSession).toBe(false);
+    expect(assessActiveSession(store.policies, RUNNING, session, CHECKS).interruptSession).toBe(
+      false,
+    );
     expect(
-      decideAction(store.policies, RUNNING, session, {
+      decideAction(store.policies, RUNNING, session, CHECKS, {
         kind: "network",
         host: "example.org",
         port: 443,
@@ -603,12 +620,15 @@ describe("session active face aux restrictions, élargissements et révocations"
       reason: "stop",
     });
     expect(
-      decideAction(store.policies, RUNNING, session, { kind: "publish_checkpoint" }),
+      decideAction(store.policies, RUNNING, session, CHECKS, { kind: "publish_checkpoint" }),
     ).toMatchObject({ verdict: "deny", reason: "revoked", interruptSession: true });
 
     activate(store, validDraft());
     expect(
-      decideAction(store.policies, RUNNING, session, { kind: "file_read", path: "memory/a" }),
+      decideAction(store.policies, RUNNING, session, CHECKS, {
+        kind: "file_read",
+        path: "memory/a",
+      }),
     ).toMatchObject({ verdict: "deny", reason: "revoked", interruptSession: true });
   });
 
@@ -617,12 +637,23 @@ describe("session active face aux restrictions, élargissements et révocations"
     const launched = activate(store, validDraft());
     const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
     expect(
-      assessActiveSession(store.policies, { state: "paused", emergencyStopLocked: false }, session),
+      assessActiveSession(
+        store.policies,
+        { state: "paused", emergencyStopLocked: false },
+        session,
+        CHECKS,
+      ),
     ).toMatchObject({ interruptSession: true, reason: "paused" });
     expect(
-      decideAction(store.policies, { state: "running", emergencyStopLocked: true }, session, {
-        kind: "publish_checkpoint",
-      }),
+      decideAction(
+        store.policies,
+        { state: "running", emergencyStopLocked: true },
+        session,
+        CHECKS,
+        {
+          kind: "publish_checkpoint",
+        },
+      ),
     ).toMatchObject({ verdict: "deny", reason: "stopped", interruptSession: true });
   });
 
@@ -630,11 +661,16 @@ describe("session active face aux restrictions, élargissements et révocations"
     const store = memoryStore();
     activate(store, validDraft());
     expect(
-      assessActiveSession(store.policies, RUNNING, {
-        profileId: PROFILE,
-        sessionId: SESSION,
-        policyRevisionId: "rev-ghost" as never,
-      }),
+      assessActiveSession(
+        store.policies,
+        RUNNING,
+        {
+          profileId: PROFILE,
+          sessionId: SESSION,
+          policyRevisionId: "rev-ghost" as never,
+        },
+        CHECKS,
+      ),
     ).toMatchObject({ interruptSession: true, reason: "unknown_condition" });
   });
 });
@@ -648,6 +684,7 @@ describe("journalisation des décisions", () => {
       store.policies,
       RUNNING,
       { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id },
+      CHECKS,
       action,
     );
     const event = decisionJournalEvent(decision, {
@@ -671,6 +708,373 @@ describe("journalisation des décisions", () => {
         detail: "network.destination_not_granted",
         interruptSession: false,
       },
+    });
+  });
+});
+
+describe("signal de priorité humaine et contrôles revérifiés à chaque action", () => {
+  it("refuse le lancement si le signal est plus ancien que maxSignalAgeMs ou l'horloge inconnue", () => {
+    const { store } = launchStore();
+    const stale = ts("2026-10-29T10:29:29Z"); // 31 s > maxSignalAgeMs (30 s)
+    expect(
+      decideLaunch(store.policies, PROFILE, {
+        ...favorableFacts(),
+        userPriority: { favorable: true, observedAt: stale },
+      }),
+    ).toMatchObject({ reason: "unknown_condition", detail: "user_priority.stale: age_ms=31000" });
+    expect(
+      decideLaunch(store.policies, PROFILE, {
+        ...favorableFacts(),
+        userPriority: { favorable: true, observedAt: ts("2026-10-29T11:00:00Z") },
+      }),
+    ).toMatchObject({ reason: "unknown_condition", detail: "user_priority.unknown" });
+    expect(decideLaunch(store.policies, PROFILE, without(favorableFacts(), "now"))).toMatchObject({
+      reason: "unknown_condition",
+      detail: "clock.unknown",
+    });
+  });
+
+  const liveMatrix: readonly [string, Partial<SessionChecks>, string, boolean][] = [
+    [
+      "humain revenu",
+      { userPriority: { favorable: false, observedAt: NOW } },
+      "user_priority",
+      true,
+    ],
+    [
+      "signal trop ancien",
+      { userPriority: { favorable: true, observedAt: ts("2026-10-29T10:00:00Z") } },
+      "unknown_condition",
+      true,
+    ],
+    ["sandbox hors service", { sandboxOperational: false }, "sandbox_unavailable", false],
+    ["horloge invalide", { now: ts("hier") }, "unknown_condition", true],
+    [
+      "mode abonnement inconnu",
+      { onSubscription: "?" as unknown as boolean },
+      "unknown_condition",
+      true,
+    ],
+  ];
+
+  it.each(liveMatrix)("interrompt la session : %s", (_name, override, reason, checkpoint) => {
+    const store = memoryStore();
+    const revision = activate(store, validDraft());
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
+    const checks = { ...CHECKS, ...override };
+    expect(assessActiveSession(store.policies, RUNNING, session, checks)).toMatchObject({
+      interruptSession: true,
+      reason,
+      checkpointAllowed: checkpoint,
+    });
+    expect(
+      decideAction(store.policies, RUNNING, session, checks, {
+        kind: "file_read",
+        path: "memory/a",
+      }),
+    ).toMatchObject({ verdict: "deny", reason, interruptSession: true });
+  });
+
+  it("une pause laisse publier le checkpoint mais aucune autre action", () => {
+    const store = memoryStore();
+    const revision = activate(store, validDraft());
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
+    const pausing = { state: "paused", emergencyStopLocked: false } as const;
+    expect(
+      decideAction(store.policies, pausing, session, CHECKS, {
+        kind: "file_read",
+        path: "memory/a",
+      }),
+    ).toMatchObject({ verdict: "deny", reason: "paused", interruptSession: true });
+    expect(
+      decideAction(
+        store.policies,
+        { state: "checkpointing", emergencyStopLocked: false },
+        session,
+        { ...CHECKS, userPriority: { favorable: false, observedAt: NOW } },
+        { kind: "publish_checkpoint" },
+      ),
+    ).toMatchObject({ verdict: "allow", interruptSession: true });
+  });
+});
+
+describe("élargissements partiels ou mixtes et révisions non consenties", () => {
+  const wide = withFields(validDraft(), {
+    "network.explorationDestinations": [{ host: "example.org", ports: [443], purpose: "docs" }],
+  });
+
+  it("une révision mixte consentie en cours de session exige l'interruption", () => {
+    const store = memoryStore();
+    const launched = activate(store, validDraft());
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
+    // Élargit le réseau mais retire l'écriture.
+    activate(store, withFields(wide, { "filesAndTools.writeRoots": [] }));
+    expect(assessActiveSession(store.policies, RUNNING, session, CHECKS)).toMatchObject({
+      interruptSession: true,
+      detail: "policy.restricted_during_session: filesAndTools.writeRoots",
+    });
+    expect(
+      decideAction(store.policies, RUNNING, session, CHECKS, {
+        kind: "network",
+        host: "example.org",
+        port: 443,
+      }),
+    ).toMatchObject({ verdict: "deny", interruptSession: true });
+  });
+
+  it("un élargissement partiel non consenti reste sans effet sur les nouvelles sessions", () => {
+    const store = memoryStore();
+    const active = activate(store, validDraft());
+    const proposal = proposeRevision(store, {
+      revisionId: revId(700),
+      profileId: PROFILE,
+      at: NOW,
+      draft: withFields(wide, { "budget.tokensPerSession": 5_000 }),
+    });
+    expect(proposal).toMatchObject({ status: "proposed", change: { kind: "mixed" } });
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: active.id };
+    expect(
+      decideAction(store.policies, RUNNING, session, CHECKS, {
+        kind: "network",
+        host: "example.org",
+        port: 443,
+      }),
+    ).toMatchObject({ verdict: "deny", interruptSession: false });
+    expect(decideLaunch(store.policies, PROFILE, favorableFacts())).toMatchObject({
+      revisionId: active.id,
+    });
+  });
+
+  it("une révision restrictive non consentie ne réactive rien après révocation", () => {
+    const store = memoryStore();
+    activate(store, wide);
+    revokePermissions(store, { profileId: PROFILE, at: NOW, reason: "demande humaine" });
+    const narrower = proposeRevision(store, {
+      revisionId: revId(701),
+      profileId: PROFILE,
+      at: NOW,
+      draft: validDraft(),
+    });
+    expect(narrower.status).toBe("proposed");
+    expect(decideLaunch(store.policies, PROFILE, favorableFacts())).toMatchObject({
+      verdict: "deny",
+      reason: "revoked",
+    });
+  });
+});
+
+describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
+  const guard = {
+    enabled: true,
+    accountRiskAcknowledged: true,
+    startBelowBasisPoints: 5_000,
+    stopAtBasisPoints: 7_000,
+    userReserveBasisPoints: 2_000,
+    overshootBoundBasisPoints: 500,
+    maxSnapshotAgeMs: 60_000,
+  };
+  const snapshot = (used: number, extra: Partial<ProviderQuotaSnapshot> = {}) =>
+    ({
+      windowKey: "primary",
+      windowDurationMs: 18_000_000,
+      usedBasisPoints: used,
+      resetsAt: ts("2026-10-29T15:00:00Z"),
+      observedAt: NOW,
+      provenance: "measured",
+      ...extra,
+    }) satisfies ProviderQuotaSnapshot;
+  const quotaCaps = {
+    ...capabilities,
+    tokenCapEnforcement: "provider_quota_guard",
+    providerQuotaReading: "official",
+  } as const;
+  const subFacts = (overrides: Partial<LaunchFacts> = {}): LaunchFacts => ({
+    ...favorableFacts(),
+    adapter: { probe, capabilities: quotaCaps, runtime },
+    billing: { kind: "subscription_quota" },
+    quotaSnapshots: [snapshot(1_000), snapshot(4_000, { windowKey: "weekly" })],
+    ...overrides,
+  });
+  const store = (g: unknown) => {
+    const s = memoryStore();
+    activate(s, withFields(validDraft(), { "budget.subscriptionQuota": g }));
+    return s;
+  };
+
+  it("autorise seulement si toutes les conditions tiennent", () => {
+    expect(decideLaunch(store(guard).policies, PROFILE, subFacts()).verdict).toBe("allow");
+  });
+
+  const matrix: readonly [string, unknown, Partial<LaunchFacts>, string, string][] = [
+    ["voie absente", undefined, {}, "permission_not_granted", "subscription.not_enabled"],
+    [
+      "voie désactivée",
+      { enabled: false },
+      {},
+      "permission_not_granted",
+      "subscription.not_enabled",
+    ],
+    [
+      "dépassement non mesuré (null)",
+      { ...guard, overshootBoundBasisPoints: null },
+      {},
+      "bound_not_enforceable",
+      "subscription.overshoot_not_measured",
+    ],
+    [
+      "pas de lecture officielle de la jauge",
+      guard,
+      { adapter: { probe, capabilities: { ...quotaCaps, providerQuotaReading: "none" }, runtime } },
+      "bound_not_enforceable",
+      "subscription.no_official_quota_reading",
+    ],
+    [
+      "aucune lecture",
+      guard,
+      { quotaSnapshots: [] },
+      "budget_unknown",
+      "subscription.quota_unknown",
+    ],
+    [
+      "lecture estimée",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { provenance: "estimated" })] },
+      "budget_unknown",
+      "subscription.snapshot_not_measured",
+    ],
+    [
+      "lecture simulée",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { provenance: "simulated" })] },
+      "budget_unknown",
+      "subscription.snapshot_not_measured",
+    ],
+    [
+      "lecture trop ancienne",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { observedAt: ts("2026-10-29T10:28:59Z") })] },
+      "budget_unknown",
+      "subscription.snapshot_stale",
+    ],
+    [
+      "lecture datée du futur",
+      guard,
+      { quotaSnapshots: [snapshot(1_000, { observedAt: ts("2026-10-29T10:31:00Z") })] },
+      "budget_unknown",
+      "subscription.snapshot_stale",
+    ],
+    [
+      "pourcentage hors bornes",
+      guard,
+      { quotaSnapshots: [snapshot(10_001)] },
+      "budget_unknown",
+      "subscription.snapshot_invalid",
+    ],
+    [
+      "une fenêtre au seuil de départ",
+      guard,
+      { quotaSnapshots: [snapshot(1_000), snapshot(5_000, { windowKey: "weekly" })] },
+      "budget_exhausted",
+      "subscription.start_threshold_reached: weekly",
+    ],
+    [
+      "jauge utilisée hors voie abonnement",
+      guard,
+      { billing: { kind: "no_charge" } },
+      "bound_not_enforceable",
+      "adapter.token_cap_not_enforceable",
+    ],
+    [
+      "isolation toujours exigée",
+      guard,
+      {
+        adapter: { probe, capabilities: { ...quotaCaps, isolationCompatible: false }, runtime },
+      },
+      "sandbox_unavailable",
+      "adapter.isolation_incompatible",
+    ],
+    [
+      "priorité humaine toujours exigée",
+      guard,
+      { userPriority: { favorable: false, observedAt: NOW } },
+      "user_priority",
+      "user_priority.unfavorable",
+    ],
+    [
+      "budget de tokens toujours exigé",
+      guard,
+      { budget: { sessions: availability("sessions", 2) } },
+      "budget_unknown",
+      "tokens.availability_unknown",
+    ],
+  ];
+
+  it.each(matrix)("refuse : %s", (_name, g, overrides, reason, detail) => {
+    const decision = decideLaunch(store(g).policies, PROFILE, subFacts(overrides));
+    expect(decision.verdict).toBe("deny");
+    if (decision.verdict !== "deny") return;
+    expect(decision.reason).toBe(reason);
+    expect(decision.detail.startsWith(detail)).toBe(true);
+  });
+
+  it("interrompt la session au seuil d'arrêt, la laisse continuer en dessous", () => {
+    const s = memoryStore();
+    const revision = activate(s, withFields(validDraft(), { "budget.subscriptionQuota": guard }));
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
+    const sub = (used: number): SessionChecks => ({
+      ...CHECKS,
+      onSubscription: true,
+      quotaSnapshots: [snapshot(used)],
+    });
+    const read = { kind: "file_read", path: "memory/a" };
+    expect(decideAction(s.policies, RUNNING, session, sub(6_999), read)).toMatchObject({
+      verdict: "allow",
+      interruptSession: false,
+    });
+    expect(decideAction(s.policies, RUNNING, session, sub(7_000), read)).toMatchObject({
+      verdict: "deny",
+      reason: "budget_exhausted",
+      detail: "subscription.stop_threshold_reached: primary used_bp=7000",
+      interruptSession: true,
+    });
+    expect(
+      decideAction(s.policies, RUNNING, session, { ...sub(0), quotaSnapshots: [] }, read),
+    ).toMatchObject({ reason: "budget_unknown", interruptSession: true });
+  });
+
+  it("interrompt une session sur abonnement si la voie n'est pas activée dans sa révision", () => {
+    const s = memoryStore();
+    const revision = activate(s, validDraft());
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id };
+    expect(
+      assessActiveSession(s.policies, RUNNING, session, {
+        ...CHECKS,
+        onSubscription: true,
+        quotaSnapshots: [snapshot(0)],
+      }),
+    ).toMatchObject({ interruptSession: true, reason: "permission_not_granted" });
+  });
+
+  it("désactiver la voie est une restriction ; relever le seuil d'arrêt un élargissement", () => {
+    const base = withFields(validDraft(), { "budget.subscriptionQuota": guard });
+    const s = memoryStore();
+    const launched = activate(s, base);
+    const session = { profileId: PROFILE, sessionId: SESSION, policyRevisionId: launched.id };
+    const raise = proposeRevision(s, {
+      revisionId: revId(800),
+      profileId: PROFILE,
+      at: NOW,
+      draft: withFields(base, {
+        "budget.subscriptionQuota": { ...guard, stopAtBasisPoints: 7_500 },
+      }),
+    });
+    expect(raise).toMatchObject({
+      change: { kind: "widening", widened: ["budget.subscriptionQuota"] },
+    });
+    activate(s, withFields(base, { "budget.subscriptionQuota": { enabled: false } }));
+    expect(assessActiveSession(s.policies, RUNNING, session, CHECKS)).toMatchObject({
+      interruptSession: true,
+      detail: "policy.restricted_during_session: budget.subscriptionQuota",
     });
   });
 });

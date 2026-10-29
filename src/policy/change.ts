@@ -149,6 +149,7 @@ export function classifyChange(before: PolicyGroups | null, after: PolicyGroups)
   if ([...bw].some((m) => !aw.has(m))) restricted.push("schedule.weeklyWindows");
 
   comparePaidApi(before, after, widened, restricted);
+  compareSubscriptionQuota(before, after, widened, restricted);
 
   const kind: ChangeSummary["kind"] =
     widened.length > 0 && restricted.length > 0
@@ -188,4 +189,43 @@ function comparePaidApi(
   if (a.perSessionCapMinor < b.perSessionCapMinor || a.perPeriodCapMinor < b.perPeriodCapMinor) {
     restricted.push("budget.paidApi");
   }
+}
+
+/** Voie abonnement : absente ou désactivée = fermée ; un seuil plus permissif élargit. */
+function compareSubscriptionQuota(
+  before: PolicyGroups,
+  after: PolicyGroups,
+  widened: string[],
+  restricted: string[],
+): void {
+  const path = "budget.subscriptionQuota";
+  const b = before.budget.subscriptionQuota;
+  const a = after.budget.subscriptionQuota;
+  const bOn = b?.enabled === true ? b : null;
+  const aOn = a?.enabled === true ? a : null;
+  if (bOn === null && aOn === null) return;
+  if (bOn === null) {
+    widened.push(path);
+    return;
+  }
+  if (aOn === null) {
+    restricted.push(path);
+    return;
+  }
+  // Dépassement : null (non mesuré) bloque le lancement, donc null → valeur élargit.
+  const overshoot = (v: number | null): number => v ?? Number.NEGATIVE_INFINITY;
+  const wider =
+    aOn.startBelowBasisPoints > bOn.startBelowBasisPoints ||
+    aOn.stopAtBasisPoints > bOn.stopAtBasisPoints ||
+    aOn.userReserveBasisPoints < bOn.userReserveBasisPoints ||
+    overshoot(aOn.overshootBoundBasisPoints) > overshoot(bOn.overshootBoundBasisPoints) ||
+    aOn.maxSnapshotAgeMs > bOn.maxSnapshotAgeMs;
+  const narrower =
+    aOn.startBelowBasisPoints < bOn.startBelowBasisPoints ||
+    aOn.stopAtBasisPoints < bOn.stopAtBasisPoints ||
+    aOn.userReserveBasisPoints > bOn.userReserveBasisPoints ||
+    overshoot(aOn.overshootBoundBasisPoints) < overshoot(bOn.overshootBoundBasisPoints) ||
+    aOn.maxSnapshotAgeMs < bOn.maxSnapshotAgeMs;
+  if (wider) widened.push(path);
+  if (narrower) restricted.push(path);
 }

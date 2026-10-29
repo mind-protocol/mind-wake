@@ -118,6 +118,51 @@ describe("validation d'un brouillon de policy", () => {
     ["autre profil", { "identity.profileId": "profile-2" }, "identity.profileId"],
   ];
 
+  const guard = {
+    enabled: true,
+    accountRiskAcknowledged: true,
+    startBelowBasisPoints: 5_000,
+    stopAtBasisPoints: 7_000,
+    userReserveBasisPoints: 2_000,
+    overshootBoundBasisPoints: 500,
+    maxSnapshotAgeMs: 60_000,
+  };
+  const quota = "budget.subscriptionQuota";
+  const invalidQuota: readonly [string, unknown][] = [
+    ["risque de compte non reconnu", { ...guard, accountRiskAcknowledged: false }],
+    ["risque de compte absent", { ...guard, accountRiskAcknowledged: undefined }],
+    ["stopAt + overshoot > 10 000 − réserve", { ...guard, overshootBoundBasisPoints: 1_001 }],
+    ["départ ≥ arrêt", { ...guard, startBelowBasisPoints: 7_000 }],
+    ["points de base > 10 000", { ...guard, stopAtBasisPoints: 10_001 }],
+    ["dépassement négatif", { ...guard, overshootBoundBasisPoints: -1 }],
+    ["âge maximal nul", { ...guard, maxSnapshotAgeMs: 0 }],
+    ["champ inconnu", { ...guard, tokensPerPercent: 1_000 }],
+    ["voie désactivée avec seuils", { enabled: false, stopAtBasisPoints: 7_000 }],
+    ["enabled ambigu", { enabled: "yes" }],
+  ];
+
+  it.each(invalidQuota)("refuse la voie abonnement : %s", (_name, value) => {
+    const draft = withFields(validDraft(), {
+      [quota]: JSON.parse(JSON.stringify(value)) as unknown,
+    });
+    const result = validateDraft(draft, PROFILE);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues.map((i) => i.field)).toContain(quota);
+  });
+
+  it("accepte une voie abonnement absente, désactivée, ou au dépassement non mesuré", () => {
+    for (const value of [
+      undefined,
+      { enabled: false },
+      { ...guard, overshootBoundBasisPoints: null },
+    ]) {
+      const result = validateDraft(withFields(validDraft(), { [quota]: value }), PROFILE);
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.groups.budget.subscriptionQuota).toEqual(value);
+    }
+  });
+
   it.each(invalid)("refuse : %s", (_name, changes, field) => {
     const result = validateDraft(withFields(validDraft(), changes), PROFILE);
     expect(result.ok).toBe(false);
