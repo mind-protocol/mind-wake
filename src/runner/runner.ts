@@ -494,6 +494,10 @@ export class SessionRunner {
   }
 
   async #drive(session: ActiveSession): Promise<SessionResult> {
+    // Première lecture de la jauge avant le chien de garde : un CLI réel met plusieurs
+    // centaines de millisecondes à répondre, et une jauge pas encore lue n'est pas une
+    // jauge inconnue. Une lecture en échec laisse la jauge vide : le premier tour refuse.
+    if (session.onSubscription) await this.#readQuota(session);
     const watchdog = setInterval(() => {
       this.#tick(session);
     }, this.#options.watchdogIntervalMs);
@@ -503,7 +507,6 @@ export class SessionRunner {
         }, this.#options.quotaPollIntervalMs)
       : null;
     try {
-      if (session.onSubscription) await this.#readQuota(session);
       try {
         session.handle = await this.adapter.start({
           sessionId: session.grant.sessionId,

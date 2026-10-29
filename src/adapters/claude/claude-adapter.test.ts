@@ -485,7 +485,7 @@ describe("adapter Claude Code : session", () => {
 describe("adapter Claude Code : jauge de quota", () => {
   it("lit /usage sans outils ni session conservée et convertit la jauge", async () => {
     const net = network();
-    const reading = await adapter({ network: net }).readQuota(10_000);
+    const reading = await adapter({ network: net }).readQuotaReading(10_000);
     // Mesuré : cette variable prive `/usage` de sa jauge ; les sessions la gardent.
     expect(h.launches[0]?.env).not.toHaveProperty("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC");
     expect(reading.unavailable).toBeUndefined();
@@ -607,6 +607,7 @@ describe("adapter Claude Code : briques", () => {
       readOnlyRoots: ["C:\\claude"],
       network: { broker: { pipeName: "p", port: 9 }, env: {} },
       deadline: "2026-10-29T12:01:00.000Z" as UtcTimestamp,
+      unattended: false,
     });
     expect(launched[0]).toMatchObject({
       jobName: "job-s",
@@ -625,10 +626,24 @@ describe("adapter Claude Code : briques", () => {
         return {} as ContainedProcess;
       },
       authorize: () => ({ allowed: false, reason: "test", interruptSession: false }),
-      isolation: () => "job_only",
+      isolation: (sessionId) =>
+        sessionId === "nonisole"
+          ? "host_unsandboxed"
+          : sessionId === "boite"
+            ? "sandbox"
+            : "job_only",
     };
     const launcher = hostClaudeLauncher(host, 4);
-    expect(launcher.isolation().kind).toBe("host_job");
+    expect(launcher.isolation()).toMatchObject({ kind: "host_job", unsandboxedConsent: false });
+    expect(launcher.isolation("s" as SessionId)).toMatchObject({ unsandboxedConsent: false });
+    expect(launcher.isolation("nonisole" as SessionId)).toMatchObject({
+      kind: "host_job",
+      unsandboxedConsent: true,
+    });
+    expect(launcher.isolation("boite" as SessionId)).toMatchObject({
+      kind: "appcontainer",
+      selfTestPassed: true,
+    });
     launcher.launch({
       sessionId: "s" as SessionId,
       executable: "claude",
@@ -639,10 +654,18 @@ describe("adapter Claude Code : briques", () => {
       readOnlyRoots: [],
       network: null,
       deadline: "2026-10-29T12:01:00.000Z" as UtcTimestamp,
+      unattended: false,
     });
     expect(spawned[0]).toEqual({
       sessionId: "s",
-      command: { executable: "claude", args: ["-p"], cwd: "ws", env: { A: "1" }, maxProcesses: 4 },
+      command: {
+        executable: "claude",
+        args: ["-p"],
+        cwd: "ws",
+        env: { A: "1" },
+        unattended: false,
+        maxProcesses: 4,
+      },
     });
   });
 });

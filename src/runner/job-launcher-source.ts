@@ -10,7 +10,7 @@
  *     breakaway, y assigne `exe` dès sa création (PROC_THREAD_ATTRIBUTE_JOB_LIST), avec un
  *     environnement explicite et trois poignées héritées seulement : stdin (tube alimenté
  *     par ce lanceur), stdout (celle du lanceur) et stderr (NUL). Commandes sur stdin :
- *     `in <texte>` transmet une ligne au processus, `kill` termine le job ; la fin de stdin
+ *     `in <texte>` transmet une ligne au processus, `eof` ferme son entrée standard, `kill` termine le job ; la fin de stdin
  *     (contrôleur disparu) termine aussi le job. Quand le processus principal se termine,
  *     ses descendants sont terminés. Événements JSON sur stderr, préfixés par
  *     `mindwake-job ` : `started`, `kill-issued`, `done`.
@@ -232,6 +232,10 @@ static class Launcher
             while ((line = reader.ReadLine()) != null)
             {
                 if (line == "kill") Kill("command");
+                else if (line == "eof")
+                {
+                    try { childIn.Dispose(); } catch (Exception) { }
+                }
                 else if (line.StartsWith("in "))
                 {
                     try { byte[] b = new UTF8Encoding(false).GetBytes(line.Substring(3) + "\n"); childIn.Write(b, 0, b.Length); childIn.Flush(); }

@@ -24,6 +24,7 @@ export {
 } from "./command.js";
 export {
   claudeSessionUuid,
+  FileConversationStore,
   freshConversation,
   MemoryConversationStore,
   promptDigest,
@@ -34,6 +35,8 @@ export {
 export {
   hostClaudeLauncher,
   sandboxClaudeLauncher,
+  supervisorClaudeLauncher,
+  type ClaudeSupervisorLike,
   type ClaudeIsolation,
   type ClaudeLauncher,
   type ClaudeLaunchSpec,
@@ -52,3 +55,11 @@ export {
   type ClaudeTokenTotals,
   type ClaudeUsageLimitRow,
 } from "./stream.js";
+export {
+  CLAUDE_AUTH_MODE,
+  CLAUDE_PROVIDER,
+  CLAUDE_WAKE_SYSTEM_PROMPT,
+  claudeRegistration,
+  defaultClaudeConfig,
+  type ClaudeRegistrationConfig,
+} from "./registration.js";

@@ -20,7 +20,7 @@ Pages : `code.claude.com/docs/en/cli-reference`, `/headless`, `/agent-sdk/typesc
 | Option / mécanisme                                       | Constat                                                                                                                                                                                                                                                                                                   | Retenu                                                                                                  |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `-p`, `--output-format stream-json`, `--verbose`         | Documentés ; une ligne JSON par `SDKMessage`, dernier message `result`. Code de sortie non nul en cas d'échec ; une erreur interne (authentification absente) sort comme `result` sur stdout.                                                                                                             | Oui                                                                                                     |
-| `--input-format stream-json`                             | Documenté. Le lanceur (sandbox et runner) garde l'entrée standard ouverte sans pouvoir la fermer : un prompt en argument ferait attendre la fin de stdin. Le message part en `{"type":"user",…}` ; l'adapter termine le processus après `result`.                                                         | Oui                                                                                                     |
+| `--input-format stream-json`                             | Documenté. Le message part en `{"type":"user",…}` ; après `result`, l'entrée est fermée (commande `eof` des lanceurs) et le CLI sort de lui-même.                                                                                                                                                         | Oui                                                                                                     |
 | `--session-id <uuid>`, `--resume <id>`                   | Documentés (UUID obligatoire pour `--session-id`). `--resume` retrouve la session par identifiant dans tous les projets du poste.                                                                                                                                                                         | Oui : UUID dérivé de la clé de conversation                                                             |
 | `--model`                                                | Alias `opus`, `sonnet`, `haiku`, `fable` ou nom complet.                                                                                                                                                                                                                                                  | `opus` par défaut, configurable                                                                         |
 | `--system-prompt-file`                                   | Remplace le prompt par défaut. Le prompt n'est pas rangé dans la session : il doit accompagner chaque appel, reprise comprise.                                                                                                                                                                            | Oui, à chaque appel ; fichier réécrit quand l'empreinte change                                          |
@@ -87,8 +87,98 @@ Cause de `rate_limits: null` au premier passage établie : `CLAUDE_CODE_DISABLE_
 5. Délai de terminaison réel et consommation résiduelle après kill (`residualUsageBound` reste `null`).
 6. Dépassement de la jauge après le seuil d'arrêt (ADR-004 : `overshootBoundBasisPoints` à mesurer).
 
+## Enregistrement dans le daemon
+
+`claudeRegistration(defaultClaudeConfig())` est enregistré par `defaultRegistry()` (`src/daemon/registry.ts`) sous l'identifiant `claude` :
+
+- **Runtime déclaré** : `{ adapterId: "claude", provider: "anthropic", model, authMode: "claude_subscription" }`, comparé champ à champ à la policy. `model` vient de `MIND_WAKE_CLAUDE_MODEL` (défaut `opus`), le binaire de `MIND_WAKE_CLAUDE_EXE` (défaut `~/.local/bin/claude.exe`), `CLAUDE_CONFIG_DIR` facultatif de `MIND_WAKE_CLAUDE_CONFIG_DIR` (sinon la connexion par défaut de l'humain).
+- **Facturation** `subscription_quota` : la garde lit `readQuota()` (`/usage`, jamais sous `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`) avant le lancement et pendant la session. Hors session, la lecture passe par `supervisorClaudeLauncher` (Job Object, sans approbation, aucun outil). Lecture impossible : tableau vide, donc `subscription.quota_unknown`.
+- **Lancement** par le runner (`hostClaudeLauncher(context.host)`) : `host_unsandboxed` (consentement `runtime.hostUnsandboxedAcknowledged` de la policy, ADR-006) → `--dangerously-skip-permissions` dans le Job Object ; `sandbox` → refus `transport_unavailable` tant que le relais fournisseur est suspendu ; tout autre mode → refus `isolation_required`.
+- **Prompt** : `CLAUDE_WAKE_SYSTEM_PROMPT` ajouté par `--append-system-prompt-file` (outils et consignes de Claude Code conservés) ; le prompt de réveil composé par le daemon est le message utilisateur.
+- **Continuité** : une conversation par expérience (`context.experimentFor`), état dans `<données>/runtimes/claude/conversations.json` (`FileConversationStore`).
+- **Fin de tour** : après `result`, l'adapter ferme l'entrée du CLI (commande `eof` des lanceurs, `SessionProcess.closeInput`), attend sa sortie (code 0, 5 s au plus) puis termine le job si besoin.
+
+Vérifié par `daemon-registration.test.ts` (faux CLI, aucun appel modèle) : `daemon run` sans `--simulated` accepte une policy `claude` consentie (jauge lue, session `host_unsandboxed` terminée, 200 tokens mesurés) et refuse avec motif sans jauge (`subscription.quota_unknown`), sans consentement (sandbox exigée, autotest en échec : profil `blocked`, `sandbox_unavailable`) et sans CLI (`adapter_unavailable`).
+
+### Exemple de policy (`mind-wake policy configure`)
+
+Fichier `policy-claude.example.json`, validé par `policy-example.test.ts`. Le consentement `hostUnsandboxedAcknowledged: true` engage l'humain sur l'accès complet au compte Windows (ADR-006) ; `overshootBoundBasisPoints` (500) est une **marge provisoire**, le dépassement réel n'étant pas encore mesuré.
+
+```json
+{
+  "identity": { "profileId": "default", "agentId": "claude-wake" },
+  "runtime": {
+    "adapterId": "claude",
+    "provider": "anthropic",
+    "model": "opus",
+    "authMode": "claude_subscription",
+    "hostUnsandboxedAcknowledged": true
+  },
+  "schedule": {
+    "timeZone": "Europe/Paris",
+    "weeklyWindows": [
+      { "day": 1, "start": "00:00", "end": "07:30" },
+      { "day": 2, "start": "00:00", "end": "07:30" },
+      { "day": 3, "start": "00:00", "end": "07:30" },
+      { "day": 4, "start": "00:00", "end": "07:30" },
+      { "day": 5, "start": "00:00", "end": "07:30" },
+      { "day": 6, "start": "00:00", "end": "23:59" },
+      { "day": 0, "start": "00:00", "end": "23:59" }
+    ],
+    "minIntervalBetweenSessionsMs": 1800000,
+    "maxSessionDurationMs": 1800000
+  },
+  "humanPriority": {
+    "activitySignal": "windows_idle",
+    "idleThresholdMs": 600000,
+    "maxSignalAgeMs": 30000,
+    "maxInterruptLatencyMs": 5000,
+    "maxTerminationLatencyMs": 10000
+  },
+  "budget": {
+    "period": { "kind": "day", "timeZone": "Europe/Paris" },
+    "tokensPerSession": 2000000,
+    "tokensPerPeriod": 10000000,
+    "sessionsPerPeriod": 6,
+    "userReserveTokens": 1000000,
+    "checkpointTokens": 50000,
+    "paidApi": { "authorized": false },
+    "subscriptionQuota": {
+      "enabled": true,
+      "accountRiskAcknowledged": true,
+      "startBelowBasisPoints": 6000,
+      "stopAtBasisPoints": 8000,
+      "userReserveBasisPoints": 1000,
+      "overshootBoundBasisPoints": 500,
+      "maxSnapshotAgeMs": 120000,
+      "launchWhenResetWithinMs": 10800000
+    }
+  },
+  "filesAndTools": {
+    "readRoots": ["memory", "artifacts"],
+    "writeRoots": ["artifacts"],
+    "allowedExecutables": ["claude"],
+    "maxProcesses": 16,
+    "maxStorageBytes": 2000000000
+  },
+  "network": {
+    "explorationDestinations": [],
+    "providerTransportDestinations": [
+      { "host": "api.anthropic.com", "ports": [443], "purpose": "Claude Code, abonnement" }
+    ]
+  },
+  "data": {
+    "eventRetentionDays": 30,
+    "localStorageCapBytes": 5000000000,
+    "purge": "manual",
+    "exportPaths": []
+  }
+}
+```
+
+**Limite de la garde à connaître.** `decideLaunch` exige que **chaque** fenêtre lue se remette à zéro dans `launchWhenResetWithinMs`. Claude expose une fenêtre de 5 h (`session`) et des fenêtres hebdomadaires (`weekly_all`, `weekly_scoped`) : avec 3 h, le lancement n'est possible que si la remise hebdomadaire tombe aussi dans les 3 h, soit environ une fois par semaine ; les autres jours, refus `outside_window` sur `claude:weekly_all`. Le test de bout en bout règle 4 jours pour cette raison. Décision à prendre côté policy (garde sur la fenêtre la plus courte, ou sur toute fenêtre proche de sa remise à zéro, les seuils s'appliquant à toutes).
+
 ## À brancher
 
-- `ClaudeConversationStore` persistant (SQLite) et `selfTestPassed` mémorisé par le daemon (empreinte du lanceur + horodatage).
-- `ClaudeNetworkPort` par le relais fournisseur ; `onQuotaSignal` et `readQuota()` vers la garde de quota (policy/scheduler).
-- Choix `autonomy` par le daemon (réveil planifié) ou la CLI (lancement manuel).
+- `ClaudeNetworkPort` par le relais fournisseur (suspendu, ADR-006) pour la voie sandbox.
+- `onQuotaSignal` (`rate_limit_event`) vers la garde, en complément de `/usage`.

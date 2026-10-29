@@ -164,6 +164,28 @@ function assistant(content: unknown[], extra: Record<string, unknown> = {}): voi
 }
 
 function play(userContent: string): void {
+  const usageMode = process.env["FAKE_CLAUDE_USAGE"] ?? "fixed";
+  if (userContent === "/usage" && usageMode !== "fixed") {
+    // `fresh` : jauge basse, remises à zéro relatives à maintenant ; `none` : pas de jauge.
+    const inHours = (h: number): string => new Date(Date.now() + h * 3_600_000).toISOString();
+    assistant([{ type: "text", text: "usage" }], {
+      usage_report: {
+        session: {},
+        rate_limits:
+          usageMode === "none"
+            ? null
+            : {
+                limits: [
+                  { kind: "session", group: "session", percent: 20, resets_at: inHours(2) },
+                  { kind: "weekly_all", group: "weekly", percent: 30, resets_at: inHours(72) },
+                ],
+              },
+      },
+    });
+    result({});
+    hold();
+    return;
+  }
   if (userContent === "/usage") {
     assistant([{ type: "text", text: "usage" }], {
       usage_report: {
@@ -262,6 +284,10 @@ function play(userContent: string): void {
 }
 
 const input = createInterface({ input: process.stdin });
+// Comme le CLI en entrée stream-json : entrée fermée après le tour, sortie propre.
+input.on("close", () => {
+  if (scenario !== "hang") process.exit(0);
+});
 input.once("line", (line) => {
   const message = JSON.parse(line) as { message?: { content?: unknown } };
   const content = message.message?.content;

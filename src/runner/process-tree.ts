@@ -121,6 +121,8 @@ export interface SessionProcess {
   readonly hasExited: boolean;
   readLine(): Promise<string | null>;
   send(line: string): void;
+  /** Ferme l'entrée standard du processus (fin de conversation `stream-json`). */
+  closeInput?(): void;
   terminateTree(timeoutMs?: DurationMs): Promise<TreeTermination>;
 }
 
@@ -247,6 +249,12 @@ export class ContainedProcess implements SessionProcess {
   send(line: string): void {
     if (this.#done || this.#child.stdin === null || this.#child.stdin.destroyed) return;
     this.#child.stdin.write(`in ${line.replace(/[\r\n]+/g, " ")}\n`);
+  }
+
+  /** Ferme l'entrée standard du processus (commande `eof` du lanceur). */
+  closeInput(): void {
+    if (this.#done || this.#child.stdin === null || this.#child.stdin.destroyed) return;
+    this.#child.stdin.write("eof\n");
   }
 
   /**

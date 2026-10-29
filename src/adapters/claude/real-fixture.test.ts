@@ -149,7 +149,7 @@ describe("adapter Claude Code : rejeu du flux réel 2.1.308", () => {
         ],
       });
 
-      const reading = await adapter.readQuota(5_000);
+      const reading = await adapter.readQuotaReading(5_000);
       expect(reading).toEqual({
         snapshots: [],
         unmapped: [],
@@ -194,7 +194,7 @@ describe("adapter Claude Code : rejeu du flux réel 2.1.308", () => {
         }
       }
       expect(amounts).toEqual([577, 627]);
-      const reading = await adapter.readQuota(5_000);
+      const reading = await adapter.readQuotaReading(5_000);
       expect(reading.unavailable).toBeUndefined();
       expect(reading.unmapped).toEqual([]);
       expect(reading.snapshots.map((s) => [s.windowKey, s.usedBasisPoints])).toEqual([

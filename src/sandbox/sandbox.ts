@@ -222,6 +222,12 @@ export class SandboxedProcess {
     this.#child.stdin.write(`in ${line.replace(/[\r\n]+/g, " ")}\n`);
   }
 
+  /** Ferme l'entrée standard du processus confiné (commande `eof` du lanceur). */
+  closeInput(): void {
+    if (this.#done || this.#child.stdin === null || this.#child.stdin.destroyed) return;
+    this.#child.stdin.write("eof\n");
+  }
+
   /** Tue le lanceur sans lui laisser de nettoyage (tests du filet de sécurité). */
   killLauncher(): void {
     this.#child.kill("SIGKILL");

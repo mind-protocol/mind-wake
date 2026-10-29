@@ -31,6 +31,8 @@ export type ClaudePermissionStance =
 export interface ClaudeRunArgs {
   readonly model: string;
   readonly systemPromptFile: string;
+  /** `replace` : `--system-prompt-file` ; `append` : `--append-system-prompt-file`. */
+  readonly systemPromptMode?: "replace" | "append";
   readonly tools: readonly string[];
   readonly permission: ClaudePermissionStance;
   /** `--session-id` pour une conversation neuve, `--resume` pour la suite. */
@@ -49,7 +51,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     "--verbose",
     "--model",
     options.model,
-    "--system-prompt-file",
+    options.systemPromptMode === "append" ? "--append-system-prompt-file" : "--system-prompt-file",
     options.systemPromptFile,
     "--tools",
     options.tools.join(","),
@@ -162,6 +164,8 @@ export interface ClaudeEnvironmentOptions {
    * mise à jour. Mesuré avec 2.1.308 : prive `/usage` de `rate_limits`.
    */
   readonly disableNonessentialTraffic?: boolean;
+  /** Variables supplémentaires, posées en dernier ; aucun nom de secret. */
+  readonly extra?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -182,6 +186,7 @@ export function claudeEnvironment(options: ClaudeEnvironmentOptions): Record<str
   }
   if (options.gitBashPath !== undefined) env["CLAUDE_CODE_GIT_BASH_PATH"] = options.gitBashPath;
   for (const [key, value] of Object.entries(options.network ?? {})) env[key] = value;
+  for (const [key, value] of Object.entries(options.extra ?? {})) env[key] = value;
   for (const key of Object.keys(env)) {
     if (SECRET_NAME.test(key)) throw new ClaudeEnvironmentError(key);
   }

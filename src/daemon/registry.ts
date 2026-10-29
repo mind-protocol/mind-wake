@@ -6,6 +6,7 @@
  * le démarrage ; un adapter enregistré n'est accepté que si `probe` le dit disponible.
  */
 
+import { claudeRegistration, defaultClaudeConfig } from "../adapters/claude/index.js";
 import {
   FAKE_ADAPTER_ID,
   FakeAdapter,
@@ -102,5 +103,9 @@ export class AdapterRegistry {
  * (`MIND_WAKE_CODEX_BIN`, `MIND_WAKE_CODEX_MODEL`, `MIND_WAKE_CODEX_EFFORT`).
  */
 export function defaultRegistry(): AdapterRegistry {
-  return new AdapterRegistry([FAKE_REGISTRATION, codexRegistrationFromEnv()]);
+  return new AdapterRegistry([
+    FAKE_REGISTRATION,
+    codexRegistrationFromEnv(),
+    claudeRegistration(defaultClaudeConfig()),
+  ]);
 }

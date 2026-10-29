@@ -76,3 +76,53 @@ export function writePromptFile(dir: string, prompt: string, digest: string): st
   fs.renameSync(temp, target);
   return target;
 }
+
+/**
+ * Conversations persistées dans un fichier JSON côté contrôle (hors espace d'exploration),
+ * réécrit par renommage : un redémarrage du daemon reprend la même conversation.
+ */
+export class FileConversationStore implements ClaudeConversationStore {
+  readonly #file: string;
+
+  constructor(file: string) {
+    this.#file = file;
+  }
+
+  #read(): Record<string, Partial<ClaudeConversationRecord>> {
+    try {
+      const value: unknown = JSON.parse(fs.readFileSync(this.#file, "utf8"));
+      return typeof value === "object" && value !== null && !Array.isArray(value)
+        ? (value as Record<string, Partial<ClaudeConversationRecord>>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  get(key: string): ClaudeConversationRecord | null {
+    const record = this.#read()[key];
+    if (
+      record?.key !== key ||
+      typeof record.generation !== "number" ||
+      !Number.isSafeInteger(record.generation) ||
+      typeof record.started !== "boolean"
+    ) {
+      return null;
+    }
+    return {
+      key,
+      generation: record.generation,
+      started: record.started,
+      promptDigest: typeof record.promptDigest === "string" ? record.promptDigest : null,
+    };
+  }
+
+  put(record: ClaudeConversationRecord): void {
+    const all = this.#read();
+    all[record.key] = record;
+    fs.mkdirSync(path.dirname(this.#file), { recursive: true });
+    const temp = `${this.#file}.${String(process.pid)}.tmp`;
+    fs.writeFileSync(temp, JSON.stringify(all, null, 2), "utf8");
+    fs.renameSync(temp, this.#file);
+  }
+}

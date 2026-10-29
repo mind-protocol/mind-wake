@@ -14,6 +14,7 @@
 
 import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import type {
   AdapterCapabilities,
@@ -22,6 +23,7 @@ import type {
   BudgetQuantity,
   CancelResult,
   DurationMs,
+  ProviderQuotaSnapshot,
   ProbeResult,
   ReconcileResult,
   RuntimeAdapter,
@@ -58,7 +60,8 @@ import type {
 import { quotaSnapshots, type ClaudeQuotaReading } from "./quota.js";
 import { errorCodeFor, parseStreamLine, type ClaudeTokenTotals } from "./stream.js";
 
-export const CLAUDE_ADAPTER_ID = "claude-code" as AdapterId;
+/** Identifiant du runtime dans la policy et le registre (`RUNTIME_IDS`). */
+export const CLAUDE_ADAPTER_ID = "claude" as AdapterId;
 
 /**
  * Version minimale : `--permission-prompts` (2.1.259), `rate_limit_event` (2.1.181) et
@@ -69,8 +72,14 @@ export const CLAUDE_MIN_VERSION = "2.1.273";
 const EXECUTION_MECHANISM =
   "CLI officiel Claude Code, mode non interactif `claude -p` en stream-json (code.claude.com/docs/en/headless)";
 
-/** Délai laissé au CLI pour se terminer après son résultat avant terminaison forcée. */
+/** Délai de terminaison forcée, en dernier recours. */
 const AFTER_RESULT_TERMINATION_MS = 1_000 as DurationMs;
+
+/**
+ * Après `result`, entrée fermée : délai laissé au CLI pour sortir de lui-même (code 0)
+ * avant la terminaison forcée du job.
+ */
+const AFTER_RESULT_EXIT_GRACE_MS = 5_000;
 
 export type ClaudeAutonomy =
   /**
@@ -91,7 +100,19 @@ export interface ClaudeAdapterOptions {
    * (ADR-006), lu dans la policy en vigueur à chaque lancement (champ
    * `hostUnsandboxedAcknowledged`). Absent ou `false` : mode autonome refusé sur l'hôte.
    */
-  readonly hostUnsandboxedAcknowledged?: () => boolean;
+  readonly hostUnsandboxedAcknowledged?: (sessionId?: SessionId) => boolean;
+  /**
+   * Lanceur des lectures de jauge hors session (`supervisorClaudeLauncher`) ; défaut :
+   * `launcher`. Le runner refuse tout lancement hors de la session active.
+   */
+  readonly quotaLauncher?: ClaudeLauncher;
+  /** Variables supplémentaires (aucun nom de secret), par exemple pour un banc de test. */
+  readonly extraEnv?: Readonly<Record<string, string>>;
+  /**
+   * `replace` (défaut) : `--system-prompt-file` remplace le prompt de Claude Code ;
+   * `append` : `--append-system-prompt-file` l'ajoute, outils et consignes du CLI conservés.
+   */
+  readonly systemPromptMode?: "replace" | "append";
   /** Source des variables de profil reprises sur l'hôte (tests) ; défaut `process.env`. */
   readonly hostEnvSource?: Readonly<Record<string, string | undefined>>;
   /** Chemin absolu du binaire `claude` officiel. */
@@ -275,11 +296,14 @@ export class ClaudeAdapter implements RuntimeAdapter {
     );
   }
 
-  #stance(): ClaudePermissionStance {
-    const isolation = this.#options.launcher.isolation();
+  #stance(sessionId: SessionId): ClaudePermissionStance {
+    const isolation = this.#options.launcher.isolation(sessionId);
     if (this.#options.autonomy === "supervised") return "allowlist_only";
     if (isolation.kind === "host_job") {
-      if (this.#options.hostUnsandboxedAcknowledged?.() !== true) {
+      const consent =
+        isolation.unsandboxedConsent === true ||
+        this.#options.hostUnsandboxedAcknowledged?.(sessionId) === true;
+      if (!consent) {
         throw new ClaudeAdapterError(
           "isolation_required",
           "lancement autonome refusé sur l'hôte : consentement distinct au mode non isolé absent de la policy (hostUnsandboxedAcknowledged, ADR-006)",
@@ -302,8 +326,11 @@ export class ClaudeAdapter implements RuntimeAdapter {
     return "skip_permissions_in_sandbox";
   }
 
-  async #openNetwork(sessionId: SessionId): Promise<ClaudeNetworkGrant | null> {
-    const isolation = this.#options.launcher.isolation();
+  async #openNetwork(
+    launcher: ClaudeLauncher,
+    sessionId: SessionId,
+  ): Promise<ClaudeNetworkGrant | null> {
+    const isolation = launcher.isolation(sessionId);
     if (this.#options.network === undefined) {
       if (isolation.kind === "appcontainer") {
         throw new ClaudeAdapterError(
@@ -325,18 +352,20 @@ export class ClaudeAdapter implements RuntimeAdapter {
   }
 
   #launch(
+    launcher: ClaudeLauncher,
     sessionId: SessionId,
     args: readonly string[],
     grant: ClaudeNetworkGrant | null,
     cwd: string,
     deadline: UtcTimestamp,
-    quotaRead = false,
+    mode: { readonly quotaRead: boolean; readonly unattended: boolean },
   ): ClaudeProcess {
     const o = this.#options;
+    const quotaRead = mode.quotaRead;
     // Mesuré avec 2.1.308 : sous `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, `/usage` rend
     // `rate_limits: null` ; sans elle, la jauge revient. La lecture de jauge ne la pose donc pas.
     const disableNonessentialTraffic = quotaRead ? false : o.disableNonessentialTraffic;
-    const host = o.launcher.isolation().kind === "host_job";
+    const host = launcher.isolation(sessionId).kind === "host_job";
     const env = claudeEnvironment({
       ...(host ? { inherited: hostProfileEnv(o.hostEnvSource) } : {}),
       ...(o.configDir === undefined ? {} : { configDir: o.configDir }),
@@ -344,8 +373,9 @@ export class ClaudeAdapter implements RuntimeAdapter {
       ...(o.gitBashPath === undefined ? {} : { gitBashPath: o.gitBashPath }),
       ...(disableNonessentialTraffic === undefined ? {} : { disableNonessentialTraffic }),
       ...(grant === null ? {} : { network: grant.env }),
+      ...(o.extraEnv === undefined ? {} : { extra: o.extraEnv }),
     });
-    return o.launcher.launch({
+    return launcher.launch({
       sessionId,
       executable: o.executable,
       args: [...(o.executablePrefixArgs ?? []), ...args],
@@ -359,13 +389,14 @@ export class ClaudeAdapter implements RuntimeAdapter {
       readOnlyRoots: [path.dirname(o.executable), o.promptDir, ...(o.extraReadOnlyRoots ?? [])],
       network: grant,
       deadline,
+      unattended: mode.unattended,
     });
   }
 
   async start(request: StartRequest): Promise<SessionHandle> {
     const o = this.#options;
     const sessionId = request.sessionId;
-    const permission = this.#stance();
+    const permission = this.#stance(sessionId);
     const key = o.conversationKeyFor?.(sessionId) ?? sessionId;
     const record = this.#conversations.get(key) ?? freshConversation(key);
     const prompt =
@@ -376,16 +407,25 @@ export class ClaudeAdapter implements RuntimeAdapter {
     const args = claudeRunArgs({
       model: o.model ?? DEFAULT_CLAUDE_MODEL,
       systemPromptFile: promptFile,
+      systemPromptMode: o.systemPromptMode ?? "replace",
       tools: o.tools ?? DEFAULT_CLAUDE_TOOLS,
       permission,
       session: { mode: record.started ? "resume" : "new", id: claudeSessionId },
       ...(o.maxTurns === undefined ? {} : { maxTurns: o.maxTurns }),
     });
 
-    const grant = await this.#openNetwork(sessionId);
+    const grant = await this.#openNetwork(o.launcher, sessionId);
     let process_: ClaudeProcess;
     try {
-      process_ = this.#launch(sessionId, args, grant, o.workspaceFor(sessionId), request.deadline);
+      process_ = this.#launch(
+        o.launcher,
+        sessionId,
+        args,
+        grant,
+        o.workspaceFor(sessionId),
+        request.deadline,
+        { quotaRead: false, unattended: permission !== "allowlist_only" },
+      );
       await process_.started();
     } catch (error) {
       if (grant !== null) await this.#closeNetwork(sessionId);
@@ -419,6 +459,14 @@ export class ClaudeAdapter implements RuntimeAdapter {
   }
 
   async #finish(sessionId: SessionId, session: ClaudeSession): Promise<void> {
+    // Fin de conversation : entrée fermée, le CLI sort de lui-même ; sinon terminaison.
+    if (!session.process.hasExited && session.process.closeInput !== undefined) {
+      session.process.closeInput();
+      await Promise.race([
+        session.process.exited,
+        new Promise((resolve) => setTimeout(resolve, AFTER_RESULT_EXIT_GRACE_MS).unref()),
+      ]);
+    }
     if (!session.process.hasExited)
       await session.process.terminateTree(AFTER_RESULT_TERMINATION_MS);
     if (session.networkOpen) {
@@ -660,22 +708,38 @@ export class ClaudeAdapter implements RuntimeAdapter {
   }
 
   /**
-   * Lecture officielle de la jauge (`/usage`), par le même lanceur et le même relais qu'une
-   * session. Aucune requête au modèle ; aucun outil ; aucune session conservée.
+   * Jauge pour la garde de quota (`QuotaReadable`) : relevés officiels, ou tableau vide si la
+   * lecture échoue (quota inconnu, donc lancement refusé par la policy).
    */
-  async readQuota(timeoutMs = 30_000): Promise<ClaudeQuotaReading> {
+  async readQuota(): Promise<readonly ProviderQuotaSnapshot[]> {
+    try {
+      return (await this.readQuotaReading()).snapshots;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Lecture officielle de la jauge (`/usage`) avec son diagnostic, par `quotaLauncher`.
+   * Aucune requête au modèle ; aucun outil ; aucune session conservée.
+   */
+  async readQuotaReading(timeoutMs = 30_000): Promise<ClaudeQuotaReading> {
+    const launcher = this.#options.quotaLauncher ?? this.#options.launcher;
     const sessionId = `claude-quota-${randomBytes(6).toString("hex")}` as SessionId;
     const deadline = new Date(this.#now().getTime() + timeoutMs).toISOString() as UtcTimestamp;
-    const grant = await this.#openNetwork(sessionId);
+    // Dossier de travail de la lecture : celui des prompts, côté contrôle (il doit exister).
+    fs.mkdirSync(this.#options.promptDir, { recursive: true });
+    const grant = await this.#openNetwork(launcher, sessionId);
     let process_: ClaudeProcess | null = null;
     try {
       process_ = this.#launch(
+        launcher,
         sessionId,
         claudeUsageArgs(),
         grant,
         this.#options.promptDir,
         deadline,
-        true,
+        { quotaRead: true, unattended: false },
       );
       await process_.started();
       process_.send(userMessageLine("/usage"));
