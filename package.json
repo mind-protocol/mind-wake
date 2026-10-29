@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "demo:advice": "node --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts services/advice/demo/main.ts",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write ."
   },
