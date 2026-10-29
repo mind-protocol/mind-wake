@@ -75,6 +75,7 @@ try {
           mode: "plan",
           dataDir,
           steps: [
+            "vérifier le lancement et l’arrêt du Job Object sur ce poste, sans appel modèle",
             "préparer le profil sans changer son activation",
             "créer ou réutiliser les deux identités locales",
             "démarrer le hub et vérifier le MCP",
@@ -93,6 +94,15 @@ try {
       "-p",
       path.join(repoDir, "tsconfig.build.json"),
     ]);
+    // Check the executable on this PC before claiming the runtime can launch or preparing a hub.
+    const launcherCheck = spawnSync(process.execPath, [
+      path.join(repoDir, "scripts/check-job-launcher.mjs"), "--data-dir", dataDir,
+    ], { cwd: repoDir, encoding: "utf8", windowsHide: true, timeout: 30000 });
+    if (launcherCheck.error || launcherCheck.status !== 0) {
+      process.stderr.write(launcherCheck.stdout || "");
+      throw new SetupError("Le test local du Job Object a échoué. Voir docs/WINDOWS-APPLICATION-CONTROL.md ; aucun réveil lancé.");
+    }
+    const launcherPreflight = JSON.parse(launcherCheck.stdout);
     const init = JSON.parse(
       command(process.execPath, [
         path.join(repoDir, "dist/cli/main.js"),
@@ -125,6 +135,7 @@ try {
         mode: "installed-local",
         dataDir,
         engine: { prepared: true, profileState: init.data.profile.state, activationChanged: false },
+        launcherPreflight,
         mcp: {
           registeredIn: "Codex",
           authenticated: true,

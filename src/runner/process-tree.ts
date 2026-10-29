@@ -20,8 +20,10 @@ import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import type { DurationMs, ProfileId, SessionId } from "../contracts/index.js";
 import { JOB_LAUNCHER_SOURCE } from "./job-launcher-source.js";
+import { bundledJobLauncher } from "./bundled-launcher.js";
 
 /** Borne de terminaison proposée pour G1 (ADR-003) : 1 s après la décision d'arrêt. */
 export const DEFAULT_TERMINATION_TIMEOUT_MS: DurationMs = 1_000;
@@ -48,12 +50,19 @@ export type LauncherStatus =
 export function ensureJobLauncher(
   runtimeDir: string,
   platform: NodeJS.Platform = process.platform,
+  bundledDirectory: string | null = fileURLToPath(new URL("../../bin/native/", import.meta.url)),
 ): LauncherStatus {
   if (platform !== "win32") {
     return {
       available: false,
       reason: "terminaison d'arborescence démontrée sous Windows seulement",
     };
+  }
+  // A distributed binary may be signed or allowed by an administrator. Never replace it
+  // with an unsigned local compilation if its manifest is invalid or execution is blocked.
+  if (bundledDirectory !== null) {
+    const bundled = bundledJobLauncher(bundledDirectory);
+    if (bundled !== null) return bundled;
   }
   const digest = createHash("sha256").update(JOB_LAUNCHER_SOURCE).digest("hex").slice(0, 16);
   const launcherPath = path.join(runtimeDir, `mindwake-job-${digest}.exe`);
