@@ -650,7 +650,7 @@ describe("voie abonnement : pilotage vers la cible (ADR-005, complément)", () =
     expectTransitionsAllowed();
   });
 
-  it("autre motif de blocage : une jauge lisible ne débloque rien", async () => {
+  it("jauge périmée : reste bloqué tant qu'elle vieillit, puis reprend après une lecture fraîche", async () => {
     pacingSetup();
     const observed = b.clock.now() - 2 * MINUTE;
     b.environment.quota = () => [
@@ -665,8 +665,9 @@ describe("voie abonnement : pilotage vers la cible (ADR-005, complément)", () =
     ];
     await tickFresh();
     expect(state()).toBe("blocked");
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "blocked", detail: "subscription.snapshot_stale" });
     gauge(() => [{ key: "primary", used: 2_000, resetsAt: RESET }]);
-    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "blocked" });
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "ready" });
     expect(b.launcher.tickets).toHaveLength(0);
   });
 
@@ -775,3 +776,22 @@ function transitionTo(to: ProfileState): void {
     at: iso(THURSDAY_10H_PARIS),
   });
 }
+
+it("always-on enchaîne les réponses sans intervalle ni chevauchement, puis respecte Pause", async () => {
+  let always = true;
+  setup({schedule:{weeklyWindows:[{day:1,start:"09:00",end:"17:00"}],minIntervalBetweenSessionsMs:3_600_000}}, {overrides:{alwaysOn:()=>always,humanWakePending:()=>always,wakeRequests:{nextRequestedWake:async()=>b.clock.now()}}});
+  b.priority.set(false,b.clock.now());
+  for(let i=0;i<3;i++){
+    const result=await b.scheduler.tick();
+    expect(result.kind,JSON.stringify(result)).toBe("launched");
+    await b.scheduler.tick();
+    expect(b.launcher.tickets).toHaveLength(i+1);
+    b.launcher.finish({outcome:"completed"});
+    await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  const at=iso(b.clock.now());
+  store.uow.profiles.transition(PROFILE,{from:"hibernating",to:"paused",reason:"pause humaine",at});
+  expect((await b.scheduler.tick()).kind).toBe("inactive");
+  expect(b.launcher.tickets).toHaveLength(3);
+  always=false;
+});

@@ -1,6 +1,6 @@
 # src/adapters/codex
 
-Adapter Codex conforme à `src/contracts/adapter.ts` (ADR-002, ADR-004, ADR-005). Aucun appel modèle réel n'a été fait : les tests utilisent un faux exécutable `codex` (`test/fixtures/codex/fake-codex.ts`) qui rejoue des flux enregistrés (`test/fixtures/codex/flows/*.json`). Ils ne prouvent pas l'intégration réelle (AGENTS §5).
+Adapter Codex conforme à `src/contracts/adapter.ts` (ADR-002, ADR-004, ADR-005). Les tests ordinaires utilisent un faux exécutable `codex` (`test/fixtures/codex/fake-codex.ts`) qui rejoue des flux enregistrés (`test/fixtures/codex/flows/*.json`). Des essais réels distincts sont décrits ci-dessous ; ils ne valident pas à eux seuls le parcours Wake complet.
 
 ## Interface retenue : `codex app-server`, version figée 0.165.0
 
@@ -26,7 +26,7 @@ En contrepartie, OpenAI classe `codex app-server` comme « Experimental » dans 
   - `non-interactive-mode` ;
   - `cli/reference` : drapeaux globaux, `codex app-server` « Experimental », `--dangerously-bypass-approvals-and-sandbox` « Only use inside an externally hardened environment ».
 
-Le binaire installé sur le poste de développement est `codex-cli 0.147.0` (seul `codex --version` a été exécuté) : `probe` le déclare **indisponible**.
+Le CLI installé sur le poste a été mis à jour de `0.147.0` vers **`0.165.0`** avec `codex update`, le 29 octobre 2026. La sonde de l'adapter le déclare **disponible**. À 18:11 UTC, le test réel `codex-real.smoke.test.ts` a réussi avec `gpt-5.6-luna`, effort `low` : tour terminé, 8 795 tokens mesurés et rapprochés, lecture de la fenêtre de quota hebdomadaire réussie. Cet essai utilise le mode manuel du test et ne bascule pas l'agent Wake actif de Claude vers Codex. L'injection des messages desktop pendant un tour Codex reste à intégrer.
 
 ## Options retenues
 

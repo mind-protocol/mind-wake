@@ -1,12 +1,7 @@
 # MIND Wake — Claude Code
 
-Lire et appliquer [AGENTS.md](./AGENTS.md) avant toute intervention. Ce fichier est la source de vérité complète pour la vision, le périmètre v0.1, l'architecture, les invariants, les critères d'acceptation et le plan de développement. Ne pas dupliquer ces règles ici.
+Lire et appliquer [AGENTS.md](./AGENTS.md), source de vérité pour la vision, l’initiative et la manière de contribuer. Les détails techniques et les décisions sont référencés depuis ce fichier ; ne pas les dupliquer ici.
 
-Consignes propres à ce point d'entrée :
+Conserver les instructions propres au runtime Claude Code dans ses fichiers dédiés. Utiliser les modes et accès autorisés pour la tâche en cours. Rapporter les vérifications réellement effectuées et préserver les modifications des autres contributeurs.
 
-- Le projet est greenfield. Le rôle de Claude Code comme contributeur n'implique pas que son adapter d'exécution soit sûr par défaut : les runtimes d'exploration retenus (Codex, Claude Code, Gemini CLI) et leurs conditions sont décrits dans `docs/decisions/ADR-005-runtimes-multiples.md`.
-- Utiliser les permissions et mécanismes d'approbation normaux de Claude Code ; ne pas les désactiver pour faciliter l'autonomie du futur produit.
-- Consigner les décisions partagées et leurs révisions dans `AGENTS.md`. Réserver ce fichier aux particularités de Claude Code.
-- Si `AGENTS.md` est absent ou illisible, signaler le problème avant de poursuivre les modifications ; ne pas reconstruire une direction à partir d'anciens dépôts MIND.
-
-Statut initial : direction seulement. Ne pas implémenter, installer ou lancer le produit tant que l'utilisateur n'en a pas fait la demande.
+Le projet est en développement actif. Les anciennes mentions « direction seulement » ne décrivent plus son état.

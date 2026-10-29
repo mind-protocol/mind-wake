@@ -1,3 +1,5 @@
+import { executionMode, type ExecutionMode } from "../../daemon/execution-mode.js";
+import { keyboardContextStatus } from "../../daemon/keyboard-context.js";
 /**
  * `status` : état courant, expérience active, dernière activité, budget, prochain réveil
  * et motif d'attente (SPEC §3.3). Lecture seule.
@@ -135,7 +137,9 @@ const NO_DAEMON: DaemonStatus = {
 };
 
 export interface StatusData {
+  readonly keyboardContext?: { readonly state: string; readonly bufferedChanges: number };
   readonly dataDir: string;
+  readonly executionMode: ExecutionMode;
   readonly persistence: Persistence | null;
   readonly profile: {
     readonly id: string;
@@ -204,6 +208,11 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
     if (uow === null || profile === null) {
       return {
         dataDir: dataDir.path,
+        executionMode: executionMode(dataDir.path),
+        keyboardContext: keyboardContextStatus(
+          dataDir.path,
+          profile !== null && ["ready", "running", "hibernating"].includes(profile.state),
+        ),
         persistence,
         profile: null,
         hint: NO_PROFILE_HINT,
@@ -271,6 +280,11 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
           };
     return {
       dataDir: dataDir.path,
+      executionMode: executionMode(dataDir.path),
+      keyboardContext: keyboardContextStatus(
+        dataDir.path,
+        profile !== null && ["ready", "running", "hibernating"].includes(profile.state),
+      ),
       persistence,
       profile: {
         id: profile.id,

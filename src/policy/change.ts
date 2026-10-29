@@ -168,6 +168,9 @@ export function classifyChange(before: PolicyGroups | null, after: PolicyGroups)
   if (!hostBefore && hostAfter) widened.push("runtime.hostUnsandboxedAcknowledged");
   if (hostBefore && !hostAfter) restricted.push("runtime.hostUnsandboxedAcknowledged");
 
+  if (before.runtime.nativeCapabilities !== after.runtime.nativeCapabilities) {
+    (after.runtime.nativeCapabilities === true ? widened : restricted).push("runtime.nativeCapabilities");
+  }
   const kind: ChangeSummary["kind"] =
     widened.length > 0 && restricted.length > 0
       ? "mixed"

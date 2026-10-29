@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-wake-open-location"
+description = "Enables the wake_open_location command without any pre-configured scope."
+commands.allow = ["wake_open_location"]
+
+[[permission]]
+identifier = "deny-wake-open-location"
+description = "Denies the wake_open_location command without any pre-configured scope."
+commands.deny = ["wake_open_location"]

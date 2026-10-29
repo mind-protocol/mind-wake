@@ -97,7 +97,7 @@ function summarize(messages: readonly Delivered[]) {
       last_sequence: t.last.sequence,
       last_at: t.last.provenance.received_at,
       last_from_kind: t.last.provenance.kind,
-      preview: t.last.text.slice(0, 160),
+      preview: t.last.text,
     }))
     .sort((a, b) => b.last_sequence - a.last_sequence);
 }

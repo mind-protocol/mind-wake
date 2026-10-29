@@ -50,6 +50,7 @@ export interface BuildCommandInput {
    * manuel par l'humain seulement (test de fumée), jamais en autonome.
    */
   readonly allowUserCodexHome?: boolean;
+  readonly nativeCapabilities?: boolean;
 }
 
 /** Refuse le dossier Codex de l'utilisateur (credentials et configuration personnels). */
@@ -103,10 +104,10 @@ export function buildAppServerCommand(input: BuildCommandInput): CodexCommand {
   // Ordre : réglages Wake, puis ceux du relais (fournisseur), puis ceux de l'appelant ;
   // les réglages Wake de sûreté sont réappliqués en dernier et ne peuvent être écrasés.
   const overrides = {
-    ...WAKE_CONFIG_OVERRIDES,
+    ...(input.nativeCapabilities === true ? {} : WAKE_CONFIG_OVERRIDES),
     ...(input.channel?.configOverrides ?? {}),
     ...(input.extraConfig ?? {}),
-    ...WAKE_CONFIG_OVERRIDES,
+    ...(input.nativeCapabilities === true ? {} : WAKE_CONFIG_OVERRIDES),
   };
   return {
     executable: input.executable.path,

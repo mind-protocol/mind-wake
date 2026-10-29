@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
 import type {
   AdapterEvent,
   ReservationId,
@@ -149,6 +150,23 @@ function request(sessionId: string, context = "Que veux-tu explorer ?"): StartRe
   };
 }
 
+it("backgrounds a blocking worker on incoming messages and preserves it beyond the first parent result",async()=>{
+  h.scenario="foreground-preemption";
+  h.isolation={kind:"host_job",detail:"test",unsandboxedConsent:true};
+  enqueueOwnerMessage(h.dir,{id:"human-priority",at:new Date().toISOString(),text:"Talk to me now"});
+  const subject=adapter({ownerInboxDir:h.dir});
+  const events=await run(subject,"priority-session");
+  expect(events.filter(e=>e.type==="error")).toEqual([]);
+  expect(events.filter(e=>e.type==="activity").map(e=>e.summary)).toContain("Attente libérée, travail conservé en arrière-plan ; transmission du message en cours.");
+  expect(fs.readFileSync(path.join(h.workspace,"background-finished.txt"),"utf8")).toContain("survived");
+  expect(events.filter(e=>e.type==="ended")).toHaveLength(1);
+  const usages=events.filter(e=>e.type==="usage");
+  expect(usages.map(e=>e.quantity.unit==="tokens"?e.quantity.amount:0)).toEqual([60,60]);
+  expect(await subject.reconcile("priority-session" as SessionId)).toMatchObject({status:"confirmed",usage:[{amount:120}]});
+  expect(readOwnerReceipts(h.dir)["human-priority"]).toBeTruthy();
+  expect(events.some(e=>e.type==="activity" && e.summary.includes("travail conservé"))).toBe(true);
+});
+
 async function run(subject: ClaudeAdapter, sessionId: string): Promise<AdapterEvent[]> {
   const handle = await subject.start(request(sessionId));
   const events: AdapterEvent[] = [];
@@ -237,6 +255,25 @@ describe("adapter Claude Code : garde d'isolation", () => {
 });
 
 describe("adapter Claude Code : mode non isolé sur l'hôte (ADR-006)", () => {
+  it("loads native tools and configured integrations when the host policy requests them", async () => {
+    h.isolation = { kind: "host_job", detail: "Job Object" };
+    const subject = adapter({ network: null, hostUnsandboxedAcknowledged: () => true });
+    const req = {
+      ...request("s-native"),
+      policy: { groups: { runtime: { nativeCapabilities: true } } } as StartRequest["policy"],
+    };
+    const handle = await subject.start(req);
+    for await (const _event of subject.events(handle)) {
+      /* drain the real fixture process */
+    }
+    const argv = invocations()[0]?.argv ?? [];
+    expect(flagValue(argv, "--tools")).toBe("default");
+    expect(argv).not.toContain("--strict-mcp-config");
+    expect(argv).not.toContain("--setting-sources");
+    expect(h.launches[0]?.env).not.toHaveProperty("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC");
+    expect(h.launches[0]?.env).toHaveProperty("CLAUDE_CODE_ENABLE_TODO_TOOLS", "1");
+  });
+
   const hostSource = {
     USERPROFILE: "C:/Users/humain",
     APPDATA: "C:/Users/humain/AppData/Roaming",
@@ -351,14 +388,13 @@ describe("adapter Claude Code : session", () => {
     expect(launch?.readWriteRoots).toEqual([h.workspace, h.configDir]);
     expect(launch?.readOnlyRoots).toContain(h.promptDir);
 
-    expect(events.map((e) => e.type)).toEqual([
-      "started",
-      "activity",
-      "activity",
-      "activity",
-      "usage",
-      "ended",
-    ]);
+    expect(
+      events
+        .filter(
+          (e) => !(e.type === "activity" && e.summary.startsWith("Outils exposés par Claude")),
+        )
+        .map((e) => e.type),
+    ).toEqual(["started", "activity", "activity", "activity", "usage", "ended"]);
     const usage = events.find((e) => e.type === "usage");
     expect(usage).toMatchObject({
       quantity: { unit: "tokens", amount: 200 },
@@ -410,6 +446,93 @@ describe("adapter Claude Code : session", () => {
     expect(third[0]).toMatchObject({ type: "activity" });
     expect(third.find((e) => e.type === "usage")).toMatchObject({ quantity: { amount: 200 } });
     expect(conversations.get("experience-1")).toMatchObject({ started: true, generation: 0 });
+  });
+
+  it("auto-compaction : au-delà du seuil, le réveil suivant commence par /compact", async () => {
+    const conversations = new MemoryConversationStore();
+    // Chaque réveil du faux CLI mesure 200 tokens : seuil 150, donc compaction dès le 2e.
+    const subject = adapter({
+      conversations,
+      conversationKeyFor: () => "experience-1",
+      compactAboveTokens: 150,
+    });
+    const first = await run(subject, "s1");
+    expect(first.some((e) => e.type === "activity" && e.summary.includes("compact"))).toBe(false);
+    expect(conversations.get("experience-1")).toMatchObject({ lastWakeTokens: 200 });
+
+    const second = await run(subject, "s2");
+    expect(second.filter((e) => e.type === "started")).toHaveLength(1);
+    expect(
+      second.find((e) => e.type === "activity" && e.summary.startsWith("conversation compactée")),
+    ).toMatchObject({ summary: "conversation compactée : 242652 → 3960 tokens de contexte" });
+    // Le réveil continue dans la même conversation : usage du réveil, fin normale.
+    expect(second.filter((e) => e.type === "usage")).toHaveLength(1);
+    expect(second.find((e) => e.type === "usage")).toMatchObject({ quantity: { amount: 200 } });
+    expect(second.at(-1)).toMatchObject({ type: "ended", exitReason: "result:completed" });
+    expect(flagValue(invocations()[1]?.argv ?? [], "--resume")).toBe(
+      claudeSessionUuid("experience-1", 0),
+    );
+  });
+
+  it("auto-compaction : jamais sous le seuil, ni sur une conversation neuve, ni si désactivée", async () => {
+    const conversations = new MemoryConversationStore();
+    const subject = adapter({
+      conversations,
+      conversationKeyFor: () => "x",
+      compactAboveTokens: 0,
+    });
+    await run(subject, "s1");
+    const second = await run(subject, "s2");
+    expect(second.some((e) => e.type === "activity" && e.summary.includes("compact"))).toBe(false);
+
+    const high = adapter({
+      conversations: new MemoryConversationStore(),
+      conversationKeyFor: () => "y",
+      compactAboveTokens: 10_000,
+    });
+    await run(high, "s3");
+    const under = await run(high, "s4");
+    expect(under.some((e) => e.type === "activity" && e.summary.includes("compact"))).toBe(false);
+  });
+
+  it("l'agent règle sa compaction (ADR-009) : son seuil prime, sa demande sert une fois", async () => {
+    let pilot: { compactAboveTokens?: number; compactRequest?: string } | null = {
+      compactAboveTokens: 150,
+    };
+    const conversations = new MemoryConversationStore();
+    const subject = adapter({
+      conversations,
+      conversationKeyFor: () => "p",
+      compactAboveTokens: 0,
+      agentPilot: () => pilot,
+    });
+    const compacted = (events: AdapterEvent[]): boolean =>
+      events.some((e) => e.type === "activity" && e.summary.startsWith("conversation compactée"));
+    await run(subject, "s1");
+    expect(compacted(await run(subject, "s2"))).toBe(true);
+
+    pilot = { compactAboveTokens: 0, compactRequest: "maintenant-1" };
+    expect(compacted(await run(subject, "s3"))).toBe(true);
+    expect(compacted(await run(subject, "s4"))).toBe(false);
+    expect(conversations.get("p")).toMatchObject({ lastCompactRequest: "maintenant-1" });
+  });
+
+  it("auto-compaction sans effet : signalée, et le réveil a quand même lieu", async () => {
+    const subject = adapter({
+      conversations: new MemoryConversationStore(),
+      conversationKeyFor: () => "z",
+      compactAboveTokens: 150,
+      extraEnv: { FAKE_CLAUDE_COMPACT: "noop" },
+    });
+    await run(subject, "s1");
+    const second = await run(subject, "s2");
+    expect(
+      second.some(
+        (e) => e.type === "activity" && e.summary.startsWith("auto-compaction sans effet"),
+      ),
+    ).toBe(true);
+    expect(second.find((e) => e.type === "usage")).toMatchObject({ quantity: { amount: 200 } });
+    expect(second.at(-1)).toMatchObject({ type: "ended" });
   });
 
   it("repart sur une nouvelle conversation quand la reprise est impossible", async () => {

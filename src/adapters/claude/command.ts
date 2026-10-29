@@ -1,3 +1,5 @@
+import type { WakeImage } from "../../contracts/wake-image.js";
+import { claudeWakeContent } from "../wake-image.js";
 /**
  * Ligne de commande et environnement de `claude -p`, à partir des seules options documentées
  * dans la référence CLI officielle (code.claude.com/docs/en/cli-reference, vérifiée le
@@ -34,6 +36,13 @@ export interface ClaudeRunArgs {
   /** `replace` : `--system-prompt-file` ; `append` : `--append-system-prompt-file`. */
   readonly systemPromptMode?: "replace" | "append";
   readonly tools: readonly string[];
+  readonly nativeCapabilities?: boolean;
+  /** Trusted local desktop inbox hook; never supplied by the agent workspace. */
+  readonly ownerInboxHook?: {
+    readonly script: string;
+    readonly dataDir: string;
+    readonly node: string;
+  };
   /** Configuration MCP explicitement fournie par le lanceur de confiance. */
   readonly mcpConfigFile?: string;
   readonly permission: ClaudePermissionStance;
@@ -56,14 +65,47 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     options.systemPromptMode === "append" ? "--append-system-prompt-file" : "--system-prompt-file",
     options.systemPromptFile,
     "--tools",
-    options.tools.join(","),
+    options.nativeCapabilities === true ? "default" : options.tools.join(","),
     // Seuls les réglages du dossier de configuration dédié : aucun `.claude/settings*.json`
     // de l'espace d'exploration, écrit par l'agent, n'est chargé.
-    "--setting-sources",
-    "user",
-    "--settings",
-    CLAUDE_SESSION_SETTINGS,
-    "--strict-mcp-config",
+    ...(options.nativeCapabilities === true
+      ? []
+      : [
+          "--setting-sources",
+          options.ownerInboxHook === undefined ? "user" : "",
+          "--strict-mcp-config",
+        ]),
+    ...(options.ownerInboxHook === undefined
+      ? options.nativeCapabilities === true
+        ? []
+        : ["--settings", CLAUDE_SESSION_SETTINGS]
+      : [
+          "--settings",
+          JSON.stringify({
+            disableAllHooks: false,
+            hooks: Object.fromEntries(
+              ["SessionStart", "PostToolUse", "PostToolUseFailure", "Stop"].map((event) => [
+                event,
+                [
+                  {
+                    hooks: [
+                      {
+                        type: "command",
+                        command: options.ownerInboxHook!.node,
+                        args: [
+                          options.ownerInboxHook!.script,
+                          "--deliver-owner-inbox",
+                          options.ownerInboxHook!.dataDir,
+                          options.session.id,
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              ]),
+            ),
+          }),
+        ]),
     options.session.mode === "new" ? "--session-id" : "--resume",
     options.session.id,
   ];
@@ -78,6 +120,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
   }
   if (options.mcpConfigFile !== undefined) args.push("--mcp-config", options.mcpConfigFile);
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
+  if (options.ownerInboxHook !== undefined) args.push("--replay-user-messages");
   return args;
 }
 
@@ -107,8 +150,11 @@ export function claudeUsageArgs(): string[] {
 }
 
 /** Message utilisateur au format `--input-format stream-json` (une ligne). */
-export function userMessageLine(content: string): string {
-  return JSON.stringify({ type: "user", message: { role: "user", content } });
+export function userMessageLine(content: string, image?: WakeImage): string {
+  return JSON.stringify({
+    type: "user",
+    message: { role: "user", content: claudeWakeContent(content, image) },
+  });
 }
 
 /** Même règle que la sandbox (`spec.ts`) : aucun nom de secret dans l'environnement. */

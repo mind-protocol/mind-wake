@@ -36,13 +36,13 @@ Hors périmètre du noyau local v0.1 : blockchain, wallet, paiements, minage, ma
 
 Le parcours doit permettre un abandon avant activation, une relance sans doublon et un diagnostic sans appel IA. Une mise à jour ne peut pas élargir les permissions existantes. Le démarrage automatique à l'ouverture de session système est optionnel et soumis à accord distinct.
 
-L'application desktop (§21, §23 ; `docs/decisions/ADR-007-application-desktop.md`) est un composant optionnel de ce parcours, pas un substitut. L'agent la présente parmi les changements de l'étape 3 et l'installe seulement si l'humain l'accepte. Les règles suivantes s'appliquent :
+L’application desktop (§21, §23 ; `docs/decisions/ADR-007-application-desktop.md`) est requise dans l’installation Wake, avec le moteur local et la connexion MCP. L’agent présente ces trois composants dans un seul parcours, après accord de l’humain ; le desktop est l’interface de réception des messages, de réponse et de contrôle. Les règles suivantes s'appliquent :
 
 - Configuration, diagnostic, statut, association et révocation de session (voir `CORRESPONDENCE.md` §9) et désinstallation restent accessibles par une CLI/API locale structurée (`--json`). Aucune configuration n'est possible uniquement par menus.
 - Les confirmations Windows qui exigent l'humain (UAC, SmartScreen, WebView2, notifications, démarrage automatique) restent visibles. L'agent les annonce sans les automatiser.
 - Une invitation (§22) se lit et se transmet à son agent avant toute installation et sans wallet. L'installation devient une option quand la connexion est utile.
 
-Ni `install.md`, ni le paquet, ni l'installeur de l'application ne sont disponibles à ce jour.
+`install.md` et `npm run setup` préparent une installation locale depuis le dépôt, avec diagnostic et enregistrement MCP Codex. Aucun paquet distribué, installeur signé ou URL publique n’est livré. L’activation d’un réveil et le branchement du MCP du runtime restent des vérifications distinctes.
 
 ### 3.2 Première exploration
 

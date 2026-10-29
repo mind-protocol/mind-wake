@@ -48,6 +48,8 @@ export interface PanelView {
   readonly light: Light;
   /** Réveil au plus tôt possible : profil prêt ou en hibernation. */
   readonly canWake: boolean;
+  readonly alwaysOn: boolean;
+  readonly canAlwaysOn: boolean;
   readonly reason: string;
   readonly simulated: boolean;
   readonly activity: readonly Line[];
@@ -123,6 +125,8 @@ function unavailable(reason: string, read: StatusRead, now: number): PanelView {
     tone: "unknown",
     light: "unknown",
     canWake: false,
+    alwaysOn: false,
+    canAlwaysOn: false,
     reason,
     simulated: false,
     activity: [],
@@ -238,6 +242,11 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
     tone: known?.tone ?? "unknown",
     light: LIGHTS[state] ?? "unknown",
     canWake: !locked && (state === "ready" || state === "hibernating"),
+    alwaysOn:
+      data["executionMode"] === "always-on" &&
+      ["ready", "hibernating", "running", "checkpointing"].includes(state),
+    canAlwaysOn:
+      !locked && ["ready", "hibernating", "running", "checkpointing", "paused"].includes(state),
     reason: str(profile["stateReason"]) ?? "motif non communiqué",
     simulated,
     activity: [
@@ -247,7 +256,7 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
         value:
           lastEvent === null
             ? "—"
-            : `${str(lastEvent["type"]) ?? "?"} — ${str(lastEvent["reason"]) ?? ""} · ${time(str(lastEvent["at"]), now)}`,
+            : `${str(lastEvent["reason"]) ?? str(lastEvent["type"]) ?? "?"} · ${time(str(lastEvent["at"]), now)}`,
       },
       {
         label: "Dernière session",

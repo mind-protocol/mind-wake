@@ -1,3 +1,9 @@
+import { KeyboardContextCollector } from "./keyboard-context.js";
+import {
+  captureWakeScreenshot,
+  configuredWakeScreenshot,
+  type WakeScreenshotChoice,
+} from "./wake-screenshot.js";
 /**
  * Daemon Wake au premier plan (AGENTS §5 « Daemon », SPEC §5 et §8).
  *
@@ -104,7 +110,11 @@ import {
   type WakeTemplates,
 } from "./wake-prompt.js";
 import { AgentWakeups, type QuotaSource } from "./wakeups.js";
+import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
+import { currentContextEvent } from "./current-context.js";
+import { ownerMessagePending } from "../communication/owner-inbox.js";
+import { BackgroundJobs } from "./background-jobs.js";
 import { QuotaPacingStore } from "./pacing.js";
 
 export class DaemonError extends Error {
@@ -136,6 +146,8 @@ export interface DaemonIsolation {
 }
 
 export interface DaemonOptions {
+  /** Surface visuelle explicitement autorisée pour cette exécution ; absente = aucune capture. */
+  readonly wakeScreenshot?: WakeScreenshotChoice;
   readonly dataDir: string;
   readonly profileId: ProfileId;
   /** Adapter factice, tout est marqué SIMULÉ ; sinon l'adapter réel de la policy. */
@@ -237,10 +249,12 @@ export class WakeDaemon implements SessionLauncher {
   #readiness: SandboxReadiness = { ok: false, detail: "autotest de refus non exécuté" };
   #stopReason = "arrêt demandé";
   #scheduler: Scheduler | null = null;
+  #backgroundJobs: BackgroundJobs | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
   readonly #pacing: QuotaPacingStore;
+  readonly #keyboardContext: KeyboardContextCollector;
 
   private constructor(
     options: DaemonOptions,
@@ -255,6 +269,15 @@ export class WakeDaemon implements SessionLauncher {
     this.#lock = lock;
     this.#registration = registration;
     this.#real = real;
+    this.#keyboardContext = new KeyboardContextCollector(options.dataDir, () => {
+      if (real === null) return false;
+      const profile = store.uow.profiles.get(options.profileId);
+      return (
+        profile !== null &&
+        !profile.emergencyStopLocked &&
+        ["ready", "running", "hibernating"].includes(profile.state)
+      );
+    });
     // Le fichier simulé reste réservé au mode `--simulated` ; en mode réel, l'inactivité
     // du poste est lue en continu et comparée au seuil de la révision effective.
     this.#idleWatcher = real === null ? null : (options.idleWatcher ?? windowsIdleWatcher());
@@ -294,6 +317,7 @@ export class WakeDaemon implements SessionLauncher {
           host,
           dataDir: options.dataDir,
           workspaceDir,
+          nativeCapabilities: (() => { const profile = store.uow.profiles.get(options.profileId); return profile?.activePolicyRevisionId != null && store.uow.policies.getRevision(profile.activePolicyRevisionId)?.groups.runtime.nativeCapabilities === true; })(),
           experimentFor: (sessionId) => this.#sessions.get(sessionId)?.experimentId ?? null,
           onProposal: (sessionId, proposal) => {
             this.#onProposal(sessionId, proposal);
@@ -357,8 +381,8 @@ export class WakeDaemon implements SessionLauncher {
         }
         throw error;
       }
-      const registry = options.registry ?? defaultRegistry();
       const resolution = resolvePolicy(store.uow.policies, options.profileId);
+      const registry = options.registry ?? defaultRegistry(resolution.status==="active"?resolution.revision.groups.runtime:undefined);
       const wanted: AdapterId | null =
         resolution.status === "active" ? resolution.revision.groups.runtime.adapterId : null;
       const runtimeDir = options.runtimeDir ?? runtimeDirFor(options.dataDir);
@@ -525,6 +549,7 @@ export class WakeDaemon implements SessionLauncher {
     if (real !== null) await this.#prepareIsolation(real);
 
     this.#wakeups.prepare();
+    if (real !== null) this.#keyboardContext.start();
     const environment =
       real === null
         ? new SimulatedEnvironment(this.#runner.adapter, this.#registration.runtime())
@@ -553,12 +578,16 @@ export class WakeDaemon implements SessionLauncher {
       // jamais des autorisations.
       wakeRequests: {
         nextRequestedWake: async (now) => {
+          if (this.#backgroundJobs?.store.events().length) return now;
+          if (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir)) return now;
+          if (executionMode(this.#o.dataDir) === "always-on") return now;
           const agent = await this.#wakeups.nextDue(now, this.#quota);
           const human = pendingHumanWake(this.#o.dataDir, now);
           return agent === null ? human : human === null ? agent : Math.min(agent, human);
         },
       },
-      humanWakePending: (now) => pendingHumanWake(this.#o.dataDir, now) !== null,
+      humanWakePending: (now) => pendingHumanWake(this.#o.dataDir, now) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir)),
+      alwaysOn: () => executionMode(this.#o.dataDir) === "always-on",
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -566,14 +595,26 @@ export class WakeDaemon implements SessionLauncher {
     });
     this.#scheduler = scheduler;
     try {
+      if (real !== null && real.sandbox === null) {
+        this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
+          const profile = uow.profiles.get(profileId);
+          const policy = resolvePolicy(uow.policies,profileId);
+          return !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists() && profile !== null && !profile.emergencyStopLocked &&
+            !["paused","checkpointing","stopped","disabled"].includes(profile.state) &&
+            policy.status === "active" && policy.revision.groups.runtime.hostUnsandboxedAcknowledged === true;
+        });
+        this.#backgroundJobs.start();
+      }
       await scheduler.run(this.#abort.signal);
     } finally {
+      await this.#backgroundJobs?.close();
       this.#close();
     }
     return { runId: this.runId, sessions: [...this.#results], reason: this.#stopReason };
   }
 
   #close(): void {
+    this.#keyboardContext.close();
     const at = utcNow();
     try {
       recordDaemonEnd(this.#store.db, this.runId, at, this.#stopReason);
@@ -641,7 +682,11 @@ export class WakeDaemon implements SessionLauncher {
       sessionTokens === 0 ? 32_000 : Math.max(1, Math.floor(sessionTokens / 2));
     // La consigne de réveil occupe une part du contexte ; la mémoire prend le reste. Le
     // factice ignore le contexte : sa mémoire garde toute l'enveloppe (démo inchangée).
-    const promptBound = utf8TokenBound(this.#templates.base) + 2_048;
+    const keyboardContext = this.#keyboardContext.takeContext(
+      Math.max(512, Math.floor(maxInputTokens / 3)),
+    );
+    const promptBound =
+      utf8TokenBound(this.#templates.base) + 2_048 + utf8TokenBound(keyboardContext ?? "");
     const memory = this.#memory(
       experimentId,
       this.#real === null ? maxInputTokens : Math.max(1, maxInputTokens - promptBound),
@@ -658,8 +703,8 @@ export class WakeDaemon implements SessionLauncher {
           }));
     const billing: BillingFacts = this.#registration.billing();
     // Lu avant `#composeWake`, qui consomme la demande.
-    const humanRequested = pendingHumanWake(this.#o.dataDir, Date.now()) !== null;
-    const wake = await this.#composeWake(ticket, memory, billing);
+    const humanRequested = pendingHumanWake(this.#o.dataDir, Date.now()) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir));
+    const wake = await this.#composeWake(ticket, memory, billing, keyboardContext === null ? [] : [keyboardContext]);
     this.#sessions.set(ticket.sessionId, {
       revisionId: ticket.policyRevisionId,
       experimentId,
@@ -674,6 +719,19 @@ export class WakeDaemon implements SessionLauncher {
     const startedAtMs = Date.now();
     let result: SessionResult;
     try {
+      const screenshotSurface = configuredWakeScreenshot(this.#o.dataDir, this.#o.wakeScreenshot);
+      const wakeImage =
+        this.#real !== null &&
+        screenshotSurface !== undefined &&
+        (this.#registration.id === "claude" || this.#registration.id === "codex")
+          ? await captureWakeScreenshot(screenshotSurface)
+          : undefined;
+      if (screenshotSurface !== undefined)
+        this.#log(
+          wakeImage === undefined
+            ? "contexte visuel indisponible : réveil sans image"
+            : `contexte visuel ${wakeImage.width}x${wakeImage.height}, ${wakeImage.capturedAt} (${wakeImage.surface})`,
+        );
       const running = await this.#runner.launch({
         profileId: ticket.profileId,
         sessionId: ticket.sessionId,
@@ -684,7 +742,9 @@ export class WakeDaemon implements SessionLauncher {
           revisionId: ticket.policyRevisionId,
           reason: "launch.allowed",
         },
-        context: wake,
+        context: wake.text,
+        systemContext: wake.systemContext,
+        ...(wakeImage === undefined ? {} : { wakeImage }),
         maxInputTokens,
         sessionPrepared: true,
         onSubscription: billing.kind === "subscription_quota",
@@ -754,10 +814,11 @@ export class WakeDaemon implements SessionLauncher {
     ticket: LaunchTicket,
     memory: WakeMemory | null,
     billing: BillingFacts,
-  ): Promise<string> {
+    events: readonly string[] = [],
+  ): Promise<ReturnType<typeof composeWake>> {
     const { uow, db } = this.#store;
     const revision = uow.policies.getRevision(ticket.policyRevisionId);
-    if (revision === null) return memory?.text ?? "";
+    if (revision === null) throw new Error("Wake policy revision missing");
     const agentWakeup = await this.#wakeups.takeDue(Date.now(), this.#quota);
     if (pendingHumanWake(this.#o.dataDir, Date.now()) !== null) {
       consumeHumanWake(this.#o.dataDir);
@@ -771,6 +832,12 @@ export class WakeDaemon implements SessionLauncher {
           : "sandbox";
     const composition = composeWake({
       templates: this.#templates,
+      events: [
+        ...events,
+        ...(this.#backgroundJobs?.store.events(true) ?? []),
+        // Contexte en cours noté par l'agent : rappel de son projet et de ses réveils budgétés.
+        ...[currentContextEvent(artifactsDirFor(this.#o.dataDir))].filter((e) => e !== null),
+      ],
       revision,
       isolation,
       onSubscription: billing.kind === "subscription_quota",
@@ -791,7 +858,7 @@ export class WakeDaemon implements SessionLauncher {
         ? `réveil : relance « ${composition.nudge ?? "—"} » (${composition.source})`
         : `réveil : demande de l'agent « ${composition.agentWakeupId} » à la place de la relance`,
     );
-    return composition.text;
+    return composition;
   }
 
   #memory(experimentId: ExperimentId | null, maxInputTokens: number): WakeMemory | null {

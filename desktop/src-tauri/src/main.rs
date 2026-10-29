@@ -50,8 +50,40 @@ async fn wake_stop() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn wake_on() -> Result<CliRun, String> { blocking(|| cli::wake(Verb::On)).await }
+
+#[tauri::command]
+async fn wake_always_on() -> Result<CliRun, String> { blocking(cli::always_on).await }
+
+#[tauri::command]
 async fn wake_now() -> Result<CliRun, String> {
-    blocking(|| cli::wake(Verb::Wake)).await
+    blocking(cli::wake_now).await
+}
+
+#[tauri::command]
+async fn wake_messages() -> Result<CliRun, String> {
+    blocking(|| cli::wake(Verb::Messages)).await
+}
+
+#[tauri::command]
+async fn wake_history() -> Result<CliRun, String> {
+    blocking(|| cli::wake(Verb::WakeHistory)).await
+}
+
+#[tauri::command]
+async fn wake_open_location(kind: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || cli::open_wake_location(&kind))
+        .await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn wake_reply(idempotency_key: String, text: String) -> Result<CliRun, String> {
+    blocking(move || cli::wake_reply(idempotency_key, text)).await
+}
+
+#[tauri::command]
+async fn helpers_answers() -> Result<CliRun, String> {
+    blocking(cli::helpers_answers).await
 }
 
 #[tauri::command]
@@ -131,14 +163,17 @@ impl Light {
 struct Switch {
     on: CheckMenuItem<Wry>,
     wake: CheckMenuItem<Wry>,
+    always: CheckMenuItem<Wry>,
     off: CheckMenuItem<Wry>,
 }
 
 impl Switch {
-    fn show(&self, light: Light) {
-        let _ = self.on.set_checked(light == Light::On);
-        let _ = self.wake.set_checked(light == Light::Awake);
+    fn show(&self, light: Light, always_on: bool) {
+        let _ = self.on.set_checked(light == Light::On && !always_on);
+        let _ = self.wake.set_checked(light == Light::Awake && !always_on);
         let _ = self.off.set_checked(light == Light::ForcedOff);
+        let _ = self.always.set_checked(always_on);
+        let _ = self.always.set_enabled(light != Light::ForcedOff);
         // Après un arrêt d'urgence, seule une commande explicite hors menu peut relancer.
         let _ = self.on.set_enabled(light != Light::ForcedOff);
         let _ = self.wake.set_enabled(light != Light::ForcedOff);
@@ -146,12 +181,14 @@ impl Switch {
 }
 
 fn refresh_light(tray: &TrayIcon<Wry>, switch: &Switch) {
-    let light = Light::of(&cli::wake(Verb::Status));
+    let status = cli::wake(Verb::Status);
+    let light = Light::of(&status);
+    let always_on = status.as_ref().ok().and_then(|r| serde_json::from_str::<serde_json::Value>(&r.stdout).ok()).map(|j| j["data"]["executionMode"] == "always-on" && matches!(light, Light::On | Light::Awake)).unwrap_or(false);
     if let Ok(icon) = Image::from_bytes(light.icon()) {
         let _ = tray.set_icon(Some(icon));
     }
     let _ = tray.set_tooltip(Some(light.tooltip()));
-    switch.show(light);
+    switch.show(light, always_on);
 }
 
 fn show_panel(app: &AppHandle) {
@@ -166,7 +203,7 @@ fn show_panel(app: &AppHandle) {
 fn menu_action(app: &AppHandle, verb: Verb) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _ = cli::wake(verb);
+        let _ = if matches!(verb, Verb::Wake) { cli::wake_now() } else if matches!(verb, Verb::AlwaysOn) { cli::always_on() } else { cli::wake(verb) };
         if let (Some(tray), Some(switch)) = (app.tray_by_id("wake"), app.try_state::<Switch>()) {
             refresh_light(&tray, &switch);
         }
@@ -184,6 +221,13 @@ fn main() {
             wake_resume,
             wake_stop,
             wake_now,
+            wake_on,
+            wake_always_on,
+            wake_messages,
+            wake_history,
+            wake_open_location,
+            wake_reply,
+            helpers_answers,
             owner_threads,
             owner_thread,
             owner_reply
@@ -192,6 +236,7 @@ fn main() {
             let open = MenuItem::with_id(app, "open", "Ouvrir le panneau", true, None::<&str>)?;
             let on = CheckMenuItem::with_id(app, "mode_on", "On — réveils autorisés", true, false, None::<&str>)?;
             let wake = CheckMenuItem::with_id(app, "mode_wake", "Réveil — maintenant", true, false, None::<&str>)?;
+            let always = CheckMenuItem::with_id(app, "mode_always", "Always-on — enchaîner les réponses", true, false, None::<&str>)?;
             let off = CheckMenuItem::with_id(app, "mode_off", "Force-off — arrêt d'urgence", true, false, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Pause", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quitter le panneau (Wake continue)", true, None::<&str>)?;
@@ -202,6 +247,7 @@ fn main() {
                     &PredefinedMenuItem::separator(app)?,
                     &on,
                     &wake,
+                    &always,
                     &off,
                     &pause,
                     &PredefinedMenuItem::separator(app)?,
@@ -216,7 +262,8 @@ fn main() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_panel(app),
                     // « On » lève une pause ; la CLI refuse après un arrêt d'urgence.
-                    "mode_on" => menu_action(app, Verb::Resume),
+                    "mode_on" => menu_action(app, Verb::On),
+                    "mode_always" => menu_action(app, Verb::AlwaysOn),
                     "mode_wake" => menu_action(app, Verb::Wake),
                     "mode_off" => {
                         menu_action(app, Verb::Stop);
@@ -237,7 +284,7 @@ fn main() {
                     }
                 })
                 .build(app)?;
-            app.manage(Switch { on, wake, off });
+            app.manage(Switch { on, wake, always, off });
 
             let handle = app.handle().clone();
             std::thread::spawn(move || loop {

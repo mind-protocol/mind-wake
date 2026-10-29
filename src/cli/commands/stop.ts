@@ -19,6 +19,7 @@ import { EXIT_FAILURE, EXIT_OK, type CommandResult } from "../output.js";
 import { inspectDataDir, type DataDir } from "../paths.js";
 import { withControlStore } from "./control.js";
 import { NO_PROFILE_HINT } from "./read.js";
+import { terminateBackgroundJobs } from "../../daemon/background-jobs.js";
 
 export interface StopTermination {
   readonly sessionId: string;
@@ -101,6 +102,8 @@ export function stop(ctx: CliContext, dataDir: DataDir): CommandResult<StopData>
     }
   }
   const persisted = outcome?.persistence.persisted ?? false;
+  try { terminations.push(...terminateBackgroundJobs(dataDir.path,ctx.platform)); }
+  catch (error) { terminations.push({sessionId:"background-jobs",processFound:null,confirmed:false,elapsedMs:0,detail:String(error)}); }
   return result({
     profileId: DEFAULT_PROFILE_ID,
     persisted,

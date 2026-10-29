@@ -1,0 +1,180 @@
+/** Durable delivery queue, separate from the human conversation history. */
+import fs from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
+
+export interface InboxMessage {
+  id: string;
+  at: string;
+  text: string;
+}
+const FILE = "owner-inbox.sqlite";
+/** Hook delivery receipts; delivery does not attest that the model read or understood. */
+export function readOwnerReceipts(dataDir: string): Record<string, string> {
+  const file = path.join(dataDir, FILE);
+  if (!fs.existsSync(file)) return {};
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
+    throw new Error("Invalid inbox store");
+  const db = new Database(file, { readonly: true, fileMustExist: true });
+  try {
+    return Object.fromEntries(
+      (
+        db
+          .prepare(
+            "SELECT id, emitted_at FROM inbox WHERE emitted_session IS NOT NULL AND emitted_at IS NOT NULL",
+          )
+          .all() as { id: string; emitted_at: string }[]
+      ).map((r) => [r.id, r.emitted_at]),
+    );
+  } finally {
+    db.close();
+  }
+}
+function open(dataDir: string): Database.Database {
+  const file = path.join(dataDir, FILE);
+  if (fs.existsSync(file)) {
+    const stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1)
+      throw new Error("Invalid inbox store");
+  }
+  const db = new Database(file);
+  db.pragma("busy_timeout = 5000");
+  db.exec(`CREATE TABLE IF NOT EXISTS inbox (
+    id TEXT PRIMARY KEY, at TEXT NOT NULL, text TEXT NOT NULL,
+    emitted_session TEXT, emitted_at TEXT
+  )`);
+  const columns = new Set(
+    (db.prepare("PRAGMA table_info(inbox)").all() as { name: string }[]).map((c) => c.name),
+  );
+  for (const column of ["claimed_session", "claim_id"])
+    if (!columns.has(column)) {
+      try {
+        db.exec(`ALTER TABLE inbox ADD COLUMN ${column} TEXT`);
+      } catch (error) {
+        if (
+          !(db.prepare("PRAGMA table_info(inbox)").all() as { name: string }[]).some(
+            (c) => c.name === column,
+          )
+        )
+          throw error;
+      }
+    }
+  return db;
+}
+export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): void {
+  const db = open(dataDir);
+  try {
+    db.prepare("INSERT OR IGNORE INTO inbox(id, at, text) VALUES (?, ?, ?)").run(
+      message.id,
+      message.at,
+      message.text,
+    );
+  } finally {
+    db.close();
+  }
+}
+export function ownerMessagePending(dataDir: string): boolean {
+  if (!fs.existsSync(path.join(dataDir, FILE))) return false;
+  const db = open(dataDir);
+  try {
+    return (
+      db.prepare("SELECT 1 FROM inbox WHERE emitted_session IS NULL LIMIT 1").get() !== undefined
+    );
+  } finally {
+    db.close();
+  }
+}
+
+/** Reserve a stream delivery; the hook cannot consume it and no receipt is exposed yet. */
+export function claimOwnerMessages(
+  dataDir: string,
+  session: string,
+  claim: string,
+): InboxMessage[] {
+  if (!fs.existsSync(path.join(dataDir, FILE))) return [];
+  const db = open(dataDir);
+  try {
+    return db
+      .transaction(() => {
+        const messages = db
+          .prepare(
+            "SELECT id,at,text FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid",
+          )
+          .all() as InboxMessage[];
+        const mark = db.prepare("UPDATE inbox SET claimed_session=?,claim_id=? WHERE id=?");
+        for (const message of messages) mark.run(session, claim, message.id);
+        return messages;
+      })
+      .immediate();
+  } finally {
+    db.close();
+  }
+}
+export function confirmOwnerClaim(dataDir: string, session: string, claim: string): void {
+  const db = open(dataDir);
+  try {
+    db.prepare(
+      "UPDATE inbox SET emitted_session=?,emitted_at=?,claimed_session=NULL,claim_id=NULL WHERE claimed_session=? AND claim_id=? AND emitted_session IS NULL",
+    ).run(session, new Date().toISOString(), session, claim);
+  } finally {
+    db.close();
+  }
+}
+/** Process death or failed write releases unsent reservations, retaining their original IDs. */
+export function releaseOwnerClaims(dataDir: string, session?: string): void {
+  if (!fs.existsSync(path.join(dataDir, FILE))) return;
+  const db = open(dataDir);
+  try {
+    if (session === undefined)
+      db.prepare(
+        "UPDATE inbox SET claimed_session=NULL,claim_id=NULL WHERE emitted_session IS NULL",
+      ).run();
+    else
+      db.prepare(
+        "UPDATE inbox SET claimed_session=NULL,claim_id=NULL WHERE emitted_session IS NULL AND claimed_session=?",
+      ).run(session);
+  } finally {
+    db.close();
+  }
+}
+/** One synchronous transaction also serializes simultaneous PostToolUse hooks. */
+export function restoreOwnerMessages(
+  dataDir: string,
+  session: string,
+  ids: readonly string[],
+): void {
+  if (!ids.length) return;
+  const db = open(dataDir);
+  try {
+    db.transaction(() => {
+      const restore = db.prepare(
+        "UPDATE inbox SET emitted_session=NULL, emitted_at=NULL WHERE id=? AND emitted_session=?",
+      );
+      for (const id of ids) restore.run(id, session);
+    }).immediate();
+  } finally {
+    db.close();
+  }
+}
+
+export function takeOwnerMessages(dataDir: string, session: string): InboxMessage[] {
+  if (!fs.existsSync(path.join(dataDir, FILE))) return [];
+  const db = open(dataDir);
+  try {
+    return db
+      .transaction(() => {
+        const rows = db
+          .prepare(
+            "SELECT id, at, text FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid",
+          )
+          .all() as InboxMessage[];
+        const mark = db.prepare("UPDATE inbox SET emitted_session=?, emitted_at=? WHERE id=?");
+        for (const row of rows) mark.run(session, new Date().toISOString(), row.id);
+        return rows;
+      })
+      .immediate();
+  } finally {
+    db.close();
+  }
+}

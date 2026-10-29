@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-helpers-answers"
+description = "Enables the helpers_answers command without any pre-configured scope."
+commands.allow = ["helpers_answers"]
+
+[[permission]]
+identifier = "deny-helpers-answers"
+description = "Denies the helpers_answers command without any pre-configured scope."
+commands.deny = ["helpers_answers"]

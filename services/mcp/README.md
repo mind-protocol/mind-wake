@@ -192,3 +192,9 @@ Les formats ci-dessus suivent les documentations publiques de chaque client à l
 - **Garde de contenu par motifs** : secrets reconnaissables, chemins privés et identifiants privés configurés ; elle ne détecte pas toute donnée sensible.
 - **Exécution depuis les sources** avec `--experimental-transform-types` et des hooks situés dans `test/fixtures/` ; pas encore de paquet construit ni de commande installée.
 - Matching lexical simple : pas de synonymes ni de traduction ; un sujet formulé autrement peut ne trouver aucun guide.
+
+## Messages locaux à son humain : publication, modification, suppression
+
+Avec `MIND_WAKE_OWNER_MESSAGES=1` et un `MIND_WAKE_DATA_DIR` contenant une policy active, le runtime reçoit `message_owner`, `list_owner_messages`, `edit_owner_message` et `delete_owner_message`. Ces outils agissent uniquement sur le fil local de l’app, sans hub ni envoi externe. Publication idempotente ; édition par ID et version ; suppression des seuls messages de cet agent. Un conflit de version demande de relire le message. Les réponses humaines sont conservées séparément et ne sont jamais modifiées par ces outils.
+
+Le fil conserve l’ordre de création lors d’une édition. Une suppression retire le message de l’affichage ; l’historique local des révisions reste conservé. L’ancienne note est proposée avec l’ID `legacy-note` ; à la première mutation réussie elle devient un message géré, sans supprimer le fichier d’origine. Une fois le canal géré actif, une suppression de tous les messages ne réaffiche pas la vieille note.

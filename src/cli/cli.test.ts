@@ -434,6 +434,8 @@ describe("sortie JSON versionnée", () => {
     const data = parseJson((await h.run("status", "--json")).stdout)["data"];
     expect(data).toEqual({
       dataDir: h.dataDir,
+      executionMode: "on",
+      keyboardContext: { state: "off", bufferedChanges: 0 },
       persistence: "memory",
       profile: {
         id: "default",

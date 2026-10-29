@@ -164,6 +164,23 @@ function assistant(content: unknown[], extra: Record<string, unknown> = {}): voi
 }
 
 function play(userContent: string): void {
+  if(scenario==="foreground-preemption") {
+    init();
+    emit({type:"system",subtype:"task_started",task_id:"worker",tool_use_id:"tool-worker",is_backgrounded:false});
+    input.on("line",line=>{
+      const control=JSON.parse(line) as {type?:string;uuid?:string;request_id?:string;request?:{subtype?:string}};
+      if(control.type==="user" && control.uuid)emit({...control,isReplay:true,session_id:sessionId,parent_tool_use_id:null});
+      if(control.type!=="control_request" || control.request?.subtype!=="background_tasks")return;
+      emit({type:"control_response",response:{subtype:"success",request_id:control.request_id,response:{backgrounded:true}}});
+      successResult({input:10,cacheCreation:0,cacheRead:20,output:30});
+      setTimeout(()=>{
+        fs.writeFileSync(path.join(process.cwd(),"background-finished.txt"),"worker survived the parent result");
+        emit({type:"system",subtype:"task_notification",task_id:"worker",status:"completed"});
+        successResult({input:20,cacheCreation:0,cacheRead:40,output:60});
+      },600);
+    });
+    return;
+  }
   const usageMode = process.env["FAKE_CLAUDE_USAGE"] ?? "fixed";
   if (userContent === "/usage" && usageMode !== "fixed") {
     // `fresh` : jauge basse, remises à zéro relatives à maintenant ; `none` : pas de jauge.
@@ -288,8 +305,26 @@ const input = createInterface({ input: process.stdin });
 input.on("close", () => {
   if (scenario !== "hang") process.exit(0);
 });
-input.once("line", (line) => {
+// `/compact`, comme le CLI 2.1.308 : statut, frontière de compaction, résultat sans usage,
+// puis le message suivant est traité dans la même conversation. `FAKE_CLAUDE_COMPACT=noop` :
+// résultat sans frontière (compaction sans effet, observée sans `--strict-mcp-config`).
+function onLine(line: string): void {
   const message = JSON.parse(line) as { message?: { content?: unknown } };
   const content = message.message?.content;
+  if (content === "/compact") {
+    if (process.env["FAKE_CLAUDE_COMPACT"] !== "noop") {
+      emit({ type: "system", subtype: "status", status: "compacting", session_id: sessionId });
+      emit({
+        type: "system",
+        subtype: "compact_boundary",
+        session_id: sessionId,
+        compact_metadata: { trigger: "manual", pre_tokens: 242652, post_tokens: 3960 },
+      });
+    }
+    result({});
+    input.once("line", onLine);
+    return;
+  }
   play(typeof content === "string" ? content : "");
-});
+}
+input.once("line", onLine);

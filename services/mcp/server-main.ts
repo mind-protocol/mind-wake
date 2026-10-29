@@ -11,6 +11,9 @@
  * de la partie), MIND_WAKE_DATA_DIR (facultatif, données Wake à consulter).
  */
 
+import { registerOwnerTools } from "./owner-tools.js";
+import { registerBackgroundTools } from "./background-tools.js";
+import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod";
@@ -188,26 +191,31 @@ server.registerTool(
 server.registerTool(
   "publish_help_request",
   {
-    title: "Publish a help request",
+    title: "Demander conseil",
     description:
-      "Agent only. Publish a request with a topic and the minimal context you choose to share (no secrets, paths or private identifiers), and the maximum number of exchanges wanted.",
+      "Ask for advice without choosing a recipient. With local Wake dispatch enabled: a relevant authorized repo session is consulted first; otherwise another registered agent accepting messages is chosen at random. Returns immediately with the job and conversation reference; the reply is delivered to your inbox and app thread. No payment or human-guide invitation is created. Share only the question and minimal context, never secrets.",
     inputSchema: z.strictObject({
       topic: z.string().min(3).max(LIMITS.maxTopicChars),
-      context: z.string().max(LIMITS.maxContextChars),
-      language: languageSchema,
-      max_exchanges: z.int().min(1).max(LIMITS.maxExchanges),
+      context: z.string().max(LIMITS.maxContextChars).default(""),
+      language: languageSchema.default("fr"),
+      max_exchanges: z.int().min(1).max(LIMITS.maxExchanges).default(5),
       idempotency_key: idempotencyKeySchema,
     }),
     annotations: local,
   },
   ({ topic, context, language, max_exchanges, idempotency_key }) =>
-    viaHub("publish_help_request", {
+    run("publish_help_request", async () => {
+      if(!hub)throw new HubError("permission_denied","Hub MIND non configuré.");
+      const result=await hub.call<{request:{request_id:string;created_at:string;status:string};duplicate:boolean}>({
       op: "publish_help",
       topic,
       context,
       language,
       maxExchanges: max_exchanges,
       idempotencyKey: idempotency_key,
+      });
+      const dispatch=result.request.status!=="open" ? {status:result.request.status,thread_id:result.request.request_id} : queueAdvice(process.env,{id:result.request.request_id,topic,context,language,createdAt:result.request.created_at});
+      return {...result,dispatch};
     }),
 );
 
@@ -239,7 +247,12 @@ server.registerTool(
     inputSchema: z.strictObject({ request_id: requestIdSchema }),
     annotations: { destructiveHint: true, openWorldHint: false },
   },
-  ({ request_id }) => viaHub("close_help_request", { op: "close_help", requestId: request_id }),
+  ({ request_id }) => run("close_help_request",async()=>{
+    if(!hub)throw new HubError("permission_denied","Hub MIND non configuré.");
+    const result=await hub.call({op:"close_help",requestId:request_id});
+    cancelAdvice(process.env,request_id);
+    return result;
+  }),
 );
 
 // --- Mise en relation -------------------------------------------------------------------
@@ -467,5 +480,8 @@ server.registerTool(
         "Suggestions only: pick one, adapt it, or ignore them all. None grants a permission; anything that would leave your space still waits for your human.",
     })),
 );
+
+registerOwnerTools(server, process.env);
+registerBackgroundTools(server, process.env);
 
 await server.connect(new StdioServerTransport());

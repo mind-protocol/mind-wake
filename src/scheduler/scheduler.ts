@@ -93,6 +93,7 @@ export interface SchedulerOptions {
   readonly wakeRequests?: WakeRequestSource;
   /** Réveil demandé par l'humain en attente (`mind-wake wake`) : lève fenêtre et attente. */
   readonly humanWakePending?: (nowMs: number) => boolean;
+  readonly alwaysOn?: () => boolean;
   /** Verrou d'instance du profil, déjà acquis. */
   readonly lock: InstanceLock;
   readonly backoff?: BackoffPolicy;
@@ -331,7 +332,8 @@ export class Scheduler {
 
   /** Dernier refus : jauge d'abonnement illisible (lecture échouée ou hors délai). */
   #blockedOnUnknownQuota(): boolean {
-    return this.#o.state.get(this.#o.profileId).lastDenial === QUOTA_UNKNOWN_KEY;
+    const reason = this.#o.state.get(this.#o.profileId).lastDenial;
+    return reason === QUOTA_UNKNOWN_KEY || reason === "budget_unknown/subscription.snapshot_stale";
   }
 
   /**
@@ -344,6 +346,13 @@ export class Scheduler {
     if (facts.quotaSnapshots === undefined || facts.quotaSnapshots.length === 0) {
       return { kind: "inactive", state: profile.state, detail: "subscription.quota_unknown" };
     }
+    const resolution = resolvePolicy(this.#o.uow.policies,this.#o.profileId);
+    const guard = resolution.status === "active" ? resolution.revision.groups.budget.subscriptionQuota : undefined;
+    const now = this.#o.clock.now();
+    if (guard?.enabled !== true || facts.quotaSnapshots.some(snapshot => {
+      const observed = Date.parse(snapshot.observedAt);
+      return snapshot.provenance !== "measured" || !Number.isFinite(observed) || observed > now || now-observed > guard.maxSnapshotAgeMs;
+    })) return { kind: "inactive", state: profile.state, detail: "subscription.snapshot_stale" };
     const at = iso(this.#o.clock.now());
     const { uow, profileId, state: stateRepo } = this.#o;
     uow.transaction(() => {
@@ -366,7 +375,9 @@ export class Scheduler {
     await this.recover();
     while (!signal.aborted) {
       const result = await this.tick();
-      await sleep(this.#delayAfter(result), signal);
+      const completion = this.#o.alwaysOn?.() === true ? this.#inFlight : null;
+      if (completion !== null) await Promise.race([completion, sleep(this.#delayAfter(result), signal)]);
+      else await sleep(this.#delayAfter(result), signal);
     }
     if (this.#inFlight !== null) await this.#inFlight;
   }
@@ -505,7 +516,7 @@ export class Scheduler {
       return undefined;
     }
     // Pilotage du quota : sessions enchaînées sans délai minimal jusqu'à la cible.
-    const interval = ended === null || revision === null ? null : ended + minIntervalFor(revision);
+    const interval = ended === null || revision === null ? null : ended + (this.#o.alwaysOn?.() === true ? 0 : minIntervalFor(revision));
     if (backoff === null) return interval;
     return interval === null ? backoff : Math.max(backoff, interval);
   }
@@ -518,7 +529,7 @@ export class Scheduler {
     const until = this.#holdUntil(sched, revision);
     if (until === undefined) return {};
     const wallOk = until === null || nowMs >= until;
-    const monoOk = this.#monotonicHold === null || this.#o.clock.monotonic() >= this.#monotonicHold;
+    const monoOk = this.#o.alwaysOn?.() === true ? sched.backoffUntil === null || wallOk : this.#monotonicHold === null || this.#o.clock.monotonic() >= this.#monotonicHold;
     return { backoffExpired: wallOk && monoOk };
   }
 

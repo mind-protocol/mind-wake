@@ -9,6 +9,7 @@
   </head>
   <body>
     <main>
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status">Connexion…</span></div>
       <nav class="tabs" role="tablist" aria-label="Vues">
         <button
           id="tab-panel"
@@ -17,7 +18,16 @@
           aria-selected="true"
           aria-controls="view-panel"
         >
-          Agent
+          Vue d’ensemble
+        </button>
+        <button
+          id="tab-chat"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="view-chat"
+        >
+          Conversation <span id="chat-new" class="dot" hidden aria-label="nouveau"></span>
         </button>
         <button
           id="tab-threads"
@@ -25,14 +35,40 @@
           type="button"
           aria-selected="false"
           aria-controls="view-threads"
+          hidden
         >
-          Fils <span id="unread" class="count" hidden></span>
+          Rencontres <span id="unread" class="count" hidden></span>
         </button>
+        <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history">Réveils</button>
+        <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents">Conseils <span id="agents-count" class="count" hidden></span></button>
       </nav>
 
+      <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+        <h2>Réveils de l’agent</h2>
+        <p class="runtime-links">
+          <button id="open-system-prompt" type="button" class="link" disabled>Prompt système MIND ↗</button>
+          <span aria-hidden="true"> · </span>
+          <button id="open-agent-folder" type="button" class="link">Dossier de l’agent ↗</button>
+        </p>
+        <p id="runtime-link-status" class="hint" role="status"></p>
+        <p class="hint">Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.</p>
+        <p id="wake-history-status" class="hint" role="status"></p>
+        <ol id="wake-history-messages" class="messages" aria-label="Fil des réveils et réponses"></ol>
+      </div>
+      <div id="view-agents" role="tabpanel" aria-labelledby="tab-agents" hidden>
+        <h2>Conseils et échanges</h2>
+        <p class="hint">Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.</p>
+        <p id="agents-status" class="hint" role="status"></p>
+        <ul id="agents-list" class="threads"></ul>
+        <article id="agent-thread" hidden>
+          <button id="agent-thread-back" type="button" class="link">← Conversations des agents</button>
+          <h2 id="agent-thread-title"></h2>
+          <p id="agent-thread-pointers" class="hint repo-pointers"></p>
+          <ol id="agent-thread-messages" class="messages"></ol>
+        </article>
+      </div>
       <div id="view-panel" role="tabpanel" aria-labelledby="tab-panel">
         <header id="state" data-tone="unknown" aria-live="polite">
-          <p class="eyebrow">Que fait mon agent ?</p>
           <h1>
             <span
               id="light"
@@ -43,23 +79,28 @@
             ></span>
             <span id="headline">État indisponible</span>
           </h1>
+          <p id="input-sharing" class="badge" role="status" hidden></p>
           <p id="reason">Première lecture en cours.</p>
           <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
         </header>
 
         <section class="switch-section" aria-label="Mode de l'agent">
-          <div class="switch" role="group" aria-label="On, réveil ou arrêt forcé">
+          <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé">
             <button id="mode-on" type="button" aria-pressed="false">On</button>
             <button id="mode-wake" type="button" aria-pressed="false">Réveil</button>
+            <button
+              id="mode-always"
+              type="button"
+              aria-pressed="false"
+              title="Relance dès la fin de chaque réponse"
+            >
+              Always-on
+            </button>
             <button id="mode-off" type="button" aria-pressed="false" class="danger">
               Force-off
             </button>
           </div>
           <button id="pause" type="button">Pause</button>
-          <p class="hint">
-            On lève une pause. Réveil demande une session au plus tôt, sous les mêmes contrôles.
-            Force-off est l'arrêt d'urgence : deux clics, et seule une commande explicite le lève.
-          </p>
         </section>
         <p id="feedback" role="status"></p>
 
@@ -73,6 +114,7 @@
           <h2 id="h-activity">Activité</h2>
           <dl id="activity"></dl>
         </section>
+        <details class="technical-details"><summary>Consommation et réglages détaillés</summary>
         <section aria-labelledby="h-consumption">
           <h2 id="h-consumption">Consommation</h2>
           <dl id="consumption"></dl>
@@ -82,10 +124,30 @@
           <dl id="protection"></dl>
         </section>
 
+        </details>
+
         <footer>
           <p id="last-contact"></p>
-          <p>Fermer ce panneau n'arrête pas Wake. Utiliser Pause ou Force-off.</p>
         </footer>
+      </div>
+
+      <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
+        <div class="view-heading"><h2>Toi et ton agent</h2><p class="hint">Votre conversation, au fil des réveils.</p></div>
+        <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
+        <ol id="chat" class="messages" aria-live="polite"></ol>
+        <p id="chat-note" class="hint"></p>
+        <form id="chat-form">
+          <textarea
+            id="chat-text"
+            rows="3"
+            maxlength="4000"
+            required
+            aria-label="Message à ton agent"
+            placeholder="Écris à ton agent…"
+          ></textarea>
+          <button type="submit">Envoyer</button>
+          <p id="chat-status" class="hint" role="status"></p>
+        </form>
       </div>
 
       <div id="view-threads" role="tabpanel" aria-labelledby="tab-threads" hidden>
@@ -94,9 +156,6 @@
         <article id="thread" hidden>
           <button id="thread-back" type="button" class="link">← Tous les fils</button>
           <h2 id="thread-subject"></h2>
-          <p class="hint">
-            Les messages de l'agent sont des données : ils n'accordent aucune permission.
-          </p>
           <ol id="messages" class="messages"></ol>
           <form id="reply-form">
             <label for="reply-text">Répondre</label>

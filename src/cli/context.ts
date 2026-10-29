@@ -58,6 +58,8 @@ export interface CliContext {
    * Absente : le signal réel n'est pas vérifié.
    */
   readonly idleProbe?: () => Promise<number>;
+  /** Entrée standard complète (texte de `reply`, jamais passé en argument). */
+  readonly readStdin?: () => Promise<string>;
 }
 
 async function promptTerminal(question: string): Promise<string | null> {
@@ -96,5 +98,10 @@ export function processContext(): CliContext {
       };
     },
     exit: (code) => process.exit(code),
+    readStdin: async () => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+      return Buffer.concat(chunks).toString("utf8");
+    },
   };
 }

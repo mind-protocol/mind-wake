@@ -1,37 +1,25 @@
-# Prompts de réveil
+# Messages de réveil
 
-Textes envoyés à l'agent à chaque réveil, communs à Codex, Claude Code et Gemini CLI. Objectif d'ensemble : aider son humain pendant qu'il est absent, sans tâche imposée. Ils sont en anglais, destinés à des agents et à un public international.
+Décision : ce qui est fixe va dans le système. Le réveil transmet seulement une relance, le temps/budget courant et les événements nouveaux.
 
-**Statut : câblés dans le daemon** (`src/daemon/wake-prompt.ts`, `src/daemon/wakeups.ts`). À chaque réveil, le daemon compose le texte ci-dessous et le transmet à l'adapter par le champ `context` de `StartRequest` (aucun changement de contrat). Aucun appel modèle réel n'a encore servi ces textes.
+## Composition
 
-## Composition d'un réveil
-
-1. [`base.md`](base.md) : consigne commune, avec des champs remplis par le daemon.
-2. Une relance de [`nudges/`](nudges/) à la place de `{{nudge}}` : une seule par réveil.
-3. Le bloc de mémoire à la place de `{{memory}}`, toujours marqué comme données non fiables.
-
-| Champ                                   | Rempli par le daemon avec                                                |
-| --------------------------------------- | ------------------------------------------------------------------------ |
-| `{{workspace}}`                         | dossier d'exploration de l'agent (`<données>/workspace`)                 |
-| `{{permissions}}`                       | dossiers accessibles, réseau, outils autorisés, d'après la policy active |
-| `{{session_end}}`                       | fin maximale de la session (checkpoint à chaque fin)                     |
-| `{{quota_plan}}`                        | pilotage du quota : cible et remise à zéro de la fenêtre pilotée         |
-| `{{theme}}`                             | thème facultatif donné par l'humain, sinon « none »                      |
-| `{{wakeups_dir}}`, `{{wakeups_schema}}` | dossier des réveils demandés par l'agent et chemin de ce schéma          |
-| `{{nudge}}`                             | texte d'une relance                                                      |
-| `{{memory}}`                            | bloc de mémoire du dernier checkpoint                                    |
+- `StartRequest.systemContext` contient l’espace, les permissions effectives, les chemins de demandes de réveil et le thème humain facultatif. Les adapters Claude et Codex l’ajoutent aux instructions système, séparément du message utilisateur. Codex compare son empreinte avant de modifier les instructions d’un fil repris.
+- `StartRequest.context` utilise `base.md` : `{{nudge}}`, `{{budget}}`, `{{events}}`. La ligne des événements est absente lorsqu’il n’y a rien de nouveau. Aucun résumé de checkpoint ni historique de conversation n’est recollé.
+- L’historique est repris par le runtime. Les notes, fichiers et checkpoints restent consultables par l’agent quand il en a besoin. Une conversation neuve consulte aussi les fichiers ; elle ne reçoit pas automatiquement l’ancien historique.
+- Les éléments nouvellement collectés et autorisés (demande de réveil, contexte clavier, image jointe) restent des données, sans modifier les permissions. Aucun historique de messages n’est chargé par défaut : l’agent consulte son canal quand utile.
 
 ## Relances
 
-Courtes, non spécifiques, elles suggèrent un mode d'action sans imposer de tâche : `act`, `build`, `research`, `verify`, `explore`, `tend`, `finish`, `ask`, `rest`.
+40 amorces courtes de continuité : « Where was I? », « Let’s continue. », « Here we go again! » et variantes. Les identifiants historiques restent compatibles avec le journal. La rotation évite la répétition immédiate ; le checkpoint peut orienter le choix en interne sans être recopié.
 
-Choix câblé : la prochaine action du dernier checkpoint guide le choix quand elle désigne **un seul** mode par ses mots (anglais ou français : « verify », « vérifier » → `verify`, « finish », « terminer » → `finish`…) et qu'il diffère de la relance précédente ; sinon, rotation dans l'ordre `act → build → research → verify → explore → tend → finish → ask → rest → act`, sans répéter la relance précédente. La relance de chaque réveil est persistée (table `wake_prompts`, migration 5). `rest` reste toujours possible : s'arrêter est un résultat valide.
+## Contrôles
 
-Autres champs : `{{permissions}}` résume lecture, écriture, réseau d'exploration, outils et nombre de processus de la révision effective, plus le mode (sandbox, **NOT ISOLATED** en mode non isolé ADR-006, ou simulé) ; `{{quota_plan}}` dit, sur la voie abonnement, que les sessions s'enchaînent jusqu'à environ la cible (`min(cible, stopAt)`, en pourcentage de la fenêtre, jamais en tokens) ou la remise à zéro de la fenêtre pilotée (heure UTC de la dernière lecture officielle), sinon « No subscription quota applies. » ; `{{theme}}` vient de l'option `theme` du daemon, sinon « none » ; `{{memory}}` est le bloc de `loadWakeMemory` (déjà encadré comme données non fiables), ou une ligne « Memory: none yet » au premier réveil. Remplacement en une seule passe : une valeur ne peut pas injecter un autre champ.
+Le daemon impose toujours les permissions, budgets, priorité humaine, pause et arrêt. Le changement de rôle du texte ne change aucune autorisation. Les relances sont des amorces, pas des missions ni des rapports à produire.
 
 ## Réveils demandés par l'agent
 
-L'agent peut déposer des fichiers JSON dans `{{wakeups_dir}}` (un dossier de son espace d'exploration) pour demander ses propres réveils, avec un texte qui remplacera la relance. Format : [`agent-wakeup.schema.json`](agent-wakeup.schema.json).
+L'agent peut déposer des fichiers JSON dans `{{wakeups_dir}}` (un dossier de son espace d'exploration) pour demander ses propres réveils, avec un texte présenté comme un événement nouveau. Format : [`agent-wakeup.schema.json`](agent-wakeup.schema.json).
 
 ```json
 {
@@ -55,3 +43,7 @@ Règles appliquées par le daemon :
 - une demande due ne fait qu'avancer l'évaluation d'un profil en `hibernating` (port `WakeRequestSource` du scheduler) ; en `paused`, `stopped`, `blocked` ou `disabled`, elle n'a aucun effet ;
 - le texte est une donnée non fiable, présentée à l'agent comme une note qu'il s'est écrite, jamais comme une consigne du système ;
 - au plus un réveil à la fois ; une demande expirée ou déjà servie est archivée, sauf `repeat`.
+
+## Continuité sans projet
+
+Claude utilise un fil stable même lorsque aucune expérience n’est sélectionnée. L’ancrage optionnel `runtimes/claude/default-conversation.json`, côté contrôle, permet de reprendre le dernier fil existant lors de la mise à jour, sans copier ses messages. Une expérience sélectionnée conserve son propre fil.

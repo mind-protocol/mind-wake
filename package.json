@@ -21,7 +21,8 @@
     "desktop": "npm run build && npm run desktop:ui && cargo run --manifest-path desktop/src-tauri/Cargo.toml",
     "devnet:kit": "node --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts services/advice/rail-solana-devnet/kit-main.ts",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "setup": "node scripts/setup.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "2.4.0",

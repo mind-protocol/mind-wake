@@ -19,6 +19,7 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import { defaultRegistry } from "../../daemon/registry.js";
+import {enqueueOwnerMessage,readOwnerReceipts} from "../../communication/owner-inbox.js";
 import { canReadQuota } from "../../runner/host.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
 import { SpawnedCodexProcess } from "../../../test/fixtures/codex/process.js";
@@ -216,6 +217,24 @@ describe("protocole app-server", () => {
 });
 
 describe("commande", () => {
+  it("the active policy model is retained when starting with the default registry",()=>{
+    expect(defaultRegistry({adapterId:"codex",model:"gpt-6.1-sol"}).get("codex" as never)?.runtime().model).toBe("gpt-6.1-sol");
+  });
+  it("native host runtime uses its configured CLI profile and keeps native settings", async () => {
+    h.attestation = { confined: false, selfTestPassed: false, detail: "host" };
+    const home = path.join(h.dir, "native-home");
+    fs.mkdirSync(home);
+    enqueueOwnerMessage(h.dir,{id:"switch-pending",at:new Date().toISOString(),text:"Pending message during switch"});
+    const subject = adapter({ transport: undefined, nativeCodexHome: home, nativeCapabilities: true,ownerInboxDir:h.dir });
+    const req = request();
+    const policy = { ...req.policy, groups: { runtime: { hostUnsandboxedAcknowledged: true, nativeCapabilities: true } } } as unknown as PolicyRevision;
+    await collect(subject, { ...req, policy });
+    expect(h.launches[0]?.env["CODEX_HOME"]).toBe(home);
+    expect(h.launches[0]?.args).not.toContain('shell_environment_policy.inherit="none"');
+    expect(JSON.stringify(h.requests("turn/start")[0])).toContain("Pending message during switch");
+    expect(readOwnerReceipts(h.dir)["switch-pending"]).toBeTruthy();
+  });
+
   it("CODEX_HOME dédié, aucune variable au nom de secret, réglages Wake prioritaires", () => {
     const base = {
       executable: { path: "C:\\codex\\codex.exe" },
@@ -475,6 +494,17 @@ describe("annulation", () => {
 });
 
 describe("continuité", () => {
+  it("garde la configuration durable dans le système et les nouveautés dans le tour", async () => {
+    const threads = new FileThreadStore(path.join(h.dir, "environment-threads"));
+    const req = { ...request(), systemContext: "Durable runtime environment", context: "Where was I?\nTime: provider limits only." };
+    await collect(adapter({ threads }), req);
+    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
+      developerInstructions: expect.stringContaining("Durable runtime environment"),
+    });
+    expect(JSON.stringify(h.requests("turn/start")[0]?.["params"])).not.toContain("Durable runtime environment");
+    await collect(adapter({ threads }), { ...req, context: "Let's continue.\nTime: provider limits only." });
+    expect(h.requests("thread/resume")[0]?.["params"]).not.toHaveProperty("developerInstructions");
+  });
   it("fil persisté et repris ; prompt système réinjecté seulement s'il change", async () => {
     const threads = new FileThreadStore(path.join(h.dir, "threads"));
     await collect(adapter({ threads }), request());

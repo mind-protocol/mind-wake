@@ -160,3 +160,12 @@ describe("voyant et sélecteur", () => {
     expect(panelView(null, NOW).light).toBe("unknown");
   });
 });
+
+it("always-on est affiché comme un mode persistant et ne dépasse pas l’arrêt humain", () => {
+  const data = profileData("running") as Record<string, unknown>;
+  data["executionMode"] = "always-on";
+  expect(panelView(read(data), NOW)).toMatchObject({ alwaysOn: true, canAlwaysOn: true });
+  const stopped = profileData("stopped") as Record<string, unknown>;
+  stopped["executionMode"] = "always-on";
+  expect(panelView(read(stopped), NOW)).toMatchObject({ alwaysOn: false, canAlwaysOn: false });
+});

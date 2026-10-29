@@ -38,6 +38,8 @@ export interface RuntimeGroup {
    * Object), la priorité humaine, la pause, la garde de quota et le journal restent dus.
    */
   readonly hostUnsandboxedAcknowledged?: true;
+  /** Load the native CLI tools, settings, skills and configured MCP servers. */
+  readonly nativeCapabilities?: true;
 }
 
 /** Fenêtre hebdomadaire évaluée dans le fuseau de la policy. Heures au format `HH:MM`. */

@@ -113,7 +113,8 @@ export function sandboxClaudeLauncher(options: SandboxClaudeLauncherOptions): Cl
       };
     },
     launch(spec: ClaudeLaunchSpec): ClaudeProcess {
-      if (spec.deadline === null) throw new Error("Unlimited duration is currently supported by the host launcher only");
+      if (spec.deadline === null)
+        throw new Error("Unlimited duration is currently supported by the host launcher only");
       const remaining = Date.parse(spec.deadline) - now();
       return options.sandbox.launch({
         jobName: options.jobNameFor(spec.sessionId),

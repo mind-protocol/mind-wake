@@ -1,0 +1,21 @@
+/** Prepare a fresh native Codex policy. Does not activate or grant permissions. */
+import fs from 'node:fs';
+import path from 'node:path';
+import { parseArgs } from 'node:util';
+import { fileURLToPath } from 'node:url';
+const {values} = parseArgs({options:{output:{type:'string'},model:{type:'string',default:'gpt-6.1-sol'},'time-zone':{type:'string',default:'Europe/Paris'}}});
+if (!values.output) throw Error('Usage: node scripts/prepare-codex-policy.mjs --output FILE [--model MODEL] [--time-zone IANA]');
+new Intl.DateTimeFormat('en', {timeZone:values['time-zone']});
+const repo = fileURLToPath(new URL('../', import.meta.url));
+const policy = JSON.parse(fs.readFileSync(path.join(repo,'src/adapters/claude/policy-claude.example.json'),'utf8'));
+delete policy.identity;
+policy.runtime = {adapterId:'codex',provider:'openai',model:values.model,authMode:'chatgpt',hostUnsandboxedAcknowledged:true,nativeCapabilities:true};
+Object.assign(policy.schedule,{timeZone:values['time-zone'],weeklyWindows:Array.from({length:7},(_,day)=>({day,start:'00:00',end:'24:00'})),minIntervalBetweenSessionsMs:0,maxSessionDurationMs:0});
+Object.assign(policy.humanPriority,{activitySignal:'none',idleThresholdMs:0});
+Object.assign(policy.budget,{tokensPerSession:0,tokensPerPeriod:0,sessionsPerPeriod:0,userReserveTokens:0,checkpointTokens:0,paidApi:{authorized:false}});
+policy.budget.period.timeZone = values['time-zone'];
+Object.assign(policy.budget.subscriptionQuota,{enabled:true,accountRiskAcknowledged:true,providerLimitsOnly:true,startBelowBasisPoints:10000,stopAtBasisPoints:10000,userReserveBasisPoints:0,overshootBoundBasisPoints:null,targetUsageBasisPoints:10000});
+policy.filesAndTools.allowedExecutables = ['codex'];
+policy.network.providerTransportDestinations = ['chatgpt.com','api.openai.com'].map(host=>({host,ports:[443],purpose:'Codex avec connexion ChatGPT'}));
+fs.writeFileSync(path.resolve(values.output),JSON.stringify(policy,null,2)+'\n',{flag:'wx'});
+console.log('Brouillon écrit. Aucune activation : examiner puis utiliser policy configure et enable après accord.');

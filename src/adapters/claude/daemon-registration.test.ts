@@ -176,6 +176,12 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
         log: (line) => lines.push(line),
       });
       expect(daemon.simulated).toBe(false);
+      const personalDir = path.join(dir.path, "workspace", "artifacts");
+      fs.mkdirSync(personalDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(personalDir, "PERSONALITY.md"),
+        "My evolving voice: warm, playful and candid.",
+      );
       const summary = await daemon.run();
       expect(summary.sessions).toHaveLength(1);
       expect(summary.sessions[0]).toMatchObject({
@@ -194,6 +200,24 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
       expect(sessions).toHaveLength(1);
       expect(sessions[0]?.argv).toContain("--dangerously-skip-permissions");
       expect(sessions[0]?.argv).toContain("--append-system-prompt-file");
+      const hookSettings = JSON.parse(
+        sessions[0]!.argv[sessions[0]!.argv.indexOf("--settings") + 1]!,
+      );
+      expect(hookSettings.hooks.PostToolUse[0].hooks[0].args).toContain(dir.path);
+      expect(hookSettings.hooks.SessionStart).toBeDefined();
+      const promptIndex = sessions[0]!.argv.indexOf("--append-system-prompt-file");
+      const runtimePrompt = fs.readFileSync(sessions[0]!.argv[promptIndex + 1]!, "utf8");
+      expect(runtimePrompt).toContain("You are an agent of MIND.");
+      expect(runtimePrompt).toContain(
+        "Stay actively engaged throughout the time and compute allocated to this wake.",
+      );
+      expect(runtimePrompt).toContain("Wake environment — runtime configuration");
+      expect(runtimePrompt).toContain("Your space:");
+      expect(runtimePrompt).toContain("NOT ISOLATED");
+      expect(runtimePrompt).toContain("A human theme is optional");
+      expect(runtimePrompt).toContain("My evolving voice: warm, playful and candid.");
+      expect(runtimePrompt).toContain("artifacts/questions-for-human.md");
+      expect(runtimePrompt).toContain("old self-imposed rules");
       expect(sessions[0]?.argv).toContain("--session-id");
 
       const store = openStoreReadOnly(controlDbPath(dir.path));

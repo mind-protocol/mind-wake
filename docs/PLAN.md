@@ -22,14 +22,14 @@ Aucun port, aucune lecture directe de SQLite. Lancement : `npm run desktop`. Vé
 
 Non vérifié : le tray, la fermeture et l'arrêt d'urgence cliqués à la main.
 
-Direction agent-first (révision d'ADR-007, `SPEC.md` §3.1) : l'agent installe et configure par `install.md` et la CLI. L'application est optionnelle et n'est jamais le seul moyen de configurer. Les confirmations Windows restent à l'humain. Découpage desktop, chaque tranche apportant d'abord ses commandes CLI `--json` puis leur vue dans l'application :
+Direction agent-first (révision d'ADR-007, `SPEC.md` §3.1) : l'agent installe et configure par `install.md` et la CLI. L’application est requise dans l’installation produit, avec le moteur local et le MCP, tout en conservant les équivalents CLI pour l’administration et les tests. Les confirmations Windows restent à l'humain. Découpage desktop, chaque tranche apportant d'abord ses commandes CLI `--json` puis leur vue dans l'application :
 
 | Tranche | Contenu | Dépend de | Recettes |
 | --- | --- | --- | --- |
 | **D0 Squelette** | Tray avec voyant, sélecteur On / Réveil / Force-off (`resume`, `wake`, `stop`), pause, panneau, graphe réveils / consommation sur 24 h depuis `journal --json` | — | W01, W03, W04 en simulé : fait. Panneau piloté dans l'application réelle ; menu de l'icône non cliqué. |
 | **D1 Bindings de session** | `session bind`, `session list`, `session revoke` dans la CLI : registre local protégé, credential par binding, génération, révocation. Vue en lecture et révocation dans l'application. | Contrôleur local, `services/mcp` | B01–B07 |
 | **D2 Configuration MCP** | Commande qui prépare la configuration MCP du runtime (diff montré avant écriture, retour arrière), diagnostic `doctor`. | D1, adapters runtime | Configuration réversible, aucun credential en argument ni en fichier committé |
-| **D3 Fil propriétaire §23** | **Fait :** CLI `services/mcp/owner-main.ts` (`threads`, `thread`, `reply` par l'entrée standard), onglet Fils avec badge et réponse, testés contre un vrai hub. **Reste :** `message_owner` (destinataire déduit, plafonds, heures de calme), outbox, toasts après un spike de clic, préférences dans la policy, clé dans le coffre Windows. | D0, policy | N01, N02 partiels ; N03–N06 |
+| **D3 Fil propriétaire §23** | **Fait :** onglet Messages relié à l'agent Wake réel, avec `mind-wake messages` / `reply` (note de l'agent ; registre humain hors de son espace, recopie balisée). Fils du hub : CLI `services/mcp/owner-main.ts` (`threads`, `thread`, `reply` par l'entrée standard), onglet Fils avec badge et réponse, testés contre un vrai hub. **Reste :** `message_owner` (destinataire déduit, plafonds, heures de calme), outbox, toasts après un spike de clic, préférences dans la policy, clé dans le coffre Windows. | D0, policy | N01, N02 partiels ; N03–N06 |
 | **D4 Budgets et protection** | Ledger lisible par `status`, signal d'activité réel, « Pourquoi peut-il travailler maintenant ? » | S3, S6 | W02, W05, W06 |
 | **D5 Paquet et install.md** | Installation, diagnostic et retrait de l'application avec le paquet F5. Parcours agent-first avec annonce des invites Windows. Aucune publication sans demande. | S14 | A01, A12 |
 

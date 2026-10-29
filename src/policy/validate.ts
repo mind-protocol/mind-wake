@@ -56,7 +56,7 @@ export function createSafeDraft(identity: NonNullable<PolicyDraft["identity"]>):
 
 const GROUP_FIELDS: { readonly [G in keyof PolicyGroups]: readonly (keyof PolicyGroups[G])[] } = {
   identity: ["profileId", "agentId"],
-  runtime: ["adapterId", "provider", "model", "authMode", "hostUnsandboxedAcknowledged"],
+  runtime: ["adapterId", "provider", "model", "authMode", "hostUnsandboxedAcknowledged", "nativeCapabilities"],
   schedule: ["timeZone", "weeklyWindows", "minIntervalBetweenSessionsMs", "maxSessionDurationMs"],
   humanPriority: [
     "activitySignal",
@@ -295,6 +295,10 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
     );
   }
 
+  const nativeCapabilities = field(c, runtime, "runtime", "nativeCapabilities");
+  if (nativeCapabilities !== undefined && (nativeCapabilities !== true || hostUnsandboxed !== true)) {
+    c.add("runtime.nativeCapabilities", "invalid", "native capabilities require the explicitly authorized host runtime");
+  }
   const schedule = groupObject(c, draft, "schedule");
   const scheduleTz = field(c, schedule, "schedule", "timeZone");
   if (scheduleTz !== undefined && !isValidTimeZone(scheduleTz)) {
@@ -484,6 +488,7 @@ export function validateDraft(draft: unknown, expectedProfileId?: string): Valid
       model,
       authMode,
       ...(hostUnsandboxed === true ? { hostUnsandboxedAcknowledged: true } : {}),
+      ...(nativeCapabilities === true ? { nativeCapabilities: true } : {}),
     } as PolicyGroups["runtime"],
     schedule: {
       timeZone: scheduleTz,

@@ -49,6 +49,7 @@ import type {
   UtcTimestamp,
 } from "../contracts/index.js";
 import { isProfileTransitionAllowed } from "../contracts/index.js";
+import { successfulRuntimeExit } from "./runtime-exit.js";
 import { JournalWriter } from "../journal/index.js";
 import {
   assessActiveSession,
@@ -107,6 +108,7 @@ export interface LaunchGrant {
   readonly decision: PolicyDecision;
   /** Contexte borné transmis à l'agent ; aucun credential. */
   readonly context: string;
+  readonly systemContext?: string;
   readonly wakeImage?: WakeImage;
   readonly maxInputTokens: number;
   /**
@@ -520,6 +522,7 @@ export class SessionRunner {
           reservationId: session.reservation.id,
           policy: session.revision,
           context: session.grant.context,
+          ...(session.grant.systemContext === undefined ? {} : { systemContext: session.grant.systemContext }),
           ...(session.grant.wakeImage === undefined ? {} : { wakeImage: session.grant.wakeImage }),
           maxInputTokens: session.grant.maxInputTokens,
           deadline: Number.isFinite(session.deadlineMs) ? utc(session.deadlineMs) : null,
@@ -640,7 +643,9 @@ export class SessionRunner {
       args: command.args,
       ...(command.env === undefined ? {} : { env: command.env }),
       ...(command.cwd === undefined ? {} : { cwd: command.cwd }),
-      maxProcesses: Math.min(command.maxProcesses ?? maxProcesses, maxProcesses),
+      ...(session.revision.groups.runtime.nativeCapabilities === true
+        ? (command.maxProcesses === undefined ? {} : { maxProcesses: command.maxProcesses })
+        : { maxProcesses: Math.min(command.maxProcesses ?? maxProcesses, maxProcesses) }),
     });
     return session.process;
   }
@@ -986,9 +991,9 @@ export class SessionRunner {
       outcome = interruption.outcome;
       reason = interruption.reason;
       next = interruption.next;
-    } else if (session.ended !== null && exit?.mainExitCode === 0) {
+    } else if (successfulRuntimeExit(this.adapter.id, session.ended, exit?.mainExitCode)) {
       outcome = "completed";
-      reason = session.ended;
+      reason = session.ended!;
       next = "hibernating";
     } else {
       outcome = "failed";

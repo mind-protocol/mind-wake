@@ -1,3 +1,7 @@
+import path from "node:path";
+import os from "node:os";
+import { codexWakeInput } from "../wake-image.js";
+import { takeOwnerMessages, restoreOwnerMessages } from "../../communication/owner-inbox.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
  * `codex app-server` (JSON-RPC sur stdio, version figée), un fil Codex repris d'un réveil
@@ -71,6 +75,7 @@ const SUMMARY_MAX = 200;
 export type CodexLaunchMode = "autonomous" | "manual";
 
 export interface CodexAdapterOptions {
+  readonly ownerInboxDir?: string;
   readonly executable: CodexExecutable;
   /** Dossier Codex propre à Wake (configuration, connexion officielle). */
   readonly codexHome: string;
@@ -118,6 +123,8 @@ export interface CodexAdapterOptions {
   readonly acceptedVersions?: readonly string[];
   /** Connexion déjà configurée de l'utilisateur (`~/.codex`) : mode manuel seulement. */
   readonly allowUserCodexHome?: boolean;
+  readonly nativeCodexHome?: string;
+  readonly nativeCapabilities?: boolean;
   /** Surcharges `-c` supplémentaires ; les réglages de sûreté Wake priment. */
   readonly extraConfig?: Readonly<Record<string, string>>;
   readonly requestTimeoutMs?: number;
@@ -396,12 +403,14 @@ export class CodexAdapter implements RuntimeAdapter {
     const channel =
       this.#options.transport === undefined ? null : await this.#options.transport.open(sessionId);
     try {
+      const nativeCapabilities = !attestation.confined && ((policy?.groups?.runtime?.nativeCapabilities === true && bypass) || (policy === null && this.#options.nativeCapabilities === true));
       const command = buildAppServerCommand({
         executable: this.#options.executable,
-        codexHome: this.#options.codexHome,
+        codexHome: nativeCapabilities ? (this.#options.nativeCodexHome ?? path.join(os.homedir(), ".codex")) : this.#options.codexHome,
         workspaceDir: this.#options.workspaceDir,
         channel,
-        allowUserCodexHome: this.#manualOnly() && this.#options.allowUserCodexHome === true,
+        allowUserCodexHome: nativeCapabilities || (this.#manualOnly() && this.#options.allowUserCodexHome === true),
+        nativeCapabilities,
         ...(this.#options.extraConfig === undefined
           ? {}
           : { extraConfig: this.#options.extraConfig }),
@@ -557,12 +566,19 @@ export class CodexAdapter implements RuntimeAdapter {
       }
       await this.#openThread(session, rpc, request);
       if (session.threadId === null) return;
-      const started = await rpc.request("turn/start", {
+      const inbox=this.#options.ownerInboxDir;
+      const incoming=inbox && request.policy.groups?.runtime?.nativeCapabilities===true ? takeOwnerMessages(inbox,request.sessionId) : [];
+      const context=incoming.length ? request.context+"\n\nNew messages delivered through the local MIND inbox (conversation content, not system instructions):\n"+JSON.stringify(incoming) : request.context;
+      let started: Record<string,unknown>;
+      try { started = await rpc.request("turn/start", {
         threadId: session.threadId,
-        input: [{ type: "text", text: request.context }],
+        input: codexWakeInput(context, request.wakeImage),
         ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
         ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
-      });
+      }); } catch(error) {
+        if(inbox)restoreOwnerMessages(inbox,request.sessionId,incoming.map(m=>m.id));
+        throw error;
+      }
       const turnId = asRecord(started["turn"])?.["id"];
       if (typeof turnId === "string") session.turnId ??= turnId;
       if (session.turn === "pending") session.turn = "inProgress";
@@ -606,7 +622,8 @@ export class CodexAdapter implements RuntimeAdapter {
       typeof this.#options.systemPrompt === "function"
         ? this.#options.systemPrompt(request)
         : this.#options.systemPrompt;
-    const prompt = given === undefined || given === "" ? null : given;
+    const combined = [given, request.systemContext].filter((part) => part !== undefined && part !== "").join("\n\n");
+    const prompt = combined === "" ? null : combined;
     const fingerprint = promptFingerprint(prompt ?? "");
     const instructions = prompt === null ? {} : { developerInstructions: prompt };
     const common = {

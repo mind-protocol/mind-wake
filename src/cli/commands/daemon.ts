@@ -1,3 +1,4 @@
+import type { WakeScreenshotChoice } from "../../daemon/wake-screenshot.js";
 /**
  * `daemon run` : daemon Wake au premier plan, dans le terminal de l'humain. Ni service
  * Windows, ni tâche planifiée, ni démarrage automatique : il s'arrête avec Ctrl+C (fin
@@ -38,6 +39,7 @@ function forcedScenario(name: string | undefined): FakeScenarioName | null {
 }
 
 export interface DaemonRunOptions {
+  readonly wakeScreenshot?: WakeScreenshotChoice;
   readonly simulated: boolean;
   readonly recheckMs: number | null;
   readonly exitAfterSessions: number | null;
@@ -73,6 +75,7 @@ export async function daemonRun(
       dataDir: dataDir.path,
       profileId: DEFAULT_PROFILE_ID,
       simulated: options.simulated,
+      ...(options.wakeScreenshot === undefined ? {} : { wakeScreenshot: options.wakeScreenshot }),
       ...(options.recheckMs === null ? {} : { recheckIntervalMs: options.recheckMs }),
       ...(options.exitAfterSessions === null
         ? {}

@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "panel",
-  "description": "Panneau « Que fait mon agent ? » et fils privés : statut, journal, pause, reprise, réveil, arrêt d'urgence et réponses par les CLI. Aucun accès fichier, shell, réseau ou notification depuis le webview.",
+  "description": "Panneau « Que fait mon agent ? » et fils privés : statut, journal, pause, reprise, réveil, arrêt d'urgence messages avec l'agent et réponses par les CLI. Aucun accès fichier, shell, réseau ou notification depuis le webview.",
   "windows": ["main"],
   "permissions": [
     "core:event:default",
@@ -11,6 +11,13 @@
     "allow-wake-resume",
     "allow-wake-stop",
     "allow-wake-now",
+    "allow-wake-on",
+    "allow-wake-always-on",
+    "allow-wake-messages",
+    "allow-wake-history",
+    "allow-wake-open-location",
+    "allow-wake-reply",
+    "allow-helpers-answers",
     "allow-owner-threads",
     "allow-owner-thread",
     "allow-owner-reply"

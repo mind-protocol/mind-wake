@@ -7,7 +7,7 @@
  * accordé qu'avec `runtime.hostUnsandboxedAcknowledged` (ADR-006), constaté par le runner.
  */
 
-import { WAKE_HOME_SYSTEM_PROMPT } from "../wake-system-prompt.js";
+import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import type { ProfileId, StartRequest } from "../../contracts/index.js";
@@ -61,6 +61,8 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         executable: executable(),
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,
+        ownerInboxDir: context.dataDir,
+        nativeCapabilities: context.nativeCapabilities === true,
         launcher: hostLauncher(context.host),
         quotaLauncher: supervisorLauncher(
           new ProcessTreeSupervisor(runtimeDirFor(context.dataDir)),
@@ -71,7 +73,8 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         ),
         model: config.model,
         ...(config.effort === undefined ? {} : { effort: config.effort }),
-        systemPrompt: config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT,
+        systemPrompt: (request) => withWakePersonality(context.workspaceDir,
+          typeof config.systemPrompt === "function" ? config.systemPrompt(request) : config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
       }),
   };
 }

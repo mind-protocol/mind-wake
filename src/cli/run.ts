@@ -1,3 +1,4 @@
+import { parseWakeScreenshotSurface } from "../daemon/wake-screenshot.js";
 /**
  * Analyse des arguments et répartition des commandes. Renvoie le code de sortie au lieu
  * de terminer le processus, pour rester testable.
@@ -5,6 +6,7 @@
 
 import { parseArgs } from "node:util";
 import { daemonRun } from "./commands/daemon.js";
+import { changeExecutionMode } from "./commands/execution-mode.js";
 import { doctor } from "./commands/doctor.js";
 import { enable } from "./commands/enable.js";
 import { exportCommand } from "./commands/export.js";
@@ -19,6 +21,8 @@ import { resume } from "./commands/resume.js";
 import { status } from "./commands/status.js";
 import { stop } from "./commands/stop.js";
 import { wake } from "./commands/wake.js";
+import { messages, reply } from "./commands/messages.js";
+import { wakeHistory } from "./commands/wake-history.js";
 import { uninstall } from "./commands/uninstall.js";
 import type { CliContext } from "./context.js";
 import {
@@ -40,6 +44,8 @@ plan, et seulement avec l'adapter factice (--simulated).
 Commandes :
   doctor        Diagnostic local, sans appel modèle ni accès réseau
   init          Prépare un profil désactivé, sans budget ni permission
+  always-on     Enchaîne les réveils dès la fin de chaque réponse
+  on            Revient aux réveils planifiés
   status        État, expérience active, budget, prochain réveil
   journal       Derniers événements (--limit N, --after SÉQUENCE)
   policy show   Révision de policy active, consentement et révocations
@@ -49,10 +55,13 @@ Commandes :
   reactivate    Lève un arrêt d'urgence (action de l'humain), policy revérifiée
   wake          Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité,
                 budgets revérifiés), refusé en pause, arrêt ou blocage
+  messages      Fil avec ton agent : sa note artifacts/questions-for-human.md et tes réponses
+  reply         Répond à ton agent : texte lu sur l'entrée standard
+                (--idempotency-key K) ; ne le réveille pas, n'accorde rien
   policy configure FICHIER.json
                 Propose une révision validée, sans effet avant \`enable\`
-  enable        Active la révision proposée après confirmation humaine : code saisi
-                dans le terminal, ou --confirm CODE (--revision ID). Refusé tant que
+  enable        Active la révision proposée, sans code à saisir (ADR-008) ; --confirm
+                CODE reste vérifié s'il est passé (--revision ID). Refusé tant que
                 l'isolation et l'adapter ne sont pas livrés
   export CHEMIN Copie cohérente et expurgée de l'état et des artefacts, avec manifeste
   purge         Plan de purge du journal expiré (--older-than-days N) ; --apply l'applique
@@ -61,11 +70,11 @@ Commandes :
   daemon run --simulated
                 Daemon au premier plan (Ctrl+C pour l'arrêter) avec l'adapter factice :
                 tout est marqué SIMULÉ, aucun appel modèle. Sans --simulated : refus,
-                aucun adapter réel n'existe dans ce build. Options : --recheck-ms N,
+                aucun adapter réel n'existe dans ce build. Options : --wake-screenshot primary|wake-window|off, --recheck-ms N,
                 --exit-after-sessions N
 
-Réservés à l'humain : --confirm et la saisie du code de \`enable\`, le choix de
-\`uninstall\`. Ni la skill ni l'espace d'exploration ne doivent les utiliser.
+Réservé à l'humain : le choix de \`uninstall\`. Ni la skill ni l'espace d'exploration
+ne doivent l'utiliser.
 
 Options :
   --json             Sortie JSON versionnée (schema mind-wake.cli, schemaVersion 1)
@@ -115,7 +124,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "delete-data": { type: "boolean" },
         simulated: { type: "boolean" },
         "recheck-ms": { type: "string" },
+        "wake-screenshot": { type: "string" },
         "exit-after-sessions": { type: "string" },
+        "idempotency-key": { type: "string" },
       },
     });
     const [first, second, ...rest] = positionals;
@@ -175,8 +186,23 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "reactivate":
         result = reactivate(ctx, dataDir) as CommandResult<unknown>;
         break;
+      case "always-on":
+        result = changeExecutionMode(ctx, dataDir, "always-on") as CommandResult<unknown>;
+        break;
+      case "on":
+        result = changeExecutionMode(ctx, dataDir, "on") as CommandResult<unknown>;
+        break;
       case "wake":
         result = wake(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "messages":
+        result = messages(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "wake-history":
+        result = wakeHistory(dataDir) as CommandResult<unknown>;
+        break;
+      case "reply":
+        result = (await reply(ctx, dataDir, values["idempotency-key"])) as CommandResult<unknown>;
         break;
       case "policy configure":
         result = policyConfigure(ctx, dataDir, argument ?? "") as CommandResult<unknown>;
@@ -225,6 +251,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
             1_000,
           ),
           quiet: json,
+          ...(values["wake-screenshot"] === undefined
+            ? {}
+            : { wakeScreenshot: parseWakeScreenshotSurface(values["wake-screenshot"])! }),
         })) as CommandResult<unknown>;
         break;
       default:
@@ -255,7 +284,9 @@ const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   "delete-data": ["uninstall"],
   simulated: ["daemon run"],
   "recheck-ms": ["daemon run"],
+  "wake-screenshot": ["daemon run"],
   "exit-after-sessions": ["daemon run"],
+  "idempotency-key": ["reply"],
 };
 
 function rejectOptions(command: string, values: Readonly<Record<string, unknown>>): void {

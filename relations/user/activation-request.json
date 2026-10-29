@@ -1,0 +1,18 @@
+{
+  "schema": "mind.relations/activation-request",
+  "schemaVersion": 1,
+  "requestedAt": "2026-10-29T13:39:02.427Z",
+  "requestedBy": "owner_in_chat",
+  "scope": [
+    "owner_relation",
+    "authorized_contact_relations"
+  ],
+  "requested": true,
+  "effective": false,
+  "descriptionOnly": true,
+  "blockers": [
+    "relational_scheduler_not_implemented",
+    "resource_policy_not_configured"
+  ],
+  "note": "Intent recorded locally, not a daemon policy, payment mandate or runtime consent. No wake scheduled."
+}

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-wake-reply"
+description = "Enables the wake_reply command without any pre-configured scope."
+commands.allow = ["wake_reply"]
+
+[[permission]]
+identifier = "deny-wake-reply"
+description = "Denies the wake_reply command without any pre-configured scope."
+commands.deny = ["wake_reply"]

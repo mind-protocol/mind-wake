@@ -7,6 +7,8 @@
  */
 
 import { activityModel, type ActivityModel } from "./activity.js";
+import { conversation } from "./conversation.js";
+import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
 
 interface TauriGlobal {
@@ -45,6 +47,7 @@ const POLL_MS = 2000;
 const CHART_EVERY = 5;
 const DAY_MS = 86_400_000;
 const SEEN_KEY = "mind-wake.seen-sequence";
+const CHAT_SEEN_KEY = "mind-wake.chat-seen-at";
 
 let lastRead: StatusRead | null = null;
 let stopArmedUntil = 0;
@@ -52,6 +55,8 @@ let tick = 0;
 let openThread: string | null = null;
 let lastMessageId: string | null = null;
 let draftKey: string | null = null;
+let chatDraftKey: string | null = null;
+let chatOpen = false;
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- type d'élément choisi par l'appelant
 function byId<T extends HTMLElement>(id: string): T {
@@ -81,12 +86,27 @@ async function refresh(): Promise<void> {
   try {
     const envelope = await invoke("wake_status");
     lastRead = { ok: true, fetchedAt: Date.now(), envelope };
+    const input = (envelope.data as { keyboardContext?: { state?: string } } | undefined)
+      ?.keyboardContext;
+    const indicator = document.getElementById("input-sharing");
+    if (indicator) {
+      indicator.hidden = !input || input.state === "off";
+      indicator.textContent =
+        input?.state === "active"
+          ? "Partage du texte ACTIF — icône T pour pause ou arrêt"
+          : input?.state === "paused"
+            ? "Partage du texte en pause"
+            : input?.state === "starting"
+              ? "Démarrage du partage du texte…"
+              : "État du partage du texte indisponible";
+    }
   } catch (error) {
     lastRead = { ok: false, fetchedAt: Date.now(), error: message(error) };
   }
   render(panelView(lastRead, Date.now()));
   if (tick % CHART_EVERY === 0) await refreshChart();
   if (tick % CHART_EVERY === 0) await refreshThreads();
+  if (tick % CHART_EVERY === 0 || chatOpen) await refreshChat();
   tick += 1;
 }
 
@@ -112,6 +132,8 @@ function render(view: PanelView): void {
   light.setAttribute("aria-label", `Voyant : ${LIGHT_LABELS[view.light]}`);
   light.title = LIGHT_LABELS[view.light];
   byId("headline").textContent = view.headline;
+  byId("app-status").textContent = view.headline;
+  byId("app-status").dataset["tone"] = view.tone;
   byId("reason").textContent = view.reason;
   byId("simulated").hidden = !view.simulated;
   byId("last-contact").textContent = `Dernier contact avec Wake : ${view.lastContact}`;
@@ -122,10 +144,13 @@ function render(view: PanelView): void {
   const on = byId<HTMLButtonElement>("mode-on");
   const wake = byId<HTMLButtonElement>("mode-wake");
   const off = byId<HTMLButtonElement>("mode-off");
-  on.setAttribute("aria-pressed", String(view.light === "on"));
-  wake.setAttribute("aria-pressed", String(view.light === "awake"));
+  const always = byId<HTMLButtonElement>("mode-always");
+  always.setAttribute("aria-pressed", String(view.alwaysOn));
+  always.disabled = !view.canAlwaysOn;
+  on.setAttribute("aria-pressed", String(view.light === "on" && !view.alwaysOn));
+  wake.setAttribute("aria-pressed", String(view.light === "awake" && !view.alwaysOn));
   off.setAttribute("aria-pressed", String(view.light === "forced_off"));
-  on.disabled = !view.canResume;
+  on.disabled = !view.canResume && !view.alwaysOn;
   wake.disabled = !view.canWake;
   off.disabled = !view.canStop;
   byId<HTMLButtonElement>("pause").disabled = !view.canPause;
@@ -197,7 +222,7 @@ function drawChart(model: ActivityModel | null): void {
     chart.append(svg("line", { x1: x(t), x2: x(t), y1: base, y2: base + 4, class: "axis" }));
     const label = svg("text", { x: x(t), y: H - 2, class: "tick" });
     // Dernière graduation alignée à droite : « maintenant » ne déborde pas du cadre.
-    if (h === 24) label.setAttribute("text-anchor", "end");
+    if (h === 24) label.style.textAnchor = "end";
     label.textContent = h === 24 ? "maintenant" : `-${String(24 - h)} h`;
     chart.append(label);
   }
@@ -264,6 +289,13 @@ async function refreshThreads(): Promise<void> {
   let threads: readonly ThreadSummary[];
   try {
     const envelope = await invoke("owner_threads");
+    // Sans hub configuré, l'onglet n'a rien à montrer : il reste masqué, sans erreur.
+    const configured = envelope.error?.code !== "not_configured";
+    byId("tab-threads").hidden = !configured;
+    if (!configured) {
+      if (!byId("view-threads").hidden) selectTab("panel");
+      return;
+    }
     if (envelope.ok !== true) {
       status.textContent = `Fils indisponibles : ${errorText(envelope)}`;
       byId("threads").replaceChildren();
@@ -289,7 +321,8 @@ async function refreshThreads(): Promise<void> {
       const subject = document.createElement("strong");
       subject.textContent = t.subject ?? "(sans sujet)";
       const preview = document.createElement("span");
-      preview.textContent = t.preview;
+      preview.className = "thread-preview";
+      preview.textContent = plainText(t.preview);
       const when = document.createElement("small");
       when.textContent = new Date(t.last_at).toLocaleString("fr-FR");
       button.append(subject, preview, when);
@@ -368,21 +401,185 @@ async function sendReply(): Promise<void> {
   }
 }
 
+// --- Messages avec l'agent ---------------------------------------------------------------
+
+function chatSeenAt(): string {
+  try {
+    return localStorage.getItem(CHAT_SEEN_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function markChatSeen(at: string): void {
+  try {
+    localStorage.setItem(CHAT_SEEN_KEY, at);
+  } catch {
+    // Préférence d'affichage seulement.
+  }
+}
+
+/** Markdown de l'agent affiché sans ses marques (titres, gras, code) ; jamais interprété. */
+function plainText(markdown: string): string {
+  return markdown
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/`([^`]+)`/g, "$1");
+}
+
+let chatVisibleCount = 30;
+let chatSignature = "";
+let chatLoadingOlder = false;
+let chatHasOpened = false;
+byId("chat-older").addEventListener("click", () => { chatVisibleCount += 30; chatLoadingOlder = true; void refreshChat(); });
+async function refreshChat(): Promise<void> {
+  let model;
+  try {
+    // Réponses des sessions réveillées pour aider l'agent : facultatives, jamais bloquantes.
+    const [messages, helpers] = await Promise.all([
+      invoke("wake_messages"),
+      invoke("helpers_answers").catch(() => null),
+    ]);
+    model = conversation(messages, helpers);
+  } catch (error) {
+    byId("chat-note").textContent = `Messages indisponibles : ${message(error)}`;
+    return;
+  }
+  if (model === null) {
+    byId("chat-note").textContent = "Messages indisponibles : format inattendu.";
+    return;
+  }
+  const fresh = model.agentUpdatedAt !== null && model.agentUpdatedAt > chatSeenAt();
+  byId("chat-new").hidden = chatOpen || !fresh;
+  if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
+  byId("chat-note").textContent = model.note ?? "";
+  byId("chat-older").hidden = model.items.length <= chatVisibleCount;
+  const signature=JSON.stringify(model.items.slice(-chatVisibleCount));
+  if(signature===chatSignature)return;
+  const chatPane=byId("chat");
+  const firstRender=chatSignature==="";
+  const follow=!chatLoadingOlder && (firstRender || chatPane.scrollHeight-chatPane.scrollTop-chatPane.clientHeight < 100);
+  const oldTop=chatPane.scrollTop,oldHeight=chatPane.scrollHeight;
+  chatSignature=signature;
+  byId("chat").replaceChildren(
+    ...model.items.slice(-chatVisibleCount).map((item) => {
+      const li = document.createElement("li");
+      li.dataset["self"] = String(item.from === "human");
+      if (item.id) li.dataset["messageId"] = item.id;
+      const meta = document.createElement("small");
+      li.dataset["from"] = item.from;
+      const who =
+        item.from === "human"
+          ? "Toi"
+          : item.from === "session"
+            ? `Aide · ${item.source ?? "session"}`
+            : "Ton agent";
+      meta.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+      if (item.delivery) {
+        const receipt = document.createElement("span");
+        receipt.className = "delivery-receipt";
+        receipt.dataset["delivered"] = String(item.delivery === "delivered");
+        receipt.textContent = item.delivery === "delivered" ? " ✓✓" : " ✓ · en attente de réception";
+        receipt.title = item.delivery === "delivered"
+          ? `Transmis à la session${item.deliveredAt ? ` · ${new Date(item.deliveredAt).toLocaleString("fr-FR")}` : ""}. Ne confirme pas une lecture.`
+          : "Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception.";
+        receipt.setAttribute("aria-label", item.delivery === "delivered" ? "Transmis à la session de l’agent" : "Envoyé");
+        meta.append(receipt);
+      }
+      const body = document.createElement("p");
+      body.textContent = item.from === "human" ? item.text : plainText(item.text);
+      li.append(meta, body);
+      if (item.pendingReason) {
+        const wait = document.createElement("small");
+        wait.className = "message-wait";
+        wait.textContent = item.pendingReason;
+        li.append(wait);
+      }
+      return li;
+    }),
+  );
+  chatPane.scrollTop=follow?chatPane.scrollHeight:oldTop+(chatPane.scrollHeight-oldHeight);
+  chatLoadingOlder=false;
+}
+
+async function sendToAgent(): Promise<void> {
+  const field = byId<HTMLTextAreaElement>("chat-text");
+  const text = field.value.trim();
+  if (text === "") return;
+  // Une clé par brouillon : un renvoi après échec ne crée pas de doublon.
+  chatDraftKey ??= `ui-${crypto.randomUUID()}`;
+  const status = byId("chat-status");
+  status.textContent = "Envoi…";
+  try {
+    const envelope = await invoke("wake_reply", { idempotencyKey: chatDraftKey, text });
+    const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
+    if (envelope.ok !== true) {
+      status.textContent = `Non envoyé : ${detail || errorText(envelope)}`;
+      return;
+    }
+    field.value = "";
+    chatDraftKey = null;
+    // Envoyer réveille : même commande que le bouton Réveil (`mind-wake wake`), sous les
+    // mêmes contrôles ; un refus n'annule pas la réponse, déjà enregistrée.
+    let woken: string;
+    try {
+      const wake = await invoke("wake_now");
+      const wakeDetail = typeof wake.data?.["detail"] === "string" ? wake.data["detail"] : "";
+      woken =
+        wake.ok === true
+          ? wake.data?.["status"] === "already_running"
+            ? "Agent actif : il recevra le message au prochain outil terminé (hook PostToolUse)."
+            : "Réveil demandé : le message sera transmis au démarrage."
+          : `Pas de réveil : ${wakeDetail || errorText(wake)}.`;
+    } catch (error) {
+      woken = `Pas de réveil : ${message(error)}.`;
+    }
+    status.textContent = `Envoyé. ${woken}`;
+    tick = 0;
+    await refresh();
+    await refreshChat();
+  } catch (error) {
+    status.textContent = `Non envoyé : ${message(error)}`;
+  }
+}
+
+byId("chat-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  void sendToAgent();
+});
+
 // --- Navigation et événements -------------------------------------------------------------
 
-function selectTab(threads: boolean): void {
-  byId("tab-panel").setAttribute("aria-selected", String(!threads));
-  byId("tab-threads").setAttribute("aria-selected", String(threads));
-  byId("view-panel").hidden = threads;
-  byId("view-threads").hidden = !threads;
-  if (threads) void refreshThreads();
+type Tab = "panel" | "chat" | "threads" | "agents" | "history";
+
+function selectTab(tab: Tab): void {
+  for (const name of ["panel", "chat", "threads", "agents", "history"] as const) {
+    byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
+    byId(`view-${name}`).hidden = name !== tab;
+  }
+  chatOpen = tab === "chat";
+  if (tab === "threads") void refreshThreads();
+  if (tab === "chat") {
+    const firstOpen=!chatHasOpened;
+    chatHasOpened=true;
+    void refreshChat().then(()=>{ if(firstOpen)byId("chat").scrollTop=byId("chat").scrollHeight; });
+  }
+  if (tab === "agents") void refreshAgentThreads();
+  if (tab === "history") {
+    void refreshWakeHistory();
+    try { localStorage.setItem("mind-wake-history-visited", "true"); } catch { /* Display preference. */ }
+  }
+  try { localStorage.setItem("mind-wake-active-tab", tab); } catch { /* Display preference only. */ }
 }
 
 byId("tab-panel").addEventListener("click", () => {
-  selectTab(false);
+  selectTab("panel");
+});
+byId("tab-chat").addEventListener("click", () => {
+  selectTab("chat");
 });
 byId("tab-threads").addEventListener("click", () => {
-  selectTab(true);
+  selectTab("threads");
 });
 byId("thread-back").addEventListener("click", () => {
   openThread = null;
@@ -397,7 +594,11 @@ byId("reply-form").addEventListener("submit", (event) => {
 
 byId("mode-on").addEventListener(
   "click",
-  () => void control("wake_resume", "Allumé : réveils autorisés."),
+  () => void control("wake_on", "Allumé : réveils autorisés."),
+);
+byId("mode-always").addEventListener(
+  "click",
+  () => void control("wake_always_on", "Always-on activé."),
 );
 byId("mode-wake").addEventListener("click", () => void control("wake_now", "Réveil demandé."));
 byId("pause").addEventListener("click", () => void control("wake_pause", "Pause appliquée."));
@@ -415,3 +616,119 @@ byId("mode-off").addEventListener("click", () => {
 
 void refresh();
 setInterval(() => void refresh(), POLL_MS);
+
+// Repo-agent conversations: read-only observation of the actual exchanged messages.
+let agentThreads: RepoThread[] = [];
+let selectedAgentThread: string | null = null;
+function renderAgentThreads(): void {
+  byId("agents-count").textContent = String(agentThreads.length);
+  byId("agents-count").hidden = agentThreads.length === 0;
+  byId("agents-status").textContent = agentThreads.length ? "" : "Aucune conversation entre agents enregistrée.";
+  const selected = agentThreads.find(t => t.id === selectedAgentThread);
+  byId("agents-list").hidden = selected !== undefined;
+  byId("agent-thread").hidden = selected === undefined;
+  byId("agents-list").replaceChildren(...agentThreads.map(t => {
+    const li = document.createElement("li"), button = document.createElement("button");
+    button.type = "button";
+    const title = document.createElement("strong"), detail = document.createElement("small"), preview = document.createElement("span");
+    title.textContent = `Wake ↔ ${t.project}`;
+    detail.textContent = `${t.runtime} · ${t.messages.length} messages · ${new Date(t.messages.at(-1)?.at ?? "").toLocaleString("fr-FR")}`;
+    preview.className = "thread-preview"; preview.textContent = t.messages.at(-1)?.text.slice(0, 180) ?? "";
+    button.append(title, detail, preview);
+    button.addEventListener("click", () => { selectedAgentThread = t.id; renderAgentThreads(); });
+    li.append(button); return li;
+  }));
+  if (!selected) return;
+  byId("agent-thread-title").textContent = `Wake ↔ ${selected.project}`;
+  byId("agent-thread-pointers").textContent = `Repo : ${selected.repo}\nSession ${selected.runtime} : ${selected.sessionId}\nHistorique : ${selected.transcript}\nFil : ${selected.id}`;
+  byId("agent-thread-messages").replaceChildren(...selected.messages.map(m => {
+    const li = document.createElement("li"), meta = document.createElement("small"), body = document.createElement("p");
+    li.dataset["self"] = String(m.from === "wake");
+    li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
+    meta.textContent = `${m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    body.textContent = plainText(m.text); li.append(meta, body); return li;
+  }));
+}
+async function refreshAgentThreads(): Promise<void> {
+  try {
+    const env = await invoke("wake_messages");
+    if (env.ok !== true) throw new Error(errorText(env));
+    agentThreads = repoThreads(env); renderAgentThreads();
+  } catch (error) { byId("agents-status").textContent = `Conversations indisponibles : ${message(error)}`; }
+}
+byId("tab-agents").addEventListener("click", () => selectTab("agents"));
+byId("agent-thread-back").addEventListener("click", () => { selectedAgentThread = null; renderAgentThreads(); });
+void refreshAgentThreads();
+setInterval(() => { if (!byId("view-agents").hidden) void refreshAgentThreads(); }, POLL_MS);
+
+interface WakeTurnView {
+  id: string; sessionId: string; at: string; prompt: string;
+  promptMissing?: boolean;
+  responses: {id:string;at:string;text:string}[];
+}
+let wakeTurns: WakeTurnView[] = [];
+let wakeHistoryNote = "";
+let wakeHistorySignature = "";
+function renderWakeHistory(): void {
+  const pane=byId("view-history");
+  const firstRender=wakeHistorySignature==="";
+  const follow=firstRender || pane.scrollHeight-pane.scrollTop-pane.clientHeight<100;
+  const oldTop=pane.scrollTop;
+  const expanded=new Set([...byId("wake-history-messages").querySelectorAll<HTMLDetailsElement>("details[open]")].map(d=>d.dataset["turnId"]));
+  const signature=JSON.stringify({turns:wakeTurns,note:wakeHistoryNote});
+  if(signature===wakeHistorySignature)return;
+  wakeHistorySignature=signature;
+  byId("wake-history-status").textContent = wakeHistoryNote || (!wakeTurns.length ? "Aucun échange disponible." : "");
+  const items=wakeTurns.flatMap(turn=>[
+    {id:turn.id,at:turn.at,text:turn.prompt,prompt:true,missing:turn.promptMissing===true},
+    ...turn.responses.map(r=>({...r,prompt:false,missing:false})),
+    ...(turn.responses.length ? [] : [{id:`pending:${turn.id}`,at:turn.at,text:"Aucune réponse visible enregistrée pour ce réveil pour le moment.",prompt:false,missing:false}]),
+  ]);
+  byId("wake-history-messages").replaceChildren(...items.map(m=>{
+    const li=document.createElement("li"),meta=document.createElement("strong"),body=document.createElement("p");
+    li.dataset["from"]=m.prompt?"prompt":"agent";
+    li.dataset["messageId"]=m.id;
+    const pending=m.id.startsWith("pending:");
+    if(pending)li.className="wake-placeholder";
+    meta.textContent=`${pending?"État du réveil":m.prompt?m.missing?"Échange partiel":"Réveil":"Réponse de l’agent"} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    if(m.prompt) {
+      const cue=document.createElement("p"),details=document.createElement("details"),summary=document.createElement("summary"),pre=document.createElement("pre");
+      cue.className="wake-cue";cue.textContent=m.missing?"Début de ce réveil non chargé":m.text.split("\n")[0]??m.text;
+      summary.textContent="Voir le prompt complet et son contexte";
+      pre.textContent=m.text;details.dataset["turnId"]=m.id;details.open=expanded.has(m.id);details.append(summary,pre);li.append(meta,cue);if(!m.missing)li.append(details);
+    } else { body.textContent=m.text;li.append(meta,body); }
+    return li;
+  }));
+  pane.scrollTop=follow?pane.scrollHeight:oldTop;
+}
+async function refreshWakeHistory(): Promise<void> {
+  try {
+    const env=await invoke("wake_history");
+    if(env.ok!==true)throw new Error(errorText(env));
+    const data=env.data;
+    if(!data || !Array.isArray(data["turns"]))throw new Error("Format inattendu");
+    const locations=data["locations"] as {workspace?:string;systemPrompt?:string|null} | undefined;
+    byId<HTMLButtonElement>("open-system-prompt").disabled=!locations?.systemPrompt;
+    byId("open-system-prompt").title=locations?.systemPrompt ?? "Aucun prompt MIND chargé disponible.";
+    byId("open-agent-folder").title=locations?.workspace ?? "Dossier de travail de l’agent";
+    wakeTurns=data["turns"] as WakeTurnView[];
+    wakeHistoryNote=typeof data["note"]==="string"?data["note"]:"";
+    renderWakeHistory();
+  } catch(error) {byId("wake-history-status").textContent=`Historique indisponible : ${message(error)}`;}
+}
+byId("tab-history").addEventListener("click",()=>selectTab("history"));
+async function openWakeLocation(kind: "workspace" | "systemPrompt"): Promise<void> {
+  const status=byId("runtime-link-status");
+  try {
+    if(!tauri)throw new Error("Ouvrir depuis l’app desktop.");
+    await tauri.core.invoke("wake_open_location",{kind});
+    status.textContent=kind==="workspace"?"Dossier ouvert dans l’Explorateur.":"Prompt système MIND ouvert dans le Bloc-notes.";
+  } catch(error){status.textContent=message(error);}
+}
+byId("open-system-prompt").addEventListener("click",()=>void openWakeLocation("systemPrompt"));
+byId("open-agent-folder").addEventListener("click",()=>void openWakeLocation("workspace"));
+setInterval(()=>{if(!byId("view-history").hidden)void refreshWakeHistory();},5000);
+try {
+  const saved=localStorage.getItem("mind-wake-history-visited") ? localStorage.getItem("mind-wake-active-tab") : null;
+  selectTab(saved && ["panel","chat","threads","agents","history"].includes(saved)?saved as Tab:"history");
+} catch {selectTab("history");}

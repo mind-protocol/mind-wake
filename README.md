@@ -57,17 +57,18 @@ Après `npm run build`, la CLI se lance avec `node dist/cli/main.js <commande>`.
 node dist/cli/main.js doctor
 ```
 
-| Commande                                       | Effet                                                                                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `doctor`                                       | Diagnostic local, sans appel modèle ni réseau ; indique ce qui est présent, simulé, expérimental, bloqué ou non implémenté               |
-| `init`                                         | Prépare un profil désactivé, sans budget ni permission                                                                                   |
-| `status`, `journal`                            | État, budget, prochain réveil, derniers événements                                                                                       |
-| `policy show`, `policy configure FICHIER.json` | Affiche la policy active ; propose une révision validée, sans effet avant `enable`                                                       |
-| `enable`                                       | Active une révision après confirmation humaine dans le terminal ; refusé tant que l'isolation et un adapter réel ne sont pas disponibles |
-| `pause`, `resume`, `stop`                      | Pause persistante, reprise, arrêt d'urgence verrouillé                                                                                   |
-| `wake`                                         | Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité, budgets revérifiés), refusé en pause, arrêt ou blocage               |
-| `export CHEMIN`, `purge`, `uninstall`          | Export expurgé, purge du journal expiré, désinstallation (`--dry-run` pour lister les effets)                                            |
-| `daemon run --simulated`                       | Daemon au premier plan avec l'adapter factice ; refusé sans `--simulated`                                                                |
+| Commande                                       | Effet                                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `doctor`                                       | Diagnostic local, sans appel modèle ni réseau ; indique ce qui est présent, simulé, expérimental, bloqué ou non implémenté                |
+| `init`                                         | Prépare un profil désactivé, sans budget ni permission                                                                                    |
+| `status`, `journal`                            | État, budget, prochain réveil, derniers événements                                                                                        |
+| `policy show`, `policy configure FICHIER.json` | Affiche la policy active ; propose une révision validée, sans effet avant `enable`                                                        |
+| `enable`                                       | Active une révision après confirmation humaine dans le terminal ; refusé tant que l'isolation et un adapter réel ne sont pas disponibles  |
+| `pause`, `resume`, `stop`                      | Pause persistante, reprise, arrêt d'urgence verrouillé                                                                                    |
+| `wake`                                         | Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité, budgets revérifiés), refusé en pause, arrêt ou blocage                |
+| `messages`, `reply`                            | Fil avec ton agent : sa note de travail et tes réponses (texte sur l'entrée standard) ; n'accorde rien (l'app enchaîne `wake` par défaut) |
+| `export CHEMIN`, `purge`, `uninstall`          | Export expurgé, purge du journal expiré, désinstallation (`--dry-run` pour lister les effets)                                             |
+| `daemon run --simulated`                       | Daemon au premier plan avec l'adapter factice ; refusé sans `--simulated`                                                                 |
 
 Chaque commande accepte `--json` pour une sortie structurée versionnée. Aucune commande ne fait de paiement ni n'installe de service ou de démarrage automatique.
 
@@ -111,3 +112,19 @@ npm run lint
 ## Licence
 
 [MIT](LICENSE)
+
+## Installation produit : un parcours, trois composants
+
+L’installation Wake comprend le moteur local, la connexion MCP côté agent et l’application desktop côté humain. Le desktop est requis pour le parcours produit : recevoir les messages, répondre et contrôler l’agent. L’agent habituel guide l’installation de l’ensemble depuis `install.md` ; l’humain autorise les changements et les confirmations Windows nécessaires. La CLI reste utilisable pour l’administration et les tests, et fermer la fenêtre n’arrête pas le moteur. Ce parcours unifié est une cible : aucun paquet ou installeur public n’est livré à ce jour.
+
+### Essayer l’installation locale unifiée
+
+Voir [install.md](./install.md). `npm run setup -- --apply --data-dir "C:\Users\reyno\AppData\Local\mind-wake-essai"` prépare le moteur et ses migrations, vérifie et enregistre le MCP dans Codex, puis ouvre le desktop sur ce profil. Le desktop doit avoir été compilé. Une nouvelle session Codex charge le MCP. Le setup préserve les permissions, n’active aucun profil et n’installe aucun démarrage automatique. Pas encore de paquet public ni de désinstallation unifiée complète.
+
+### Capture au réveil (option Windows)
+
+Une capture horodatée et réduite peut accompagner le message de réveil de Codex ou Claude, sur autorisation explicite. Elle est désactivée par défaut ; le choix local actuel porte sur l’écran principal entier, à la demande explicite de l’utilisateur. Voir [contexte visuel](./docs/WAKE-VISUAL-CONTEXT.md) pour les réglages, la révocation et les limites de conservation des runtimes.
+
+### Texte saisi au réveil
+
+Sur autorisation explicite, les ajouts aux champs de saisie compatibles peuvent rejoindre le contexte du réveil. Le partage est visible via une icône T, avec pause et arrêt ; les champs protégés et non reconnus sont exclus. Voir [texte saisi](./docs/WAKE-TYPED-CONTEXT.md) pour le fonctionnement, les limites et la révocation. Le moteur en pause ne collecte pas.

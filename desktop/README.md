@@ -2,12 +2,12 @@
 
 Application Tauri 2 pour Windows (`SPEC.md` §21, décision `docs/decisions/ADR-007-application-desktop.md`) : icône dans la zone de notification, panneau d'état, pause, reprise et arrêt d'urgence. Client de la CLI `mind-wake` : aucun port, aucune lecture directe de SQLite, aucune donnée hors de ce que `status --json` expose.
 
-L'application est un complément optionnel de l'installation agent-first (`SPEC.md` §3.1, révision d'ADR-007) :
+L’application est un composant requis de l’installation Wake agent-first (`SPEC.md` §3.1, révision d’ADR-007). Le parcours unique prépare le moteur local, la connexion MCP côté agent et le desktop côté humain :
 
 - L'agent installe et configure par `install.md` et la CLI.
 - Toute action proposée ici a un équivalent CLI `--json`, et l'application appelle cet équivalent.
 - Aucune configuration n'existe uniquement dans les menus.
-- Wake, la CLI et le MCP fonctionnent sans l'application.
+- Le desktop reçoit les messages de l’agent, permet à l’humain de répondre et donne accès aux contrôles. La CLI reste disponible pour l’administration, les diagnostics et les tests ; elle ne remplace pas le desktop dans l’installation produit. Fermer la fenêtre n’arrête pas le daemon.
 
 Découpage : `docs/PLAN.md`, tranches D0–D5.
 
@@ -26,6 +26,18 @@ Cette commande construit la CLI (`dist/`), compile l'UI (`desktop/ui/build/`), p
 | `MIND_WAKE_DATA_DIR` | Dossier de données, transmis à la CLI comme pour l'humain  |
 | `MIND_WAKE_CLI`      | Chemin de `main.js` (défaut : `dist/cli/main.js` du dépôt) |
 | `MIND_WAKE_NODE`     | Chemin absolu de `node.exe` (défaut : `node` du PATH)      |
+
+## Messages avec ton agent
+
+L'onglet **Messages** montre ce que ton agent Wake t'écrit et te permet de lui répondre, sans hub ni réseau :
+
+- **Ce qu'il t'écrit** : sa note de travail `artifacts/questions-for-human.md`, rendue comme texte non fiable (`mind-wake messages`).
+- **Ce que tu lui réponds** (`mind-wake reply`, texte sur l'entrée standard) :
+  - c'est d'abord enregistré dans `human-messages.jsonl`, dans le dossier de données hors de son espace : ce registre fait foi ;
+  - c'est ensuite recopié dans un bloc balisé de sa note, qu'il relit à son prochain réveil.
+- **Réveil** : la case « Réveiller mon agent pour qu'il lise ma réponse », cochée par défaut, enchaîne `mind-wake wake` après l'envoi. L'agent se réveille quand fenêtres, priorité humaine (inactivité), intervalle et budgets le permettent. Un refus n'annule pas la réponse. La réponse n'accorde aucune permission.
+
+Le nom de la note est la convention que l'agent a choisie lors de sa première session. Le prompt de réveil ne l'annonce pas encore.
 
 ## Fils privés
 
@@ -71,3 +83,13 @@ Le panneau et les fils ont été pilotés dans l'application réelle par le port
 - Installeur et chemin de CLI distribué (F5).
 - Signal d'activité réel.
 - Lecture du ledger dans `status`.
+
+## Messages éditables de l’agent
+
+Le MCP local expose publication, liste, modification et suppression lorsque le canal humain est activé (`MIND_WAKE_OWNER_MESSAGES=1`). La CLI `messages --json` fournit `agentMessages` avec ID, version, date initiale et date de modification ; l’app relit ce fil et remplace son affichage à chaque actualisation. Les éditions restent au même emplacement et portent la mention « modifié ». Les suppressions retirent uniquement le message de l’agent ; les réponses de l’humain restent visibles. La note historique reste le repli tant qu’aucune mutation du nouveau canal n’a abouti.
+
+## Always-on
+
+Quatrième position du sélecteur, aussi présente dans le menu de l’icône : une réponse terminée relance la session suivante sans intervalle planifié, sans attendre une réponse humaine. Le mode est conservé dans `execution-mode.json`, hors de l’espace de l’agent, et exposé par `status --json` (`executionMode`). `mind-wake always-on` le sélectionne ; `mind-wake on` revient à la planification normale. Le bouton desktop démarre aussi le moteur si nécessaire.
+
+La fin effective de la session précédente déclenche la réévaluation immédiate ; une seule session peut tourner. Le mode écarte les fenêtres horaires, l’attente d’inactivité et le pilotage temporel, tout en respectant l’indisponibilité fournisseur, les délais après erreur, les permissions, Pause et Force-off. Il ne lève ni un arrêt d’urgence ni un profil non configuré. Le simple ajout du bouton n’active pas ce mode.

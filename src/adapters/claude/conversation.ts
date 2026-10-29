@@ -19,6 +19,10 @@ export interface ClaudeConversationRecord {
   readonly started: boolean;
   /** Empreinte du dernier prompt système transmis. */
   readonly promptDigest: string | null;
+  /** Tokens mesurés au dernier réveil de cette conversation (déclenche l'auto-compaction). */
+  readonly lastWakeTokens?: number;
+  /** Dernière demande de compaction de l'agent servie (`pilote.json`, ADR-009). */
+  readonly lastCompactRequest?: string;
 }
 
 /** Stockage des conversations ; le daemon fournit une implémentation persistante. */

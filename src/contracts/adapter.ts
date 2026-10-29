@@ -1,3 +1,4 @@
+import type { WakeImage } from "./wake-image.js";
 /**
  * Contrat d'adapter runtime (SPEC §8.1), indépendant d'une API fournisseur particulière.
  * Le handle de session ne donne aucun moyen de modifier la policy.
@@ -52,6 +53,9 @@ export interface StartRequest {
   readonly reservationId: ReservationId;
   readonly policy: PolicyRevision;
   readonly context: string;
+  /** Configuration durable fournie par le contrôle, séparée du message de réveil. */
+  readonly systemContext?: string;
+  readonly wakeImage?: WakeImage;
   readonly maxInputTokens: number;
   readonly deadline: UtcTimestamp | null;
 }

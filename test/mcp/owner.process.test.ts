@@ -130,3 +130,11 @@ describe("fils de l'humain par la CLI", { timeout: TIMEOUT }, () => {
     for (const run of [empty, unknown, bare]) expect(run.stdout).not.toContain(h.keys.guide);
   });
 });
+
+it("thread preview preserves the complete message beyond 160 characters", async () => {
+  const text = "Bonjour ! ".repeat(30) + "\n\nVoici la fin du message, à afficher entièrement.";
+  const sent = await agent.call("send_message", { to: ownerRef, subject: "Message complet", text, idempotency_key: idem() });
+  const listed = await owner(["threads"]);
+  const item = (listed.json.data?.["threads"] as Record<string, unknown>[]).find(t => t["thread_id"] === sent.data["thread_id"]);
+  expect(item?.["preview"]).toBe(text);
+}, TIMEOUT);

@@ -270,10 +270,11 @@ describe.runIf(WINDOWS)("daemon en mode réel (adapter de test non simulé)", ()
       expect(lines.some((l) => l.startsWith("[NON ISOLÉ]"))).toBe(true);
       // Prompt de réveil composé et transmis par `context`, note de l'agent en place de relance.
       const context = lastAdapter?.context ?? "";
-      expect(context).toContain("You are waking up in MIND Wake");
-      expect(context).toContain(`Your space: ${workspaceDirFor(dir.path)}.`);
-      expect(context).toContain("NOT ISOLATED");
-      expect(context).toContain("small emergent systems");
+      expect(context).not.toContain("You are waking up in MIND Wake");
+      expect(context).toContain("Time:");
+      expect(context).not.toContain("Your space:");
+      expect(context).not.toContain("NOT ISOLATED");
+      expect(context).not.toContain("small emergent systems");
       expect(context).toContain("> Re-run the rule 110 test and compare.");
       expect(context).not.toMatch(/\{\{[a-z_]+\}\}/);
       expect(fs.existsSync(path.join(wakeupsDir, "retest.json"))).toBe(false);

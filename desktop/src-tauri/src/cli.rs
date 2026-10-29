@@ -27,8 +27,12 @@ pub enum Verb {
     Journal,
     Pause,
     Resume,
+    On,
+    AlwaysOn,
     Stop,
     Wake,
+    Messages,
+    WakeHistory,
 }
 
 impl Verb {
@@ -38,8 +42,12 @@ impl Verb {
             Verb::Journal => &["journal", "--limit", "1000"],
             Verb::Pause => &["pause"],
             Verb::Resume => &["resume"],
+            Verb::On => &["on"],
+            Verb::AlwaysOn => &["always-on"],
             Verb::Stop => &["stop"],
             Verb::Wake => &["wake"],
+            Verb::Messages => &["messages"],
+            Verb::WakeHistory => &["wake-history"],
         }
     }
 }
@@ -49,7 +57,8 @@ fn env_path(name: &str) -> Option<PathBuf> {
 }
 
 fn repo() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+    env_path("MIND_WAKE_REPO_DIR")
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
 }
 
 /// `MIND_WAKE_NODE` (chemin absolu de node.exe) sinon `node` du PATH.
@@ -78,7 +87,17 @@ fn owner_command() -> Vec<OsString> {
     ]
 }
 
-pub fn wake(verb: Verb) -> Result<CliRun, String> {
+/// Réponses des sessions Claude Code / Codex réveillées pour aider l'agent
+/// (`services/helpers/helpers-main.ts answers --json`, état dans MIND_WAKE_HELPERS_DIR).
+pub fn helpers_answers() -> Result<CliRun, String> {
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/helpers/helpers-main.ts").into());
+    args.push("answers".into());
+    run(args, None)
+}
+
+fn wake_args(verb_args: &[&str]) -> Result<Vec<OsString>, String> {
     let script = wake_script();
     if !script.is_file() {
         return Err(format!(
@@ -87,8 +106,94 @@ pub fn wake(verb: Verb) -> Result<CliRun, String> {
         ));
     }
     let mut args: Vec<OsString> = vec![script.into()];
-    args.extend(verb.args().iter().map(OsString::from));
-    run(args, None)
+    args.extend(verb_args.iter().map(OsString::from));
+    Ok(args)
+}
+
+pub fn wake(verb: Verb) -> Result<CliRun, String> {
+    run(wake_args(verb.args())?, None)
+}
+
+/// Opens only fixed locations resolved by the local Wake CLI, never a webview-supplied path.
+pub fn open_wake_location(kind: &str) -> Result<(), String> {
+    if kind != "workspace" && kind != "systemPrompt" { return Err("Emplacement inconnu".into()); }
+    let history = wake(Verb::WakeHistory)?;
+    let envelope: serde_json::Value = serde_json::from_str(&history.stdout).map_err(|e| e.to_string())?;
+    if history.exit_code != 0 { return Err("Emplacements de l’agent indisponibles".into()); }
+    let file = envelope["data"]["locations"][kind].as_str().ok_or("Prompt système pas encore disponible")?;
+    let target = PathBuf::from(file).canonicalize().map_err(|e| e.to_string())?;
+    if kind == "workspace" {
+        if !target.is_dir() { return Err("Dossier de l’agent introuvable".into()); }
+        Command::new("explorer.exe").arg(target).spawn().map_err(|e| e.to_string())?;
+    } else {
+        if !target.is_file() || target.extension().and_then(|s| s.to_str()) != Some("md") {
+            return Err("Fichier du prompt invalide".into());
+        }
+        Command::new("notepad.exe").arg(target).spawn().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Bouton « Réveil » : démarre le daemon s'il ne tourne pas, puis demande la session.
+/// Le daemon est détaché du panneau (le fermer ne l'arrête pas) ; sa sortie va dans
+/// `daemon.log` du dossier de données.
+pub fn wake_now() -> Result<CliRun, String> {
+    let status = wake(Verb::Status)?;
+    let running = serde_json::from_str::<serde_json::Value>(&status.stdout)
+        .map(|j| j["data"]["daemon"]["state"] == "running")
+        .unwrap_or(false);
+    let requested = wake(Verb::Wake)?;
+    if !running {
+        start_daemon(&status.stdout)?;
+    }
+    Ok(requested)
+}
+
+pub fn always_on() -> Result<CliRun, String> {
+    let status = wake(Verb::Status)?;
+    let running = serde_json::from_str::<serde_json::Value>(&status.stdout).map(|j| j["data"]["daemon"]["state"] == "running").unwrap_or(false);
+    let result = wake(Verb::AlwaysOn)?;
+    if result.exit_code == 0 && !running { start_daemon(&status.stdout)?; }
+    Ok(result)
+}
+
+fn start_daemon(status_json: &str) -> Result<(), String> {
+    let data_dir = serde_json::from_str::<serde_json::Value>(status_json)
+        .ok()
+        .and_then(|j| j["data"]["dataDir"].as_str().map(PathBuf::from))
+        .ok_or("dossier de données inconnu")?;
+    let log = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(data_dir.join("daemon.log"))
+        .map_err(|e| format!("journal du daemon : {e}"))?;
+    let err = log.try_clone().map_err(|e| e.to_string())?;
+    let mut command = Command::new(node());
+    command
+        .args(wake_args(&["daemon", "run"])?)
+        .stdin(Stdio::null())
+        .stdout(log)
+        .stderr(err);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+        command.creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+    }
+    command.spawn().map(|_| ()).map_err(|e| format!("démarrage du daemon : {e}"))
+}
+
+/// Réponse de l'humain à son agent (`mind-wake reply`) : clé vérifiée ici puis par la CLI,
+/// texte par l'entrée standard, jamais en argument.
+pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
+    if !idempotency_key(&key) {
+        return Err("clé d'idempotence invalide".into());
+    }
+    let mut args = wake_args(&["reply", "--idempotency-key"])?;
+    args.push(key.into());
+    run(args, Some(text))
 }
 
 /// Requête vers les fils de l'humain. Les identifiants viennent du webview : formats

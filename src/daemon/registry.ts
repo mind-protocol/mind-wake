@@ -35,6 +35,7 @@ export interface AdapterFactoryContext {
   readonly dataDir: string;
   /** Espace d'exploration (racines de la policy). */
   readonly workspaceDir: string;
+  readonly nativeCapabilities?: boolean;
   /** Expérience de la session, choisie par l'agent ou reprise. */
   experimentFor(sessionId: SessionId): ExperimentId | null;
   /** Proposition d'expérience de l'agent : contenu non fiable, validé par le daemon. */
@@ -102,10 +103,14 @@ export class AdapterRegistry {
  * s'y ajoutent à leur fusion ; Codex est lu dans l'environnement du daemon
  * (`MIND_WAKE_CODEX_BIN`, `MIND_WAKE_CODEX_MODEL`, `MIND_WAKE_CODEX_EFFORT`).
  */
-export function defaultRegistry(): AdapterRegistry {
+export function defaultRegistry(runtime?: {adapterId:string;model:string}): AdapterRegistry {
+  const env={...process.env,
+    ...(runtime?.adapterId==="codex"?{MIND_WAKE_CODEX_MODEL:runtime.model}:{}),
+    ...(runtime?.adapterId==="claude"?{MIND_WAKE_CLAUDE_MODEL:runtime.model}:{}),
+  };
   return new AdapterRegistry([
     FAKE_REGISTRATION,
-    codexRegistrationFromEnv(),
-    claudeRegistration(defaultClaudeConfig()),
+    codexRegistrationFromEnv(env),
+    claudeRegistration(defaultClaudeConfig(env)),
   ]);
 }
