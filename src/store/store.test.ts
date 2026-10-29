@@ -115,10 +115,12 @@ describe("ouverture et migrations", () => {
     try {
       const broken = [
         ...MIGRATIONS,
-        { version: 2, name: "broken", sql: "CREATE TABLE x (a); SELEC" },
+        { version: MIGRATIONS.length + 1, name: "broken", sql: "CREATE TABLE x (a); SELEC" },
       ];
       expect(() => migrate(db, broken)).toThrow();
-      expect(db.prepare("SELECT max(version) AS v FROM schema_migrations").get()).toEqual({ v: 1 });
+      expect(db.prepare("SELECT max(version) AS v FROM schema_migrations").get()).toEqual({
+        v: MIGRATIONS.length,
+      });
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'x'").get()).toBeUndefined();
     } finally {
       db.close();
