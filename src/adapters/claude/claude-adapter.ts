@@ -32,6 +32,7 @@ import type {
 } from "../../contracts/index.js";
 import {
   claudeEnvironment,
+  hostProfileEnv,
   claudeRunArgs,
   claudeUsageArgs,
   DEFAULT_CLAUDE_MODEL,
@@ -72,7 +73,10 @@ const EXECUTION_MECHANISM =
 const AFTER_RESULT_TERMINATION_MS = 1_000 as DurationMs;
 
 export type ClaudeAutonomy =
-  /** Réveil planifié par le daemon : sandbox à autotest réussi obligatoire. */
+  /**
+   * Réveil planifié par le daemon : sandbox à autotest réussi, ou poste hôte avec le
+   * consentement distinct au mode non isolé (ADR-006).
+   */
   | "autonomous"
   /** Lancement manuel par l'humain : jamais de mode sans approbation. */
   | "supervised";
@@ -82,6 +86,14 @@ export interface ClaudeAdapterOptions {
   /** Relais fournisseur ; obligatoire pour un lancement confiné (seule sortie réseau). */
   readonly network?: ClaudeNetworkPort;
   readonly autonomy: ClaudeAutonomy;
+  /**
+   * Consentement distinct de l'humain au mode sans approbation non isolé sur l'hôte
+   * (ADR-006), lu dans la policy en vigueur à chaque lancement (champ
+   * `hostUnsandboxedAcknowledged`). Absent ou `false` : mode autonome refusé sur l'hôte.
+   */
+  readonly hostUnsandboxedAcknowledged?: () => boolean;
+  /** Source des variables de profil reprises sur l'hôte (tests) ; défaut `process.env`. */
+  readonly hostEnvSource?: Readonly<Record<string, string | undefined>>;
   /** Chemin absolu du binaire `claude` officiel. */
   readonly executable: string;
   /** Arguments placés avant ceux de l'adapter (tests : script du faux exécutable). */
@@ -105,6 +117,11 @@ export interface ClaudeAdapterOptions {
   readonly maxTurns?: number;
   readonly homeDir?: string;
   readonly gitBashPath?: string;
+  /**
+   * Voir `ClaudeEnvironmentOptions.disableNonessentialTraffic` ; défaut `true` pour les
+   * sessions. Jamais posé pour `readQuota()`, sans quoi la jauge est absente.
+   */
+  readonly disableNonessentialTraffic?: boolean;
   /** Racines en lecture seule supplémentaires (Git Bash, outils déclarés). */
   readonly extraReadOnlyRoots?: readonly string[];
   /** Signal de jauge reçu en cours de session (`rate_limit_event`), pour la garde de quota. */
@@ -142,6 +159,8 @@ interface ClaudeSession {
   readonly process: ClaudeProcess;
   readonly claudeSessionId: string;
   readonly promptChanged: boolean;
+  /** Sans approbation sur l'hôte (ADR-006) : signalé dans les événements. */
+  readonly unsandboxed: boolean;
   readonly promptDigest: string;
   record: ClaudeConversationRecord;
   networkOpen: boolean;
@@ -190,7 +209,9 @@ export class ClaudeAdapter implements RuntimeAdapter {
     const { executable } = this.#options;
     const base = {
       adapterId: CLAUDE_ADAPTER_ID,
-      executionMechanism: EXECUTION_MECHANISM,
+      executionMechanism: this.#unsandboxed()
+        ? `${EXECUTION_MECHANISM} — NON ISOLÉ : --dangerously-skip-permissions sur le poste hôte (ADR-006)`
+        : EXECUTION_MECHANISM,
       simulated: false,
     };
     // Seule invocation hors lanceur : `--version`, sans environnement hérité ni réseau.
@@ -245,25 +266,40 @@ export class ClaudeAdapter implements RuntimeAdapter {
     });
   }
 
+  /** Mode autonome sur l'hôte avec consentement distinct : sans approbation, non isolé. */
+  #unsandboxed(): boolean {
+    return (
+      this.#options.autonomy === "autonomous" &&
+      this.#options.launcher.isolation().kind === "host_job" &&
+      this.#options.hostUnsandboxedAcknowledged?.() === true
+    );
+  }
+
   #stance(): ClaudePermissionStance {
     const isolation = this.#options.launcher.isolation();
-    const sandboxed = isolation.kind === "appcontainer" && isolation.selfTestPassed;
-    if (this.#options.autonomy === "autonomous") {
-      if (!sandboxed) {
+    if (this.#options.autonomy === "supervised") return "allowlist_only";
+    if (isolation.kind === "host_job") {
+      if (this.#options.hostUnsandboxedAcknowledged?.() !== true) {
         throw new ClaudeAdapterError(
           "isolation_required",
-          `lancement autonome refusé hors sandbox à autotest réussi (${isolation.kind} : ${isolation.detail})`,
+          "lancement autonome refusé sur l'hôte : consentement distinct au mode non isolé absent de la policy (hostUnsandboxedAcknowledged, ADR-006)",
         );
       }
-      if (this.#options.configDir === undefined) {
-        throw new ClaudeAdapterError(
-          "isolation_required",
-          "lancement autonome refusé sans dossier de configuration dédié (CLAUDE_CONFIG_DIR)",
-        );
-      }
-      return "skip_permissions_in_sandbox";
+      return "skip_permissions_unsandboxed";
     }
-    return "allowlist_only";
+    if (!isolation.selfTestPassed) {
+      throw new ClaudeAdapterError(
+        "isolation_required",
+        `lancement autonome refusé : sandbox sans autotest réussi (${isolation.detail})`,
+      );
+    }
+    if (this.#options.configDir === undefined) {
+      throw new ClaudeAdapterError(
+        "isolation_required",
+        "lancement confiné refusé sans dossier de configuration dédié (CLAUDE_CONFIG_DIR)",
+      );
+    }
+    return "skip_permissions_in_sandbox";
   }
 
   async #openNetwork(sessionId: SessionId): Promise<ClaudeNetworkGrant | null> {
@@ -294,12 +330,19 @@ export class ClaudeAdapter implements RuntimeAdapter {
     grant: ClaudeNetworkGrant | null,
     cwd: string,
     deadline: UtcTimestamp,
+    quotaRead = false,
   ): ClaudeProcess {
     const o = this.#options;
+    // Mesuré avec 2.1.308 : sous `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, `/usage` rend
+    // `rate_limits: null` ; sans elle, la jauge revient. La lecture de jauge ne la pose donc pas.
+    const disableNonessentialTraffic = quotaRead ? false : o.disableNonessentialTraffic;
+    const host = o.launcher.isolation().kind === "host_job";
     const env = claudeEnvironment({
+      ...(host ? { inherited: hostProfileEnv(o.hostEnvSource) } : {}),
       ...(o.configDir === undefined ? {} : { configDir: o.configDir }),
       ...(o.homeDir === undefined ? {} : { homeDir: o.homeDir }),
       ...(o.gitBashPath === undefined ? {} : { gitBashPath: o.gitBashPath }),
+      ...(disableNonessentialTraffic === undefined ? {} : { disableNonessentialTraffic }),
       ...(grant === null ? {} : { network: grant.env }),
     });
     return o.launcher.launch({
@@ -354,6 +397,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
       process: process_,
       claudeSessionId,
       promptChanged: record.promptDigest !== null && record.promptDigest !== digest,
+      unsandboxed: permission === "skip_permissions_unsandboxed",
       promptDigest: digest,
       record,
       networkOpen: grant !== null,
@@ -391,6 +435,15 @@ export class ClaudeAdapter implements RuntimeAdapter {
     let rateLimited = false;
     let errorEmitted = false;
 
+    if (session.unsandboxed) {
+      yield {
+        type: "activity",
+        sessionId,
+        at: this.#at(),
+        summary:
+          "mode NON ISOLÉ : --dangerously-skip-permissions sur le poste hôte, consentement distinct (ADR-006)",
+      };
+    }
     if (session.promptChanged) {
       yield {
         type: "activity",
@@ -622,6 +675,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
         grant,
         this.#options.promptDir,
         deadline,
+        true,
       );
       await process_.started();
       process_.send(userMessageLine("/usage"));

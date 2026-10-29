@@ -47,8 +47,8 @@ Pages : `code.claude.com/docs/en/cli-reference`, `/headless`, `/agent-sdk/typesc
 
 ## Comportement
 
-- **Garde d'isolation.** `autonomy: "autonomous"` exige `launcher.isolation()` = `appcontainer` avec autotest de refus réussi (et sandbox opérationnelle), sinon `start` lève `ClaudeAdapterError("isolation_required")` sans rien lancer ; c'est le seul cas où `--dangerously-skip-permissions` est passé. `supervised` (lancement manuel) utilise `dontAsk` + `--allowedTools`. Un lanceur AppContainer sans `ClaudeNetworkPort` lève `transport_unavailable`.
-- **Environnement.** `CLAUDE_CONFIG_DIR` (obligatoire en mode autonome ; absent en supervisé = configuration par défaut de l'humain), `DISABLE_AUTOUPDATER=1`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`, `HOME`/`USERPROFILE` et `CLAUDE_CODE_GIT_BASH_PATH` si fournis, variables de transport du relais. Tout nom de secret est refusé, y compris venant du relais. Les lanceurs n'héritent rien d'autre.
+- **Garde d'isolation.** `autonomy: "autonomous"` accepte deux voies : (a) `launcher.isolation()` = `appcontainer` avec autotest de refus réussi, relais fournisseur et `CLAUDE_CONFIG_DIR` dédié (ADR-005) ; (b) **mode non isolé** (ADR-006) : `host_job` (Job Object du runner) et `hostUnsandboxedAcknowledged()` vrai, lu dans la policy à chaque lancement (nom retenu pour le champ de consentement distinct). Sinon `start` lève `ClaudeAdapterError("isolation_required")` sans rien lancer. Ces deux voies seules passent `--dangerously-skip-permissions`. En mode non isolé, `probe` l'indique dans `executionMechanism`, chaque session commence par une activité « mode NON ISOLÉ », `isolationCompatible` vaut `false`, le réseau est celui de l'hôte (aucun port de transport). `supervised` (lancement manuel) utilise `dontAsk` + `--allowedTools`.
+- **Environnement.** Sur l'hôte, variables de profil reprises (`USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `APPDATA`, `LOCALAPPDATA`, `PATH`, `PATHEXT`, `ComSpec`) pour que le CLI trouve la connexion de l'humain ; `CLAUDE_CONFIG_DIR` (obligatoire en mode autonome ; absent en supervisé = configuration par défaut de l'humain), `DISABLE_AUTOUPDATER=1`, `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`, `HOME`/`USERPROFILE` et `CLAUDE_CODE_GIT_BASH_PATH` si fournis, variables de transport du relais. Tout nom de secret est refusé, y compris venant du relais. Les lanceurs n'héritent rien d'autre.
 - **Racines.** Écriture : espace d'exploration (dossier de travail), dossier de configuration dédié, dossier personnel substitué. Lecture : dossier du binaire, dossier des prompts, racines supplémentaires (Git Bash).
 - **Conversation.** Clé `conversationKeyFor(sessionId)` (défaut : la session). `--session-id` tant que le CLI n'a pas confirmé la session (`system/init`), puis `--resume`. Échec avant `init` : nouvelle génération, donc nouvel UUID, la continuité repassant par la mémoire Wake.
 - **Événements.** `started` sur `init` ; `activity` (outils, tailles, nouvelles tentatives, refus d'outil, prompt modifié) ; `usage` mesuré au `result` ; `rate_limited` une fois, avec le délai jusqu'à `resetsAt` ; `error` (classement de `errorCodeFor`) ; `ended` (`result:<terminal_reason>` ou `stream_cut`). Après `result`, le processus est terminé (1 s) et le canal fermé.
@@ -66,11 +66,23 @@ Pages : `code.claude.com/docs/en/cli-reference`, `/headless`, `/agent-sdk/typesc
 
 `rate_limit_event` à chaque appel : `five_hour` 10 %, `seven_day` 44 %, `overageStatus: rejected` (`out_of_credits`). Aucune erreur, aucune limitation. Cause probable de `rate_limits: null` : `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` posé par l'adapter, ou point d'accès d'usage limité (nombreuses sessions parallèles sur le poste) ; non tranché faute d'appel supplémentaire. Tant que `/usage` ne renvoie pas `rate_limits`, la seule jauge réelle est `unifiedWindows`, non documentée : la garde de quota ne doit pas s'y fier comme lecture officielle.
 
+### Second passage : mode non isolé (ADR-006, « Bypass total »)
+
+Même commande, mode `unsandboxed` (défaut du test) : `ClaudeAdapter` autonome, `hostClaudeLauncher` sur le **vrai Job Object du runner** (`ContainedProcess`), consentement injecté, 3 appels. Flux expurgé : `test/fixtures/claude/real-2.1.308-unsandboxed.jsonl`.
+
+| Appel                                                           | Résultat                                                                                                                                                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. `--session-id` + `--dangerously-skip-permissions`            | `permissionMode: bypassPermissions`, `tools: []` (l'argument vide traverse le lanceur C#), « bleu », 577 tokens                                               |
+| 2. `--resume` + `--dangerously-skip-permissions`                | Continuité (« bleu »), 627 tokens                                                                                                                             |
+| 3. `/usage` **sans** `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | **Jauge officielle obtenue** : `session` 13 % (remise 15:59 UTC), `weekly_all` 45 % (3 novembre), `weekly_scoped` Fable 0 % ; `extra_usage.is_enabled: false` |
+
+Cause de `rate_limits: null` au premier passage établie : `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. `readQuota()` ne pose plus cette variable ; les sessions la gardent. Les valeurs concordent avec `unifiedWindows` du même moment (12 %, 45 %).
+
 ## Encore à tester en réel (porte humaine : consomme le quota de l'utilisateur)
 
-1. `claude.exe` (binaire natif) dans l'AppContainer : chargement, `LOCALAPPDATA` redirigé, `CLAUDE_CONFIG_DIR` et `HOME` substitués, Git Bash en lecture seule (`shell_tool_missing` sinon), argument vide `--tools ""` à travers le lanceur C# (passe hors lanceur).
-2. Transport : le conteneur ne joint que le pipe du broker ; il faut un relais qui expose ce pipe au CLI (proxy HTTPS ou `ANTHROPIC_BASE_URL`) **sans** détenir le jeton claude.ai. À concevoir avec `src/broker/`.
-3. Connexion : `/login` par l'humain dans un `CLAUDE_CONFIG_DIR` dédié ; `/usage` sans `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` pour savoir si `rate_limits` revient.
+1. `claude.exe` dans l'AppContainer (voie ADR-005, suspendue) : `LOCALAPPDATA` redirigé, `CLAUDE_CONFIG_DIR` et `HOME` substitués, Git Bash en lecture seule.
+2. Transport sous sandbox (relais suspendu par ADR-006) : sans objet en mode non isolé.
+3. Une session avec outils (`Bash`, `Edit`…) en mode non isolé, arrêt d'urgence pendant un outil en cours : terminaison de l'arborescence mesurée.
 4. Forme exacte des erreurs : authentification absente, reprise d'une session inconnue, session déjà utilisée, limitation (`rejected`).
 5. Délai de terminaison réel et consommation résiduelle après kill (`residualUsageBound` reste `null`).
 6. Dépassement de la jauge après le seuil d'arrêt (ADR-004 : `overshootBoundBasisPoints` à mesurer).

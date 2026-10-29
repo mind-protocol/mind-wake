@@ -21,19 +21,52 @@ import { describe, expect, it } from "vitest";
 import { ChildClaude } from "../../../test/fixtures/claude/child-process.js";
 import type {
   AdapterEvent,
+  ProfileId,
   ReservationId,
   SessionId,
   StartRequest,
   UtcTimestamp,
 } from "../../contracts/index.js";
+import type { AdapterHost } from "../../runner/host.js";
+import { ContainedProcess, ensureJobLauncher, jobNameFor } from "../../runner/process-tree.js";
 import {
   ClaudeAdapter,
   claudeSessionUuid,
+  hostClaudeLauncher,
   MemoryConversationStore,
   type ClaudeLauncher,
+  type ClaudeProcess,
 } from "./index.js";
 
 const ENABLED = process.env["MIND_WAKE_REAL_SMOKE"] === "1";
+/**
+ * `unsandboxed` (défaut, ADR-006) : mode autonome sur l'hôte, `--dangerously-skip-permissions`,
+ * dans le Job Object du runner. `supervised` : `dontAsk`, processus enfant direct.
+ */
+const MODE =
+  process.env["MIND_WAKE_REAL_SMOKE_MODE"] === "supervised" ? "supervised" : "unsandboxed";
+
+/** Relaie les lignes brutes lues par l'adapter vers `onLine` (capture de la fixture). */
+function tap(inner: ClaudeProcess, onLine: (line: string) => void): ClaudeProcess {
+  return {
+    started: () => inner.started(),
+    get exited() {
+      return inner.exited;
+    },
+    get hasExited() {
+      return inner.hasExited;
+    },
+    readLine: async () => {
+      const line = await inner.readLine();
+      if (line !== null) onLine(line);
+      return line;
+    },
+    send: (line) => {
+      inner.send(line);
+    },
+    terminateTree: (timeoutMs) => inner.terminateTree(timeoutMs),
+  };
+}
 
 /** Variables système nécessaires au CLI sur l'hôte ; aucune variable au nom de secret. */
 const HOST_ENV_KEYS = [
@@ -81,6 +114,19 @@ function redactor(paths: Readonly<Record<string, string>>): (line: string) => st
 /** Le texte de `/usage` décrit l'activité du poste : il ne va pas dans la fixture. */
 function fixtureMessage(line: string): unknown {
   const message = JSON.parse(line) as Record<string, unknown>;
+  if (message["type"] === "system" && message["subtype"] === "init") {
+    // Environnement de l'utilisateur (plugins, skills, commandes) : hors fixture.
+    for (const key of [
+      "plugins",
+      "skills",
+      "slash_commands",
+      "terminal_slash_commands",
+      "agents",
+      "mcp_servers",
+    ]) {
+      if (key in message) message[key] = [];
+    }
+  }
   if (message["usage_report"] === undefined) return message;
   const inner = message["message"] as { content?: { type?: string; text?: string }[] } | undefined;
   for (const block of inner?.content ?? []) {
@@ -122,20 +168,51 @@ describe.skipIf(!ENABLED)("adapter Claude Code : fumée réelle (opt-in)", () =>
     const raw: { call: number; line: string }[] = [];
     const argvs: string[][] = [];
     let call = 0;
-    const launcher: ClaudeLauncher = {
-      isolation: () => ({ kind: "host_job", detail: "fumée réelle, poste hôte" }),
-      launch: (spec) => {
-        call += 1;
-        const current = call;
-        if (current > 3) throw new Error("plus de trois appels refusés");
-        argvs.push([...spec.args]);
-        return new ChildClaude(spec, hostEnv(), (line) => raw.push({ call: current, line }));
-      },
+    const nextCall = (args: readonly string[]): number => {
+      call += 1;
+      if (call > 3) throw new Error("plus de trois appels refusés");
+      argvs.push([...args]);
+      return call;
     };
+    let launcher: ClaudeLauncher;
+    if (MODE === "unsandboxed") {
+      // Chemin de production d'ADR-006 : Job Object du runner, réseau direct de l'hôte.
+      const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "mindwake-real-smoke-job-"));
+      const status = ensureJobLauncher(runtimeDir);
+      if (!status.available) throw new Error(status.reason);
+      let pending: number | null = null;
+      const host: AdapterHost = {
+        spawnContained: (sessionId, command) => {
+          const current = pending ?? 0;
+          const contained = new ContainedProcess(
+            status.launcherPath,
+            jobNameFor("smoke" as ProfileId, sessionId),
+            command,
+          );
+          return tap(contained, (line) => raw.push({ call: current, line })) as never;
+        },
+        authorize: () => ({ allowed: false, reason: "fumée", interruptSession: false }),
+      };
+      const inner = hostClaudeLauncher(host);
+      launcher = {
+        isolation: () => inner.isolation(),
+        launch: (spec) => {
+          pending = nextCall(spec.args);
+          return inner.launch(spec);
+        },
+      };
+    } else {
+      launcher = {
+        isolation: () => ({ kind: "host_job", detail: "fumée réelle, poste hôte" }),
+        launch: (spec) => {
+          const current = nextCall(spec.args);
+          return new ChildClaude(spec, hostEnv(), (line) => raw.push({ call: current, line }));
+        },
+      };
+    }
     const key = `smoke-${String(Date.now())}`;
-    const adapter = new ClaudeAdapter({
+    const common = {
       launcher,
-      autonomy: "supervised",
       executable,
       promptDir,
       systemPrompt: "Réponds en un seul mot, en minuscules, sans ponctuation.",
@@ -144,9 +221,19 @@ describe.skipIf(!ENABLED)("adapter Claude Code : fumée réelle (opt-in)", () =>
       conversations: new MemoryConversationStore(),
       model: "opus",
       tools: [],
-    });
+    } as const;
+    const adapter =
+      MODE === "unsandboxed"
+        ? new ClaudeAdapter({
+            ...common,
+            autonomy: "autonomous",
+            // Consentement « Bypass total » de l'utilisateur (ADR-006), pour ce test seulement.
+            hostUnsandboxedAcknowledged: () => true,
+          })
+        : new ClaudeAdapter({ ...common, autonomy: "supervised" });
 
     const report: Json = {
+      mode: MODE,
       probe: await adapter.probe(),
       claudeSessionId: claudeSessionUuid(key, 0),
       calls: [] as Json[],
@@ -204,7 +291,16 @@ describe.skipIf(!ENABLED)("adapter Claude Code : fumée réelle (opt-in)", () =>
     expect(report["stoppedOn"]).toBeNull();
     expect(argvs[0]).toContain("--session-id");
     expect(argvs[1]).toContain("--resume");
-    expect(argvs.flat()).not.toContain("--dangerously-skip-permissions");
+    if (MODE === "unsandboxed") {
+      expect(argvs[0]).toContain("--dangerously-skip-permissions");
+      const firstEvents = (calls[0]?.["events"] ?? []) as { summary?: string }[];
+      expect(firstEvents[0]?.summary).toContain("NON ISOLÉ");
+    } else {
+      expect(argvs.flat()).not.toContain("--dangerously-skip-permissions");
+    }
+    expect(argvs[2]).not.toContain("--dangerously-skip-permissions");
+    const quota = report["quota"] as { snapshots?: unknown[] } | undefined;
+    expect(quota?.snapshots?.length ?? 0).toBeGreaterThan(0);
     const answers = report["answers"] as string[];
     expect(answers[0]?.length).toBeGreaterThan(0);
     expect(answers[1]?.toLowerCase()).toContain(answers[0]?.toLowerCase().trim());

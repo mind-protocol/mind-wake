@@ -25,10 +25,14 @@ import {
 const FIXTURE = fileURLToPath(
   new URL("../../../test/fixtures/claude/real-2.1.308.jsonl", import.meta.url),
 );
+/** Second passage : mode non isolé (ADR-006), Job Object, `/usage` sans trafic non essentiel coupé. */
+const FIXTURE_UNSANDBOXED = fileURLToPath(
+  new URL("../../../test/fixtures/claude/real-2.1.308-unsandboxed.jsonl", import.meta.url),
+);
 
-function linesOf(call: number): string[] {
+function linesOf(call: number, file = FIXTURE): string[] {
   return fs
-    .readFileSync(FIXTURE, "utf8")
+    .readFileSync(file, "utf8")
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line) as { call: number; message: unknown })
@@ -86,7 +90,7 @@ function request(sessionId: string): StartRequest {
 
 describe("adapter Claude Code : rejeu du flux réel 2.1.308", () => {
   it("chaque ligne réelle est reconnue", () => {
-    const kinds = [1, 2, 3].flatMap(linesOf).map((line) => parseStreamLine(line).kind);
+    const kinds = [1, 2, 3].flatMap((n) => linesOf(n)).map((line) => parseStreamLine(line).kind);
     expect(kinds).not.toContain("malformed");
     expect(kinds.filter((k) => k === "init")).toHaveLength(3);
     expect(kinds.filter((k) => k === "result")).toHaveLength(2);
@@ -150,6 +154,58 @@ describe("adapter Claude Code : rejeu du flux réel 2.1.308", () => {
         snapshots: [],
         unmapped: [],
         unavailable: "rate_limits absent du rapport",
+      });
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("mode non isolé : bypassPermissions et jauge officielle /usage", async () => {
+    const init = parseStreamLine(linesOf(1, FIXTURE_UNSANDBOXED)[0] ?? "");
+    expect(init).toMatchObject({ kind: "init", permissionMode: "bypassPermissions", tools: [] });
+    let call = 0;
+    const launcher: ClaudeLauncher = {
+      isolation: () => ({ kind: "host_job", detail: "rejeu" }),
+      launch: () => {
+        call += 1;
+        return new ReplayProcess(linesOf(call, FIXTURE_UNSANDBOXED));
+      },
+    };
+    const dir = fs.mkdtempSync(`${fileURLToPath(new URL(".", import.meta.url))}/.replay-`);
+    try {
+      const adapter = new ClaudeAdapter({
+        launcher,
+        autonomy: "autonomous",
+        hostUnsandboxedAcknowledged: () => true,
+        executable: "claude",
+        promptDir: dir,
+        systemPrompt: "p",
+        workspaceFor: () => dir,
+        conversationKeyFor: () => "replay",
+        tools: [],
+      });
+      const amounts: number[] = [];
+      for (const id of ["u1", "u2"]) {
+        const handle = await adapter.start(request(id));
+        for await (const event of adapter.events(handle)) {
+          if (event.type === "usage" && event.quantity.unit === "tokens") {
+            amounts.push(event.quantity.amount);
+          }
+        }
+      }
+      expect(amounts).toEqual([577, 627]);
+      const reading = await adapter.readQuota(5_000);
+      expect(reading.unavailable).toBeUndefined();
+      expect(reading.unmapped).toEqual([]);
+      expect(reading.snapshots.map((s) => [s.windowKey, s.usedBasisPoints])).toEqual([
+        ["claude:session", 1300],
+        ["claude:weekly_all", 4500],
+        ["claude:weekly_scoped:Fable", 0],
+      ]);
+      expect(reading.snapshots[0]).toMatchObject({
+        windowDurationMs: 5 * 3_600_000,
+        resetsAt: "2026-10-29T15:59:59.713Z",
+        provenance: "measured",
       });
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });

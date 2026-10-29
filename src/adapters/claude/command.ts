@@ -23,6 +23,8 @@ export const CLAUDE_SESSION_SETTINGS = JSON.stringify({ disableAllHooks: true })
 export type ClaudePermissionStance =
   /** Sandbox AppContainer avec autotest réussi : mode sans approbation (ADR-005). */
   | "skip_permissions_in_sandbox"
+  /** Poste hôte, consentement distinct au mode non isolé consigné (ADR-006). */
+  | "skip_permissions_unsandboxed"
   /** Hors sandbox : `dontAsk`, seuls les outils listés passent, sans demande. */
   | "allowlist_only";
 
@@ -61,7 +63,10 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     options.session.mode === "new" ? "--session-id" : "--resume",
     options.session.id,
   ];
-  if (options.permission === "skip_permissions_in_sandbox") {
+  if (
+    options.permission === "skip_permissions_in_sandbox" ||
+    options.permission === "skip_permissions_unsandboxed"
+  ) {
     args.push("--dangerously-skip-permissions");
   } else {
     args.push("--permission-mode", "dontAsk", "--permission-prompts", "none");
@@ -111,7 +116,36 @@ export class ClaudeEnvironmentError extends Error {
   }
 }
 
+/**
+ * Variables du profil Windows nécessaires au CLI lancé sur l'hôte (connexion par défaut,
+ * Git Bash, réseau direct) ; le Job Object du runner ne transmet que les variables système.
+ * Aucune n'a un nom de secret.
+ */
+export const HOST_PROFILE_ENV_KEYS = [
+  "USERPROFILE",
+  "HOMEDRIVE",
+  "HOMEPATH",
+  "APPDATA",
+  "LOCALAPPDATA",
+  "PATH",
+  "PATHEXT",
+  "ComSpec",
+] as const;
+
+export function hostProfileEnv(
+  source: Readonly<Record<string, string | undefined>> = process.env,
+): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const key of HOST_PROFILE_ENV_KEYS) {
+    const value = source[key];
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
+}
+
 export interface ClaudeEnvironmentOptions {
+  /** Variables reprises de l'hôte (`hostProfileEnv`), posées en premier. */
+  readonly inherited?: Readonly<Record<string, string>>;
   /**
    * Dossier de configuration dédié à Wake (`CLAUDE_CONFIG_DIR`). Absent : configuration
    * par défaut du CLI, celle de l'humain (lancement supervisé seulement).
@@ -123,6 +157,11 @@ export interface ClaudeEnvironmentOptions {
   readonly gitBashPath?: string;
   /** Variables de transport du relais fournisseur. */
   readonly network?: Readonly<Record<string, string>>;
+  /**
+   * `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` (défaut `true`) : pas de télémétrie ni de
+   * mise à jour. Mesuré avec 2.1.308 : prive `/usage` de `rate_limits`.
+   */
+  readonly disableNonessentialTraffic?: boolean;
 }
 
 /**
@@ -131,10 +170,12 @@ export interface ClaudeEnvironmentOptions {
  * du relais (`ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`…).
  */
 export function claudeEnvironment(options: ClaudeEnvironmentOptions): Record<string, string> {
-  const env: Record<string, string> = {};
+  const env: Record<string, string> = { ...options.inherited };
   if (options.configDir !== undefined) env["CLAUDE_CONFIG_DIR"] = options.configDir;
   env["DISABLE_AUTOUPDATER"] = "1";
-  env["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "1";
+  if (options.disableNonessentialTraffic !== false) {
+    env["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "1";
+  }
   if (options.homeDir !== undefined) {
     env["HOME"] = options.homeDir;
     env["USERPROFILE"] = options.homeDir;

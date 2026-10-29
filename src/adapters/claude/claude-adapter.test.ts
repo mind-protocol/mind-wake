@@ -236,6 +236,79 @@ describe("adapter Claude Code : garde d'isolation", () => {
   });
 });
 
+describe("adapter Claude Code : mode non isolé sur l'hôte (ADR-006)", () => {
+  const hostSource = {
+    USERPROFILE: "C:/Users/humain",
+    APPDATA: "C:/Users/humain/AppData/Roaming",
+    PATH: "C:/Windows",
+    ANTHROPIC_API_KEY: "ne-doit-pas-passer",
+    CLAUDE_CODE_OAUTH_TOKEN: "ne-doit-pas-passer",
+  };
+
+  it("passe --dangerously-skip-permissions seulement avec le consentement distinct", async () => {
+    h.isolation = { kind: "host_job", detail: "Job Object du runner" };
+    let consent = false;
+    const subject = adapter({
+      network: null,
+      hostUnsandboxedAcknowledged: () => consent,
+      hostEnvSource: hostSource,
+    });
+    await expect(subject.start(request("s-refus"))).rejects.toMatchObject({
+      code: "isolation_required",
+      message: expect.stringContaining("hostUnsandboxedAcknowledged") as unknown,
+    });
+    expect(h.launches).toHaveLength(0);
+    expect((await subject.probe()).executionMechanism).not.toContain("NON ISOLÉ");
+
+    consent = true;
+    const probe = await subject.probe();
+    expect(probe.executionMechanism).toContain("NON ISOLÉ");
+    expect((await subject.capabilities()).isolationCompatible).toBe(false);
+    const events = await run(subject, "s-host");
+
+    const [call] = invocations();
+    expect(call?.argv).toContain("--dangerously-skip-permissions");
+    expect(call?.argv).not.toContain("--permission-mode");
+    expect(events[0]).toMatchObject({ type: "activity" });
+    expect(events[0]?.type === "activity" ? events[0].summary : "").toContain("NON ISOLÉ");
+    expect(events[1]).toMatchObject({ type: "started" });
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "result:completed" });
+
+    const env = h.launches[0]?.env ?? {};
+    expect(env).toMatchObject({ USERPROFILE: hostSource.USERPROFILE, PATH: "C:/Windows" });
+    expect(env).not.toHaveProperty("ANTHROPIC_API_KEY");
+    expect(env).not.toHaveProperty("CLAUDE_CODE_OAUTH_TOKEN");
+    expect(h.launches[0]?.network).toBeNull();
+  });
+
+  it("relit le consentement à chaque lancement : une révocation bloque le suivant", async () => {
+    h.isolation = { kind: "host_job", detail: "Job Object du runner" };
+    let consent = true;
+    const subject = adapter({
+      network: null,
+      hostUnsandboxedAcknowledged: () => consent,
+      hostEnvSource: hostSource,
+    });
+    await run(subject, "s-ok");
+    consent = false;
+    await expect(subject.start(request("s-revoque"))).rejects.toBeInstanceOf(ClaudeAdapterError);
+    expect(h.launches).toHaveLength(1);
+  });
+
+  it("le consentement n'affecte ni la sandbox ni le mode supervisé", async () => {
+    h.isolation = { kind: "host_job", detail: "hôte" };
+    await run(
+      adapter({ autonomy: "supervised", network: null, hostUnsandboxedAcknowledged: () => true }),
+      "s-sup",
+    );
+    expect(invocations()[0]?.argv).not.toContain("--dangerously-skip-permissions");
+    h.isolation = { kind: "appcontainer", selfTestPassed: false, detail: "autotest échoué" };
+    await expect(
+      adapter({ hostUnsandboxedAcknowledged: () => true }).start(request("s-ac")),
+    ).rejects.toMatchObject({ code: "isolation_required" });
+  });
+});
+
 describe("adapter Claude Code : session", () => {
   it("lance dans la sandbox avec session fixée, outils listés et environnement minimal", async () => {
     const net = network();
@@ -413,6 +486,8 @@ describe("adapter Claude Code : jauge de quota", () => {
   it("lit /usage sans outils ni session conservée et convertit la jauge", async () => {
     const net = network();
     const reading = await adapter({ network: net }).readQuota(10_000);
+    // Mesuré : cette variable prive `/usage` de sa jauge ; les sessions la gardent.
+    expect(h.launches[0]?.env).not.toHaveProperty("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC");
     expect(reading.unavailable).toBeUndefined();
     expect(reading.snapshots).toEqual([
       expect.objectContaining({
