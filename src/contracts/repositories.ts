@@ -44,6 +44,11 @@ export interface ProfileRepository {
    * humaine explicite peut le lever.
    */
   setEmergencyStopLocked(id: ProfileId, locked: boolean, at: UtcTimestamp): ProfileRecord;
+  /**
+   * Désigne la révision de policy activée par l'humain (`enable`). N'accorde rien :
+   * le policy engine décide toujours depuis `resolvePolicy`.
+   */
+  setActivePolicyRevision(id: ProfileId, revisionId: PolicyRevisionId | null): void;
 }
 
 export interface PolicyRepository {

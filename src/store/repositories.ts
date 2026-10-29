@@ -149,6 +149,15 @@ export class SqliteProfileRepository implements ProfileRepository {
       return current;
     });
   }
+
+  setActivePolicyRevision(id: ProfileId, revisionId: PolicyRevisionId | null): void {
+    const result = this.#db
+      .prepare("UPDATE profiles SET active_policy_revision_id = ? WHERE id = ?")
+      .run(revisionId, id);
+    if (result.changes !== 1) {
+      throw new StoreError("not_found", `profil ${id} inconnu`);
+    }
+  }
 }
 
 // ── Policies ───────────────────────────────────────────────────────────────────

@@ -109,6 +109,11 @@ export class MemoryUnitOfWork implements UnitOfWork {
       this.state.profiles.set(id, next);
       return clone(next);
     },
+    setActivePolicyRevision: (id: ProfileId, revisionId: PolicyRevisionId | null) => {
+      const current = this.state.profiles.get(id);
+      if (current === undefined) throw new Error(`profil inconnu : ${id}`);
+      this.state.profiles.set(id, { ...current, activePolicyRevisionId: revisionId });
+    },
   };
 
   readonly policies: PolicyRepository = {
