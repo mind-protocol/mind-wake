@@ -68,6 +68,31 @@ export type PaidApiAllowance =
       readonly perPeriodCapMinor: number;
     };
 
+/**
+ * Garde de quota d'abonnement pour la voie expérimentale (AGENTS §5, ADR-004),
+ * exprimée en points de base de chaque fenêtre du fournisseur. Absente ou désactivée
+ * par défaut. Règles de validation :
+ * - lancement seulement si chaque fenêtre lue est `measured`, plus récente que
+ *   `maxSnapshotAgeMs` et sous `startBelowBasisPoints` ;
+ * - interruption dès qu'une fenêtre atteint `stopAtBasisPoints` ;
+ * - `stopAtBasisPoints + overshootBoundBasisPoints ≤ 10 000 − userReserveBasisPoints` ;
+ * - `overshootBoundBasisPoints` à `null` (dépassement non mesuré) bloque le lancement.
+ */
+export type SubscriptionQuotaGuard =
+  | { readonly enabled: false }
+  | {
+      readonly enabled: true;
+      /** Consentement distinct : usage non explicitement autorisé, risque pour le compte. */
+      readonly accountRiskAcknowledged: true;
+      readonly startBelowBasisPoints: number;
+      readonly stopAtBasisPoints: number;
+      /** Part de fenêtre laissée à l'humain, jamais consommable par Wake. */
+      readonly userReserveBasisPoints: number;
+      /** Dépassement maximal mesuré après le seuil d'arrêt (une réponse en cours). */
+      readonly overshootBoundBasisPoints: number | null;
+      readonly maxSnapshotAgeMs: DurationMs;
+    };
+
 export interface BudgetGroup {
   readonly period: BudgetPeriodDefinition;
   readonly tokensPerSession: number;
@@ -78,6 +103,8 @@ export interface BudgetGroup {
   /** Tokens réservés dans chaque session pour le checkpoint final. */
   readonly checkpointTokens: number;
   readonly paidApi: PaidApiAllowance;
+  /** Voie abonnement expérimentale ; absente = désactivée. */
+  readonly subscriptionQuota?: SubscriptionQuotaGuard;
 }
 
 export interface FilesAndToolsGroup {

@@ -1,6 +1,6 @@
 # ADR-002 — Codex comme runtime d'exploration v0.1
 
-- Statut : proposé, à trancher à la porte G1
+- Statut : proposé, à trancher à la porte G1 ; verdict abonnement nuancé par ADR-004
 - Date : 29 octobre 2026
 - Auteur : session S1 (F0-Codex)
 - Base : [docs/feasibility/codex.md](../feasibility/codex.md) ; versions `@openai/codex` et `@openai/codex-sdk` 0.165.0
