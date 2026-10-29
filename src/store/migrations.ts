@@ -233,8 +233,22 @@ CREATE TABLE journal_sequences (
 ) STRICT;
 `;
 
+// Session S6 : état propre au scheduler, une ligne par profil. Les échéances sont en UTC ;
+// `last_denial` sert seulement à ne pas journaliser deux fois le même refus.
+const SCHEDULER_STATE = `
+CREATE TABLE scheduler_state (
+  profile_id TEXT PRIMARY KEY REFERENCES profiles (id),
+  consecutive_failures INTEGER NOT NULL CHECK (consecutive_failures >= 0),
+  backoff_until TEXT,
+  last_session_ended_at TEXT,
+  last_denial TEXT,
+  updated_at TEXT NOT NULL
+) STRICT;
+`;
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "initial_schema", sql: INITIAL_SCHEMA },
+  { version: 2, name: "scheduler_state", sql: SCHEDULER_STATE },
 ];
 
 const MIGRATIONS_TABLE = `
