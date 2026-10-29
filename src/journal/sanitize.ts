@@ -5,7 +5,13 @@
  */
 
 import type { JsonObject, JsonValue } from "../contracts/index.js";
-import { isSensitiveKey, REDACTED, redactString } from "./redact.js";
+import {
+  isSensitiveKey,
+  REDACTED,
+  redactPrivatePaths,
+  redactString,
+  sensitivePairSlots,
+} from "./redact.js";
 
 export interface MetadataLimits {
   readonly maxDepth: number;
@@ -39,7 +45,7 @@ function truncate(text: string, max: number): string {
 }
 
 function sanitizeString(value: string, limits: MetadataLimits): string {
-  return truncate(redactString(value), limits.maxStringLength);
+  return truncate(redactPrivatePaths(redactString(value)), limits.maxStringLength);
 }
 
 function sanitizeNode(value: unknown, depth: number, limits: MetadataLimits): JsonValue {
@@ -64,13 +70,17 @@ function sanitizeNode(value: unknown, depth: number, limits: MetadataLimits): Js
     return Number.isNaN(value.getTime()) ? null : value.toISOString();
   }
   if (value instanceof Error) {
+    // Nom et message seulement : jamais la pile, qui expose chemins et contexte privé.
     return sanitizeString(`${value.name}: ${value.message}`, limits);
   }
   if (depth >= limits.maxDepth) return "[profondeur maximale atteinte]";
   if (Array.isArray(value)) {
+    const slots = sensitivePairSlots(value);
     const items = value
       .slice(0, limits.maxArrayItems)
-      .map((item: unknown) => sanitizeNode(item, depth + 1, limits));
+      .map((item: unknown, i) =>
+        slots.includes(i) ? REDACTED : sanitizeNode(item, depth + 1, limits),
+      );
     if (value.length > limits.maxArrayItems) {
       items.push(`[${String(value.length - limits.maxArrayItems)} éléments omis]`);
     }
@@ -86,9 +96,11 @@ function sanitizeObject(
 ): JsonObject {
   const out: Record<string, JsonValue> = {};
   const entries = Object.entries(value);
+  const slots = sensitivePairSlots(value);
   for (const [key, item] of entries.slice(0, limits.maxKeys)) {
-    const safeKey = truncate(redactString(key), limits.maxKeyLength);
-    out[safeKey] = isSensitiveKey(key) ? REDACTED : sanitizeNode(item, depth + 1, limits);
+    const safeKey = truncate(redactPrivatePaths(redactString(key)), limits.maxKeyLength);
+    out[safeKey] =
+      isSensitiveKey(key) || slots.includes(key) ? REDACTED : sanitizeNode(item, depth + 1, limits);
   }
   if (entries.length > limits.maxKeys) {
     out[TRUNCATED_KEY] = `${String(entries.length - limits.maxKeys)} clés omises`;
@@ -120,5 +132,5 @@ export function sanitizeMetadata(
 /** Motif lisible : expurgé, borné, sur une seule ligne. */
 export function sanitizeReason(reason: string): string {
   const singleLine = reason.replace(/[\r\n\t]+/g, " ");
-  return truncate(redactString(singleLine), MAX_REASON_LENGTH);
+  return truncate(redactPrivatePaths(redactString(singleLine)), MAX_REASON_LENGTH);
 }

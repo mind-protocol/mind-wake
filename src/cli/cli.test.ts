@@ -72,6 +72,7 @@ function harness(options: { uow?: UnitOfWork; createDataDir?: boolean } = {}): H
       dataDir: dir,
       close: () => undefined,
     }),
+    storeBackend: "memory",
     probeSqlite: () =>
       Promise.resolve({ status: "ok", driver: "better-sqlite3", sqliteVersion: "3.53.4" }),
   };
@@ -453,7 +454,9 @@ describe("sortie JSON versionnée", () => {
         availability: "unknown",
         detail: "aucune policy active : aucun budget accordé",
         caps: null,
+        subscriptionQuota: null,
       },
+      capabilities: expect.any(Array) as unknown,
     });
   });
 
@@ -524,9 +527,6 @@ describe("doctor", () => {
       node: "ok",
       sqlite_driver: "ok",
       data_dir: "ok",
-      persistence: "warn",
-      isolation: "not_configured",
-      adapter: "not_configured",
     });
   });
 
@@ -542,7 +542,7 @@ describe("doctor", () => {
     expect(code).toBe(1);
     expect(h.out.join("")).toContain("[ÉCHEC] node");
     expect(h.out.join("")).toContain("[ÉCHEC] sqlite_driver");
-    expect(h.out.join("")).toContain("[NON CONFIGURÉ] isolation");
+    expect(h.out.join("")).toContain("[NON IMPLÉMENTÉ] isolation");
   });
 });
 

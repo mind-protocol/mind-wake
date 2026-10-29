@@ -5,7 +5,7 @@
  */
 
 import type { SchemaVersion } from "../contracts/index.js";
-import { redactValue } from "../journal/redact.js";
+import { redactPrivatePaths, redactString, redactValue } from "../journal/redact.js";
 
 /** Version du format JSON de la CLI ; à incrémenter à tout changement incompatible. */
 export const CLI_OUTPUT_SCHEMA = "mind-wake.cli";
@@ -51,7 +51,8 @@ export function renderError(
   message: string,
   json: boolean,
 ): string {
-  const safe = redactValue(message) as string;
+  // Message seulement (jamais de pile) ; secrets puis chemins de profil masqués.
+  const safe = redactPrivatePaths(redactString(message.replace(/[\r\n]+/g, " ")));
   if (!json) return `Erreur : ${safe}\n`;
   const envelope: JsonEnvelope = {
     schema: CLI_OUTPUT_SCHEMA,

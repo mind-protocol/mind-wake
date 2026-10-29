@@ -9,6 +9,9 @@ import { MemoryUnitOfWork } from "./memory.js";
 
 export type Persistence = "memory" | "sqlite";
 
+/** Stockage câblé dans ce build ; passera à `sqlite` avec S3. */
+export const STORE_BACKEND: Persistence = "memory";
+
 export interface Store {
   readonly uow: UnitOfWork;
   readonly persistence: Persistence;
@@ -22,7 +25,12 @@ export interface Store {
  * câblé ; ensuite, seule la base de `dataDir` pourra être créée ou modifiée.
  */
 export function openStore(dataDir: string): Store {
-  return { uow: new MemoryUnitOfWork(), persistence: "memory", dataDir, close: () => undefined };
+  return {
+    uow: new MemoryUnitOfWork(),
+    persistence: STORE_BACKEND,
+    dataDir,
+    close: () => undefined,
+  };
 }
 
 export type SqliteProbe =

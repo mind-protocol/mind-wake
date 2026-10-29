@@ -22,6 +22,9 @@ import { resolveDataDir } from "./paths.js";
 
 export const USAGE = `Usage : mind-wake <commande> [options]
 
+Interface locale de MIND Wake pour votre propre agent. Aucune commande de paiement,
+de transaction ou de session guest ; aucune commande n'active l'exploration.
+
 Commandes :
   doctor        Diagnostic local, sans appel modèle ni accès réseau
   init          Prépare un profil désactivé, sans budget ni permission

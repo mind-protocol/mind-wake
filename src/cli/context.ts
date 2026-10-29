@@ -5,7 +5,14 @@
 
 import os from "node:os";
 import type { AgentId, ProfileId } from "../contracts/index.js";
-import { openStore, probeSqliteDriver, type SqliteProbe, type Store } from "./store/index.js";
+import {
+  openStore,
+  probeSqliteDriver,
+  STORE_BACKEND,
+  type Persistence,
+  type SqliteProbe,
+  type Store,
+} from "./store/index.js";
 
 /** v0.1 : un seul utilisateur local, un seul agent (AGENTS §2). Identifiants stables. */
 export const DEFAULT_PROFILE_ID = "default" as ProfileId;
@@ -21,6 +28,8 @@ export interface CliContext {
   readonly nodeVersion: string;
   readonly now: () => Date;
   readonly openStore: (dataDir: string) => Store;
+  /** Stockage que `openStore` ouvrirait, connu sans l'ouvrir. */
+  readonly storeBackend: Persistence;
   readonly probeSqlite: () => Promise<SqliteProbe>;
 }
 
@@ -35,6 +44,7 @@ export function processContext(): CliContext {
     nodeVersion: process.versions.node,
     now: () => new Date(),
     openStore,
+    storeBackend: STORE_BACKEND,
     probeSqlite: probeSqliteDriver,
   };
 }

@@ -53,6 +53,26 @@ export function isSensitiveKey(key: string): boolean {
   return SENSITIVE_KEY_SUFFIXES.some((suffix) => normalized.endsWith(suffix));
 }
 
+const PAIR_NAME_KEYS = ["name", "key", "header", "field"] as const;
+const PAIR_VALUE_KEYS = ["value", "values", "val"] as const;
+
+/**
+ * Paires nom/valeur où le nom désigne un secret : `{ name: "Set-Cookie", value }` ou
+ * `["Authorization", valeur]`. Renvoie les clés (ou index) dont la valeur est à masquer.
+ */
+export function sensitivePairSlots(value: object): readonly (string | number)[] {
+  if (Array.isArray(value)) {
+    const first: unknown = value[0];
+    return value.length === 2 && typeof first === "string" && isSensitiveKey(first) ? [1] : [];
+  }
+  const record = value as Record<string, unknown>;
+  const named = PAIR_NAME_KEYS.some((k) => {
+    const name = record[k];
+    return typeof name === "string" && isSensitiveKey(name);
+  });
+  return named ? PAIR_VALUE_KEYS.filter((k) => k in record) : [];
+}
+
 type Replacement = string | ((match: string, ...groups: string[]) => string);
 
 interface Rule {
@@ -61,7 +81,7 @@ interface Rule {
 }
 
 const KV_KEYWORDS =
-  "password|passwd|passphrase|pwd|secret|token|api[_-]?key|access[_-]?key|account[_-]?key|private[_-]?key|credentials?|connection[_-]?string|dsn";
+  "password|passwd|passphrase|pwd|secret|token|api[_-]?key|access[_-]?key|account[_-]?key|private[_-]?key|credentials?|connection[_-]?string|dsn|sig|signature";
 
 const RULES: readonly Rule[] = [
   // Blocs PEM de clé privée, y compris tronqués.
@@ -115,13 +135,25 @@ const RULES: readonly Rule[] = [
   },
 ];
 
-/** Masque les secrets reconnaissables dans une chaîne libre. */
-export function redactString(input: string): string {
-  if (input.length > MAX_SCANNED_STRING_LENGTH) {
-    return `[valeur omise : ${String(input.length)} caractères]`;
-  }
+export const PRIVATE_USER = "[utilisateur]";
+
+const PRIVATE_PATH_RULES: readonly Rule[] = [
+  // C:\Users\nom, C:/Users/nom, C:\\Users\\nom (JSON échappé), Documents and Settings.
+  {
+    pattern:
+      /\b([A-Za-z]:(?:\\{1,2}|\/)(?:Users|Documents and Settings)(?:\\{1,2}|\/))([^\\/\s"':;*?<>|]{1,128})/gi,
+    replace: (_m, head = "") => `${head}${PRIVATE_USER}`,
+  },
+  // /home/nom, /Users/nom
+  {
+    pattern: /(^|[\s"'=(:])(\/(?:home|Users)\/)([^/\s"':;]{1,128})/g,
+    replace: (_m, lead = "", head = "") => `${lead}${head}${PRIVATE_USER}`,
+  },
+];
+
+function applyRules(input: string, rules: readonly Rule[]): string {
   let output = input;
-  for (const rule of RULES) {
+  for (const rule of rules) {
     rule.pattern.lastIndex = 0;
     output =
       typeof rule.replace === "string"
@@ -132,19 +164,44 @@ export function redactString(input: string): string {
 }
 
 /**
+ * Masque le nom d'utilisateur dans les chemins de profil (Windows, Linux, macOS). Pour
+ * le journal et les erreurs, susceptibles d'être exportés : un chemin ne doit pas
+ * divulguer l'identité locale.
+ */
+export function redactPrivatePaths(input: string): string {
+  if (input.length > MAX_SCANNED_STRING_LENGTH) return redactString(input);
+  return applyRules(input, PRIVATE_PATH_RULES);
+}
+
+/** Masque les secrets reconnaissables dans une chaîne libre. */
+export function redactString(input: string): string {
+  if (input.length > MAX_SCANNED_STRING_LENGTH) {
+    return `[valeur omise : ${String(input.length)} caractères]`;
+  }
+  return applyRules(input, RULES);
+}
+
+/**
  * Expurge récursivement une valeur quelconque. Les clés sensibles voient leur valeur
  * remplacée ; les chaînes passent par `redactString`. Ne borne pas la taille : voir
- * `boundMetadata`.
+ * `sanitizeMetadata`.
  */
 export function redactValue(value: unknown, depth = 0): unknown {
   if (depth > 32) return "[profondeur excessive]";
   if (typeof value === "string") return redactString(value);
   if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map((item: unknown) => redactValue(item, depth + 1));
+  if (Array.isArray(value)) {
+    const slots = sensitivePairSlots(value);
+    return value.map((item: unknown, i) =>
+      slots.includes(i) ? REDACTED : redactValue(item, depth + 1),
+    );
+  }
   if (value !== null && typeof value === "object") {
+    const slots = sensitivePairSlots(value);
     const out: Record<string, unknown> = {};
     for (const [key, item] of Object.entries(value)) {
-      out[redactString(key)] = isSensitiveKey(key) ? REDACTED : redactValue(item, depth + 1);
+      out[redactString(key)] =
+        isSensitiveKey(key) || slots.includes(key) ? REDACTED : redactValue(item, depth + 1);
     }
     return out;
   }

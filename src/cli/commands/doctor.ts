@@ -1,11 +1,15 @@
 /**
  * `doctor` : diagnostic local. Aucun appel modèle, aucun accès réseau, aucune écriture
- * (le pilote SQLite est testé sur une base `:memory:`).
+ * (le pilote SQLite est testé sur une base `:memory:`, le stockage n'est ouvert que si
+ * le dossier de données existe). Sépare l'environnement (`checks`) de la disponibilité
+ * réelle des composants (`capabilities`).
  */
 
-import type { CliContext } from "../context.js";
+import { capabilities, formatCapability, type Capability } from "../capabilities.js";
+import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, type CommandResult } from "../output.js";
 import { inspectDataDir, type DataDir } from "../paths.js";
+import { withReadStore } from "./read.js";
 
 export const SUPPORTED_NODE_RANGE = "^24.17.0 || ^26.13.0";
 
@@ -23,10 +27,10 @@ export function isSupportedNodeVersion(version: string): boolean {
   );
 }
 
-export type CheckStatus = "ok" | "warn" | "fail" | "not_configured";
+export type CheckStatus = "ok" | "warn" | "fail";
 
 export interface DoctorCheck {
-  readonly id: "node" | "sqlite_driver" | "data_dir" | "persistence" | "isolation" | "adapter";
+  readonly id: "node" | "sqlite_driver" | "data_dir";
   readonly status: CheckStatus;
   readonly detail: string;
 }
@@ -36,14 +40,16 @@ export interface DoctorData {
   readonly modelCalls: "none";
   readonly networkAccess: "none";
   readonly checks: readonly DoctorCheck[];
+  readonly capabilities: readonly Capability[];
+  readonly notes: readonly string[];
 }
 
-const STATUS_LABEL: Record<CheckStatus, string> = {
-  ok: "OK",
-  warn: "ATTENTION",
-  fail: "ÉCHEC",
-  not_configured: "NON CONFIGURÉ",
-};
+const STATUS_LABEL: Record<CheckStatus, string> = { ok: "OK", warn: "ATTENTION", fail: "ÉCHEC" };
+
+export const DOCTOR_NOTES: readonly string[] = [
+  "Aucune commande de cette CLI n'active l'exploration, n'appelle de modèle, n'envoie de message ni n'installe de daemon.",
+  "Voie abonnement : avant toute activation future, désactiver l'achat automatique de crédits du forfait (ADR-004) ; cette CLI ne le vérifie pas.",
+];
 
 export async function doctor(
   ctx: CliContext,
@@ -109,34 +115,14 @@ export async function doctor(
       break;
   }
 
-  const persistence = ctx.openStore(dataDir.path);
-  try {
-    checks.push(
-      persistence.persistence === "sqlite"
-        ? { id: "persistence", status: "ok", detail: "état du profil persisté dans SQLite" }
-        : {
-            id: "persistence",
-            status: "warn",
-            detail:
-              "stockage SQLite du profil non câblé : état en mémoire, perdu à la fin de la commande",
-          },
-    );
-  } finally {
-    persistence.close();
-  }
-
-  checks.push(
-    {
-      id: "isolation",
-      status: "not_configured",
-      detail: "aucune sandbox installée : exécution autonome impossible",
-    },
-    {
-      id: "adapter",
-      status: "not_configured",
-      detail: "aucun adapter runtime installé : aucune session ne peut être lancée",
-    },
-  );
+  const caps = withReadStore(ctx, dataDir, ({ uow, persistence }) => {
+    const profile = uow?.profiles.get(DEFAULT_PROFILE_ID) ?? null;
+    const policy =
+      profile?.activePolicyRevisionId == null
+        ? null
+        : (uow?.policies.getRevision(profile.activePolicyRevisionId) ?? null);
+    return capabilities(persistence ?? ctx.storeBackend, policy);
+  });
 
   const failed = checks.some((check) => check.status === "fail");
   return {
@@ -146,6 +132,8 @@ export async function doctor(
       modelCalls: "none",
       networkAccess: "none",
       checks,
+      capabilities: caps,
+      notes: DOCTOR_NOTES,
     },
     human: formatDoctor,
   };
@@ -158,20 +146,22 @@ const SOURCE_LABEL: Record<DataDir["source"], string> = {
 };
 
 function formatDoctor(data: DoctorData): string {
-  const lines = [
+  const failed = data.checks.filter((check) => check.status === "fail").length;
+  return [
     "Diagnostic MIND Wake (local, sans appel modèle ni accès réseau)",
     `Dossier de données : ${data.dataDir.path} (${SOURCE_LABEL[data.dataDir.source]})`,
     "",
+    "Environnement :",
     ...data.checks.map(
       (check) => `  [${STATUS_LABEL[check.status]}] ${check.id} : ${check.detail}`,
     ),
-  ];
-  const failed = data.checks.filter((check) => check.status === "fail").length;
-  lines.push(
     "",
+    "Composants (présent, simulé, expérimental, bloqué, non implémenté) :",
+    ...data.capabilities.map(formatCapability),
+    "",
+    ...data.notes,
     failed === 0
-      ? "Aucun échec bloquant. L'exploration reste désactivée tant qu'isolation et adapter ne sont pas configurés."
-      : `${String(failed)} vérification(s) en échec.`,
-  );
-  return lines.join("\n");
+      ? "Environnement sans échec bloquant. Ce build ne peut lancer aucune session : l'exploration reste désactivée."
+      : `${String(failed)} vérification(s) d'environnement en échec.`,
+  ].join("\n");
 }
