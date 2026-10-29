@@ -41,6 +41,7 @@ import type {
   RuntimeAdapter,
   SessionId,
   SessionRecord,
+  SubscriptionQuotaGuard,
   UtcTimestamp,
 } from "../contracts/index.js";
 import { prepareJournalEvent } from "../journal/index.js";
@@ -100,6 +101,7 @@ import {
   type WakeTemplates,
 } from "./wake-prompt.js";
 import { AgentWakeups, type QuotaSource } from "./wakeups.js";
+import { QuotaPacingStore } from "./pacing.js";
 
 export class DaemonError extends Error {
   override readonly name = "DaemonError";
@@ -227,6 +229,7 @@ export class WakeDaemon implements SessionLauncher {
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
+  readonly #pacing: QuotaPacingStore;
 
   private constructor(
     options: DaemonOptions,
@@ -246,6 +249,7 @@ export class WakeDaemon implements SessionLauncher {
     this.#root = openRoot(artifactsDirFor(options.dataDir));
     const workspaceDir = workspaceDirFor(options.dataDir);
     this.#templates = loadWakeTemplates(options.promptsDir);
+    this.#pacing = new QuotaPacingStore(store.db, store.uow, options.profileId, registration.id);
     this.#wakeups = new AgentWakeups({
       uow: store.uow,
       db: store.db,
@@ -499,6 +503,13 @@ export class WakeDaemon implements SessionLauncher {
             this.#registration.runtime(),
             this.#registration.billing(),
             () => this.#readiness.ok,
+            {
+              observe: (snapshots) => {
+                const guard = this.#activeGuard();
+                if (guard !== null) this.#pacing.observe(guard, snapshots, Date.now());
+              },
+              estimates: () => this.#pacing.estimates(),
+            },
           );
     this.#quota =
       environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
@@ -615,6 +626,10 @@ export class WakeDaemon implements SessionLauncher {
     this.#log(
       `session ${ticket.sessionId} lancée (${scenario === undefined ? `adapter ${this.#registration.id}` : `scénario ${scenario.name}`}, mémoire ${memory?.status ?? "aucune expérience"}${memory?.interruption == null ? "" : ` — ${memory.interruption}`})`,
     );
+    // Pilotage : jauge lue au début et à la fin pour mesurer le débit de la session.
+    const guard = billing.kind === "subscription_quota" ? this.#activeGuard() : null;
+    const quotaAtStart = guard === null ? undefined : await this.#quota?.().catch(() => undefined);
+    const startedAtMs = Date.now();
     let result: SessionResult;
     try {
       const running = await this.#runner.launch({
@@ -648,6 +663,12 @@ export class WakeDaemon implements SessionLauncher {
     }
     this.#sessions.delete(ticket.sessionId);
     this.#results.push(result);
+    if (guard !== null && quotaAtStart !== undefined) {
+      const quotaAtEnd = await this.#quota?.().catch(() => undefined);
+      if (quotaAtEnd !== undefined) {
+        this.#pacing.recordSession(guard, quotaAtStart, quotaAtEnd, startedAtMs, Date.now());
+      }
+    }
     this.#log(
       `session ${result.sessionId} terminée : ${result.outcome} (${result.reason}), ${String(result.tokens)} tokens ${result.provenance}, profil ${result.profileState ?? "inconnu"}`,
     );
@@ -656,6 +677,16 @@ export class WakeDaemon implements SessionLauncher {
       this.requestStop(`${String(limit)} session(s) terminée(s) (--exit-after-sessions)`);
     }
     return reportFor(result);
+  }
+
+  /** Garde de quota de la révision active, si elle est activée. */
+  #activeGuard(): Extract<SubscriptionQuotaGuard, { enabled: true }> | null {
+    const resolution = resolvePolicy(this.#store.uow.policies, this.#o.profileId);
+    const guard =
+      resolution.status === "active"
+        ? resolution.revision.groups.budget.subscriptionQuota
+        : undefined;
+    return guard?.enabled === true ? guard : null;
   }
 
   /**

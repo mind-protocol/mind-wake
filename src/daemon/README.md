@@ -6,6 +6,10 @@ Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câbla
 
 `RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Ce build n'enregistre que l'adapter factice (`defaultRegistry`) ; les adapters réels s'y ajoutent à leur fusion.
 
+## Pilotage du quota (`pacing.ts`)
+
+`QuotaPacingStore` (migration 6 `quota_pacing`) observe chaque lecture officielle de la jauge (scheduler et runner) : usage de la fenêtre en cours, instant où la cible est atteinte, ajustement de la marge à chaque remise à zéro. Le daemon lit la jauge au début et à la fin de chaque session pour mesurer le débit (moyenne glissante par runtime et par fenêtre) et journalise la projection (`quota.pacing_rate_measured`, `quota.pacing_margin_adjusted`). Ces estimations alimentent `decideLaunch` ; elles n'autorisent rien.
+
 ## Prompt de réveil et réveils demandés par l'agent
 
 À chaque lancement, `wake-prompt.ts` compose `prompts/wake/base.md` (champs remplis depuis la révision effective et le ticket), une relance ou la note d'une demande de l'agent, et le bloc de mémoire ; le texte part dans `context`. `wakeups.ts` lit `workspace/wakeups/*.json` : validation fermée, confinement, archivage, échéances candidates transmises au scheduler (`wakeRequests`), jamais une autorisation. Règles détaillées : `prompts/wake/README.md`.

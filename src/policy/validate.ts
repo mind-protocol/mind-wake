@@ -633,6 +633,9 @@ function validatePaidApi(c: Collector, value: unknown): unknown {
 }
 
 export const BASIS_POINTS_MAX = 10_000;
+/** Cible par défaut : juste au-dessus de 99 % d'usage à la remise à zéro. */
+export const DEFAULT_TARGET_USAGE_BASIS_POINTS = 9_900;
+export const DEFAULT_PACING_MARGIN_RATIO = 0.25;
 
 /**
  * Voie abonnement expérimentale (ADR-004). Absente = désactivée. L'activation exige la
@@ -667,7 +670,9 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     "userReserveBasisPoints",
     "overshootBoundBasisPoints",
     "maxSnapshotAgeMs",
-    "launchWhenResetWithinMs",
+    "targetUsageBasisPoints",
+    "initialRateBasisPointsPerHour",
+    "pacingMarginRatio",
   ];
   if (Object.keys(value).some((k) => !keys.includes(k))) {
     c.add(path, "unknown_field", "champ inconnu dans subscriptionQuota");
@@ -682,14 +687,24 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   const reserve = own(value, "userReserveBasisPoints");
   const overshoot = own(value, "overshootBoundBasisPoints");
   const maxAge = own(value, "maxSnapshotAgeMs");
-  const resetWithin = own(value, "launchWhenResetWithinMs");
+  const target = own(value, "targetUsageBasisPoints") ?? DEFAULT_TARGET_USAGE_BASIS_POINTS;
+  const rate = own(value, "initialRateBasisPointsPerHour");
+  const margin = own(value, "pacingMarginRatio") ?? DEFAULT_PACING_MARGIN_RATIO;
   const bp = (v: unknown, min: number): v is number => isInt(v, min) && v <= BASIS_POINTS_MAX;
   if (!bp(start, 1) || !bp(stop, 1) || !bp(reserve, 0) || !isInt(maxAge, 1)) {
     c.add(path, "invalid", "seuils entiers en points de base (0..10 000) et âge > 0 requis");
     return undefined;
   }
-  if (!isInt(resetWithin, 1)) {
-    c.add(path, "invalid", "délai maximal avant remise à zéro (ms, entier > 0) requis");
+  if (!bp(target, 1) || !bp(rate, 1)) {
+    c.add(
+      path,
+      "invalid",
+      "cible d'usage et débit initial prudent (points de base par heure) entiers requis",
+    );
+    return undefined;
+  }
+  if (typeof margin !== "number" || !Number.isFinite(margin) || margin < 0 || margin > 10) {
+    c.add(path, "invalid", "marge de pilotage entre 0 et 10 requise");
     return undefined;
   }
   if (overshoot !== null && !bp(overshoot, 0)) {
@@ -698,6 +713,10 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
   }
   if (start >= stop) {
     c.add(path, "inconsistent", "startBelowBasisPoints doit être < stopAtBasisPoints");
+    return undefined;
+  }
+  if (target > stop) {
+    c.add(path, "inconsistent", "targetUsageBasisPoints (9 900 par défaut) doit être ≤ stopAt");
     return undefined;
   }
   if (stop + (overshoot ?? 0) > BASIS_POINTS_MAX - reserve) {
@@ -712,7 +731,9 @@ function validateSubscriptionQuota(c: Collector, value: unknown): unknown {
     userReserveBasisPoints: reserve,
     overshootBoundBasisPoints: overshoot,
     maxSnapshotAgeMs: maxAge,
-    launchWhenResetWithinMs: resetWithin,
+    targetUsageBasisPoints: target,
+    initialRateBasisPointsPerHour: rate,
+    pacingMarginRatio: margin,
   };
 }
 

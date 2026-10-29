@@ -225,14 +225,19 @@ function compareSubscriptionQuota(
     aOn.userReserveBasisPoints < bOn.userReserveBasisPoints ||
     overshoot(aOn.overshootBoundBasisPoints) > overshoot(bOn.overshootBoundBasisPoints) ||
     aOn.maxSnapshotAgeMs > bOn.maxSnapshotAgeMs ||
-    aOn.launchWhenResetWithinMs > bOn.launchWhenResetWithinMs;
+    aOn.targetUsageBasisPoints > bOn.targetUsageBasisPoints ||
+    // Débit supposé plus lent ou marge plus grande : réveil plus tôt, plus de sessions.
+    aOn.initialRateBasisPointsPerHour < bOn.initialRateBasisPointsPerHour ||
+    aOn.pacingMarginRatio > bOn.pacingMarginRatio;
   const narrower =
     aOn.startBelowBasisPoints < bOn.startBelowBasisPoints ||
     aOn.stopAtBasisPoints < bOn.stopAtBasisPoints ||
     aOn.userReserveBasisPoints > bOn.userReserveBasisPoints ||
     overshoot(aOn.overshootBoundBasisPoints) < overshoot(bOn.overshootBoundBasisPoints) ||
     aOn.maxSnapshotAgeMs < bOn.maxSnapshotAgeMs ||
-    aOn.launchWhenResetWithinMs < bOn.launchWhenResetWithinMs;
+    aOn.targetUsageBasisPoints < bOn.targetUsageBasisPoints ||
+    aOn.initialRateBasisPointsPerHour > bOn.initialRateBasisPointsPerHour ||
+    aOn.pacingMarginRatio < bOn.pacingMarginRatio;
   if (wider) widened.push(path);
   if (narrower) restricted.push(path);
 }

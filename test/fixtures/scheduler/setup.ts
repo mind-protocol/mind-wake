@@ -15,7 +15,7 @@ import type {
   WeeklyWindow,
 } from "../../../src/contracts/index.js";
 import { POLICY_SCHEMA_VERSION } from "../../../src/contracts/index.js";
-import type { BillingFacts, LaunchFacts } from "../../../src/policy/index.js";
+import type { BillingFacts, LaunchFacts, PacingEstimate } from "../../../src/policy/index.js";
 import {
   FakeClock,
   ManualPrioritySignal,
@@ -144,6 +144,8 @@ export class FakeEnvironment implements LaunchEnvironment {
   billingFacts: BillingFacts | undefined = { kind: "no_charge" };
   /** Lectures de jauge rendues par `quotaSnapshots` ; `undefined` = aucune lecture. */
   quota: (() => readonly ProviderQuotaSnapshot[] | undefined) | undefined;
+  /** Estimations du pilotage (débit mesuré, marge) rendues par `pacingEstimates`. */
+  estimates: readonly PacingEstimate[] | undefined;
   calls = 0;
 
   adapter(): Promise<LaunchFacts["adapter"]> {
@@ -163,6 +165,10 @@ export class FakeEnvironment implements LaunchEnvironment {
 
   quotaSnapshots(): Promise<readonly ProviderQuotaSnapshot[] | undefined> {
     return Promise.resolve(this.quota?.());
+  }
+
+  pacingEstimates(): Promise<readonly PacingEstimate[] | undefined> {
+    return Promise.resolve(this.estimates);
   }
 }
 

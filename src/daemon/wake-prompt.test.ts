@@ -39,7 +39,9 @@ function revision(overrides: Partial<PolicyRevision["groups"]> = {}): PolicyRevi
       userReserveBasisPoints: 1_000,
       overshootBoundBasisPoints: 500,
       maxSnapshotAgeMs: 60_000,
-      launchWhenResetWithinMs: 21_600_000,
+      targetUsageBasisPoints: 8_000,
+      initialRateBasisPointsPerHour: 2_000,
+      pacingMarginRatio: 0.25,
     },
   });
   return {

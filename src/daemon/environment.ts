@@ -12,7 +12,13 @@ import type {
   RuntimeGroup,
   UtcTimestamp,
 } from "../contracts/index.js";
-import type { BillingFacts, LaunchFacts, PrioritySignal, SessionChecks } from "../policy/index.js";
+import type {
+  BillingFacts,
+  LaunchFacts,
+  PacingEstimate,
+  PrioritySignal,
+  SessionChecks,
+} from "../policy/index.js";
 import { canReadQuota } from "../runner/index.js";
 import type { LaunchEnvironment, UserPrioritySignal } from "../scheduler/index.js";
 
@@ -88,6 +94,11 @@ export class RuntimeEnvironment implements LaunchEnvironment {
     private readonly runtime: RuntimeGroup,
     private readonly billingFacts: BillingFacts,
     private readonly sandboxReady: () => boolean,
+    /** Pilotage : chaque lecture est observée, les estimations alimentent `decideLaunch`. */
+    private readonly pacing?: {
+      observe(snapshots: readonly ProviderQuotaSnapshot[]): void;
+      estimates(): readonly PacingEstimate[];
+    },
   ) {}
 
   async adapter(): Promise<LaunchFacts["adapter"]> {
@@ -107,7 +118,17 @@ export class RuntimeEnvironment implements LaunchEnvironment {
   async quotaSnapshots(): Promise<readonly ProviderQuotaSnapshot[] | undefined> {
     if (this.billingFacts.kind !== "subscription_quota") return undefined;
     if (!canReadQuota(this.adapterFacts)) return undefined;
-    return this.adapterFacts.readQuota();
+    const snapshots = await this.adapterFacts.readQuota();
+    try {
+      this.pacing?.observe(snapshots);
+    } catch {
+      // Le suivi du pilotage ne doit jamais empêcher la lecture de la jauge.
+    }
+    return snapshots;
+  }
+
+  pacingEstimates(): Promise<readonly PacingEstimate[] | undefined> {
+    return Promise.resolve(this.pacing?.estimates());
   }
 }
 

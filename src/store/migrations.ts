@@ -313,12 +313,35 @@ CREATE TABLE agent_wakeups (
 ) STRICT;
 `;
 
+/**
+ * Pilotage de la voie abonnement (ADR-005, complément) : débit de consommation mesuré
+ * (points de base par heure de session continue, moyenne glissante) et marge ajustée,
+ * par runtime et par fenêtre fournisseur, avec le suivi de la fenêtre en cours (usage
+ * observé, instant où la cible a été atteinte). Jamais converti en tokens.
+ */
+const QUOTA_PACING = `
+CREATE TABLE quota_pacing (
+  profile_id TEXT NOT NULL REFERENCES profiles (id),
+  adapter_id TEXT NOT NULL,
+  window_key TEXT NOT NULL,
+  rate_bp_per_hour REAL CHECK (rate_bp_per_hour IS NULL OR rate_bp_per_hour > 0),
+  samples INTEGER NOT NULL DEFAULT 0 CHECK (samples >= 0),
+  margin_ratio REAL NOT NULL CHECK (margin_ratio >= 0),
+  window_resets_at TEXT,
+  last_used_bp INTEGER CHECK (last_used_bp IS NULL OR last_used_bp BETWEEN 0 AND 10000),
+  reached_at TEXT,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (profile_id, adapter_id, window_key)
+) STRICT;
+`;
+
 export const MIGRATIONS: readonly Migration[] = [
   { version: 1, name: "initial_schema", sql: INITIAL_SCHEMA },
   { version: 2, name: "scheduler_state", sql: SCHEDULER_STATE },
   { version: 3, name: "daemon_runs", sql: DAEMON_RUNS },
   { version: 4, name: "isolation_self_tests", sql: ISOLATION_SELF_TESTS },
   { version: 5, name: "wake_prompts", sql: WAKE_PROMPTS },
+  { version: 6, name: "quota_pacing", sql: QUOTA_PACING },
 ];
 
 const MIGRATIONS_TABLE = `

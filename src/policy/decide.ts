@@ -25,6 +25,7 @@ import type {
 import type { PolicyRepository } from "../contracts/repositories.js";
 import type { JsonObject } from "../contracts/common.js";
 import { classifyChange } from "./change.js";
+import { pacingDetail, planPacing, type PacingEstimate } from "./pacing.js";
 import { isUtcTimestamp, resolvePolicy, type PolicyResolution } from "./revisions.js";
 import { BASIS_POINTS_MAX, isConfinedPath, isValidHost } from "./validate.js";
 
@@ -129,6 +130,8 @@ export interface LaunchFacts {
   readonly billing?: BillingFacts;
   /** Lectures officielles des fenêtres de quota, pour la voie abonnement. */
   readonly quotaSnapshots?: readonly ProviderQuotaSnapshot[];
+  /** Débits mesurés et marges ajustées par fenêtre ; absents = valeurs de la policy. */
+  readonly quotaPacing?: readonly PacingEstimate[];
   readonly sandboxOperational?: boolean;
   readonly windowOpen?: boolean;
   readonly userPriority?: PrioritySignal;
@@ -230,6 +233,10 @@ export function decideLaunch(
   }
   const sessions = availabilityDenial(id, facts.budget?.sessions, "sessions", 1);
   if (sessions !== null) return sessions;
+  if (facts.billing?.kind === "subscription_quota") {
+    const pacing = pacingDenial(id, groups, now, facts);
+    if (pacing !== null) return pacing;
+  }
 
   return allow(id, "launch.allowed");
 }
@@ -373,18 +380,20 @@ function subscriptionLaunchDenial(
   if (facts.adapter?.capabilities.providerQuotaReading !== "official") {
     return deny(id, "bound_not_enforceable", "subscription.no_official_quota_reading");
   }
-  return quotaDenial(id, guard, now, facts.quotaSnapshots, "start");
+  return quotaDenial(id, guard, now, facts.quotaSnapshots, "start", facts.quotaPacing);
 }
 
-/** Préfixe du détail « remise à zéro trop lointaine », lu par le scheduler. */
-export const RESET_NOT_WITHIN = "subscription.reset_not_within";
+/** Préfixe du détail « pas encore l'heure de pilotage », lu par le scheduler. */
+export const PACING_WAIT = "subscription.pacing_wait";
 
 /**
- * Lectures de quota : au moins une, toutes `measured`, récentes, cohérentes, et sous le
- * seuil de départ (`start`) ou d'arrêt (`stop`). Au départ, chaque fenêtre lue doit en
- * outre se remettre à zéro dans `launchWhenResetWithinMs` (ADR-005) : Wake ne consomme
- * que ce qui serait perdu de toute façon. Les points de base ne sont jamais convertis en
- * tokens.
+ * Lectures de quota : au moins une, toutes `measured`, récentes et cohérentes. Pilotage
+ * (ADR-005, complément) : la fenêtre qui se remet à zéro le plus tôt est pilotée vers
+ * `targetUsageBasisPoints` (lancement tant qu'elle est sous la cible, arrêt à
+ * `min(stopAt, cible)`) ; les autres fenêtres doivent rester sous `startBelowBasisPoints`
+ * au lancement et sous `stopAtBasisPoints` en session. Au départ, le réveil n'a lieu que
+ * si `temps avant remise à zéro ≤ temps nécessaire × (1 + marge)`. Les points de base ne
+ * sont jamais convertis en tokens.
  */
 function quotaDenial(
   id: PolicyRevisionId,
@@ -392,11 +401,16 @@ function quotaDenial(
   now: UtcTimestamp,
   snapshots: readonly ProviderQuotaSnapshot[] | undefined,
   phase: "start" | "stop",
+  estimates?: readonly PacingEstimate[],
 ): PolicyDecision | null {
   if (snapshots === undefined || snapshots.length === 0) {
     return deny(id, "budget_unknown", "subscription.quota_unknown");
   }
-  const threshold = phase === "start" ? guard.startBelowBasisPoints : guard.stopAtBasisPoints;
+  const nowMs = Date.parse(now);
+  const plan = snapshots.every((s) => s.provenance === "measured")
+    ? planPacing(guard, snapshots, nowMs, estimates)
+    : null;
+  const target = Math.min(guard.stopAtBasisPoints, guard.targetUsageBasisPoints);
   for (const snapshot of snapshots) {
     const key = snapshot.windowKey;
     if (snapshot.provenance !== "measured") {
@@ -410,11 +424,19 @@ function quotaDenial(
     if (!Number.isSafeInteger(used) || used < 0 || used > BASIS_POINTS_MAX) {
       return deny(id, "budget_unknown", `subscription.snapshot_invalid: ${key}`);
     }
+    const piloted = plan?.windowKey === key;
+    const threshold = piloted
+      ? target
+      : phase === "start"
+        ? guard.startBelowBasisPoints
+        : guard.stopAtBasisPoints;
     if (used >= threshold) {
       return deny(
         id,
         "budget_exhausted",
-        `subscription.${phase}_threshold_reached: ${key} used_bp=${String(used)}`,
+        piloted
+          ? `subscription.target_reached: ${key} used_bp=${String(used)}`
+          : `subscription.${phase}_threshold_reached: ${key} used_bp=${String(used)}`,
       );
     }
     if (phase === "start") {
@@ -426,16 +448,26 @@ function quotaDenial(
       if (resetsInMs <= 0) {
         return deny(id, "budget_unknown", `subscription.snapshot_reset_passed: ${key}`);
       }
-      if (resetsInMs > guard.launchWhenResetWithinMs) {
-        return deny(
-          id,
-          "outside_window",
-          `${RESET_NOT_WITHIN}: ${key} resets_in_ms=${String(resetsInMs)}`,
-        );
-      }
     }
   }
   return null;
+}
+
+/**
+ * Moment du réveil (pilotage) : vérifié en dernier, après fenêtres horaires, priorité
+ * humaine, pause, arrêt et budget, qui restent prioritaires sur le pilotage.
+ */
+function pacingDenial(
+  id: PolicyRevisionId,
+  groups: PolicyGroups,
+  now: UtcTimestamp,
+  facts: LaunchFacts,
+): PolicyDecision | null {
+  const guard = enabledGuard(groups);
+  if (guard === null || facts.quotaSnapshots === undefined) return null;
+  const plan = planPacing(guard, facts.quotaSnapshots, Date.parse(now), facts.quotaPacing);
+  if (plan === null || plan.due) return null;
+  return deny(id, "outside_window", `${PACING_WAIT}: ${pacingDetail(plan)}`);
 }
 
 function availabilityDenial(

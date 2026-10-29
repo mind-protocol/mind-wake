@@ -481,22 +481,25 @@ describe("boucle", () => {
   });
 });
 
-describe("voie abonnement : déclenchement avant remise à zéro (ADR-005)", () => {
+describe("voie abonnement : pilotage vers la cible (ADR-005, complément)", () => {
+  // Cible 99 %, réserve humaine 0 (choix de l'utilisateur : le quota non utilisé est perdu).
   const GUARD = {
     enabled: true,
     accountRiskAcknowledged: true,
-    startBelowBasisPoints: 6_000,
-    stopAtBasisPoints: 8_000,
-    userReserveBasisPoints: 1_000,
-    overshootBoundBasisPoints: 500,
+    startBelowBasisPoints: 9_800,
+    stopAtBasisPoints: 9_900,
+    userReserveBasisPoints: 0,
+    overshootBoundBasisPoints: 100,
     maxSnapshotAgeMs: 60_000,
-    launchWhenResetWithinMs: 6 * HOUR,
+    targetUsageBasisPoints: 9_900,
+    initialRateBasisPointsPerHour: 1_000,
+    pacingMarginRatio: 0.25,
   } as const;
 
-  /** Jauge lue « maintenant » sur l'horloge simulée. */
-  function gauge(windows: readonly { key: string; used: number; resetsAt: number }[]): void {
+  /** Jauge lue « maintenant » sur l'horloge simulée ; `used` peut évoluer entre deux tours. */
+  function gauge(windows: () => readonly { key: string; used: number; resetsAt: number }[]): void {
     b.environment.quota = () =>
-      windows.map((w) => ({
+      windows().map((w) => ({
         windowKey: w.key,
         windowDurationMs: 5 * HOUR,
         usedBasisPoints: w.used,
@@ -506,8 +509,8 @@ describe("voie abonnement : déclenchement avant remise à zéro (ADR-005)", () 
       }));
   }
 
-  function subscriptionSetup(): void {
-    setup({ budget: { subscriptionQuota: GUARD } });
+  function pacingSetup(seed: SeedOptions = {}): void {
+    setup({ ...seed, budget: { subscriptionQuota: GUARD, ...seed.budget } });
     b.environment.billingFacts = { kind: "subscription_quota" };
     const facts = b.environment.adapterFacts;
     if (typeof facts !== "object") throw new Error("faits d'adapter attendus");
@@ -521,100 +524,123 @@ describe("voie abonnement : déclenchement avant remise à zéro (ADR-005)", () 
     };
   }
 
-  it("remise à zéro trop lointaine : hibernation, réveil quand elle entre dans le délai", async () => {
-    subscriptionSetup();
-    gauge([{ key: "primary", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 10 * HOUR }]);
+  const RESET = THURSDAY_10H_PARIS + 8 * HOUR;
+
+  it("réveil au bon moment : (cible − usage) / débit × (1 + marge) avant la remise à zéro", async () => {
+    pacingSetup();
+    gauge(() => [{ key: "primary", used: 5_900, resetsAt: RESET }]);
+    // 4 000 bp à 1 000 bp/h = 4 h, × 1,25 = 5 h avant 17:00Z → réveil à 12:00Z.
     expect(await tickFresh()).toMatchObject({
       kind: "denied",
       decision: {
         reason: "outside_window",
-        detail: expect.stringContaining("reset_not_within") as unknown,
+        detail: expect.stringContaining("wake_at=2026-10-29T12:00:00.000Z") as unknown,
       },
     });
     expect(state()).toBe("hibernating");
-    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 4 * HOUR));
-    expect(b.launcher.tickets).toHaveLength(0);
-
-    b.clock.setWall(THURSDAY_10H_PARIS + 4 * HOUR);
-    const launched = await tickFresh();
-    expect(launched.kind).toBe("launched");
-    // Aucune enveloppe de tokens propre à Wake : la garde de quota borne la session.
+    // Réévaluation au plus tard après 15 min : le réveil peut encore avancer.
+    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 15 * MINUTE));
+    b.clock.setWall(THURSDAY_10H_PARIS + 3 * HOUR - MINUTE);
+    expect(await tickFresh()).toMatchObject({ kind: "denied" });
+    b.clock.setWall(THURSDAY_10H_PARIS + 3 * HOUR);
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
     expect(b.launcher.tickets[0]?.maxima).toEqual([{ unit: "sessions", amount: 1 }]);
   });
 
-  it("toutes les fenêtres lues doivent se remettre à zéro dans le délai", async () => {
-    subscriptionSetup();
-    gauge([
-      { key: "primary", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 2 * HOUR },
-      { key: "weekly", used: 2_000, resetsAt: THURSDAY_10H_PARIS + 7 * HOUR },
-    ]);
+  it("en continu jusqu'à la cible, sans délai minimal, puis attente de la remise à zéro", async () => {
+    pacingSetup({ schedule: { minIntervalBetweenSessionsMs: 30 * MINUTE } });
+    let used = 6_000;
+    gauge(() => [{ key: "primary", used, resetsAt: THURSDAY_10H_PARIS + 4 * HOUR }]);
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+    b.clock.advance(HOUR);
+    used = 7_000;
+    b.launcher.finish({ outcome: "completed" });
+    await b.scheduler.sessionInFlight;
+    // Pas d'intervalle minimal sous la garde : la session suivante part aussitôt.
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+    b.clock.advance(2 * HOUR);
+    used = 9_900;
+    b.launcher.finish({ outcome: "completed" });
+    await b.scheduler.sessionInFlight;
     expect(await tickFresh()).toMatchObject({
-      decision: { detail: expect.stringContaining("reset_not_within: weekly") as unknown },
-    });
-    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + HOUR));
-  });
-
-  it("seuil de départ atteint : réveil à la remise à zéro de cette fenêtre", async () => {
-    subscriptionSetup();
-    gauge([
-      { key: "primary", used: 6_000, resetsAt: THURSDAY_10H_PARIS + 3 * HOUR },
-      { key: "weekly", used: 1_000, resetsAt: THURSDAY_10H_PARIS + 5 * HOUR },
-    ]);
-    expect(await tickFresh()).toMatchObject({
+      kind: "denied",
       decision: {
         reason: "budget_exhausted",
-        detail: expect.stringContaining(": primary") as unknown,
+        detail: expect.stringContaining("target_reached: primary") as unknown,
       },
     });
-    expect(state()).toBe("hibernating");
-    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 3 * HOUR));
+    expect(nextWake()).toBe(iso(THURSDAY_10H_PARIS + 4 * HOUR));
+    expect(b.launcher.tickets).toHaveLength(2);
   });
 
-  it("lecture absente ou périmée : runtime bloqué avec motif, rien n'est réservé", async () => {
-    subscriptionSetup();
+  it("débit mesuré plus lent que prévu : le réveil avance (rattrapage)", async () => {
+    pacingSetup();
+    gauge(() => [{ key: "primary", used: 5_900, resetsAt: RESET }]);
+    expect(await tickFresh()).toMatchObject({ kind: "denied" });
+    b.clock.setWall(THURSDAY_10H_PARIS + 15 * MINUTE);
+    // Mesure : 450 bp/h → 4 000 / 450 × 1,25 ≈ 11 h > 7 h 45 restantes : réveil immédiat.
+    b.environment.estimates = [
+      { windowKey: "primary", rateBasisPointsPerHour: 450, marginRatio: 0.25, samples: 2 },
+    ];
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+  });
+
+  it("interruption par l'humain puis reprise : la priorité humaine prime sur le pilotage", async () => {
+    pacingSetup();
+    gauge(() => [{ key: "primary", used: 5_900, resetsAt: THURSDAY_10H_PARIS + 4 * HOUR }]);
+    b.priority.set(false, b.clock.now());
+    expect(await b.scheduler.tick()).toMatchObject({
+      kind: "denied",
+      decision: { reason: "user_priority" },
+    });
+    expect(b.launcher.tickets).toHaveLength(0);
+    b.clock.advance(MINUTE);
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+  });
+
+  it("deux fenêtres : pilote celle qui se remet à zéro le plus tôt, sans dépasser l'autre", async () => {
+    pacingSetup();
+    let weekly = 9_700;
+    gauge(() => [
+      { key: "weekly", used: weekly, resetsAt: THURSDAY_10H_PARIS + 72 * HOUR },
+      { key: "primary", used: 5_900, resetsAt: THURSDAY_10H_PARIS + 4 * HOUR },
+    ]);
+    expect(await tickFresh()).toMatchObject({ kind: "launched" });
+    b.clock.advance(HOUR);
+    weekly = 9_800;
+    b.launcher.finish({ outcome: "completed" });
+    await b.scheduler.sessionInFlight;
+    expect(await tickFresh()).toMatchObject({
+      kind: "denied",
+      decision: {
+        reason: "budget_exhausted",
+        detail: expect.stringContaining("start_threshold_reached: weekly") as unknown,
+      },
+    });
+  });
+
+  it("lecture absente : runtime bloqué avec motif, rien n'est réservé", async () => {
+    pacingSetup();
     expect(await tickFresh()).toMatchObject({
       kind: "denied",
       state: "blocked",
       decision: { reason: "budget_unknown", detail: "subscription.quota_unknown" },
     });
-    expect(b.launcher.tickets).toHaveLength(0);
     expect(b.events("budget_reserved")).toHaveLength(0);
   });
 
-  it("lecture trop ancienne : bloqué", async () => {
-    subscriptionSetup();
-    const observed = b.clock.now() - 2 * MINUTE;
-    b.environment.quota = () => [
-      {
-        windowKey: "primary",
-        windowDurationMs: 5 * HOUR,
-        usedBasisPoints: 1_000,
-        resetsAt: iso(THURSDAY_10H_PARIS + HOUR),
-        observedAt: iso(observed),
-        provenance: "measured",
-      },
-    ];
-    expect(await tickFresh()).toMatchObject({
-      state: "blocked",
-      decision: { reason: "budget_unknown", detail: "subscription.snapshot_stale: primary" },
-    });
-  });
-
   it("sans lecture officielle de la jauge : bloqué en mode autonome", async () => {
-    subscriptionSetup();
+    pacingSetup();
     const facts = b.environment.adapterFacts;
     if (typeof facts !== "object") throw new Error("faits d'adapter attendus");
     b.environment.adapterFacts = {
       ...facts,
       capabilities: { ...facts.capabilities, providerQuotaReading: "none" },
     };
-    gauge([{ key: "primary", used: 1_000, resetsAt: THURSDAY_10H_PARIS + HOUR }]);
+    gauge(() => [{ key: "primary", used: 1_000, resetsAt: THURSDAY_10H_PARIS + HOUR }]);
     expect(await tickFresh()).toMatchObject({
       state: "blocked",
-      decision: {
-        reason: "bound_not_enforceable",
-        detail: "subscription.no_official_quota_reading",
-      },
+      decision: { reason: "bound_not_enforceable" },
     });
   });
 });

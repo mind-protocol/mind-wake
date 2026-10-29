@@ -51,6 +51,12 @@ export interface SubscriptionQuotaStatus {
   readonly stopAt: string | null;
   readonly userReserve: string | null;
   readonly overshootBound: string | null;
+  /** Pilotage (ADR-005, complément) : usage visé à la remise à zéro de la fenêtre. */
+  readonly pacing: {
+    readonly target: string;
+    readonly initialRatePerHour: string;
+    readonly margin: number;
+  } | null;
   readonly note: string;
 }
 
@@ -69,6 +75,7 @@ function subscriptionQuotaStatus(revision: PolicyRevision): SubscriptionQuotaSta
       stopAt: null,
       userReserve: null,
       overshootBound: null,
+      pacing: null,
       note: QUOTA_NOTE,
     };
   }
@@ -83,6 +90,11 @@ function subscriptionQuotaStatus(revision: PolicyRevision): SubscriptionQuotaSta
       guard.overshootBoundBasisPoints === null
         ? null
         : basisPointsToPercent(guard.overshootBoundBasisPoints),
+    pacing: {
+      target: basisPointsToPercent(guard.targetUsageBasisPoints),
+      initialRatePerHour: basisPointsToPercent(guard.initialRateBasisPointsPerHour),
+      margin: guard.pacingMarginRatio,
+    },
     note: QUOTA_NOTE,
   };
 }
@@ -308,7 +320,7 @@ function formatStatus(data: StatusData): string {
   if (q !== null) {
     lines.push(
       q.enabled
-        ? `  Jauge abonnement (expérimentale) : lancement sous ${orDash(q.startBelow)}, arrêt à ${orDash(q.stopAt)}, réserve humaine ${orDash(q.userReserve)}, dépassement ${q.overshootBound ?? "non mesuré"} — ${q.note}`
+        ? `  Jauge abonnement (expérimentale) : lancement sous ${orDash(q.startBelow)}, arrêt à ${orDash(q.stopAt)}, réserve humaine ${orDash(q.userReserve)}, dépassement ${q.overshootBound ?? "non mesuré"}${q.pacing === null ? "" : `, cible ${q.pacing.target} à la remise à zéro (débit initial ${q.pacing.initialRatePerHour}/h, marge ${String(q.pacing.margin)})`} — ${q.note}`
         : "  Jauge abonnement : désactivée",
     );
   }

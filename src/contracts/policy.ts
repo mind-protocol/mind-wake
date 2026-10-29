@@ -79,10 +79,14 @@ export type PaidApiAllowance =
  * Garde de quota d'abonnement pour la voie expérimentale (AGENTS §5, ADR-004),
  * exprimée en points de base de chaque fenêtre du fournisseur. Absente ou désactivée
  * par défaut. Règles de validation :
- * - lancement seulement si chaque fenêtre lue est `measured`, plus récente que
- *   `maxSnapshotAgeMs`, sous `startBelowBasisPoints`, et se remet à zéro dans
- *   `launchWhenResetWithinMs` (ADR-005 : capacité qui serait perdue de toute façon) ;
- * - interruption dès qu'une fenêtre atteint `stopAtBasisPoints` ;
+ * - lancement seulement si chaque fenêtre lue est `measured` et plus récente que
+ *   `maxSnapshotAgeMs`, et si le **pilotage** le demande (ADR-005, complément) : la
+ *   fenêtre qui se remet à zéro le plus tôt est sous `targetUsageBasisPoints` et
+ *   `temps avant remise à zéro ≤ (cible − usage) / débit × (1 + marge)` ; les autres
+ *   fenêtres sont sous `startBelowBasisPoints` ;
+ * - interruption quand la fenêtre pilotée atteint `min(stopAt, cible)`, ou une autre
+ *   fenêtre `stopAtBasisPoints` ;
+ * - `targetUsageBasisPoints ≤ stopAtBasisPoints` ; `startBelow < stopAt` ;
  * - `stopAtBasisPoints + overshootBoundBasisPoints ≤ 10 000 − userReserveBasisPoints` ;
  * - `overshootBoundBasisPoints` à `null` (dépassement non mesuré) bloque le lancement.
  */
@@ -100,10 +104,20 @@ export type SubscriptionQuotaGuard =
       readonly overshootBoundBasisPoints: number | null;
       readonly maxSnapshotAgeMs: DurationMs;
       /**
-       * Délai maximal entre le lancement et la remise à zéro de chaque fenêtre lue
-       * (ADR-005). Aucun plafond de tokens propre à Wake n'est exigé sur cette voie.
+       * Usage visé à la remise à zéro de la fenêtre pilotée (9 900 = 99 % par défaut) :
+       * le quota non utilisé avant la remise à zéro est perdu. Aucun plafond de tokens
+       * propre à Wake n'est exigé sur cette voie ; les points de base ne deviennent
+       * jamais des tokens.
        */
-      readonly launchWhenResetWithinMs: DurationMs;
+      readonly targetUsageBasisPoints: number;
+      /**
+       * Débit prudent de consommation (points de base par heure de session continue)
+       * utilisé avant toute mesure ; ensuite, moyenne glissante mesurée par runtime et
+       * par fenêtre.
+       */
+      readonly initialRateBasisPointsPerHour: number;
+      /** Marge initiale du pilotage (0,25 = 25 % de temps en plus), ajustée ensuite. */
+      readonly pacingMarginRatio: number;
     };
 
 export interface BudgetGroup {
