@@ -19,6 +19,17 @@ export function nodeArgs(m) {
     pathToFileURL(path.join(m.repoDir, "test/fixtures/store-ledger/ts-hooks.ts")).href,
   ];
 }
+/** An explicitly reviewed desktop sidecar must not switch the running agent's CLI. */
+export function desktopRuntimeEnv(m, role) {
+  if (role !== "desktop" || m.desktopRepoDir === undefined) return {};
+  if (typeof m.desktopRepoDir !== "string" || !path.isAbsolute(m.desktopRepoDir))
+    throw Error("desktopRepoDir must be an absolute reviewed runtime directory.");
+  const cli = path.join(m.desktopRepoDir, "dist/cli/main.js");
+  const owner = path.join(m.desktopRepoDir, "services/mcp/owner-main.ts");
+  if (!fs.statSync(cli).isFile() || !fs.statSync(owner).isFile())
+    throw Error("Incomplete desktop runtime sidecar.");
+  return { MIND_WAKE_REPO_DIR: m.desktopRepoDir, MIND_WAKE_CLI: cli, MIND_OWNER_CLI: owner };
+}
 function reachable(pipe) {
   return new Promise((resolve) => {
     const s = net.connect(pipe);
@@ -98,21 +109,21 @@ export async function startLocal(manifestFile, role, options = {}) {
     MIND_WAKE_BACKGROUND_JOBS: role === "agent" ? "1" : "0",
     MIND_WAKE_NODE: m.node,
     MIND_WAKE_DESKTOP_SUPERVISED: options.supervised ? "1" : "0",
+    ...desktopRuntimeEnv(m, role),
   };
   if (role === "desktop") {
     // Restart only this exact desktop executable. No daemon is stopped.
     const script =
       "$existingDesktop = @(Get-Process -Name 'mind-wake-desktop' -ErrorAction SilentlyContinue); if ($existingDesktop.Count -gt 0) { $existingDesktop | Where-Object { $_.Path -eq $env:MIND_SETUP_DESKTOP } | Stop-Process -ErrorAction Stop }; exit 0";
-    const stopped = options.restart === false ? {status: 0} : spawnSync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      {
-        env: { ...env, MIND_SETUP_DESKTOP: m.desktopExe },
-        windowsHide: true,
-        encoding: "utf8",
-        timeout: 10000,
-      },
-    );
+    const stopped =
+      options.restart === false
+        ? { status: 0 }
+        : spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
+            env: { ...env, MIND_SETUP_DESKTOP: m.desktopExe },
+            windowsHide: true,
+            encoding: "utf8",
+            timeout: 10000,
+          });
     if (stopped.error || stopped.status !== 0)
       throw Error("Impossible de relancer le panneau existant.");
     // A reviewed local update can replace the unlocked binary before relaunching.
@@ -120,7 +131,7 @@ export async function startLocal(manifestFile, role, options = {}) {
     return await new Promise((resolve, reject) => {
       const child = spawn(m.desktopExe, [], {
         env,
-        cwd: m.repoDir,
+        cwd: env.MIND_WAKE_REPO_DIR,
         detached: true,
         windowsHide: false,
         stdio: "ignore",

@@ -31,3 +31,7 @@ Le hub partagé garde son défaut de deux agents. Le mode administratif explicit
 Recette réelle : `test/mcp/recipient.process.test.ts` traverse le sender du formulaire → CLI production → hub HTTPS éphémère → deux clients MCP stdio réels. Elle couvre deux fils, retour corrélé, fil/citation étrangers, corps spoof NLR, clé agent incorrecte, destinataire incorrect, retry et récupération du miroir sans doublons. `desktop/ui/recipient.test.ts` couvre brouillon, nouvelle saisie pendant appel et corrélation après recréation UI.
 
 Un appairage public Auroracle et l'affichage sur le desktop vivant restent à vérifier séparément. Les essais temporaires ne prouvent pas cette connexion publique.
+
+## Livraison desktop isolée
+
+Le manifeste local peut préciser `desktopRepoDir`, chemin absolu d'une copie revue possédant `dist/cli/main.js` et `services/mcp/owner-main.ts`. `start-local.mjs` transmet alors au desktop seulement `MIND_WAKE_CLI`, `MIND_OWNER_CLI` et son dossier de runtime. Le `repoDir` agent/hub reste inchangé. Sans ce champ, le comportement existant est conservé. La bascule du binaire et du manifeste doit rester coordonnée avec l'affichage réel ; ce champ ne redémarre aucun daemon.
