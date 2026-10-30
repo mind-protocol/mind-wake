@@ -28,6 +28,9 @@
     "allow-helpers-answers",
     "allow-owner-threads",
     "allow-owner-thread",
-    "allow-owner-reply"
+    "allow-owner-reply",
+    "allow-recipient-status",
+    "allow-recipient-send",
+    "allow-recipient-poll"
   ]
 }

@@ -19,6 +19,9 @@
 
 import { parseArgs } from "node:util";
 import { HubLink } from "./hub-link.js";
+import { recipientStatus, sendRecipient, pollRecipient } from "./recipient-route.js";
+import { resolveDataDir } from "../../src/cli/paths.js";
+import { processContext } from "../../src/cli/context.js";
 import {
   HubError,
   idempotencyKeySchema,
@@ -128,12 +131,42 @@ async function main(argv: readonly string[]): Promise<number> {
       thread: { type: "string" },
       "in-reply-to": { type: "string" },
       "idempotency-key": { type: "string" },
+      "new-thread": { type: "boolean" },
     },
   });
   const command = positionals[0] ?? "help";
   if (values.json !== true) throw new UsageError("seule la sortie --json est disponible");
   if (positionals.length > 1)
     throw new UsageError(`argument inattendu : ${positionals.slice(1).join(" ")}`);
+
+  if (["recipient-status", "recipient-send", "recipient-poll"].includes(command)) {
+    const dir = resolveDataDir(processContext(), undefined).path;
+    try {
+      const result =
+        command === "recipient-status"
+          ? recipientStatus(dir)
+          : command === "recipient-poll"
+            ? await pollRecipient(dir)
+            : await sendRecipient(
+                dir,
+                parse(idempotencyKeySchema, values["idempotency-key"], "idempotency-key"),
+                (await readStdin()).trim(),
+                values.thread,
+                values["new-thread"] === true,
+              );
+      output(command, true, { data: result });
+      return 0;
+    } catch {
+      output(command, false, {
+        error: {
+          code: "recipient_unavailable",
+          message:
+            "Route non raccordée, identité incorrecte ou envoi non confirmé. Brouillon conservé ; réessayer avec la même clé.",
+        },
+      });
+      return 1;
+    }
+  }
 
   const pipe = process.env["MIND_MCP_HUB_PIPE"];
   const key = process.env["MIND_MCP_LINK_KEY"];

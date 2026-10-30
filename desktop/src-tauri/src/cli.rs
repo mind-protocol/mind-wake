@@ -254,6 +254,21 @@ pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
     run(args, Some(text))
 }
 
+/// Fixed recipient alias only. No endpoint or credential is accepted from the webview.
+pub fn recipient(action: &str, key: Option<String>, text: Option<String>) -> Result<CliRun, String> {
+    let verb = match action { "status" => "recipient-status", "poll" => "recipient-poll", "send" => "recipient-send", _ => return Err("Action inconnue".into()) };
+    let mut args=owner_command();
+    args.extend([verb.into(),"--json".into()]);
+    if action=="send" {
+        let key=key.ok_or("Clé manquante")?;
+        if !idempotency_key(&key) { return Err("Clé invalide".into()); }
+        let body=text.as_ref().ok_or("Message manquant")?;
+        if body.trim().is_empty() || body.chars().count()>4000 { return Err("Message invalide".into()); }
+        args.extend(["--idempotency-key".into(),key.into()]);
+    }
+    run(args,text)
+}
+
 pub fn quick_reply(key: String, text: String, point: Option<crate::quick_input::ClickTarget>) -> Result<CliRun, String> {
     if !idempotency_key(&key) || text.trim().is_empty() || text.chars().count() > 4000 {
         return Err("Message ou identifiant invalide".into());

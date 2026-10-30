@@ -13,24 +13,26 @@ const { values } = parseArgs({
     key: { type: "string" },
     host: { type: "string", default: "127.0.0.1" },
     port: { type: "string", default: "0" },
+    "pilot-human-route": { type: "boolean", default: false },
   },
 });
 const { config, dir, cert, key } = values;
 if (!config || !dir || !cert || !key) throw new Error("--config --dir --cert --key requis.");
 const settings = loadHubConfig(config);
 if (
-  settings.parties.length !== 2 ||
-  new Set(settings.parties.map((p) => p.keyDigest)).size !== 2 ||
+  (values["pilot-human-route"]
+    ? settings.parties.length !== 3 ||
+      settings.parties.filter((p) => p.kind === "human").length !== 1 ||
+      settings.parties.filter((p) => p.kind === "agent").length !== 2
+    : settings.parties.length !== 2 || settings.parties.some((p) => p.kind !== "agent")) ||
+  new Set(settings.parties.map((p) => p.keyDigest)).size !== settings.parties.length ||
   settings.parties.some(
-    (p) =>
-      p.kind !== "agent" ||
-      p.permissions.guide ||
-      p.permissions.requestHelp ||
-      p.guide ||
-      p.fictiveBudget,
+    (p) => p.permissions.guide || p.permissions.requestHelp || p.guide || p.fictiveBudget,
   )
 )
-  throw new Error("Hub dédié : deux agents, clés distinctes, messages seulement.");
+  throw new Error(
+    "Hub dédié : deux agents, ou pilote explicite un humain et deux agents ; clés distinctes, messages seulement.",
+  );
 mkdirSync(dir, { recursive: true });
 const hub = new Hub(settings, dir);
 // Re-read administrative config on every call: removal/revocation is immediate.

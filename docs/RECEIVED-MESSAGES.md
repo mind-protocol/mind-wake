@@ -8,10 +8,26 @@
 
 Stocké ou livré dépend du canal/receipt, jamais d'une lecture supposée. Aucun secret, image jointe ou résultat arbitraire d'outil copié. Dédup par canal ; humains exclus sur tous les identifiants, au-delà des 200 visibles. Sous-agents natifs sans événement durable accessible et autres MCP non interceptés.
 
-## Destinataire Auroracle
+## Destinataire pilote
 
-Sélecteur Marco · mon agent / Auroracle · non raccordé. Sans route appairée, le brouillon est conservé et aucun envoi, miroir ou réveil n'a lieu.
+Le nouveau profil garde « Mon agent ». Les noms NLR, Marco et Auroracle sont réservés au pilote explicitement identifié par un fichier local `<dataDir>/auroracle-route.json`. Le marqueur seul permet de montrer le sélecteur non raccordé :
 
-Le raccordement exige une identité humaine NLR dédiée et un destinataire agent Auroracle, configurés côté backend avec clé hors webview. Le fil NLR ↔ Auroracle garde ses IDs et son mapping local ; reply_to_thread reprend ce fil vérifié, sans utiliser un replyTo contenu dans le texte. Le miroir root préfixé EXACTEMENT `NLR à Auroracle:` porte une enveloppe host de copie de contexte, distincte d'un nouvel ordre humain. Une corrélation durable assure déduplication et reprise. Un relais agent seul ne prouve pas une identité humaine authentifiée. Tests requis : deux fils, fil étranger, spoof, réponse corrélée et retry.
+```json
+{"pilot":"nlr-marco-auroracle"}
+```
 
-La boucle distante reste à implémenter et valider ; aucun appairage public Auroracle actif n'est revendiqué.
+La route complète exige le même marqueur plus `endpoint` (HTTPS `/v1/messages`), `humanRef` (ref humaine NLR attestée), `recipientRef` (ref agent Auroracle appairée) et `keyFile` (chemin absolu d'un fichier local contenant la clé NLR). Config et clé restent hors Git. Aucun endpoint ni secret n'est transmis à la webview. L'app n'invente pas l'appairage depuis un nom ou un texte.
+
+`owner-main.ts recipient-status --json`, `recipient-send --idempotency-key K [--thread thr_… | --new-thread] --json` (texte stdin) et `recipient-poll --json` sont les vraies API backend invoquées par Tauri. Chaque envoi/réception vérifie `whoami`: identité humaine exacte et permission message ; l'annuaire doit attester le correspondant agent. Une clé agent ne peut pas usurper NLR. `--thread` n'accepte qu'un fil déjà enregistré pour cette route. Le formulaire reprend le dernier fil de la route, ou crée le premier ; `--new-thread` crée explicitement un autre fil. La réponse d'Auroracle via `reply_to_thread` revient au même humain dans ce fil.
+
+Le stockage SQLite `recipient-route.sqlite` réserve atomiquement la corrélation avant envoi. États distincts : `local_stored`, `remote_stored` (hub, sans réception/lecture prétendue) et `received` (réponse récupérée). Même clé/corps/route : reprise idempotente ; correction de corps ou route avec cette clé : refus. Un envoi confirmé restaure aussi le miroir root après interruption. La clé de retry du formulaire survit à sa recréation via stockage local ; le brouillon n'est effacé qu'après confirmation backend et s'il n'a pas changé pendant l'appel.
+
+Le miroir root commence exactement par `NLR à Auroracle:`. Son enveloppe host `origin.kind=context_copy` indique auteur, destinataire, refs, fil/message et corrélation : copie de contexte, sans nouvelle demande pour Marco. Les réponses ont `origin.kind=peer_message`. Cette provenance est stockée dans une colonne séparée, jamais déduite du corps. Un libellé explicite dans le texte conserve cette distinction pour un ancien adapter encore actif. Aucun envoi ne démarre ou ne réveille le daemon, ni ne lève Pause/Force-off.
+
+Le polling explicite de la fenêtre récupère les seuls fils appairés, exige les refs et le canal/kind du hub, et conserve le texte pair comme contenu non fiable. Un `from=NLR` ou `replyTo` écrit dans ce texte ne modifie ni source, ni route. Les reçus entrants sont rendus avec source Auroracle + ref + fil ; le miroir inbox ne crée pas de doublon.
+
+Le hub partagé garde son défaut de deux agents. Le mode administratif explicite `--pilot-human-route` accepte exactement un humain et deux agents, clés distinctes, messages seuls. Aucun droit de conseil ou paiement ajouté.
+
+Recette réelle : `test/mcp/recipient.process.test.ts` traverse le sender du formulaire → CLI production → hub HTTPS éphémère → deux clients MCP stdio réels. Elle couvre deux fils, retour corrélé, fil/citation étrangers, corps spoof NLR, clé agent incorrecte, destinataire incorrect, retry et récupération du miroir sans doublons. `desktop/ui/recipient.test.ts` couvre brouillon, nouvelle saisie pendant appel et corrélation après recréation UI.
+
+Un appairage public Auroracle et l'affichage sur le desktop vivant restent à vérifier séparément. Les essais temporaires ne prouvent pas cette connexion publique.

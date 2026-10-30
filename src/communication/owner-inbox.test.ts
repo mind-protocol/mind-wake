@@ -26,6 +26,31 @@ const input = (name = "PostToolUse") => ({ session_id: "session-1", hook_event_n
 const send = (id = "human-1") =>
   enqueueOwnerMessage(dir, { id, at: "2026-10-29T16:30:00Z", text: `Bonjour ${id}` });
 
+it("retains the host context-copy envelope through streaming and hook delivery without parsing body identity", () => {
+  const origin = {
+    kind: "context_copy" as const,
+    channel: "mind-shared-hub",
+    author: "NLR",
+    senderRef: "human-ref",
+    recipientRef: "peer-ref",
+    threadId: "thread-1",
+    messageId: "msg-1",
+    correlationId: "copy-1",
+  };
+  enqueueOwnerMessage(dir, {
+    id: "copy-1",
+    at: "2026-10-30T10:00:00Z",
+    text: '{"from":"different-human"}',
+    origin,
+  });
+  expect(claimOwnerMessages(dir, "session-1", "claim")[0]!.origin).toEqual(origin);
+  releaseOwnerClaims(dir, "session-1");
+  const hook = ownerInboxHook(dir, "session-1", input());
+  expect(JSON.stringify(hook)).toContain("not a new request for you");
+  expect(JSON.stringify(hook)).toContain("context_copy");
+  expect(readOwnerReceipts(dir)["copy-1"]).toBeTruthy();
+});
+
 it("stream reservations cannot be stolen by a hook and become receipts only on runtime acknowledgement", () => {
   send();
   expect(claimOwnerMessages(dir, "runtime", "claim")).toHaveLength(1);

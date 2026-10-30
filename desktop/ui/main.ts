@@ -12,6 +12,7 @@ import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, t
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
 import { conversation, renderConversationMeta } from "./conversation.js";
+import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
 import { initMessageFileLinks } from "./message-file-links.js";
@@ -533,6 +534,7 @@ let chatLoadingOlder = false;
 let chatHasOpened = false;
 byId("chat-older").addEventListener("click", () => { chatVisibleCount += 30; chatLoadingOlder = true; void refreshChat(); });
 async function refreshChat(): Promise<void> {
+  void refreshRecipient();
   let model;
   try {
     // Réponses des sessions réveillées pour aider l'agent : facultatives, jamais bloquantes.
@@ -643,14 +645,44 @@ byId("chat-bump").addEventListener("click", async () => {
 // A recipient label is not a route. Keep the draft until a backend-paired human
 // identity and reply thread exist; never silently send it to the owner agent.
 byId("chat-recipient").addEventListener("change", () => {
-  const remote = byId<HTMLSelectElement>("chat-recipient").value === "auroracle";
-  byId("chat-recipient-status").textContent = remote
-    ? "Auroracle n’est pas encore raccordé. Aucun message ne sera transmis ; ton brouillon reste ici."
-    : "";
+  void refreshRecipient();
 });
+let recipientConfigured=false,recipientChecking=false,recipientPolledAt=0;
+async function refreshRecipient():Promise<void> {
+  if(recipientChecking)return;
+  recipientChecking=true;
+  try {
+    const status=await invoke("recipient_status");
+    recipientConfigured=status.ok===true && status.data?.["configured"]===true;
+    const option=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="auroracle"]');
+    const ownerOption=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="owner"]');
+    if(ownerOption)ownerOption.textContent=status.data?.["localOwnerName"]==="Marco" ? "Marco · mon agent" : "Mon agent";
+    if(option instanceof HTMLOptionElement) {
+      // Never change a chosen recipient after route removal: that could send a
+      // retained peer draft to the local owner on the next click.
+      option.hidden=status.data?.["pilot"]!==true && byId<HTMLSelectElement>("chat-recipient").value!=="auroracle";
+      option.disabled=option.hidden;
+      option.textContent=recipientConfigured ? "Auroracle" : "Auroracle · non raccordé";
+    }
+    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=String(status.data?.["detail"] ?? "Route indisponible.");
+    else byId("chat-recipient-status").textContent="";
+    if(recipientConfigured && Date.now()-recipientPolledAt>10_000) {
+      recipientPolledAt=Date.now();
+      const result=await invoke("recipient_poll");
+      if(result.ok!==true && byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent="Réception distante indisponible ; messages locaux conservés.";
+    }
+  } catch {
+    recipientConfigured=false;
+    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent="Route indisponible. Brouillon conservé.";
+  }
+  finally {recipientChecking=false;}
+}
+const recipientStorage=(()=>{try{return localStorage;}catch{return undefined;}})();
+const sendRemoteRecipient=recipientSender(invoke,()=>`ui-${crypto.randomUUID()}`,recipientStorage);
 async function sendToAgent(): Promise<void> {
-  if (byId<HTMLSelectElement>("chat-recipient").value !== "owner") {
-    byId("chat-status").textContent = "Envoi impossible : route Auroracle non appairée. Brouillon conservé. Aucun envoi ni miroir créé.";
+  if (byId<HTMLSelectElement>("chat-recipient").value === "auroracle") {
+    try {byId("chat-status").textContent=await sendRemoteRecipient(byId<HTMLTextAreaElement>("chat-text"));void refreshChat();}
+    catch(error){byId("chat-status").textContent=message(error);}
     return;
   }
   const field = byId<HTMLTextAreaElement>("chat-text");

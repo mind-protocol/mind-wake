@@ -45,6 +45,9 @@ fn main() {
             "owner_threads",
             "owner_thread",
             "owner_reply",
+            "recipient_status",
+            "recipient_send",
+            "recipient_poll",
         ]),
     ))
     .expect("échec de tauri-build");

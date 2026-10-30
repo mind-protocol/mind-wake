@@ -108,6 +108,13 @@ async fn wake_reply(idempotency_key: String, text: String) -> Result<CliRun, Str
 }
 
 #[tauri::command]
+async fn recipient_status() -> Result<CliRun, String> { blocking(|| cli::recipient("status",None,None)).await }
+#[tauri::command]
+async fn recipient_poll() -> Result<CliRun, String> { blocking(|| cli::recipient("poll",None,None)).await }
+#[tauri::command]
+async fn recipient_send(idempotency_key:String,text:String) -> Result<CliRun,String> { blocking(move || cli::recipient("send",Some(idempotency_key),Some(text))).await }
+
+#[tauri::command]
 fn quick_input_close(window: tauri::WebviewWindow) -> Result<(), String> {
     if window.label() != "quick-input" { return Err("Fenêtre invalide".into()); }
     quick_input::dismiss(&window)
@@ -305,6 +312,9 @@ fn main() {
             quick_input_send,
             helpers_answers,
             owner_threads,
+            recipient_status,
+            recipient_poll,
+            recipient_send,
             owner_thread,
             owner_reply
         ])
