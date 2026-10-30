@@ -1,10 +1,12 @@
 # Saisie rapide au clic droit
 
-L'en-tête et la poignée à côté de MIND permettent de déplacer le menu. Les boutons gardent leur comportement normal. Le déplacement ne change pas le point original joint à l'envoi. Un clic extérieur ferme le menu ; un clic droit extérieur ne le rouvre pas au relâchement du même bouton.
+L'en-tête et la poignée à côté de MIND permettent de déplacer le menu. Les boutons gardent leur comportement normal. Le déplacement ne change pas le point original joint à l'envoi. Un clic extérieur ferme le menu (gauche, droit, molette ou bouton latéral, y compris les clics injectés par un outil d'accessibilité) ; un clic droit extérieur ne le rouvre pas au relâchement du même bouton. Le clic reste transmis à l'application visée.
 
 Fermeture : un clic extérieur ou Échap masque le menu, même s'il n'a jamais reçu le focus. La croix reste disponible pendant l'envoi ; fermer conserve le brouillon et ne révoque pas un message déjà soumis. Une fermeture explicite empêche la réouverture automatique sur erreur. L'observateur clavier ne retient aucune saisie : il reconnaît seulement Échap lorsque le menu est visible, et transmet les événements à l'application.
 
-Implémentation Windows, 30 octobre 2026. Le panneau desktop observe le relâchement du bouton droit sur le bureau interactif et ouvre une petite fenêtre près du pointeur, contenue dans le moniteur visé. Les clics restent transmis aux applications : leur menu contextuel habituel peut rester visible derrière Wake. Les clics dans la saisie elle-même, dans un menu natif déjà ouvert et les événements injectés ne déclenchent pas le raccourci.
+Implémentation Windows, 30 octobre 2026. Le panneau desktop observe le relâchement du bouton droit sur le bureau interactif et ouvre une petite fenêtre près du pointeur, contenue dans le moniteur visé. À l'ouverture, le worker laisse le menu contextuel prendre sa place (80 à 200 ms), puis relève les rectangles des menus Win32 et des popups de l'application cliquée, y compris les menus modernes Explorer reconnus. MIND se place à droite, à gauche, dessous ou dessus avec un espace de 8 pixels, sans recouvrir les rectangles détectés. Sans place suffisante dans cet écran, le menu MIND reste masqué. Un nouveau clic ou Échap annule une ouverture encore en préparation. Le point original joint à l'envoi reste inchangé. Les menus personnalisés non exposés comme fenêtres popup et ceux apparaissant après ce délai restent une limite de détection.
+
+Les clics restent transmis aux applications et leur menu contextuel garde son comportement normal. Les clics dans la saisie elle-même, dans un menu natif déjà ouvert et les événements injectés ne déclenchent pas le raccourci.
 
 ## Parcours
 
