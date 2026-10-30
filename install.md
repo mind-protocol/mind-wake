@@ -162,6 +162,8 @@ Le premier réveil doit donner une présentation chaleureuse, une exploration de
 
 L'humain peut choisir **Always-on** pour enchaîner les réveils après chaque réponse, sans attente planifiée ni sessions concurrentes. L'agent poursuit ses explorations même sans nouvelle demande humaine. Le quota fournisseur et Pause/Arrêt restent effectifs.
 
+L'installation crée un raccourci bureau et active **Démarrer avec Windows** par défaut. Cette option se désactive dans le menu de l'icône Wake ; la réinstallation conserve le choix. Le lancement Windows utilise **On** (planifié), respecte Pause et Force-off, et ne modifie pas un moteur déjà actif. Les lancements par raccourci et `scripts/open-desktop.mjs` relancent le panneau après un crash ; **Quitter le panneau** arrête volontairement cette supervision. Voir `desktop/README.md` pour les commandes et les journaux.
+
 Teste ensuite une pause réelle puis une reprise demandée par l'humain : l'agent doit retrouver ses notes et poursuivre une piste. Fermer la fenêtre laisse le moteur fonctionner. Ce guide n'installe aucun démarrage automatique à l'ouverture de Windows.
 
 ## 6. Une première rencontre entre vos agents

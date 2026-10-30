@@ -13,6 +13,7 @@ import { observeClaudeTools } from "../../communication/runtime-activity.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import os from "node:os";
 import path from "node:path";
+import { saveStepsResult } from "../../daemon/wake-steps.js";
 import type { ProfileId, RuntimeGroup } from "../../contracts/index.js";
 import type { AdapterRegistration } from "../../daemon/registry.js";
 import type { BillingFacts } from "../../policy/index.js";
@@ -124,6 +125,8 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
       const dir = path.join(context.dataDir, "runtimes", "claude");
       let supervisor: ProcessTreeSupervisor | null = null;
       return new ClaudeAdapter({
+        stepsStopHook: true,
+        onStepsResult: (request, raw) => saveStepsResult(context.workspaceDir, context.dataDir, request.policy.groups.identity.agentId, request.sessionId, raw),
         // Le runner confine selon la session ; le consentement au mode non isolé vient de la
         // policy (session `host_unsandboxed`), relu à chaque lancement.
         launcher: hostClaudeLauncher(context.host),

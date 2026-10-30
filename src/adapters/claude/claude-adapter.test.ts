@@ -4,6 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
+import { saveStepsResult, nextWakeStep, readWakeSteps } from "../../daemon/wake-steps.js";
+import { readOwnerMessages } from "../../communication/owner-messages.js";
 import type {
   AdapterEvent,
   ReservationId,
@@ -90,6 +92,17 @@ beforeEach(() => {
     },
   };
   h = harness;
+  fs.mkdirSync(path.join(h.workspace, "artifacts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(h.workspace, "artifacts/projets-compteur.json"),
+    JSON.stringify({
+      current: "A",
+      projects: {
+        A: { estimate: 40, spent: 2 },
+        B: { estimate: 30, spent: 0, status: "en cours" },
+      },
+    }),
+  );
 });
 
 afterEach(async () => {
@@ -150,22 +163,61 @@ function request(sessionId: string, context = "Que veux-tu explorer ?"): StartRe
   };
 }
 
-it("backgrounds a blocking worker on incoming messages and preserves it beyond the first parent result",async()=>{
-  h.scenario="foreground-preemption";
-  h.isolation={kind:"host_job",detail:"test",unsandboxedConsent:true};
-  enqueueOwnerMessage(h.dir,{id:"human-priority",at:new Date().toISOString(),text:"Talk to me now"});
-  const subject=adapter({ownerInboxDir:h.dir});
-  const events=await run(subject,"priority-session");
-  expect(events.filter(e=>e.type==="error")).toEqual([]);
-  expect(events.filter(e=>e.type==="activity").map(e=>e.summary)).toContain("Attente libérée, travail conservé en arrière-plan ; transmission du message en cours.");
-  expect(fs.readFileSync(path.join(h.workspace,"background-finished.txt"),"utf8")).toContain("survived");
-  expect(events.filter(e=>e.type==="ended")).toHaveLength(1);
-  const usages=events.filter(e=>e.type==="usage");
-  expect(usages.map(e=>e.quantity.unit==="tokens"?e.quantity.amount:0)).toEqual([60,60]);
-  expect(await subject.reconcile("priority-session" as SessionId)).toMatchObject({status:"confirmed",usage:[{amount:120}]});
-  expect(readOwnerReceipts(h.dir)["human-priority"]).toBeTruthy();
-  expect(events.some(e=>e.type==="activity" && e.summary.includes("travail conservé"))).toBe(true);
-});
+it.each([false, true])(
+  "backgrounds a worker and delivers owner content (image=%s)",
+  async (withImage) => {
+    h.scenario = "foreground-preemption";
+    h.isolation = { kind: "host_job", detail: "test", unsandboxedConsent: true };
+    enqueueOwnerMessage(h.dir, {
+      id: "human-priority",
+      at: new Date().toISOString(),
+      text: "Talk to me now",
+      ...(withImage
+        ? {
+            image: {
+              mediaType: "image/jpeg" as const,
+              base64: "/9j/2Q==",
+              capturedAt: "2026-01-01T00:00:00Z",
+              width: 20,
+              height: 20,
+              surface: "primary" as const,
+            },
+          }
+        : {}),
+    });
+    const subject = adapter({ ownerInboxDir: h.dir });
+    const events = await run(subject, "priority-session");
+    expect(events.filter((e) => e.type === "error")).toEqual([]);
+    expect(events.filter((e) => e.type === "activity").map((e) => e.summary)).toContain(
+      "Attente libérée, travail conservé en arrière-plan ; transmission du message en cours.",
+    );
+    expect(fs.readFileSync(path.join(h.workspace, "background-finished.txt"), "utf8")).toContain(
+      "survived",
+    );
+    expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
+    const usages = events.filter((e) => e.type === "usage");
+    expect(usages.map((e) => (e.quantity.unit === "tokens" ? e.quantity.amount : 0))).toEqual([
+      60, 60,
+    ]);
+    expect(await subject.reconcile("priority-session" as SessionId)).toMatchObject({
+      status: "confirmed",
+      usage: [{ amount: 120 }],
+    });
+    expect(readOwnerReceipts(h.dir)["human-priority"]).toBeTruthy();
+    if (withImage) {
+      const frame = JSON.parse(
+        fs.readFileSync(path.join(h.workspace, "received-owner-frame.json"), "utf8"),
+      ) as { message: { content: unknown[] } };
+      expect(frame.message.content).toContainEqual({
+        type: "image",
+        source: { type: "base64", media_type: "image/jpeg", data: "/9j/2Q==" },
+      });
+    }
+    expect(
+      events.some((e) => e.type === "activity" && e.summary.includes("travail conservé")),
+    ).toBe(true);
+  },
+);
 
 async function run(subject: ClaudeAdapter, sessionId: string): Promise<AdapterEvent[]> {
   const handle = await subject.start(request(sessionId));
@@ -173,6 +225,115 @@ async function run(subject: ClaudeAdapter, sessionId: string): Promise<AdapterEv
   for await (const event of subject.events(handle)) events.push(event);
   return events;
 }
+
+it("runs one transition coordination turn and leaves an unaccepted plan unpublished", async () => {
+  h.scenario = "steps-stop";
+  let calls = 0;
+  const subject = adapter({
+    stepsStopHook: true,
+    onStepsResult: (req, raw) => {
+      calls++;
+      return saveStepsResult(h.workspace, h.dir, "agent-test", req.sessionId, raw);
+    },
+  });
+  const events = await run(subject, "steps-session");
+  expect(calls).toBe(1);
+  expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
+  expect(
+    events
+      .filter((e) => e.type === "usage")
+      .map((e) => (e.quantity.unit === "tokens" ? e.quantity.amount : 0)),
+  ).toEqual([150, 150]);
+  expect(fs.readFileSync(path.join(h.workspace, "steps-input.json"), "utf8")).toContain(
+    "coordination après changement",
+  );
+  expect(readWakeSteps(h.workspace)).toBeNull();
+  expect(nextWakeStep(h.workspace)).toContain("orientations à reprendre");
+  expect(readOwnerMessages(h.dir)).toBeNull();
+});
+
+it("keeps human text pending while capturing the planning result", async () => {
+  h.scenario = "steps-stop";
+  h.isolation = { kind: "host_job", detail: "test", unsandboxedConsent: true };
+  let saved = 0;
+  const subject = adapter({
+    stepsStopHook: true,
+    ownerInboxDir: h.dir,
+    onStepsResult: () => {
+      saved++;
+      return true;
+    },
+  });
+  const handle = await subject.start(request("human-during-plan"));
+  for await (const event of subject.events(handle)) {
+    if (event.type === "activity" && event.summary.includes("bilan de fin de réponse"))
+      enqueueOwnerMessage(h.dir, {
+        id: "during-plan",
+        at: new Date().toISOString(),
+        text: "Stop this project",
+      });
+  }
+  expect(saved).toBe(0);
+  expect(readOwnerReceipts(h.dir)["during-plan"]).toBeUndefined();
+});
+
+it("does not turn a planning failure into a failed work response", async () => {
+  h.scenario = "steps-stop-error";
+  const subject = adapter({ stepsStopHook: true });
+  const events = await run(subject, "plan-error");
+  expect(events.filter((e) => e.type === "error")).toHaveLength(0);
+  expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "result:success" });
+  expect(await subject.reconcile("plan-error" as SessionId)).toMatchObject({ status: "uncertain" });
+});
+
+it("preserves a provider 429 reported only by the planning result", async () => {
+  h.scenario = "steps-stop-429";
+  const subject = adapter({ stepsStopHook: true });
+  const events = await run(subject, "plan-result-429");
+  expect(events.filter((e) => e.type === "rate_limited")).toHaveLength(1);
+  expect(events.filter((e) => e.type === "error")).toHaveLength(0);
+  expect(await subject.reconcile("plan-result-429" as SessionId)).toMatchObject({
+    status: "uncertain",
+  });
+});
+
+it("preserves uncertain planning usage after cancellation", async () => {
+  h.scenario = "steps-stop-hang";
+  let saved = 0;
+  const subject = adapter({
+    stepsStopHook: true,
+    onStepsResult: () => {
+      saved++;
+      return true;
+    },
+  });
+  const handle = await subject.start(request("plan-cancel"));
+  for await (const event of subject.events(handle)) {
+    if (event.type === "activity" && event.summary.includes("bilan de fin de réponse"))
+      await subject.cancel(handle, 1000);
+  }
+  expect(saved).toBe(0);
+  expect(await subject.reconcile("plan-cancel" as SessionId)).toMatchObject({
+    status: "uncertain",
+  });
+});
+
+it.each(["rate_limited", "auth_failed", "cut"])("does not plan after %s", async (scenario) => {
+  h.scenario = scenario;
+  let calls = 0;
+  await run(
+    adapter({
+      stepsStopHook: true,
+      onStepsResult: () => {
+        calls++;
+        return true;
+      },
+    }),
+    `no-plan-${scenario}`,
+  );
+  expect(calls).toBe(0);
+  expect(fs.existsSync(path.join(h.workspace, "steps-input.json"))).toBe(false);
+});
 
 function invocations(): { argv: string[]; env: string[]; cwd: string }[] {
   return fs
@@ -592,7 +753,7 @@ describe("adapter Claude Code : session", () => {
   it("annule une session bloquée dans le délai, sans affirmer d'usage", async () => {
     h.scenario = "hang";
     const net = network();
-    const subject = adapter({ network: net });
+    const subject = adapter({ network: net, stepsStopHook: true });
     const handle = await subject.start(request("s-hang"));
     const iterator = subject.events(handle)[Symbol.asyncIterator]();
     expect((await iterator.next()).value).toMatchObject({ type: "started" });
@@ -799,4 +960,58 @@ describe("adapter Claude Code : briques", () => {
       },
     });
   });
+});
+
+it.each(["stable", "roundtrip", "missing"])(
+  "does not invoke coordination for %s endpoints",
+  async (mode) => {
+    h.scenario = "steps-stop-" + mode;
+    let calls = 0;
+    await run(
+      adapter({
+        stepsStopHook: true,
+        onStepsResult: () => {
+          calls++;
+          return false;
+        },
+      }),
+      "skip-" + mode,
+    );
+    expect(calls).toBe(0);
+    expect(fs.existsSync(path.join(h.workspace, "steps-input.json"))).toBe(false);
+  },
+);
+it("persists a canonical plan only after actual correlated Agent result and main decision", async () => {
+  h.scenario = "steps-stop-accepted";
+  await run(
+    adapter({
+      stepsStopHook: true,
+      onStepsResult: (req, raw) => saveStepsResult(h.workspace, h.dir, "agent", req.sessionId, raw),
+    }),
+    "accepted",
+  );
+  expect(readWakeSteps(h.workspace)).toMatchObject({
+    sourceSessionId: "accepted",
+    prochaineEtape: "e1",
+  });
+  expect(readOwnerMessages(h.dir)).toHaveLength(1);
+  expect(h.launches[0]?.env["MIND_WAKE_SESSION"]).toBe("accepted");
+});
+it("records transition even when human guard defers coordination", async () => {
+  h.scenario = "steps-stop";
+  const a = adapter({ stepsStopHook: true, ownerInboxDir: h.dir });
+  const handle = await a.start(request("deferred"));
+  // Claim occurs only in the existing work session; a new pending message at end blocks the extra turn.
+  for await (const event of a.events(handle))
+    if (event.type === "usage")
+      enqueueOwnerMessage(h.dir, {
+        id: "urgent",
+        at: new Date().toISOString(),
+        text: "Stop et discute",
+      });
+  expect(fs.existsSync(path.join(h.workspace, "steps-input.json"))).toBe(false);
+  const folder = path.join(h.workspace, "artifacts/steps-requests");
+  expect(fs.readdirSync(folder)).toHaveLength(1);
+  expect(nextWakeStep(h.workspace)).toContain("orientations à reprendre");
+  expect(readOwnerMessages(h.dir)).toBeNull();
 });

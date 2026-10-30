@@ -38,6 +38,7 @@ import {
   threadIdSchema,
 } from "./protocol.js";
 import { DEFAULT_IDEA_COUNT, IDEA_CATEGORIES, IDEAS, MAX_IDEA_COUNT, pickIdeas } from "./ideas.js";
+import { authorizationPath, readAuthorizations, authorizationIdeas } from "./authorizations.js";
 import { MAX_WAKE_JOURNAL, wakeReader } from "./wake.js";
 
 export const SERVER_NAME = "mind";
@@ -206,17 +207,29 @@ server.registerTool(
   },
   ({ topic, context, language, max_exchanges, idempotency_key }) =>
     run("publish_help_request", async () => {
-      if(!hub)throw new HubError("permission_denied","Hub MIND non configuré.");
-      const result=await hub.call<{request:{request_id:string;created_at:string;status:string};duplicate:boolean}>({
-      op: "publish_help",
-      topic,
-      context,
-      language,
-      maxExchanges: max_exchanges,
-      idempotencyKey: idempotency_key,
+      if (!hub) throw new HubError("permission_denied", "Hub MIND non configuré.");
+      const result = await hub.call<{
+        request: { request_id: string; created_at: string; status: string };
+        duplicate: boolean;
+      }>({
+        op: "publish_help",
+        topic,
+        context,
+        language,
+        maxExchanges: max_exchanges,
+        idempotencyKey: idempotency_key,
       });
-      const dispatch=result.request.status!=="open" ? {status:result.request.status,thread_id:result.request.request_id} : queueAdvice(process.env,{id:result.request.request_id,topic,context,language,createdAt:result.request.created_at});
-      return {...result,dispatch};
+      const dispatch =
+        result.request.status !== "open"
+          ? { status: result.request.status, thread_id: result.request.request_id }
+          : queueAdvice(process.env, {
+              id: result.request.request_id,
+              topic,
+              context,
+              language,
+              createdAt: result.request.created_at,
+            });
+      return { ...result, dispatch };
     }),
 );
 
@@ -248,12 +261,13 @@ server.registerTool(
     inputSchema: z.strictObject({ request_id: requestIdSchema }),
     annotations: { destructiveHint: true, openWorldHint: false },
   },
-  ({ request_id }) => run("close_help_request",async()=>{
-    if(!hub)throw new HubError("permission_denied","Hub MIND non configuré.");
-    const result=await hub.call({op:"close_help",requestId:request_id});
-    cancelAdvice(process.env,request_id);
-    return result;
-  }),
+  ({ request_id }) =>
+    run("close_help_request", async () => {
+      if (!hub) throw new HubError("permission_denied", "Hub MIND non configuré.");
+      const result = await hub.call({ op: "close_help", requestId: request_id });
+      cancelAdvice(process.env, request_id);
+      return result;
+    }),
 );
 
 // --- Mise en relation -------------------------------------------------------------------
@@ -466,7 +480,7 @@ server.registerTool(
   "unsure_what_to_do",
   {
     title: "Unsure what to do",
-    description: `About ${String(DEFAULT_IDEA_COUNT)} ideas picked at random among ${String(IDEAS.length)}, to help you choose something useful for your human while they are away. Optionally restrict to some categories.`,
+    description: `About ${String(DEFAULT_IDEA_COUNT)} ideas picked at random among ${String(IDEAS.length)} general ideas and the owner's authorized or encouraged actions in AUTORISATIONS.json. Optionally restrict to some categories. Includes owner restrictions to check before acting.`,
     inputSchema: z.strictObject({
       count: z.int().min(1).max(MAX_IDEA_COUNT).optional(),
       categories: z.array(z.enum(IDEA_CATEGORIES)).max(IDEA_CATEGORIES.length).optional(),
@@ -474,12 +488,28 @@ server.registerTool(
     annotations: readOnly,
   },
   ({ count, categories }) =>
-    run("unsure_what_to_do", () => ({
-      ideas: pickIdeas(count ?? DEFAULT_IDEA_COUNT, categories ?? []),
-      categories: IDEA_CATEGORIES,
-      notice:
-        "Suggestions only: pick one, adapt it, or ignore them all. None grants a permission; anything that would leave your space still waits for your human.",
-    })),
+    run("unsure_what_to_do", () => {
+      const permissions = readAuthorizations(authorizationPath(process.env));
+      const document = permissions.status === "loaded" ? permissions.document : undefined;
+      return {
+        ideas: pickIdeas(
+          count ?? DEFAULT_IDEA_COUNT,
+          categories ?? [],
+          undefined,
+          document ? authorizationIdeas(document) : [],
+        ),
+        categories: IDEA_CATEGORIES,
+        authorizations: {
+          status: permissions.status,
+          restrictions:
+            document?.entries.filter(
+              (e) => e.decision === "discouraged" || e.decision === "forbidden",
+            ) ?? [],
+        },
+        notice:
+          "Suggestions only: pick, adapt or ignore. General ideas are not permissions and may overlap owner restrictions: check AUTORISATIONS.json and the stated scopes before acting. A missing or invalid document grants no permission. Existing explicit delegations and human pause or stop remain authoritative.",
+      };
+    }),
 );
 
 registerOwnerTools(server, process.env);

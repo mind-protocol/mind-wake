@@ -1,0 +1,14 @@
+{
+  "extends": "success.json",
+  "on": {
+    "turn/steps": {
+      "result": { "turn": { "id": "turn_2", "status": "inProgress" } },
+      "then": [
+        { "notify": "turn/started", "params": { "threadId": "thr_1", "turn": { "id": "turn_2", "status": "inProgress" } } },
+        { "notify": "thread/tokenUsage/updated", "params": { "turnId": "turn_2", "tokenUsage": { "last": { "inputTokens": 200, "cachedInputTokens": 0, "outputTokens": 50, "reasoningOutputTokens": 0, "totalTokens": 250 }, "total": { "inputTokens": 5340, "cachedInputTokens": 50, "outputTokens": 920, "reasoningOutputTokens": 215, "totalTokens": 6260 } } } },
+        { "notify": "item/completed", "params": { "turnId": "turn_2", "item": { "type": "agentMessage", "text": "{\"version\":1,\"travail\":\"Contrôler la reprise\",\"statut\":\"actif\",\"horizonWakes\":{\"nombre\":2,\"origine\":\"fixe_agent\",\"source\":\"un contrôle puis une correction\"},\"etapes\":[{\"id\":\"e1\",\"wake\":1,\"texte\":\"Vérifier la reprise réelle\",\"statut\":\"a_faire\"}],\"prochaineEtape\":\"e1\"}" } } },
+        { "notify": "turn/completed", "params": { "turn": { "id": "turn_2", "status": "completed" } } }
+      ]
+    }
+  }
+}

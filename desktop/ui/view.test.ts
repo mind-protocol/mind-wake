@@ -3,6 +3,14 @@ import { panelView, STALE_AFTER_MS, type StatusRead } from "./view.js";
 
 const NOW = Date.parse("2026-10-29T12:00:00Z");
 
+it("shows the declared project only with a fresh successful status", () => {
+  const current = read(profileData("running", {activeProject:"wake-ui"}));
+  expect(panelView(current, NOW).activeProject).toBe("wake-ui");
+  expect(panelView(read(profileData("running")), NOW).activeProject).toBeNull();
+  expect(panelView(current, NOW + STALE_AFTER_MS + 1).activeProject).toBeNull();
+  expect(panelView({ok:false,fetchedAt:NOW,error:"offline"}, NOW).activeProject).toBeNull();
+});
+
 function envelope(data: unknown): unknown {
   return { schema: "mind-wake.cli", schemaVersion: 1, command: "status", ok: true, data };
 }
@@ -47,6 +55,11 @@ function read(data: unknown, fetchedAt = NOW): StatusRead {
 }
 
 describe("panelView", () => {
+  it("explains launch authorization in ordinary language", () => {
+    const data = profileData("running") as {profile: {stateReason: string}};
+    data.profile.stateReason = "launch.allowed";
+    expect(panelView(read(data), NOW).reason).toBe("L’agent travaille sur une session autorisée.");
+  });
   it("affiche l'état réel, son motif et la mention SIMULÉ", () => {
     const view = panelView(read(profileData("running")), NOW);
     expect(view.headline).toBe("Travaille");
@@ -167,5 +180,7 @@ it("always-on est affiché comme un mode persistant et ne dépasse pas l’arrê
   expect(panelView(read(data), NOW)).toMatchObject({ alwaysOn: true, canAlwaysOn: true });
   const stopped = profileData("stopped") as Record<string, unknown>;
   stopped["executionMode"] = "always-on";
-  expect(panelView(read(stopped), NOW)).toMatchObject({ alwaysOn: false, canAlwaysOn: false });
+  expect(panelView(read(stopped), NOW)).toMatchObject({ alwaysOn: false, canAlwaysOn: true });
+  (stopped["profile"] as Record<string,unknown>)["emergencyStopLocked"] = true;
+  expect(panelView(read(stopped), NOW)).toMatchObject({ alwaysOn: false, canAlwaysOn: true });
 });

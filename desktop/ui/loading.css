@@ -1,0 +1,46 @@
+.wake-loading {
+  position: fixed; inset: 0; z-index: 10000; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  box-sizing: border-box; padding: clamp(24px, 4vw, 64px);
+  color: #edf5df; background: #092e28;
+  background-image: radial-gradient(ellipse at 50% 42%, #235347 0%, transparent 58%), radial-gradient(ellipse at 95% 100%, #34523c 0%, transparent 42%);
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+  transition: opacity .45s ease, visibility .45s;
+}
+.wake-loading.is-leaving { opacity: 0; visibility: hidden; pointer-events: none; }
+.wake-loading-grain { position: absolute; inset: 0; pointer-events: none; opacity: .09; background-image: radial-gradient(#d9efd5 .6px, transparent .6px); background-size: 5px 5px; }
+.wake-loading-top, .wake-loading-footer { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.wake-loading-wordmark { font-size: 22px; font-weight: 700; letter-spacing: .04em; }
+.wake-loading-wordmark span { font-weight: 300; color: #bbd6c7; }
+.wake-loading-caption, .wake-loading-footer { font-size: 10px; letter-spacing: .16em; color: #adc8b7; }
+.wake-loading-center { position: relative; text-align: center; margin: auto; padding: 14px 0; }
+.wake-loading-orbits { position: relative; width: 230px; height: 230px; margin: 0 auto 26px; display: grid; place-items: center; }
+.wake-loading-orbits::before { content: ""; position: absolute; inset: 55px; border-radius: 50%; background: #ceeaa9; filter: blur(48px); opacity: .2; animation: wake-breathe 4s ease-in-out infinite; }
+.wake-loading-orbits i { position: absolute; inset: 0; border: 1px solid #b8d7b82b; border-radius: 50%; animation: wake-orbit 18s linear infinite; }
+.wake-loading-orbits i:nth-child(2) { inset: 24px; animation-duration: 13s; animation-direction: reverse; border-color: #b8d7b84a; }
+.wake-loading-orbits i:nth-child(3) { inset: 48px; animation-duration: 9s; }
+.wake-loading-orbits i::after { content: ""; position: absolute; left: 50%; top: -3px; width: 5px; height: 5px; background: #d9edab; border-radius: 50%; box-shadow: 0 0 14px #d9edab99; }
+.wake-loading-symbol { font: bold 86px/1 Georgia, serif; color: #e0edbd; padding-bottom: 12px; }
+.wake-loading-eyebrow { font-size: 10px; letter-spacing: .27em; color: #c1d69e; margin: 0 0 16px; }
+.wake-loading-center h1 { color: #f0f2df; font-size: clamp(30px, 4.5vw, 58px); font-weight: 350; letter-spacing: -.045em; line-height: 1.15; margin: 0 0 16px; }
+.wake-loading-subtitle { color: #b3cabd; font-size: 14px; margin: 0; }
+.wake-loading-progress { width: 140px; height: 2px; overflow: hidden; background: #b4d1b126; margin: 32px auto 14px; }
+.wake-loading-progress span { display: block; height: 100%; width: 45%; background: #d6e8a7; animation: wake-progress 2s ease-in-out infinite; }
+.wake-loading-status { color: #b3cabd; font-size: 12px; margin: 0 0 14px; }
+#wake-loading-skip { border: 1px solid #afc9b22e; border-radius: 100px; background: transparent; color: #d3e2ca; padding: 9px 16px; font-size: 11px; cursor: pointer; }
+#wake-loading-skip:hover { background: #d3e2ca12; border-color: #afc9b280; }
+#wake-loading-skip:focus-visible { outline: 2px solid #e0edbd; outline-offset: 4px; }
+.wake-loading-footer b { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #d1e6a5; margin-right: 9px; }
+@keyframes wake-orbit { to { transform: rotate(360deg); } }
+@keyframes wake-breathe { 50% { opacity: .4; transform: scale(1.15); } }
+@keyframes wake-progress { from { transform: translateX(-105%); } to { transform: translateX(330%); } }
+@media (max-width: 600px), (max-height: 650px) {
+  .wake-loading-caption, .wake-loading-footer > span:last-child { display: none; }
+  .wake-loading-orbits { width: 150px; height: 150px; margin-bottom: 18px; }
+  .wake-loading-symbol { font-size: 64px; }
+  .wake-loading-progress { margin-top: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wake-loading, .wake-loading * { animation: none !important; transition: none !important; }
+  .wake-loading-progress span { width: 100%; opacity: .6; }
+}

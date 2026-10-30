@@ -1,0 +1,12 @@
+{
+  "extends": "success.json",
+  "on": {
+    "turn/steps": {
+      "result": {"turn":{"id":"turn_2","status":"inProgress"}},
+      "then": [
+        {"notify":"turn/started","params":{"turn":{"id":"turn_2","status":"inProgress"}}},
+        {"notify":"turn/completed","params":{"turn":{"id":"turn_2","status":"failed","error":{"message":"planning unavailable","codexErrorInfo":"other"}}}}
+      ]
+    }
+  }
+}

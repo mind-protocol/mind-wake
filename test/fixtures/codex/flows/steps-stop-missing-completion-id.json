@@ -1,0 +1,23 @@
+{
+  "extends": "steps-stop.json",
+  "on": {
+    "turn/steps": {
+      "result": {
+        "turn": {
+          "id": "turn_2",
+          "status": "inProgress"
+        }
+      },
+      "then": [
+        {
+          "notify": "turn/completed",
+          "params": {
+            "turn": {
+              "status": "completed"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

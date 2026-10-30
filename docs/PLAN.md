@@ -1,48 +1,41 @@
-# MIND Wake — plan d'implémentation v0.1 en sessions parallèles
+# MIND Wake — état et prochaines vérifications
 
-Date : 29 octobre 2026. Ce plan découpe les étapes F0–F5 de [SPEC.md §11](../SPEC.md) en sessions de travail indépendantes. [AGENTS.md](../AGENTS.md) reste la source de vérité ; en cas de conflit, il prévaut. Les dossiers et commandes cités ici sont à créer, pas existants.
+Mis à jour le 30 octobre 2026 depuis le code. [AGENTS.md](../AGENTS.md) porte la direction ; [SPEC.md](../SPEC.md) décrit les contrats. Le découpage initial conservé plus bas est historique.
 
-## Statut de développement
+## État actuel
 
-**Spécification et socle technique en cours ; aucun service public opérationnel.** Fusionnés dans `main` : socle et contrats (S0), faisabilité Codex et isolation (S1, S2, ADR proposés sous conditions), policy engine (S4) et journal + CLI de consultation (S5), testés unitairement. En cours : S3 (SQLite + ledger). Rien n'est câblé de bout en bout : la CLI travaille en mémoire, aucune session d'exploration, réelle ou simulée, ne peut être lancée. Aucun paiement, wallet, canal de messagerie ni service distant n'existe. La voie abonnement est retenue comme expérimentale (ADR-004) et reste bloquée tant qu'un dépassement borné n'est pas mesuré.
+| Composant | État dans le code |
+| --- | --- |
+| Moteur local | SQLite, policy, ledger, scheduler, runner, journal, checkpoints et reprise après interruption assemblés |
+| Runtimes | Codex et Claude enregistrés par défaut ; fake pour les simulations ; Gemini présent mais non enregistré |
+| Modes | On, réveil explicite et Always-on ; Pause et Force-off restent prioritaires ; une session par profil |
+| Exécution | Mode hôte consenti et profils isolés distincts ; capacités natives Codex/Claude conservées lorsque configurées |
+| Continuité | Fichiers, checkpoints, fils Codex, reprise Claude, PERSONALITY.md et réglages de compaction dans pilote.json |
+| Communication | MCP stdio, hub local, messages propriétaire et réponses, helpers et conversations de dépôt |
+| Desktop | Tauri : messages, activité, historique et contrôles ; sélection explicite Always-on réactive un profil arrêté via la CLI |
+| Jobs | Scripts supervisés entre les réveils ; logs, résultats et annulation ; arrêt sur Pause/Force-off |
+| Contexte ambiant | Capture et collecte de texte compatibles sur autorisation, avec limites documentées séparément |
+| Installation | install.md, setup local et paquet Windows portable ; désinstallation unifiée encore à compléter |
+| Économie | Démonstrations et rails expérimentaux séparés ; aucun paiement réel ne se déduit d’un test simulé |
 
-**Session S-D (porte F2, simulée).** Le daemon local est assemblé (`src/daemon/`, `mind-wake daemon run --simulated`, au premier plan seulement) avec l'adapter factice uniquement ; sans `--simulated` il refuse de démarrer. Canal de contrôle : état persisté dans SQLite, aucun port. Démo AGENTS §7 en test et en script (`test/demo/`) : session A, arrêt du processus, session B qui reprend la même expérience depuis le checkpoint, bilan produit / échoué / hypothétique, consommation marquée SIMULÉE ; puis priorité utilisateur (signal simulé), pause, reprise et arrêt d'urgence sur un daemon actif, sans réveil après l'arrêt, redémarrage compris. Tests en processus réels : deux daemons concurrents, crash pendant une session et pendant un checkpoint. Isolation et adapter Codex restent non implémentés : aucune session réelle n'est possible.
+## Vérifications et limites
 
-**Application desktop (SPEC §21, squelette).** Technologie : Tauri 2 (ADR-007, choisie par l'utilisateur le 29 octobre 2026). `desktop/` contient :
+Les plans de réveil de l’agent intègrent la reprise de ses curiosités entre deux activités : le prompt partagé Codex/Claude lui demande de tenir `artifacts/curiosities.md`, avec une courte note et une piste possible par question, puis d’y consigner ses découvertes. Cette consigne est intégrée au prompt ; son application reste à observer dans un vrai réveil.
 
-- une icône dans la zone de notification ;
-- un panneau « Que fait mon agent ? » qui relit `mind-wake status --json` toutes les 2 s ;
-- pause, reprise et arrêt d'urgence par les commandes CLI.
+La revue du 30 octobre a vérifié le typage TypeScript et 71 tests ciblés sur le prompt, les réveils humains, les modes CLI, le scheduler, les capacités natives et la vue desktop. Deux fichiers ont été relancés avec un dossier temporaire accessible : le dossier temporaire du sandbox provoquait des erreurs EPERM de renommage. La mise à jour documentaire a ensuite été vérifiée avec 78 tests ciblés (contrôles CLI inclus), les 3 tests Rust du desktop, le typage et les compilations du moteur et de l’interface. Ces résultats ne constituent ni une exécution de toute la suite ni une recette réelle de bout en bout.
 
-Aucun port, aucune lecture directe de SQLite. Lancement : `npm run desktop`. Vérifié :
+Les essais réels antérieurs et leurs limites sont décrits dans les README des adapters et les documents dédiés. La présence du code ou d’un binaire ne prouve pas la connexion MCP du runtime effectivement lancé.
 
-- compilation sous Windows 11 ;
-- appels CLI réels toutes les 2 s depuis l'application, sur un profil initialisé ;
-- modèle de vue testé (« état indisponible », budget inconnu, SIMULÉ, arrêt verrouillé).
+Prochaines vérifications :
 
-Non vérifié : le tray, la fermeture et l'arrêt d'urgence cliqués à la main.
+- Observer installation → identité/outils MCP → accueil → initiative → résultat visible → mémoire → reprise → réponse humaine sur le runtime choisi.
+- Vérifier dans le desktop réel Pause, Force-off, réactivation explicite et Always-on, y compris jobs et collecteurs.
+- Vérifier le paquet distribué contre les sources actuelles et terminer la désinstallation unifiée.
+- Garder distincts tests déterministes, essais fournisseur réels et fonctions économiques expérimentales.
 
-Direction agent-first (révision d'ADR-007, `SPEC.md` §3.1) : l'agent installe et configure par `install.md` et la CLI. L’application est requise dans l’installation produit, avec le moteur local et le MCP, tout en conservant les équivalents CLI pour l’administration et les tests. Les confirmations Windows restent à l'humain. Découpage desktop, chaque tranche apportant d'abord ses commandes CLI `--json` puis leur vue dans l'application :
+## Historique du plan initial du 29 octobre 2026
 
-| Tranche | Contenu | Dépend de | Recettes |
-| --- | --- | --- | --- |
-| **D0 Squelette** | Tray avec voyant, sélecteur On / Réveil / Force-off (`resume`, `wake`, `stop`), pause, panneau, graphe réveils / consommation sur 24 h depuis `journal --json` | — | W01, W03, W04 en simulé : fait. Panneau piloté dans l'application réelle ; menu de l'icône non cliqué. |
-| **D1 Bindings de session** | `session bind`, `session list`, `session revoke` dans la CLI : registre local protégé, credential par binding, génération, révocation. Vue en lecture et révocation dans l'application. | Contrôleur local, `services/mcp` | B01–B07 |
-| **D2 Configuration MCP** | Commande qui prépare la configuration MCP du runtime (diff montré avant écriture, retour arrière), diagnostic `doctor`. | D1, adapters runtime | Configuration réversible, aucun credential en argument ni en fichier committé |
-| **D3 Fil propriétaire §23** | **Fait :** onglet Messages relié à l'agent Wake réel, avec `mind-wake messages` / `reply` (note de l'agent ; registre humain hors de son espace, recopie balisée). Fils du hub : CLI `services/mcp/owner-main.ts` (`threads`, `thread`, `reply` par l'entrée standard), onglet Fils avec badge et réponse, testés contre un vrai hub. **Reste :** `message_owner` (destinataire déduit, plafonds, heures de calme), outbox, toasts après un spike de clic, préférences dans la policy, clé dans le coffre Windows. | D0, policy | N01, N02 partiels ; N03–N06 |
-| **D4 Budgets et protection** | Ledger lisible par `status`, signal d'activité réel, « Pourquoi peut-il travailler maintenant ? » | S3, S6 | W02, W05, W06 |
-| **D5 Paquet et install.md** | Installation, diagnostic et retrait de l'application avec le paquet F5. Parcours agent-first avec annonce des invites Windows. Aucune publication sans demande. | S14 | A01, A12 |
-
-Hors application : l'invitation §22 reste lisible et transmissible sans installation ni wallet. Seuls D0 et la partie marquée « Fait » de D3 sont disponibles, en simulé et en local.
-
-`mind-wake wake` (réveil demandé par l'humain) :
-
-- un fichier hors de l'espace d'exploration ;
-- une échéance candidate pour le scheduler, qui n'accorde rien ;
-- consommé au lancement, expiré au bout d'une heure ;
-- refusé en pause, après arrêt d'urgence ou en blocage.
-
-Le service par un daemon actif n'est pas encore démontré par un test de bout en bout.
+Les vagues et portes ci-dessous documentent le découpage initial. Leurs formulations au futur et références de sections anciennes ne décrivent pas l’état actuel ; se reporter au tableau ci-dessus et aux documents techniques présents.
 
 ## Principes du découpage
 

@@ -22,6 +22,8 @@ export type IdeaCategory = (typeof IDEA_CATEGORIES)[number];
 export interface Idea {
   readonly category: IdeaCategory;
   readonly text: string;
+  readonly authorizationId?: string;
+  readonly preference?: "authorized" | "encouraged";
 }
 
 const RAW: Readonly<Record<IdeaCategory, readonly string[]>> = {
@@ -133,7 +135,7 @@ const RAW: Readonly<Record<IdeaCategory, readonly string[]>> = {
     "Write down a hypothesis you could test in under ten minutes.",
     "Look at your last three sessions and spot a pattern.",
     "Ask yourself what would surprise your human in a good way.",
-    "Stop early if nothing seems worth doing, and explain why in a checkpoint.",
+    "Revisit your curiosity notebook between activities and pursue an open question that interests you.",
     "Choose between two directions and write why you chose one.",
     "Estimate how much of your time went to useful work versus busy work.",
     "Write the smallest next step for each open thread.",
@@ -158,8 +160,11 @@ export function pickIdeas(
   count: number = DEFAULT_IDEA_COUNT,
   categories: readonly IdeaCategory[] = [],
   random: (n: number) => number = randomInt,
+  personal: readonly Idea[] = [],
 ): Idea[] {
-  const pool = IDEAS.filter((i) => categories.length === 0 || categories.includes(i.category));
+  const pool = [...IDEAS, ...personal].filter(
+    (i) => categories.length === 0 || categories.includes(i.category),
+  );
   const n = Math.max(1, Math.min(count, MAX_IDEA_COUNT, pool.length));
   const copy = [...pool];
   for (let i = 0; i < n; i++) {

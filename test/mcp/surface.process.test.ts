@@ -6,7 +6,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CLI_MAIN, minimalEnv, NODE_ARGS, startHarness, type Harness } from "./harness.js";
@@ -97,6 +97,47 @@ describe("surface d'outils", { timeout: TIMEOUT }, () => {
 });
 
 describe("Wake en lecture seule", { timeout: TIMEOUT }, () => {
+  it("relit les choix personnels et retire une piste révoquée sans redémarrer", async () => {
+    const dataDir = join(h.dir, "personal-ideas");
+    const workspace = join(dataDir, "workspace");
+    mkdirSync(workspace, { recursive: true });
+    const file = join(workspace, "AUTORISATIONS.json");
+    const document = {
+      version: 1,
+      title: "Test",
+      context: "",
+      example: "",
+      guidance: "",
+      entries: [
+        {
+          id: "owner-test",
+          action: "Build my prototype",
+          decision: "encouraged",
+          scope: "Shared workspace only",
+          category: "build",
+        },
+      ],
+    };
+    writeFileSync(file, JSON.stringify(document));
+    const reader = await h.wakeOnly(dataDir);
+    const first = await reader.call("unsure_what_to_do", { count: 30, categories: ["build"] });
+    expect(first.isError).toBe(false);
+    expect(first.data["ideas"]).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ authorizationId: "owner-test", preference: "encouraged" }),
+      ]),
+    );
+    document.entries[0]!.decision = "forbidden";
+    writeFileSync(file, JSON.stringify(document));
+    const second = await reader.call("unsure_what_to_do", { count: 30, categories: ["build"] });
+    expect(second.data["ideas"]).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ authorizationId: "owner-test" })]),
+    );
+    expect(second.data["authorizations"]).toMatchObject({
+      status: "loaded",
+      restrictions: [{ id: "owner-test", decision: "forbidden" }],
+    });
+  });
   it("statut, journal et bilan par les modules de src/, sans écrire dans la base", async () => {
     const db = join(wakeDir, "control.sqlite");
     const before = createHash("sha256").update(readFileSync(db)).digest("hex");

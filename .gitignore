@@ -24,3 +24,8 @@ coverage/
 desktop/ui/build/
 desktop/src-tauri/target/
 desktop/src-tauri/gen/
+
+# Local tooling, generated verification builds and Windows shortcuts
+.codex/
+output/
+*.lnk

@@ -1,0 +1,16 @@
+{
+  "extends": "success.json",
+  "on": {
+    "turn/steps": {
+      "result": {"turn":{"id":"turn_2","status":"inProgress"}},
+      "then": [
+        {"notify":"turn/started","params":{"turn":{"id":"turn_2","status":"inProgress"}}},
+        {"hang":true}
+      ]
+    },
+    "turn/interrupt": {
+      "result": {},
+      "then": [ {"notify":"turn/completed","params":{"turn":{"id":"turn_2","status":"interrupted"}}} ]
+    }
+  }
+}

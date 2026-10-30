@@ -43,6 +43,7 @@ export interface Line {
 }
 
 export interface PanelView {
+  readonly activeProject: string | null;
   readonly headline: string;
   readonly tone: Tone;
   readonly light: Light;
@@ -121,6 +122,7 @@ function relative(deltaMs: number): string {
 
 function unavailable(reason: string, read: StatusRead, now: number): PanelView {
   return {
+    activeProject: null,
     headline: "État indisponible",
     tone: "unknown",
     light: "unknown",
@@ -239,6 +241,7 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
 
   return {
     headline: known?.label ?? `État ${state}`,
+    activeProject: str(data["activeProject"]),
     tone: known?.tone ?? "unknown",
     light: LIGHTS[state] ?? "unknown",
     canWake: !locked && (state === "ready" || state === "hibernating"),
@@ -246,8 +249,8 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
       data["executionMode"] === "always-on" &&
       ["ready", "hibernating", "running", "checkpointing"].includes(state),
     canAlwaysOn:
-      !locked && ["ready", "hibernating", "running", "checkpointing", "paused"].includes(state),
-    reason: str(profile["stateReason"]) ?? "motif non communiqué",
+      state === "stopped" || (!locked && ["ready", "hibernating", "running", "checkpointing", "paused"].includes(state)),
+    reason: profile["stateReason"] === "launch.allowed" ? "L’agent travaille sur une session autorisée." : str(profile["stateReason"]) ?? "motif non communiqué",
     simulated,
     activity: [
       { label: "Exploration", value: str(experiment?.["title"]) ?? "aucune exploration active" },

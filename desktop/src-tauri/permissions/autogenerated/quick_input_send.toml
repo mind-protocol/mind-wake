@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-quick-input-send"
+description = "Enables the quick_input_send command without any pre-configured scope."
+commands.allow = ["quick_input_send"]
+
+[[permission]]
+identifier = "deny-quick-input-send"
+description = "Denies the quick_input_send command without any pre-configured scope."
+commands.deny = ["quick_input_send"]

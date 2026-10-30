@@ -59,6 +59,7 @@ export function prepareInstallation(repoDir, dataDir) {
     pipe,
     node: process.execPath,
     desktopExe: desktopExecutable(repoDir),
+    development: !fs.existsSync(path.join(repoDir, "bin/mind-wake-desktop.exe")),
   };
   fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2));
   // The launcher reads the local key file; no credential in the Codex registration.

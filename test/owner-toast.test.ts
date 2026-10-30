@@ -1,0 +1,10 @@
+import {afterEach,expect,it} from 'vitest';
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
+import {queueOwnerToast} from '../services/mcp/owner-toast.js';
+const roots:string[]=[];const root=()=>{const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wake-toast-'));roots.push(dir);return dir;};
+afterEach(()=>{for(const dir of roots.splice(0))fs.rmSync(dir,{recursive:true,force:true});});
+const id='own_12345678-1234-1234-1234-123456789012';
+it('queues short text with explicit expiry and no false visibility claim',()=>{const dir=root();expect(queueOwnerToast(dir,id,{text:'Court',duration_ms:5000},1000)).toEqual({queued:true,displayConfirmed:false,expires:6000});expect(JSON.parse(fs.readFileSync(path.join(dir,'workspace/artifacts/.desktop-overlay.json'),'utf8'))).toEqual({revision:id,text:'Court',expires:6000});});
+it('does not replay an expired or duplicate toast',()=>{const dir=root();queueOwnerToast(dir,id,{text:'Une fois'},1000);expect(queueOwnerToast(dir,id,{text:'Une fois'},99999)).toEqual({queued:false,displayConfirmed:false,duplicate:true});});
+it('refuses invalid timing and excessive text',()=>{const dir=root();for(const toast of [{text:'x',duration_ms:1},{text:'x',duration_ms:30001},{text:'x'.repeat(241)}])expect(queueOwnerToast(dir,id,toast).queued).toBe(false);});
+it('returns an independent queue error if the overlay cannot be written',()=>{const dir=root();fs.writeFileSync(path.join(dir,'workspace'),'file');expect(queueOwnerToast(dir,id,{text:'Court'})).toEqual({queued:false,displayConfirmed:false,error:'overlay_queue_failed'});});

@@ -91,3 +91,16 @@ it("never steers an inactive turn", async () => {
   expect(request).not.toHaveBeenCalled();
   expect(readOwnerReceipts(dir)).toEqual({});
 });
+
+it("steers screenshot bytes as an image block, including after waiting in the queue", async () => {
+  enqueueOwnerMessage(dir, { id: "screen", at: "2026-01-01T00:00:00Z", text: "Regarde", image: {
+    mediaType: "image/jpeg", base64: "/9j/2Q==", capturedAt: "2026-01-01T00:00:00Z", width: 10, height: 10, surface: "primary",
+  } });
+  const request = vi.fn(async () => ({ turnId: "turn" }));
+  steering = new CodexOwnerSteering(dir, "session", "thread", "turn", { request }, () => true);
+  await steering.flush();
+  expect(request).toHaveBeenCalledWith("turn/steer", expect.objectContaining({ input: expect.arrayContaining([
+    { type: "image", url: "data:image/jpeg;base64,/9j/2Q==" },
+  ]) }));
+  expect(readOwnerReceipts(dir)["screen"]).toBeTruthy();
+});

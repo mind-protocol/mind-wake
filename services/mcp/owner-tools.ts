@@ -1,3 +1,4 @@
+import { queueOwnerToast } from "./owner-toast.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import {
@@ -118,14 +119,15 @@ export function registerOwnerTools(
     "message_owner",
     {
       description:
-        "Publish one short message in your human's desktop conversation. Use a unique idempotency_key per message; edit that message later instead of reposting the whole history. No external delivery or automatic wake.",
-      inputSchema: z.strictObject({ text, idempotency_key: z.string().min(8).max(128) }),
+        "Publish one short message in your human's desktop conversation. Use a unique idempotency_key per message; edit that message later instead of reposting the whole history. Optional toast queues a short local overlay without stealing focus; its visibility is not confirmed. No external delivery or automatic wake.",
+      inputSchema: z.strictObject({ text, idempotency_key: z.string().min(8).max(128), toast: z.strictObject({ text: z.string().trim().min(1).max(240), duration_ms: z.int().min(3000).max(30000).optional() }).optional() }),
       annotations: { openWorldHint: false },
     },
     (args) =>
-      call("message_owner", (store) => ({
-        message: store.publish(args.text, args.idempotency_key),
-      })),
+      call("message_owner", (store) => {
+        const message=store.publish(args.text,args.idempotency_key);
+        return {message,...(args.toast===undefined?{}:{toast:queueOwnerToast(dir!,message.id,args.toast)})};
+      }),
   );
   server.registerTool(
     "edit_owner_message",

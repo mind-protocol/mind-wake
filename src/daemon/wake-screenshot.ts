@@ -7,6 +7,12 @@ import type { WakeImage } from "../contracts/wake-image.js";
 import { freshWakeImage } from "../adapters/wake-image.js";
 export type WakeScreenshotSurface = WakeImage["surface"];
 export type WakeScreenshotChoice = WakeScreenshotSurface | "off";
+export function captureClickPoint(env: Readonly<Record<string, string | undefined>>): { x: number; y: number } | undefined {
+  const x = env["MIND_WAKE_CAPTURE_CLICK_X"], y = env["MIND_WAKE_CAPTURE_CLICK_Y"];
+  if (x === undefined || y === undefined || !/^-?\d+$/.test(x) || !/^-?\d+$/.test(y)) return undefined;
+  const point = { x: Number(x), y: Number(y) };
+  return [point.x, point.y].every(n => Number.isInteger(n) && n >= -2147483648 && n <= 2147483647) ? point : undefined;
+}
 export function parseWakeScreenshotSurface(
   value: string | undefined,
 ): WakeScreenshotChoice | undefined {
@@ -56,6 +62,15 @@ export async function captureWakeScreenshot(
     MIND_WAKE_CAPTURE_SURFACE: surface,
     MIND_WAKE_CAPTURE_DESKTOP: desktop,
   };
+  const point = surface === "primary" ? captureClickPoint(process.env) : undefined;
+  if (point) {
+    env["MIND_WAKE_CAPTURE_CLICK_X"] = String(point.x);
+    env["MIND_WAKE_CAPTURE_CLICK_Y"] = String(point.y);
+    for (const key of ["MIND_WAKE_CAPTURE_CLICK_AT_MS", "MIND_WAKE_CAPTURE_CLICK_ROOT"]) {
+      const value = process.env[key];
+      if (value !== undefined) env[key] = value;
+    }
+  }
   for (const key of ["SystemRoot", "WINDIR", "TEMP", "TMP", "PATH"]) {
     const value = process.env[key];
     if (value !== undefined) env[key] = value;

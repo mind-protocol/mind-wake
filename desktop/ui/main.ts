@@ -1,3 +1,5 @@
+import { initProjects } from "./projects.js";
+import { initDocuments } from "./documents.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
  * par une commande Rust qui exécute la CLI correspondante (`mind-wake … --json`,
@@ -6,9 +8,13 @@
  * jamais comme HTML.
  */
 
+import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
+import { mountAuthorizations } from "./authorizations.js";
 import { conversation } from "./conversation.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
+import { renderMarkdown } from "./markdown.js";
+import { initMessageFileLinks } from "./message-file-links.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
 
 interface TauriGlobal {
@@ -43,11 +49,66 @@ interface Message {
 }
 
 const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
+const messageFileLinks = tauri ? initMessageFileLinks((command,args)=>tauri.core.invoke(command,args)) : null;
+const authorizations = mountAuthorizations(async (command, args) => {
+  if (!tauri) throw new Error("Les autorisations sont disponibles dans l’application MIND Wake.");
+  return tauri.core.invoke(command, args);
+});
 const POLL_MS = 2000;
 const CHART_EVERY = 5;
 const DAY_MS = 86_400_000;
 const SEEN_KEY = "mind-wake.seen-sequence";
 const CHAT_SEEN_KEY = "mind-wake.chat-seen-at";
+
+let fullscreen = false;
+let fullscreenBusy = false;
+async function setFullscreen(enabled: boolean): Promise<void> {
+  if (!tauri || fullscreenBusy) return;
+  fullscreenBusy = true;
+  try {
+    await tauri.core.invoke("app_fullscreen", {enabled});
+    fullscreen = enabled;
+    byId("app-fullscreen").textContent = enabled ? "Quitter le plein écran" : "Plein écran";
+    byId("app-control-status").textContent = "";
+  } catch (error) { byId("app-control-status").textContent = String(error); }
+  finally { fullscreenBusy = false; }
+}
+byId("app-fullscreen").addEventListener("click", () => { void setFullscreen(!fullscreen); });
+document.addEventListener("keydown", event => {
+  if (event.key === "F11" || (event.key === "Escape" && fullscreen)) {
+    event.preventDefault();
+    void setFullscreen(event.key === "F11" ? !fullscreen : false);
+  }
+});
+byId("app-restart").addEventListener("click", async () => {
+  if (!tauri) return;
+  const button = byId<HTMLButtonElement>("app-restart");
+  button.disabled = true;
+  byId("app-control-status").textContent = "Redémarrage…";
+  try { await tauri.core.invoke("app_restart"); }
+  catch (error) {
+    byId("app-control-status").textContent = String(error);
+    button.disabled = false;
+  }
+});
+
+byId("engine-restart").addEventListener("click", async () => {
+  if (!tauri) return;
+  const button = byId<HTMLButtonElement>("engine-restart");
+  if (button.disabled) return;
+  button.disabled = true;
+  const status = byId("engine-restart-status");
+  status.hidden = false;
+  status.textContent = "Redémarrage du moteur… La session en cours sera interrompue.";
+  try {
+    const result = await tauri.core.invoke("wake_restart") as CliRun;
+    const envelope = JSON.parse(result.stdout) as Envelope;
+    if (result.exitCode !== 0 || envelope.ok !== true) throw new Error(String(envelope.error?.message ?? "Redémarrage non confirmé"));
+    status.textContent = "Moteur redémarré. Réglages conservés.";
+    await refresh();
+  } catch (error) { status.textContent = String(error); }
+  finally { button.disabled = false; }
+});
 
 let lastRead: StatusRead | null = null;
 let stopArmedUntil = 0;
@@ -55,7 +116,41 @@ let tick = 0;
 let openThread: string | null = null;
 let lastMessageId: string | null = null;
 let draftKey: string | null = null;
-let chatDraftKey: string | null = null;
+const outgoingChat = new Map<string, HTMLLIElement>();
+
+function conversationBody(text: string, kind: BumpKind | null): HTMLParagraphElement {
+  const body = document.createElement("p");
+  if (kind === null) { body.textContent = text; return body; }
+  const icon = document.createElement("span");
+  icon.className = "bump-invitation-icon";
+  icon.textContent = "↗";
+  icon.setAttribute("role", "img");
+  icon.setAttribute("aria-label", kind === "bumpe" ? "Bumpe, relance au point cliqué" : "Bump");
+  const point = kind === "bumpe" ? /Point choisi par ton humain : \((-?\d+), (-?\d+)\)/.exec(text) : null;
+  icon.title = kind === "bumpe" ? `Bumpe · relance ciblée${point ? ` au point (${point[1]}, ${point[2]})` : " au point cliqué"}` : "Bump · invitation à relancer la conversation";
+  body.append(icon);
+  return body;
+}
+
+function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement {
+  const li = document.createElement("li");
+  li.dataset["self"] = "true";
+  li.dataset["messageId"] = key;
+  li.className = "message-outgoing";
+  const meta = document.createElement("small");
+  meta.textContent = "Toi · Envoi en cours…";
+  meta.setAttribute("role", "status");
+  const kind = automaticBumpKind({from:"human",id:key,text});
+  if (kind !== null) li.dataset["invitation"] = kind;
+  const body = conversationBody(text, kind);
+  li.append(meta, body);
+  outgoingChat.set(key, li);
+  byId("chat").append(li);
+  if (kind === null) messageFileLinks?.observe([{id:key,at:new Date().toISOString(),text}],false,true);
+  byId("chat-note").textContent = "";
+  if (follow) byId("chat").scrollTop = byId("chat").scrollHeight;
+  return li;
+}
 let chatOpen = false;
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- type d'élément choisi par l'appelant
@@ -104,6 +199,8 @@ async function refresh(): Promise<void> {
     lastRead = { ok: false, fetchedAt: Date.now(), error: message(error) };
   }
   render(panelView(lastRead, Date.now()));
+  renderChatPresence();
+  window.dispatchEvent(new Event("wake-interface-ready"));
   if (tick % CHART_EVERY === 0) await refreshChart();
   if (tick % CHART_EVERY === 0) await refreshThreads();
   if (tick % CHART_EVERY === 0 || chatOpen) await refreshChat();
@@ -132,6 +229,8 @@ function render(view: PanelView): void {
   light.setAttribute("aria-label", `Voyant : ${LIGHT_LABELS[view.light]}`);
   light.title = LIGHT_LABELS[view.light];
   byId("headline").textContent = view.headline;
+  byId("agent-active-project").textContent = view.activeProject ? `Projet : ${view.activeProject}` : "";
+  byId("agent-active-project").hidden = view.activeProject === null;
   byId("app-status").textContent = view.headline;
   byId("app-status").dataset["tone"] = view.tone;
   byId("reason").textContent = view.reason;
@@ -147,6 +246,7 @@ function render(view: PanelView): void {
   const always = byId<HTMLButtonElement>("mode-always");
   always.setAttribute("aria-pressed", String(view.alwaysOn));
   always.disabled = !view.canAlwaysOn;
+  always.title = view.light === "forced_off" ? "Réactiver Wake et enchaîner les réveils" : "Enchaîner les réveils après chaque réponse";
   on.setAttribute("aria-pressed", String(view.light === "on" && !view.alwaysOn));
   wake.setAttribute("aria-pressed", String(view.light === "awake" && !view.alwaysOn));
   off.setAttribute("aria-pressed", String(view.light === "forced_off"));
@@ -454,8 +554,19 @@ async function refreshChat(): Promise<void> {
   if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
   byId("chat-note").textContent = model.note ?? "";
   byId("chat-older").hidden = model.items.length <= chatVisibleCount;
+  // Keep local bubbles through polling until the persisted ID appears.
+  let reconciled = false;
+  for (const item of model.items) {
+    if (item.id && item.from === "human") {
+      if (outgoingChat.delete(item.id)) reconciled = true;
+      // Persistence is authoritative even if the send acknowledgement was lost.
+      if (pendingBump?.key === item.id) pendingBump = null;
+    }
+  }
+  if (outgoingChat.size) byId("chat-note").textContent = "";
+  messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
   const signature=JSON.stringify(model.items.slice(-chatVisibleCount));
-  if(signature===chatSignature)return;
+  if(signature===chatSignature && !reconciled)return;
   const chatPane=byId("chat");
   const firstRender=chatSignature==="";
   const follow=!chatLoadingOlder && (firstRender || chatPane.scrollHeight-chatPane.scrollTop-chatPane.clientHeight < 100);
@@ -486,8 +597,9 @@ async function refreshChat(): Promise<void> {
         receipt.setAttribute("aria-label", item.delivery === "delivered" ? "Transmis à la session de l’agent" : "Envoyé");
         meta.append(receipt);
       }
-      const body = document.createElement("p");
-      body.textContent = item.from === "human" ? item.text : plainText(item.text);
+      const kind = automaticBumpKind(item);
+      if (kind !== null) li.dataset["invitation"] = kind;
+      const body = conversationBody(item.from === "human" ? item.text : plainText(item.text), kind);
       li.append(meta, body);
       if (item.pendingReason) {
         const wait = document.createElement("small");
@@ -498,49 +610,88 @@ async function refreshChat(): Promise<void> {
       return li;
     }),
   );
+  chatPane.append(...outgoingChat.values());
   chatPane.scrollTop=follow?chatPane.scrollHeight:oldTop+(chatPane.scrollHeight-oldHeight);
   chatLoadingOlder=false;
 }
+
+// Presence is UI state, never a persisted conversation item.
+function renderChatPresence(): void {
+  const visible = agentIsWorking(lastRead, Date.now());
+  const presence = byId("chat-presence");
+  if (presence.hidden !== !visible) presence.hidden = !visible;
+}
+// Expire the indication even if a status request is stuck.
+setInterval(renderChatPresence, 1000);
+
+let bumpBusy = false;
+let pendingBump: { key: string; text: string; bubble: HTMLLIElement } | null = null;
+byId("chat-bump").addEventListener("mousedown", event => event.preventDefault());
+byId("chat-bump").addEventListener("click", async () => {
+  if (bumpBusy || pendingBump?.bubble.dataset["sending"] === "true") return;
+  bumpBusy = true;
+  const button = byId<HTMLButtonElement>("chat-bump");
+  button.disabled = true;
+  if (pendingBump === null) {
+    const text = await resolveBumpText(() => {
+      if (!tauri) throw new Error("Application indisponible");
+      return tauri.core.invoke("document_browse", {scope:"agent",relative:BUMP_PROMPT_PATH,read:true});
+    });
+    const key = `ui-bump-${crypto.randomUUID()}`;
+    pendingBump = {key, text, bubble:outgoingBubble(key, text, false)};
+  }
+  const {key, text, bubble} = pendingBump;
+  // Bump invites a contribution; it cannot lift Pause or start a stopped daemon.
+  try { await transmitChat(key, text, bubble, false); }
+  finally { bumpBusy = false; button.disabled = false; }
+});
 
 async function sendToAgent(): Promise<void> {
   const field = byId<HTMLTextAreaElement>("chat-text");
   const text = field.value.trim();
   if (text === "") return;
-  // Une clé par brouillon : un renvoi après échec ne crée pas de doublon.
-  chatDraftKey ??= `ui-${crypto.randomUUID()}`;
-  const status = byId("chat-status");
-  status.textContent = "Envoi…";
+  const key = `ui-${crypto.randomUUID()}`;
+  const bubble = outgoingBubble(key, text);
+  field.value = "";
+  field.focus();
+  await transmitChat(key, text, bubble);
+}
+
+async function transmitChat(key: string, text: string, bubble: HTMLLIElement, requestWake = true): Promise<void> {
+  const meta = bubble.querySelector("small")!;
+  bubble.querySelector("button")?.remove();
+  bubble.dataset["sending"] = "true";
+  meta.textContent = "Toi · Envoi en cours…";
   try {
-    const envelope = await invoke("wake_reply", { idempotencyKey: chatDraftKey, text });
+    const envelope = await invoke("wake_reply", { idempotencyKey: key, text });
     const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
-    if (envelope.ok !== true) {
-      status.textContent = `Non envoyé : ${detail || errorText(envelope)}`;
-      return;
-    }
-    field.value = "";
-    chatDraftKey = null;
-    // Envoyer réveille : même commande que le bouton Réveil (`mind-wake wake`), sous les
-    // mêmes contrôles ; un refus n'annule pas la réponse, déjà enregistrée.
-    let woken: string;
-    try {
-      const wake = await invoke("wake_now");
-      const wakeDetail = typeof wake.data?.["detail"] === "string" ? wake.data["detail"] : "";
-      woken =
-        wake.ok === true
-          ? wake.data?.["status"] === "already_running"
-            ? "Agent actif : il recevra le message au prochain outil terminé (hook PostToolUse)."
-            : "Réveil demandé : le message sera transmis au démarrage."
-          : `Pas de réveil : ${wakeDetail || errorText(wake)}.`;
-    } catch (error) {
-      woken = `Pas de réveil : ${message(error)}.`;
-    }
-    status.textContent = `Envoyé. ${woken}`;
-    tick = 0;
-    await refresh();
-    await refreshChat();
+    if (envelope.ok !== true) throw new Error(detail || errorText(envelope));
   } catch (error) {
-    status.textContent = `Non envoyé : ${message(error)}`;
+    bubble.dataset["sending"] = "false";
+    meta.textContent = `Toi · Envoi non confirmé : ${message(error)}`;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Réessayer";
+    retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake); });
+    bubble.append(retry);
+    return;
   }
+  bubble.dataset["sending"] = "false";
+  meta.textContent = "Toi · Envoyé · en attente de réception";
+  if (pendingBump?.key === key) pendingBump = null;
+  // Refresh independently: waking the agent must never delay the sent receipt.
+  void refreshChat();
+  if (!requestWake) { tick = 0; return; }
+  try {
+    const wake = await invoke("wake_now");
+    if (wake.ok !== true) {
+      const detail = typeof wake.data?.["detail"] === "string" ? wake.data["detail"] : errorText(wake);
+      byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${detail}.`;
+    }
+  } catch (error) {
+    byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${message(error)}.`;
+  }
+  tick = 0;
 }
 
 byId("chat-form").addEventListener("submit", (event) => {
@@ -550,16 +701,20 @@ byId("chat-form").addEventListener("submit", (event) => {
 
 // --- Navigation et événements -------------------------------------------------------------
 
-type Tab = "panel" | "chat" | "threads" | "agents" | "history";
+type Tab = "panel" | "chat" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
 
 function selectTab(tab: Tab): void {
-  for (const name of ["panel", "chat", "threads", "agents", "history"] as const) {
+  document.querySelector("main")?.setAttribute("data-active-tab", tab);
+  byId("tab-documents").setAttribute("aria-selected", String(tab === "documents"));
+  for (const name of ["panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects"] as const) {
     byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
-    byId(`view-${name}`).hidden = name !== tab;
+    byId(`view-${name}`).hidden = name !== "chat" && name !== tab;
   }
-  chatOpen = tab === "chat";
+  byId("view-documents").hidden = tab !== "documents" && tab !== "chat";
+  chatOpen = true;
+  if (tab === "authorizations") void authorizations.open();
   if (tab === "threads") void refreshThreads();
-  if (tab === "chat") {
+  if (!chatHasOpened || tab === "chat") {
     const firstOpen=!chatHasOpened;
     chatHasOpened=true;
     void refreshChat().then(()=>{ if(firstOpen)byId("chat").scrollTop=byId("chat").scrollHeight; });
@@ -642,11 +797,17 @@ function renderAgentThreads(): void {
   byId("agent-thread-title").textContent = `Wake ↔ ${selected.project}`;
   byId("agent-thread-pointers").textContent = `Repo : ${selected.repo}\nSession ${selected.runtime} : ${selected.sessionId}\nHistorique : ${selected.transcript}\nFil : ${selected.id}`;
   byId("agent-thread-messages").replaceChildren(...selected.messages.map(m => {
-    const li = document.createElement("li"), meta = document.createElement("small"), body = document.createElement("p");
+    const li = document.createElement("li"), meta = document.createElement("small"), body = renderMarkdown(m.text);
     li.dataset["self"] = String(m.from === "wake");
     li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
     meta.textContent = `${m.from === "system" ? "État de la consultation" : m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
-    body.textContent = plainText(m.text); li.append(meta, body); return li;
+    li.append(meta, body);
+    if (m.from === "repo" && m.text.length === 4000 && Date.parse(m.at) < Date.parse("2026-10-30T16:00:00Z")) {
+      const notice = document.createElement("p"); notice.className = "hint";
+      notice.textContent = "Cette réponse historique atteint l’ancienne limite de 4 000 caractères : elle peut être incomplète.";
+      li.append(notice);
+    }
+    return li;
   }));
 }
 async function refreshAgentThreads(): Promise<void> {
@@ -728,7 +889,64 @@ async function openWakeLocation(kind: "workspace" | "systemPrompt"): Promise<voi
 byId("open-system-prompt").addEventListener("click",()=>void openWakeLocation("systemPrompt"));
 byId("open-agent-folder").addEventListener("click",()=>void openWakeLocation("workspace"));
 setInterval(()=>{if(!byId("view-history").hidden)void refreshWakeHistory();},5000);
-try {
-  const saved=localStorage.getItem("mind-wake-history-visited") ? localStorage.getItem("mind-wake-active-tab") : null;
-  selectTab(saved && ["panel","chat","threads","agents","history"].includes(saved)?saved as Tab:"history");
-} catch {selectTab("history");}
+selectTab("documents");
+
+// Updates have their own status: no interference with agent activity or drafts.
+let updateBusy = false;
+async function refreshAppUpdate(check = false): Promise<void> {
+  if (!tauri || updateBusy) return;
+  const button = byId<HTMLButtonElement>("app-update-check");
+  const label = byId("app-update-status");
+  if (check) { updateBusy = true; button.disabled = true; label.textContent = "Vérification et installation en cours…"; }
+  try {
+    const result = await tauri.core.invoke("app_update", {check}) as {state: string; development?: boolean; message?: string; revision?: string};
+    const labels: Record<string, string> = {
+      disabled: "Désactivé en mode développement.", idle: "Vérification automatique au démarrage et toutes les 6 heures.",
+      checking: "Recherche d’une mise à jour…", building: "Installation en arrière-plan…",
+      busy: "Une mise à jour est déjà en cours.", current: "Application à jour.",
+      installed: "Mise à jour installée. Quittez puis rouvrez le panneau pour l’utiliser. Les sessions déjà actives continuent avec leur version actuelle.",
+      error: "Échec de la mise à jour. La version précédente est conservée.",
+    };
+    label.textContent = result.development ? "Désactivé en mode développement." : (labels[result.state] || result.state);
+    if (result.message && !result.development) label.textContent += ` ${result.message}`;
+    button.disabled = !!result.development || ["building", "checking", "busy"].includes(result.state);
+  } catch (error) { label.textContent = String(error); button.disabled = false; }
+  finally { updateBusy = false; }
+}
+byId("app-update-check").addEventListener("click", () => { void refreshAppUpdate(true); });
+void refreshAppUpdate();
+setInterval(() => { void refreshAppUpdate(); }, 5000);
+
+// Build metadata stays accurate while an update is staged for the next launch.
+async function showAppVersion(): Promise<void> {
+  const version = byId("app-version");
+  const sourceDate = byId("app-revision-date");
+  const buildDate = byId("app-build-date");
+  const formatDate = (value: string): string => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Indisponible" : date.toLocaleString("fr-FR", {dateStyle: "long", timeStyle: "short"});
+  };
+  try {
+    if (!tauri) throw new Error("hors de l’application");
+    const info = await tauri.core.invoke("app_version") as {
+      version: string; revision: string; revisionDate: string; builtAt: string; dirty: string; debug: boolean;
+    };
+    version.textContent = `v${info.version} · ${info.revision ? info.revision.slice(0, 12) : "révision inconnue"}${info.debug ? " · dev" : ""}${info.dirty === "true" ? " · modifications locales" : ""}`;
+    sourceDate.textContent = formatDate(info.revisionDate) + (info.dirty === "true" ? " (dernier commit ; modifications locales incluses dans ce build)" : "");
+    buildDate.textContent = formatDate(new Date(Number(info.builtAt) * 1000).toISOString());
+  } catch {
+    version.textContent = "Version indisponible";
+    sourceDate.textContent = "Indisponible";
+    buildDate.textContent = "Indisponible";
+  }
+}
+void showAppVersion();
+
+byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
+
+byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
+if (tauri) initDocuments((command, args) => tauri.core.invoke(command, args));
+byId("tab-authorizations").addEventListener("click", () => { selectTab("authorizations"); });
+
+byId("tab-projects").addEventListener("click",()=>selectTab("projects"));
+if(tauri)initProjects((command,args)=>tauri.core.invoke(command,args));

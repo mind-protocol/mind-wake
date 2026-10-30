@@ -57,6 +57,10 @@ La prochaine échéance est :
 - ou la fin de période pour un budget épuisé ;
 - sinon `recheckIntervalMs`.
 
+## Réveils explicites et Always-on
+
+Le daemon fournit humanWakePending et alwaysOn. Une demande explicite peut avancer l’échéance et porte humanRequested vers la policy : fenêtres, priorité d’inactivité et attente de pilotage ne la retardent pas. Quota, backoff, permissions, pause, arrêt et unicité de session restent vérifiés. Always-on attend la fin du travail en cours puis relance sans intervalle planifié ; On revient à la planification. La garde abonnement remplace les réservations de tokens locales décrites pour les autres voies.
+
 ## Temps
 
 - Les échéances sont persistées en UTC. Les fenêtres sont évaluées en heure locale du fuseau de la policy, au changement d'heure aussi :

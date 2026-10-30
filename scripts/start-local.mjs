@@ -75,11 +75,16 @@ export async function ensureHub(m) {
     fs.closeSync(stderr);
   }
 }
-export async function startLocal(manifestFile, role) {
+export async function startLocal(manifestFile, role, options = {}) {
   const m = { ...JSON.parse(fs.readFileSync(manifestFile, "utf8")), manifestFile };
   if (m.version !== 1 || !["agent", "desktop"].includes(role))
     throw Error("Installation ou rôle invalide.");
-  await ensureHub(m);
+  if (options.existingHubOnly === true) {
+    // Development relaunches may replace only the desktop while preserving its hub.
+    if (!(await reachable(m.pipe))) throw Error("Hub existant indisponible ; aucun hub lancé.");
+  } else {
+    await ensureHub(m);
+  }
   const keys = JSON.parse(
     fs.readFileSync(path.join(path.dirname(manifestFile), "keys.json"), "utf8"),
   );
@@ -92,12 +97,13 @@ export async function startLocal(manifestFile, role) {
     MIND_WAKE_OWNER_MESSAGES: role === "agent" ? "1" : "0",
     MIND_WAKE_BACKGROUND_JOBS: role === "agent" ? "1" : "0",
     MIND_WAKE_NODE: m.node,
+    MIND_WAKE_DESKTOP_SUPERVISED: options.supervised ? "1" : "0",
   };
   if (role === "desktop") {
     // Restart only this exact desktop executable. No daemon is stopped.
     const script =
       "$existingDesktop = @(Get-Process -Name 'mind-wake-desktop' -ErrorAction SilentlyContinue); if ($existingDesktop.Count -gt 0) { $existingDesktop | Where-Object { $_.Path -eq $env:MIND_SETUP_DESKTOP } | Stop-Process -ErrorAction Stop }; exit 0";
-    const stopped = spawnSync(
+    const stopped = options.restart === false ? {status: 0} : spawnSync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", script],
       {
@@ -109,7 +115,9 @@ export async function startLocal(manifestFile, role) {
     );
     if (stopped.error || stopped.status !== 0)
       throw Error("Impossible de relancer le panneau existant.");
-    await new Promise((resolve, reject) => {
+    // A reviewed local update can replace the unlocked binary before relaunching.
+    if (options.stopOnly === true) return null;
+    return await new Promise((resolve, reject) => {
       const child = spawn(m.desktopExe, [], {
         env,
         cwd: m.repoDir,
@@ -119,11 +127,10 @@ export async function startLocal(manifestFile, role) {
       });
       child.once("error", reject);
       child.once("spawn", () => {
-        child.unref();
-        resolve();
+        if (!options.supervised) child.unref();
+        resolve(child);
       });
     });
-    return;
   }
   const child = spawn(
     m.node,

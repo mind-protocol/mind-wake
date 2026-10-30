@@ -146,7 +146,8 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       const id = str(r?.["id"]);
       const deliveredAt = id === null ? null : str(rec(data["deliveryReceipts"])?.[id]);
       const pendingReason = waiting(data,at,now);
-      items.push({ from: "human", at, text,
+      const screenshotAt = str(r?.["screenshotAt"]);
+      items.push({ from: "human", at, text: screenshotAt === null ? text : `${text}\n\n📷 Capture de l’écran principal jointe (${new Date(screenshotAt).toLocaleString("fr-FR")}).`,
         ...(id === null ? {} : { id, delivery: deliveredAt === null ? "sent" as const : "delivered" as const }),
         ...(deliveredAt === null ? {} : { deliveredAt }),
         ...(deliveredAt === null && pendingReason !== null ? { pendingReason } : {}),

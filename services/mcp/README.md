@@ -1,4 +1,4 @@
-# services/mcp — serveur MCP MIND (local, séances SIMULÉES)
+# services/mcp — outils et communication MIND locaux
 
 Serveur MCP pour **l'envoi de messages, la demande d'aide et la mise en relation** entre agents et humains, et la **consultation de Wake en lecture seule**. Tout reste sur la machine : aucun envoi vers e-mail, Telegram, WhatsApp ou Internet, aucun port réseau, aucune publication. Les séances de conseil utilisent des **unités fictives** (G1, `../advice/session/`) : aucun wallet, aucun argent réel.
 
@@ -21,6 +21,20 @@ server-main.ts ── lecture seule ── src/cli/commands/{status,journal}.ts,
 - `sessions.ts` : ouverture d'une séance **après acceptation explicite du guide** seulement ; le canal, le comptage et le règlement fictif sont ceux de G2, G1 et G3, sans logique dupliquée.
 - `wake.ts` : vues Wake par les mêmes fonctions que la CLI (`status`, `journal`) et le bilan d'expérience (`buildReport`). Base ouverte en lecture seule ; dossier jamais créé.
 - `server-main.ts` : adaptateur MCP stdio mince ; la clé de liaison reste dans son environnement et n'apparaît dans aucune sortie.
+
+## Outils locaux complémentaires
+
+Le serveur enregistre aussi les outils du propriétaire (owner-tools.ts), les jobs (background-tools.ts) et les conversations de dépôt (repo-tools.ts), selon leur configuration locale :
+
+- message_owner, list_owner_messages, edit_owner_message, delete_owner_message : messages visibles dans le desktop et lecture des réponses humaines ; aucun envoi externe.
+- start_background_job, list_background_jobs, cancel_background_job : scripts supervisés par le daemon ; voir [BACKGROUND-JOBS.md](../../docs/BACKGROUND-JOBS.md).
+- unsure_what_to_do : suggestions à adapter, sans permission supplémentaire.
+
+`unsure_what_to_do` relit `AUTORISATIONS.json` à chaque appel dans le `workspace/` du profil `MIND_WAKE_DATA_DIR` (ou le dossier courant hors profil). Les décisions `authorized` et `encouraged` rejoignent le même tirage aléatoire que les idées générales, avec leur catégorie, périmètre et identifiant ; aucune présence dans chaque tirage n’est garantie. Les décisions `discouraged` et `forbidden` sont renvoyées comme restrictions et exclues des pistes personnelles. Une idée générale peut recouper une restriction : le runtime doit vérifier les choix avant d’agir. Un JSON absent ou invalide n’ajoute aucune piste personnelle ; son statut est explicite. Aucun repli vers les choix personnels du propriétaire du dépôt.
+
+La page `AUTORISATIONS.html` permet d’ouvrir et de modifier le JSON : décisions et périmètres, recherche, enregistrement dans le fichier sélectionné sur les navigateurs compatibles, export sinon. Une modification concurrente du fichier bloque l’enregistrement pour éviter de l’écraser. Le Markdown est désormais un guide, le JSON fait référence. Cela ne modifie ni la policy technique ni les contrôles Pause/Force-off.
+
+Les vues wake_status, wake_journal et wake_last_report restent en lecture seule. Le contrôle du profil appartient aux commandes humaines ; les outils supplémentaires ne donnent pas accès à enable ou aux changements de policy. Les capacités natives du runtime complètent ce MCP et ne doivent pas être confondues avec les permissions du hub.
 
 ## Outils exposés
 

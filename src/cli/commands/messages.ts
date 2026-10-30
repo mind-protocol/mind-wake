@@ -14,7 +14,7 @@
 import { readOwnerMessages, type OwnerMessage } from "../../communication/owner-messages.js";
 import { readPublicActivity, type PublicActivity } from "../../communication/public-activity.js";
 import { readMessageWait, type MessageWait } from "../../communication/runtime-activity.js";
-import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
+import { enqueueOwnerMessage, readOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
 import { readRepoConversations, type RepoConversation } from "../../communication/repo-conversations.js";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -24,6 +24,11 @@ import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
 import { NO_PROFILE_HINT, withReadStore } from "./read.js";
+import { captureClickPoint, captureWakeScreenshot } from "../../daemon/wake-screenshot.js";
+import { freshTargetedClick, pointReplyText } from "../point-context.js";
+import { freshWakeImage } from "../../adapters/wake-image.js";
+import { latestDaemonRun } from "../../daemon/runs.js";
+import { ownerAttachmentRuntimeMatches } from "../../communication/owner-attachment-runtime.js";
 
 export const AGENT_NOTE_FILE = "questions-for-human.md";
 export const HUMAN_LOG_FILE = "human-messages.jsonl";
@@ -38,6 +43,7 @@ export interface HumanReply {
   readonly id: string;
   readonly at: string;
   readonly text: string;
+  readonly screenshotAt?: string;
 }
 
 /** Ligne du registre : la date de la note avant recopie distingue Wake de l'agent. */
@@ -114,6 +120,7 @@ function readLog(dataDir: DataDir): LogEntry[] {
           id: value.id,
           at: value.at,
           text: value.text,
+          ...(typeof value.screenshotAt === "string" ? { screenshotAt: value.screenshotAt } : {}),
           noteMtimeBeforeMs:
             typeof value.noteMtimeBeforeMs === "number" ? value.noteMtimeBeforeMs : null,
         });
@@ -128,7 +135,7 @@ function readLog(dataDir: DataDir): LogEntry[] {
 export function readReplies(dataDir: DataDir): HumanReply[] {
   return readLog(dataDir)
     .slice(-MAX_REPLIES)
-    .map(({ id, at, text }) => ({ id, at, text }));
+    .map(({ id, at, text, screenshotAt }) => ({ id, at, text, ...(screenshotAt === undefined ? {} : { screenshotAt }) }));
 }
 
 /**
@@ -199,22 +206,36 @@ export async function reply(
   ctx: CliContext,
   dataDir: DataDir,
   idempotencyKey: string | undefined,
+  captureScreen = false,
+  capture: typeof captureWakeScreenshot = captureWakeScreenshot,
 ): Promise<CommandResult<ReplyData>> {
   if (!profileExists(ctx, dataDir)) return refused(NO_PROFILE_HINT);
   if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(idempotencyKey)) {
     return refused("--idempotency-key invalide (8 à 128 caractères [A-Za-z0-9_.:-])", EXIT_USAGE);
   }
   if (ctx.readStdin === undefined) return refused("entrée standard indisponible", EXIT_USAGE);
-  const text = (await ctx.readStdin()).replace(/\r\n/g, "\n").trim();
-  if (text === "") return refused("texte vide sur l'entrée standard", EXIT_USAGE);
+  const inputText = (await ctx.readStdin()).replace(/\r\n/g, "\n").trim();
+  if (inputText === "") return refused("texte vide sur l'entrée standard", EXIT_USAGE);
+  const targetedBump = captureScreen && idempotencyKey?.startsWith("ui-bumpe-") === true;
+  if (targetedBump && captureClickPoint(ctx.env) === undefined) return refused("Point du clic absent : aucun message envoyé. Refaire un clic droit.");
+  const text = targetedBump ? pointReplyText(inputText, ctx.env) : inputText;
   if (text.length > MAX_REPLY_CHARS) {
     return refused(`texte trop long (${String(MAX_REPLY_CHARS)} caractères au plus)`, EXIT_USAGE);
   }
 
   const id = idempotencyKey ?? `rep-${randomUUID()}`;
-  const prior = readReplies(dataDir).find((r) => r.id === id);
+  let prior = readReplies(dataDir).find((r) => r.id === id);
+  if (prior === undefined && targetedBump) {
+    const queued = readOwnerMessage(dataDir.path,id);
+    if (queued !== null) {
+      prior = {id:queued.id,at:queued.at,text:queued.text,...(queued.image === undefined ? {} : {screenshotAt:queued.image.capturedAt})};
+      if (prior.text === text) {
+        fs.appendFileSync(path.join(dataDir.path,HUMAN_LOG_FILE),`${JSON.stringify({...prior,noteMtimeBeforeMs:null})}\n`);
+      }
+    }
+  }
   if (prior !== undefined) {
-    if (prior.text === text) enqueueOwnerMessage(dataDir.path, prior);
+    if (prior.text === text && prior.screenshotAt === undefined) enqueueOwnerMessage(dataDir.path, prior);
     return prior.text === text
       ? {
           exitCode: EXIT_OK,
@@ -229,8 +250,26 @@ export async function reply(
       : refused("clé déjà utilisée pour un autre texte");
   }
 
+  if (targetedBump && !freshTargetedClick(ctx.env,ctx.now().getTime())) return refused("Point du clic trop ancien ou contexte absent : aucun message envoyé. Refaire un clic droit.");
+  if (captureScreen) {
+    const oldDaemon = withReadStore(ctx, dataDir, ({ db }) => {
+      const run = db === undefined ? null : latestDaemonRun(db, DEFAULT_PROFILE_ID);
+      return run !== null && run.endedAt === null && !ownerAttachmentRuntimeMatches(dataDir.path, run.id);
+    });
+    if (oldDaemon) return refused("Le moteur en cours doit être redémarré pour recevoir les images. Aucun message envoyé ; brouillon conservé.");
+    const supported = withReadStore(ctx, dataDir, ({ uow }) => {
+      const profile = uow?.profiles.get(DEFAULT_PROFILE_ID);
+      const revision = profile?.activePolicyRevisionId == null ? null : uow?.policies.getRevision(profile.activePolicyRevisionId);
+      const runtime = revision?.groups.runtime;
+      return runtime?.nativeCapabilities === true && (runtime.adapterId === "codex" || runtime.adapterId === "claude");
+    });
+    if (!supported) return refused("La capture jointe exige un profil natif Codex ou Claude configuré.");
+  }
+  // Explicit Send authorizes this one capture, independently of ambient wake capture.
+  const image = captureScreen ? freshWakeImage(await capture("primary")) : null;
+  if (captureScreen && image === null) return refused("Capture indisponible : aucun message envoyé. Pour un clic ciblé, choisir un point sur l’écran principal puis réessayer.");
   const now = ctx.now();
-  const entry: HumanReply = { id, at: now.toISOString(), text };
+  const entry: HumanReply = { id, at: now.toISOString(), text, ...(image === null ? {} : { screenshotAt: image.capturedAt }) };
   const file = notePath(dataDir);
   let before: number | null = null;
   try {
@@ -239,10 +278,10 @@ export async function reply(
   } catch {
     before = null;
   }
-  // Registre d'abord : il fait foi même si la recopie dans l'espace de l'agent échoue.
+  // Queue ID is unique. A targeted retry can recover it if history append was interrupted.
   const logged: LogEntry = { ...entry, noteMtimeBeforeMs: before };
+  enqueueOwnerMessage(dataDir.path, { ...entry, ...(image === null ? {} : { image }) });
   fs.appendFileSync(path.join(dataDir.path, HUMAN_LOG_FILE), `${JSON.stringify(logged)}\n`);
-  enqueueOwnerMessage(dataDir.path, entry);
   let mirrored = false;
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true });

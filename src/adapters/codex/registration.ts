@@ -10,6 +10,7 @@
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { saveStepsResult } from "../../daemon/wake-steps.js";
 import type { ProfileId, StartRequest } from "../../contracts/index.js";
 import type { AdapterRegistration } from "../../daemon/registry.js";
 import { ProcessTreeSupervisor } from "../../runner/process-tree.js";
@@ -58,6 +59,8 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
     runtimeRoots: () => config.runtimeRoots ?? [path.dirname(executable().path)],
     create: (context) =>
       new CodexAdapter({
+        stepsStopHook: true,
+        onStepsResult: (request, raw) => saveStepsResult(context.workspaceDir, context.dataDir, request.policy.groups.identity.agentId, request.sessionId, raw),
         executable: executable(),
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,

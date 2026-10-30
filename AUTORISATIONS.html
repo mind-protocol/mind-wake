@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="fr">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MIND Wake · Autorisations</title>
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      color: #e8eee9;
+      background: #111a18;
+      color-scheme: dark;
+    }
+    body {
+      max-width: 1100px;
+      margin: auto;
+      padding: 40px 24px;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      margin: 8px 0;
+    }
+    p {
+      color: #afc3b9;
+      line-height: 1.6;
+    }
+    .eyebrow {
+      color: #a7e9c5;
+      letter-spacing: 0.16em;
+      font-size: 12px;
+    }
+    header {
+      margin-bottom: 24px;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      background: #111a18f5;
+      padding: 16px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      z-index: 2;
+    }
+    button,
+    select,
+    input,
+    textarea {
+      font: inherit;
+      border: 1px solid #456055;
+      border-radius: 9px;
+      padding: 10px;
+      background: #1d2b25;
+      color: inherit;
+    }
+    button {
+      cursor: pointer;
+    }
+    button.primary {
+      background: #ade9c9;
+      color: #14251c;
+      font-weight: 650;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    #status {
+      min-height: 24px;
+      color: #a7e9c5;
+    }
+    #summary {
+      margin: 18px 0;
+    }
+    article {
+      background: #18251f;
+      border: 1px solid #31473b;
+      border-radius: 14px;
+      padding: 20px;
+      margin: 12px 0;
+      display: grid;
+      grid-template-columns: 1fr 240px;
+      gap: 12px;
+    }
+    article h2 {
+      font-size: 17px;
+      margin: 0;
+    }
+    article small {
+      color: #9cb5a7;
+    }
+    label.scope {
+      grid-column: 1/-1;
+      font-size: 13px;
+      color: #afc3b9;
+    }
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      resize: vertical;
+      margin-top: 8px;
+      min-height: 70px;
+      line-height: 1.5;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 13px;
+      color: #bdd2c5;
+    }
+    details {
+      padding: 16px 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      font: inherit;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #afc3b9;
+    }
+    #search {
+      flex: 1;
+      min-width: 150px;
+    }
+    @media (max-width: 650px) {
+      body {
+        padding: 24px 14px;
+      }
+      article {
+        grid-template-columns: 1fr;
+      }
+      .toolbar button {
+        flex: 1;
+      }
+    }
+  </style>
+  <header>
+    <div class="eyebrow">MIND WAKE / MES CHOIX</div>
+    <h1>De la place pour l’initiative.</h1>
+    <p>
+      Décide de ce que ton agent peut explorer. Modifie une décision ou son périmètre, puis
+      enregistre tes choix dans le fichier JSON lu par Wake.
+    </p>
+  </header>
+  <div class="legend">
+    <span>✅ Autorisé en autonomie</span><span>🌟 Encouragé</span><span>⚠️ Découragé</span
+    ><span>⛔ Interdit</span>
+  </div>
+  <div class="toolbar">
+    <button id="open">Ouvrir le JSON</button
+    ><button class="primary" id="save" disabled>Enregistrer</button
+    ><button id="download" disabled>Exporter une copie</button
+    ><input
+      id="search"
+      type="search"
+      placeholder="Rechercher une action…"
+      aria-label="Rechercher une action"
+    />
+  </div>
+  <input id="file" type="file" accept=".json,application/json" hidden />
+  <div id="status" role="status" aria-live="polite">
+    Ouvre AUTORISATIONS.json pour modifier tes choix.
+  </div>
+  <div id="summary"></div>
+  <main id="entries"></main>
+  <details>
+    <summary>Un exemple de curiosité</summary>
+    <pre id="example">Le contenu apparaîtra après l’ouverture du JSON.</pre>
+  </details>
+  <details>
+    <summary>Portée de mes choix</summary>
+    <pre id="guidance"></pre>
+    <p>
+      Les suggestions MCP mélangent idées générales et actions autorisées ou encouragées. Elles
+      restent soumises à tes restrictions. Tes choix personnels ne sont pas les valeurs par défaut
+      des autres utilisateurs.
+    </p>
+  </details>
+  <script>
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const decisions = {
+      authorized: "✅ Autorisé en autonomie",
+      encouraged: "🌟 Encouragé",
+      discouraged: "⚠️ Découragé",
+      forbidden: "⛔ Interdit",
+    };
+    const categories = [
+      "prepare",
+      "find_out",
+      "build",
+      "fix",
+      "check",
+      "tend",
+      "connect",
+      "reflect",
+    ];
+    let doc = null,
+      handle = null,
+      baseline = null,
+      dirty = false;
+    const hosted = Boolean(window.WAKE_AUTHORIZATIONS_TOKEN);
+    let serverRevision = null;
+    async function api(method = 'GET', body) {
+      const response = await fetch('/api/authorizations', {
+        method,
+        headers: { 'Content-Type': 'application/json', 'X-Wake-Token': window.WAKE_AUTHORIZATIONS_TOKEN },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      const result = await response.json();
+      if (!response.ok) throw Error(result.error);
+      return result;
+    }
+    async function loadHosted() {
+      const result = await api();
+      await load({ name: result.file, text: async () => JSON.stringify(result.document) }, null);
+      serverRevision = result.revision;
+      status(`Fichier actif : ${result.file}`);
+    }
+    function validate(value) {
+      if (
+        !value ||
+        value.version !== 1 ||
+        !["title", "context", "example", "guidance"].every((k) => typeof value[k] === "string") ||
+        !Array.isArray(value.entries)
+      )
+        throw Error("Format de document non reconnu.");
+      const ids = new Set();
+      for (const e of value.entries) {
+        if (
+          !e ||
+          !["id", "action", "scope"].every((k) => typeof e[k] === "string" && e[k].trim()) ||
+          !Object.hasOwn(decisions, e.decision) ||
+          !categories.includes(e.category) ||
+          ids.has(e.id)
+        )
+          throw Error("Une entrée est invalide ou un identifiant est dupliqué.");
+        ids.add(e.id);
+        if (
+          Object.keys(e).some((k) => !["id", "action", "decision", "scope", "category"].includes(k))
+        )
+          throw Error("Champ non reconnu dans une entrée.");
+      }
+      if (
+        Object.keys(value).some(
+          (k) => !["version", "title", "context", "example", "guidance", "entries"].includes(k),
+        )
+      )
+        throw Error("Champ non reconnu dans le document.");
+      return value;
+    }
+    function status(text) {
+      $("status").textContent = text;
+    }
+    function counts() {
+      const n = doc.entries.filter((e) => ["authorized", "encouraged"].includes(e.decision)).length;
+      $("summary").textContent =
+        `${doc.entries.length} décisions · ${n} pistes personnelles disponibles pour les suggestions`;
+    }
+    function changed() {
+      dirty = true;
+      $("save").disabled = false;
+      counts();
+      status("Modifications non enregistrées.");
+    }
+    function render() {
+      const query = $("search").value.toLocaleLowerCase();
+      $("entries").replaceChildren();
+      for (const entry of doc.entries) {
+        if (!`${entry.id} ${entry.action} ${entry.scope}`.toLocaleLowerCase().includes(query))
+          continue;
+        const card = document.createElement("article"),
+          heading = document.createElement("div"),
+          id = document.createElement("small"),
+          title = document.createElement("h2"),
+          select = document.createElement("select"),
+          label = document.createElement("label"),
+          scope = document.createElement("textarea");
+        id.textContent = entry.id;
+        title.textContent = entry.action;
+        heading.append(id, title);
+        select.setAttribute("aria-label", `Décision pour ${entry.action}`);
+        for (const [value, text] of Object.entries(decisions)) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = text;
+          select.append(option);
+        }
+        select.value = entry.decision;
+        select.onchange = () => {
+          entry.decision = select.value;
+          changed();
+        };
+        label.className = "scope";
+        label.textContent = "Périmètre";
+        scope.value = entry.scope;
+        scope.oninput = () => {
+          entry.scope = scope.value;
+          changed();
+        };
+        label.append(scope);
+        card.append(heading, select, label);
+        $("entries").append(card);
+      }
+      counts();
+      $("example").textContent = doc.example;
+      $("guidance").textContent = doc.guidance;
+    }
+    async function load(file, newHandle) {
+      const text = await file.text();
+      const parsed = validate(JSON.parse(text));
+      doc = parsed;
+      handle = newHandle;
+      baseline = text;
+      dirty = false;
+      render();
+      $("save").disabled = true;
+      $("download").disabled = false;
+      status(
+        handle
+          ? `${file.name} ouvert · les enregistrements modifieront ce fichier.`
+          : `${file.name} importé · exporte puis remplace l’original pour appliquer les modifications.`,
+      );
+    }
+    $("open").onclick = async () => {
+      if (dirty && !confirm("Abandonner les modifications non enregistrées ?")) return;
+      try {
+        if (hosted) { await loadHosted(); return; }
+        if (window.showOpenFilePicker) {
+          const [h] = await showOpenFilePicker({
+            multiple: false,
+            types: [
+              { description: "Autorisations Wake", accept: { "application/json": [".json"] } },
+            ],
+          });
+          await load(await h.getFile(), h);
+        } else {
+          $("file").click();
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") status(e.message);
+      }
+    };
+    $("file").onchange = async () => {
+      try {
+        if ($("file").files[0]) await load($("file").files[0], null);
+      } catch (e) {
+        status(e.message);
+      } finally {
+        $("file").value = "";
+      }
+    };
+    function serialized() {
+      validate(doc);
+      return JSON.stringify(doc, null, 2) + "\n";
+    }
+    function download() {
+      const blob = new Blob([serialized()], { type: "application/json" }),
+        url = URL.createObjectURL(blob),
+        a = document.createElement("a");
+      a.href = url;
+      a.download = "AUTORISATIONS.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      status("Copie exportée. Remplace le JSON d’origine pour appliquer ces choix à Wake.");
+    }
+    $("download").onclick = () => {
+      try {
+        download();
+      } catch (e) {
+        status(e.message);
+      }
+    };
+    $("save").onclick = async () => {
+      try {
+        const text = serialized();
+        if (hosted) {
+          const result = await api('PUT', { document: doc, revision: serverRevision });
+          serverRevision = result.revision;
+          dirty = false;
+          $('save').disabled = true;
+          status('Enregistré dans le JSON actif.');
+          return;
+        }
+        if (!handle) {
+          download();
+          return;
+        }
+        if ((await (await handle.getFile()).text()) !== baseline)
+          throw Error(
+            "Le fichier a changé ailleurs. Exporte tes modifications puis rouvre la version actuelle pour les rapprocher.",
+          );
+        const writer = await handle.createWritable();
+        await writer.write(text);
+        await writer.close();
+        baseline = text;
+        dirty = false;
+        $("save").disabled = true;
+        status("Enregistré dans le JSON · pris en compte au prochain appel MCP de cet espace.");
+      } catch (e) {
+        status(`Enregistrement impossible : ${e.message}`);
+      }
+    };
+    $("search").oninput = () => {
+      if (doc) render();
+    };
+    window.addEventListener("beforeunload", (event) => {
+      if (dirty) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
+    if (hosted) {
+      $('open').textContent = 'Recharger les choix';
+      loadHosted().catch(error => status(`Chargement impossible : ${error.message}`));
+    }
+  </script>
+</html>

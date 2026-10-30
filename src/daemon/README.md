@@ -4,7 +4,7 @@ Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câbla
 
 ## Registre d'adapters (`registry.ts`)
 
-`RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Ce build n'enregistre que l'adapter factice (`defaultRegistry`) ; les adapters réels s'y ajoutent à leur fusion.
+`RUNTIME_IDS` : `fake`, `codex`, `claude`, `gemini`. Le runtime est celui de `policy.runtime.adapterId`, et seulement lui : aucun repli d'un runtime, d'un compte ou d'un fournisseur vers un autre. Une `AdapterRegistration` déclare `runtime()` (comparé champ à champ à la policy), `billing()` (`subscription_quota` pour un forfait borné par la jauge), `runtimeRoots()` (racines en lecture/exécution dans la sandbox) et `create(context)`. Le registre par défaut contient fake, codex et claude. Gemini possède un adapter mais n’est pas enregistré par défaut.
 
 ## Pilotage du quota (`pacing.ts`)
 
@@ -12,19 +12,19 @@ Session S-D : assemblage du daemon Wake local (porte F2, SPEC §11), puis câbla
 
 ## Prompt de réveil et réveils demandés par l'agent
 
-À chaque lancement, `wake-prompt.ts` compose `prompts/wake/base.md` (champs remplis depuis la révision effective et le ticket), une relance ou la note d'une demande de l'agent, et le bloc de mémoire ; le texte part dans `context`. `wakeups.ts` lit `workspace/wakeups/*.json` : validation fermée, confinement, archivage, échéances candidates transmises au scheduler (`wakeRequests`), jamais une autorisation. Règles détaillées : `prompts/wake/README.md`.
+À chaque lancement, wake-prompt.ts compose la relance, les ressources courantes et les événements nouveaux dans context. Les instructions durables sont séparées ; artifacts/PERSONALITY.md est relu à chaque session Codex/Claude. La continuité repose sur les fichiers, checkpoints et conversations natives. wakeups.ts valide et archive les demandes dans workspace/wakeups/*.json : échéances candidates, jamais autorisations. Voir prompts/wake/README.md.
 
 ## Mode réel (`daemon run` sans `--simulated`)
 
 1. Policy active désignant un adapter **enregistré** et non simulé (sinon `real_adapter_missing` ou `runtime_mismatch`) ; `probe` disponible (sinon `adapter_unavailable`) ; lanceur confiné constructible (sinon `sandbox_unavailable`), sauf en mode non isolé.
    **Mode NON ISOLÉ (ADR-006)** : si la révision porte `runtime.hostUnsandboxedAcknowledged: true` (consentement distinct, accordé seulement par `enable` avec confirmation humaine et exposé du risque), ni sandbox ni autotest ne sont exigés ; les sessions tournent sur le poste hôte dans un Job Object (arrêt d'urgence), journal `isolation: "host_unsandboxed"`, sortie préfixée `[NON ISOLÉ]`, bilans marqués « NON ISOLÉ ».
-2. Au démarrage de `run` : profil AppContainer `mindwake.sandbox` créé s'il manque, puis **autotest de refus** complet (`runIsolationSelfTest`, ≈ 4 s), consigné dans `isolation_self_tests` (migration 4) et journalisé. L'isolation n'est prête que s'il réussit, nettoyage vérifié, pour l'empreinte du lanceur ; sinon le scheduler refuse (`sandbox_unavailable`, profil `blocked`).
+2. En profil isolé uniquement, au démarrage de `run` : profil AppContainer `mindwake.sandbox` créé s'il manque, puis **autotest de refus** complet (`runIsolationSelfTest`, ≈ 4 s), consigné dans `isolation_self_tests` (migration 4) et journalisé. L'isolation n'est prête que s'il réussit, nettoyage vérifié, pour l'empreinte du lanceur ; sinon le scheduler refuse (`sandbox_unavailable`, profil `blocked`).
 3. `RuntimeEnvironment` : faits de l'adapter, isolation prête, facturation de l'enregistrement, jauge officielle (`QuotaReadable.readQuota`) pour la voie abonnement. Le ticket est lancé avec `onSubscription` : le runner relit la jauge et interrompt au seuil d'arrêt.
-4. Sessions dans la sandbox (`src/runner/sandboxing.ts`), racines de la policy sous `<données>/workspace`, base de contrôle et dossier de données protégés.
+4. En profil isolé, sessions dans la sandbox (`src/runner/sandboxing.ts`), racines de la policy sous `<données>/workspace`, base de contrôle et dossier de données protégés.
 
 ## Commande
 
-`mind-wake daemon run [--simulated] [--recheck-ms N] [--exit-after-sessions N]` — au premier plan seulement : ni service Windows, ni tâche planifiée, ni démarrage automatique. Ctrl+C : plus aucun réveil, la session en cours se termine, puis arrêt ; un second Ctrl+C arrête aussitôt (la session est alors réconciliée comme orpheline au démarrage suivant). `--simulated` exige une policy sur l'adapter `fake` (`runtime_mismatch`) ; sans `--simulated`, voir « Mode réel » (dans ce build, aucun adapter réel n'est enregistré : `real_adapter_missing`). Le daemon refuse aussi si un autre daemon tient le verrou du profil (`already_running`) ou si la terminaison d'arborescence est indisponible.
+`mind-wake daemon run [--simulated] [--recheck-ms N] [--exit-after-sessions N]` — au premier plan seulement : ni service Windows, ni tâche planifiée, ni démarrage automatique. Ctrl+C : plus aucun réveil, la session en cours se termine, puis arrêt ; un second Ctrl+C arrête aussitôt (la session est alors réconciliée comme orpheline au démarrage suivant). `--simulated` exige une policy sur l'adapter `fake` (`runtime_mismatch`) ; sans `--simulated`, voir « Mode réel ». Le daemon refuse aussi si un autre daemon tient le verrou du profil (`already_running`) ou si la terminaison d'arborescence est indisponible.
 
 Variables réservées au développement et aux tests : `MIND_WAKE_RUNTIME_DIR` (lanceur Job Object déjà compilé), `MIND_WAKE_FAKE_SCENARIO` (scénario factice imposé à toutes les sessions : `slow`, `stubborn`…).
 
@@ -39,11 +39,15 @@ Variables réservées au développement et aux tests : `MIND_WAKE_RUNTIME_DIR` (
 
 ## Canal de contrôle
 
-Aucun port. `pause`, `resume` et `stop` de la CLI écrivent l'état dans SQLite ; le watchdog du runner le relit toutes les 50 ms pendant une session, le scheduler à chaque tour (`--recheck-ms`, 2 s par défaut). `stop` termine aussi le Job Object de la session par son nom, sans dépendre du daemon. Signal de priorité utilisateur : en mode `--simulated`, **simulé** par la présence du fichier `<données>/simulated-user-activity` (hors de l'espace d'exploration) ; en mode réel, **inactivité réelle du poste** (`GetLastInputInfo`, `windowsIdleWatcher`) comparée à `humanPriority.idleThresholdMs` de la révision effective, lue à chaque tour du scheduler et à chaque tick du watchdog (50 ms). Retour de l'humain → interruption (checkpoint si possible) puis hibernation ; signal illisible ou plus vieux que `maxSignalAgeMs` → aucun réveil, et la session en cours est interrompue (hibernation, pas de blocage). `daemon_started` journalise `prioritySignal`.
+Aucun port. `pause`, `resume` et `stop` de la CLI écrivent l'état dans SQLite ; le watchdog du runner le relit toutes les 50 ms pendant une session, le scheduler à chaque tour (`--recheck-ms`, 2 s par défaut). `stop` termine aussi le Job Object de la session par son nom, sans dépendre du daemon. Signal de priorité utilisateur : en mode `--simulated`, **simulé** par la présence du fichier `<données>/simulated-user-activity` (hors de l'espace d'exploration) ; en mode réel, **inactivité réelle du poste** (`GetLastInputInfo`, `windowsIdleWatcher`) comparée à `humanPriority.idleThresholdMs` de la révision effective, lue à chaque tour du scheduler et à chaque tick du watchdog (50 ms). Lorsque la priorité d’inactivité s’applique, retour de l’humain → interruption (checkpoint si possible) puis hibernation ; signal illisible ou plus vieux que `maxSignalAgeMs` → aucun réveil, et la session en cours est interrompue (hibernation, pas de blocage). `daemon_started` journalise `prioritySignal`.
+
+Les réveils explicites et Always-on portent humanRequested : fenêtres, inactivité et attente de pilotage ne les retardent pas ; quota, backoff, permissions, Pause et Force-off restent appliqués. Always-on relance après la fin de session sans intervalle planifié, jamais en parallèle pour le même profil. On revient à la planification. La CLI exige reactivate après un arrêt verrouillé ; le choix explicite Always-on dans le desktop effectue cette revalidation.
+
+Voir aussi [jobs supervisés](../../docs/BACKGROUND-JOBS.md) et [capacités natives](../../docs/NATIVE-CAPABILITIES.md).
 
 ## Délais mesurés (démo, Windows 11, Node 24)
 
-Voir le rapport de session S-D dans `docs/PLAN.md`. Bornes documentées (ADR-003) : 1 s.
+Mesures historiques et conditions ci-dessous ; elles ne remplacent pas une recette du profil actuel. Bornes documentées (ADR-003) : 1 s.
 
 ## Agent factice de la démo
 
@@ -51,10 +55,10 @@ Voir le rapport de session S-D dans `docs/PLAN.md`. Bornes documentées (ADR-003
 
 ## Limites
 
-- **Adapter factice non confiné** : seule son arborescence de processus est contenue (Job Object) ; il pourrait écrire hors de l'espace. `sandboxOperational` est déclaré `true` pour le seul mode simulé. Les adapters réels sont confinés (mode réel).
+- **Adapter factice non confiné** : seule son arborescence de processus est contenue (Job Object) ; il pourrait écrire hors de l'espace. `sandboxOperational` est déclaré `true` pour le seul mode simulé. Les adapters réels ne sont confinés au niveau système que dans un profil isolé, pas en mode hôte consenti.
 - **Désinstallation** : le profil AppContainer `mindwake.sandbox` créé par le mode réel n'est pas encore supprimé par `uninstall`.
 - **Coût du signal réel** (mesuré le 29 octobre 2026, Windows 11, poste au repos) : un PowerShell par lecture coûte 0,44 à 0,86 s (compilation `Add-Type`), trop lent pour la borne d'une seconde. Le daemon garde donc **un seul PowerShell persistant**, sans droits administrateur, qui compile une fois (première valeur ≈ 0,64 s) puis écrit l'inactivité toutes les 250 ms (écart maximal mesuré 263 ms). Retour de l'humain → session terminée en 79 ms avec un signal injecté ; avec le flux réel, ajouter au plus un intervalle de lecture. Valable dans la session interactive de l'utilisateur seulement (un service en session 0 lirait une autre session).
-- Aucune commande de réactivation après arrêt d'urgence : `resume` et `enable` refusent ; le profil reste `stopped` (aucun réveil, vérifié).
+- resume ne lève pas un arrêt d’urgence ; reactivate revalide la policy consentie avant de retirer le verrou.
 - `--exit-after-sessions` et l'arrêt par Ctrl+C attendent la fin de la session en cours (au plus la durée maximale de session).
 - Rattachement de la session A à l'expérience choisie : écriture SQL directe (`SessionRepository` n'a pas de méthode dédiée).
 - `uninstall` ne détecte pas un daemon actif : l'arrêter d'abord.

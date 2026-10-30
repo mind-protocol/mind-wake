@@ -1,4 +1,5 @@
 import { KeyboardContextCollector } from "./keyboard-context.js";
+import { collectAgentScreenshot } from "./agent-screenshot-policy.js";
 import {
   captureWakeScreenshot,
   configuredWakeScreenshot,
@@ -114,6 +115,7 @@ import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
 import { currentContextEvent } from "./current-context.js";
 import { ownerMessagePending } from "../communication/owner-inbox.js";
+import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
 import { BackgroundJobs } from "./background-jobs.js";
 import { QuotaPacingStore } from "./pacing.js";
 
@@ -495,6 +497,7 @@ export class WakeDaemon implements SessionLauncher {
     const real = this.#real;
     const mode = real === null ? "simulated" : "real";
     const adapterId = this.#registration.id;
+    recordOwnerAttachmentRuntime(this.#o.dataDir, this.runId);
     const abandoned = closeAbandonedRuns(db, profileId, at);
     recordDaemonStart(db, {
       id: this.runId,
@@ -719,13 +722,26 @@ export class WakeDaemon implements SessionLauncher {
     const startedAtMs = Date.now();
     let result: SessionResult;
     try {
-      const screenshotSurface = configuredWakeScreenshot(this.#o.dataDir, this.#o.wakeScreenshot);
-      const wakeImage =
-        this.#real !== null &&
-        screenshotSurface !== undefined &&
-        (this.#registration.id === "claude" || this.#registration.id === "codex")
-          ? await captureWakeScreenshot(screenshotSurface)
-          : undefined;
+      const visual = await collectAgentScreenshot({
+        artifactsDir: this.#root.real,
+        stateDir: this.#o.dataDir,
+        authorizedSurface: () => configuredWakeScreenshot(this.#o.dataDir, this.#o.wakeScreenshot),
+        observation: () => this.#idleWatcher?.latest() ?? null,
+        capture: (surface) => this.#real !== null &&
+          (this.#registration.id === "claude" || this.#registration.id === "codex")
+          ? captureWakeScreenshot(surface) : Promise.resolve(undefined),
+      });
+      const screenshotDecision = visual.decision;
+      const screenshotSurface = screenshotDecision.surface;
+      const wakeImage = visual.image;
+      this.#log(`capture ambiante : ${screenshotDecision.mode}, ${screenshotDecision.reason}${visual.discardedAfterCapture ? " (image écartée après relecture)" : ""}`);
+      this.#store.uow.journal.append(prepareJournalEvent({
+        type: "wake_screenshot_decided", at: utcNow(), profileId: this.#o.profileId,
+        sessionId: ticket.sessionId, reason: screenshotDecision.reason,
+        metadata: { mode: screenshotDecision.mode, reason: screenshotDecision.reason,
+          ...(screenshotSurface === undefined ? {} : { surface: screenshotSurface }),
+          imageAttached: wakeImage !== undefined, discardedAfterCapture: visual.discardedAfterCapture },
+      }));
       if (screenshotSurface !== undefined)
         this.#log(
           wakeImage === undefined

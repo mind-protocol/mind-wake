@@ -41,6 +41,10 @@ Restent à l'humain, hors de portée de l'agent :
 - Les réglages suivants (rythme, délais de réveil, plafonds de session) suivront le même modèle : un champ de donnée validé et un test. Pas d'exécution de code de l'agent par le daemon.
 - Le journal et le panneau desktop doivent rendre visibles les réglages choisis par l'agent. Ce n'est pas encore fait.
 
+### Extension du 30 octobre 2026 : captures ambiantes
+
+`artifacts/pilote.json` accepte aussi `wakeScreenshot: { mode: "on" | "off" | "auto", idleThresholdMs?: number }`, validé indépendamment des réglages de compaction. C'est une restriction des captures déjà autorisées, pas une autorisation de surface ou de transmission. Un réglage de capture invalide suspend la capture au lieu d'appliquer le défaut `on` ; `off` ne se réactive jamais sur inactivité. Le journal du daemon rend la décision visible à chaque lancement. Voir [le protocole visuel](../WAKE-VISUAL-CONTEXT.md). Code préparé ; chargement dans le daemon vivant à vérifier séparément.
+
 ## Critères de révision
 
 - Un réglage de l'agent qui provoque une consommation que l'humain n'aurait pas voulue.

@@ -1,5 +1,7 @@
 import { executionMode, type ExecutionMode } from "../../daemon/execution-mode.js";
 import { keyboardContextStatus } from "../../daemon/keyboard-context.js";
+import { readCurrentProject } from "../../daemon/project-change.js";
+import { workspaceDirFor } from "../../daemon/paths.js";
 /**
  * `status` : état courant, expérience active, dernière activité, budget, prochain réveil
  * et motif d'attente (SPEC §3.3). Lecture seule.
@@ -137,6 +139,7 @@ const NO_DAEMON: DaemonStatus = {
 };
 
 export interface StatusData {
+  readonly activeProject?: string | null;
   readonly keyboardContext?: { readonly state: string; readonly bufferedChanges: number };
   readonly dataDir: string;
   readonly executionMode: ExecutionMode;
@@ -280,6 +283,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
           };
     return {
       dataDir: dataDir.path,
+      activeProject: readCurrentProject(workspaceDirFor(dataDir.path)),
       executionMode: executionMode(dataDir.path),
       keyboardContext: keyboardContextStatus(
         dataDir.path,

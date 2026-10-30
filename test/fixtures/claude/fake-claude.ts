@@ -51,6 +51,17 @@ const resumeId = option("--resume");
 const sessionId = newId ?? resumeId ?? "00000000-0000-4000-8000-000000000000";
 const sessionFile = path.join(state, `${sessionId}.json`);
 
+interface FixtureStepsRequest {
+  requestId: string;
+  projectId: string;
+  snapshotRef: string;
+}
+function readFixtureRequest(folder: string): FixtureStepsRequest {
+  const first = fs.readdirSync(folder)[0];
+  if (!first) throw new Error("No fixture steps request");
+  return JSON.parse(fs.readFileSync(path.join(folder, first), "utf8")) as FixtureStepsRequest;
+}
+
 interface Totals {
   input: number;
   cacheCreation: number;
@@ -125,7 +136,7 @@ function init(): void {
 }
 
 /** Usage du seul appel, reprise comprise, comme mesuré avec Claude Code 2.1.308. */
-function successResult(run: Totals): void {
+function successResult(run: Totals, text = ""): void {
   const totals: Totals = {
     input: previous.input + run.input,
     cacheCreation: previous.cacheCreation + run.cacheCreation,
@@ -134,6 +145,7 @@ function successResult(run: Totals): void {
   };
   if (fs.existsSync(sessionFile)) fs.writeFileSync(sessionFile, JSON.stringify(totals));
   result({
+    result: text,
     num_turns: 2,
     terminal_reason: "completed",
     usage: { input_tokens: run.input, output_tokens: run.output },
@@ -164,20 +176,131 @@ function assistant(content: unknown[], extra: Record<string, unknown> = {}): voi
 }
 
 function play(userContent: string): void {
-  if(scenario==="foreground-preemption") {
+  if (scenario.startsWith("steps-stop")) {
+    const f = path.join(process.cwd(), "artifacts/projets-compteur.json");
+    const c = JSON.parse(fs.readFileSync(f, "utf8")) as { current: string };
+    if (scenario.endsWith("missing")) fs.unlinkSync(f);
+    else {
+      c.current = scenario.endsWith("stable") || scenario.endsWith("roundtrip") ? "A" : "B";
+      fs.writeFileSync(f, JSON.stringify(c));
+    }
     init();
-    emit({type:"system",subtype:"task_started",task_id:"worker",tool_use_id:"tool-worker",is_backgrounded:false});
-    input.on("line",line=>{
-      const control=JSON.parse(line) as {type?:string;uuid?:string;request_id?:string;request?:{subtype?:string}};
-      if(control.type==="user" && control.uuid)emit({...control,isReplay:true,session_id:sessionId,parent_tool_use_id:null});
-      if(control.type!=="control_request" || control.request?.subtype!=="background_tasks")return;
-      emit({type:"control_response",response:{subtype:"success",request_id:control.request_id,response:{backgrounded:true}}});
-      successResult({input:10,cacheCreation:0,cacheRead:20,output:30});
-      setTimeout(()=>{
-        fs.writeFileSync(path.join(process.cwd(),"background-finished.txt"),"worker survived the parent result");
-        emit({type:"system",subtype:"task_notification",task_id:"worker",status:"completed"});
-        successResult({input:20,cacheCreation:0,cacheRead:40,output:60});
-      },600);
+    successResult({ input: 100, cacheCreation: 0, cacheRead: 0, output: 50 });
+    input.once("line", (line) => {
+      fs.writeFileSync(path.join(process.cwd(), "steps-input.json"), line);
+      if (scenario === "steps-stop-hang") return;
+      if (scenario === "steps-stop-429") {
+        result({ is_error: true, subtype: "error_during_execution", api_error_status: 429 });
+        return;
+      }
+      if (scenario === "steps-stop-error") {
+        result({
+          is_error: true,
+          subtype: "error_during_execution",
+          errors: ["planning unavailable"],
+        });
+        return;
+      }
+      const plan = {
+        version: 1,
+        travail: "Contrôler la reprise",
+        statut: "actif",
+        horizonWakes: {
+          nombre: 2,
+          origine: "fixe_agent",
+          source: "un contrôle puis une correction",
+        },
+        etapes: [{ id: "e1", wake: 1, texte: "Vérifier la reprise réelle", statut: "a_faire" }],
+        prochaineEtape: "e1",
+      };
+      if (scenario === "steps-stop-accepted") {
+        const folder = path.join(process.cwd(), "artifacts/steps-requests");
+        const r = readFixtureRequest(folder);
+        assistant([
+          {
+            type: "tool_use",
+            id: "orientation-child",
+            name: "Agent",
+            input: { prompt: r.requestId + " " + r.snapshotRef },
+          },
+        ]);
+        emit({
+          type: "user",
+          message: {
+            content: [
+              {
+                type: "tool_result",
+                tool_use_id: "orientation-child",
+                content: "Comparer2directions. Recommandation : contrôler la reprise,2wakes TOTAL.",
+              },
+            ],
+          },
+        });
+        successResult(
+          { input: 200, cacheCreation: 0, cacheRead: 0, output: 100 },
+          JSON.stringify({
+            etat: "accepted",
+            requestId: r.requestId,
+            projectId: r.projectId,
+            snapshotRef: r.snapshotRef,
+            propositionRef: "orientation-child",
+            decisionPrincipale:
+              "Je retiens le contrôle de reprise, budget total2 pour vérifier puis corriger.",
+            plan,
+          }),
+        );
+      } else
+        successResult(
+          { input: 200, cacheCreation: 0, cacheRead: 0, output: 100 },
+          JSON.stringify(plan),
+        );
+    });
+    return;
+  }
+  if (scenario === "foreground-preemption") {
+    init();
+    emit({
+      type: "system",
+      subtype: "task_started",
+      task_id: "worker",
+      tool_use_id: "tool-worker",
+      is_backgrounded: false,
+    });
+    input.on("line", (line) => {
+      const control = JSON.parse(line) as {
+        type?: string;
+        uuid?: string;
+        request_id?: string;
+        request?: { subtype?: string };
+      };
+      if (control.type === "user" && control.uuid) {
+        fs.writeFileSync(path.join(process.cwd(), "received-owner-frame.json"), line);
+        emit({ ...control, isReplay: true, session_id: sessionId, parent_tool_use_id: null });
+      }
+      if (control.type !== "control_request" || control.request?.subtype !== "background_tasks")
+        return;
+      emit({
+        type: "control_response",
+        response: {
+          subtype: "success",
+          request_id: control.request_id,
+          response: { backgrounded: true },
+        },
+      });
+      successResult({ input: 10, cacheCreation: 0, cacheRead: 20, output: 30 });
+      setTimeout(() => {
+        fs.writeFileSync(
+          path.join(process.cwd(), "background-finished.txt"),
+          "worker survived the parent result",
+        );
+        emit({
+          type: "system",
+          subtype: "task_notification",
+          task_id: "worker",
+          status: "completed",
+        });
+        successResult({ input: 20, cacheCreation: 0, cacheRead: 40, output: 60 });
+      }, 600);
     });
     return;
   }
@@ -311,6 +434,21 @@ input.on("close", () => {
 function onLine(line: string): void {
   const message = JSON.parse(line) as { message?: { content?: unknown } };
   const content = message.message?.content;
+  if (typeof content === "string" && content.startsWith("ÉTAPES — bilan automatique")) {
+    const plan = {
+      version: 1,
+      travail: "Contrôler la reprise",
+      statut: "actif",
+      horizonWakes: { nombre: 2, origine: "fixe_agent", source: "un contrôle puis une correction" },
+      etapes: [{ id: "e1", wake: 1, texte: "Vérifier la reprise réelle", statut: "a_faire" }],
+      prochaineEtape: "e1",
+    };
+    successResult(
+      { input: 220, cacheCreation: 0, cacheRead: 30, output: 100 },
+      JSON.stringify(plan),
+    );
+    return;
+  }
   if (content === "/compact") {
     if (process.env["FAKE_CLAUDE_COMPACT"] !== "noop") {
       emit({ type: "system", subtype: "status", status: "compacting", session_id: sessionId });
@@ -326,5 +464,6 @@ function onLine(line: string): void {
     return;
   }
   play(typeof content === "string" ? content : "");
+  if (scenario === "success") input.once("line", onLine);
 }
 input.once("line", onLine);

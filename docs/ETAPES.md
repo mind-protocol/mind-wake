@@ -1,0 +1,43 @@
+# Étapes au changement de projet
+
+Préparation source du 30 octobre 2026. Ce document ne prouve aucune activation du daemon ni aucun appel modèle réel.
+
+Le host compare uniquement deux identifiants explicites : `artifacts/projets-compteur.json.current` au début effectif et à la fin réussie de la même réponse ordinaire. Les deux doivent désigner un objet du registre `projects`. Projet stable, changement de document/menu, A→B→A, lecture absente/invalide/hors workspace ou trop grande : aucun tour de coordination supplémentaire. Claude recapture le début après `/compact` et avant chaque nouveau message humain réellement envoyé ; Codex conserve le début pendant `turn/steer`.
+
+Une transition connue A→B est d'abord conservée dans `artifacts/steps-requests/<requestId>.json`. Les gardes de quota, erreur, annulation, échéance, Pause/Force-off et message humain pending restent prioritaires. Un message humain qui empêche la coordination ne supprime donc pas la demande : une prochaine réponse ordinaire peut la reprendre. Un seul tour automatique de coordination par session, jamais à partir de son propre résultat. Projet stable ne crée pas une nouvelle exploration ; le prompt standard peut porter un bref rappel d'une demande encore à traiter.
+
+## Exploration déléguée, décision principale
+
+Le texte accepté de `artifacts/prompts/etapes-orientation.md` est recopié dans `STEPS_ORIENTATION_TEXT` ; il s'adresse au sous-agent. L'agent principal reçoit ce mandat, les données ciblées du projet final, son budget TOTAL `estimate`, ses wakes enregistrés `spent`, son plan et les références de demande/révision. Une CLI qui annonce une option native ne suffit pas à prouver une délégation.
+
+Le principal choisit une voie réellement disponible dans sa session : sous-agent natif ou `list_repo_sessions` puis `send_repo_request` vers une cible exacte pertinente autorisée. Le service direct existant supervise cette seconde voie en arrière-plan et refuse les cibles non autorisées ou les lancements pendant pause/arrêt. Aucun fallback aléatoire n'est ajouté. Le contexte doit être ciblé ; le portrait privé complet n'est pas un brief par défaut. Le sous-agent propose sans publier ni modifier le canon.
+
+Le host enregistre les preuves d'outils corrélées à `requestId` ET `snapshotRef`. Claude : `Agent`/`Task` puis résultat non vide du même appel, hors accusé structuré `isAsync`/`async_launched`. Codex : `collabAgentToolCall` de lancement du principal, puis état `completed` avec message non vide du même destinataire. Les notifications d'un autre `threadId` ne terminent pas le tour principal et n'alimentent pas son compteur d'usage. Un texte final qui invente des identifiants d'outils ne constitue pas une preuve.
+
+Pour la voie repo, un vrai résultat de `send_repo_request` fournit thread/job. Le host relit le fil canonique `repo-conversations.jsonl` : cible et question doivent correspondre à la demande, puis une vraie réponse `from:repo` non vide fournit `propositionRef`. Un job terminé sans texte n'est pas une proposition. Un retour `advice_reply` dans l'inbox n'est pas une consigne humaine.
+
+Sans résultat disponible, `proposal_pending` reste un état de préparation, sans écriture du plan et sans publication. Il n'entraîne ni polling ni réveil spécial. Les demandes affichées dans le prompt normal sont bornées à trois références, avec total du backlog et chemin du dossier ; les preuves et instructions restent consultables dans leurs fichiers. Les demandes plus anciennes sont conservées. Une proposition native asynchrone n'est pas garantie de survivre à la fermeture de l'arbre CLI ; cette version ne traite pas son accusé comme un résultat. Pour du travail devant survivre au wake, utiliser le canal repo déjà supervisé. Aucun état durable `running` n'est inventé pour un enfant natif.
+
+## Acceptation fraîche et canon unique
+
+Le principal peut décider dans la coordination ou dans une réponse ordinaire ultérieure. Sa réponse finale doit être un objet JSON strict `etat:accepted`, avec `requestId`, `projectId`, `snapshotRef`, `propositionRef`, `decisionPrincipale` motivée et `plan` valide. Un JSON plan seul, une proposition sans décision ou une référence sans preuve n'est jamais appliqué. Le schéma du plan conserve `cap`, `questionsOuvertes`, `critereReorientation` et les types extensibles existants (`typesEtapes`, type d'étape optionnel).
+
+Juste avant application, le host prend le même verrou que `artifacts/tools/projet.js`, relit le canon et vérifie le projet courant, l'entrée ciblée, la révision de sélection et le curseur humain issu de `human-messages.jsonl` via `readReplies`. Une modification d'un autre projet est conservée sans invalider à elle seule la décision. Une modification du projet ciblé ou une nouvelle consigne humaine rend la recommandation périmée ; elle reste conservée sans application. Après relecture des nouvelles informations, le principal peut fournir le snapshot actuel et un `reexamenPrincipal` explicite. Un snapshot nul ne peut jamais valider un autre projet.
+
+`projet.js use` incrémente `selectionRevision` seulement si l'identifiant change. Ainsi B→C→B invalide une recommandation ancienne pour B, même si les champs du projet retrouvent les mêmes valeurs. Des écrivains externes qui contournent cet outil/verrou ne donnent pas cette garantie de trajectoire ; le contrôle ne prétend pas reconstruire leur passé.
+
+Le plan final vit dans `projects[id].etapes`, le budget TOTAL dans `estimate`, sa synthèse dans `next` et son état dans `status`. `spent`, `wakes`, journaux, champs inconnus et autres projets sont conservés exactement. Le budget atteint invite à une révision, sans devenir un plafond technique ou un nouveau déclencheur. Le petit outil synchronise ses modifications `next`/`estime` avec le plan détaillé et date cette révision. Il ne change pas sa fonction d'affichage.
+
+Le verrou commun est acquis avant lecture-modification-rename. Occupé : refuser l'écriture, laisser le travail ordinaire se terminer. Aucun verrou ancien n'est volé automatiquement ; un verrou laissé par un processus tué exige de vérifier son absence avant nettoyage. Le rename protège la lisibilité, le verrou protège les mises à jour concurrentes participantes. Les fichiers de demande sont validés et bornés ; jusqu'à quatre extraits de proposition de 8000 caractères et 64 références d'appel, avec `evidenceTruncated` explicite si nécessaire. Le canon complet doit rester sous sa borne de lecture de 256Kio ; une opération qui la dépasserait est refusée sans tronquer les projets. Le plan détaillé reste borné à64Kio. Ces bornes protègent les données, pas le nombre de wakes ou l'ambition.
+
+Après persistance vérifiée, une seule note ÉTAPES est publiée par `OwnerMessages` avec `steps:<sessionId>`. La réponse JSON de décision n'est pas dupliquée comme activité brute. Fichier canonique et publication ne sont pas une transaction commune : un échec de publication laisse un résultat incomplet, rejouable sans dupliquer la note. L'ancien `artifacts/etapes.json` reste historique et n'est ni réécrit ni injecté dans un autre projet.
+
+`composeWake` garde intégralement son prompt habituel, son budget et ses événements. Il ajoute uniquement les données du plan canonique du projet courant et, si nécessaire, les références des orientations en cours. Pause/arrêt/attente ne fournit pas une prochaine étape active. Le plan n'avance pas automatiquement.
+
+## Usage et vérification
+
+Les adapters transmettent `MIND_WAKE_SESSION`, identifiant stable de session, aux futurs processus. `use` appelle déjà `tick`, qui déduplique : le bilan n'incrémente rien. Les anciens nombres enregistrés ne prouvent pas une consommation historique complète et ne sont pas reconstruits.
+
+Le bilan partage annulation et usage de la session. Claude conserve son cumul `modelUsage` sans additionner une seconde fois ses sous-agents. Pour Codex, si un lancement natif est observé mais que l'usage délégué n'est pas isolable par le protocole reçu, le rapprochement est explicitement `uncertain` ; les mesures principales restent des mesures. Les jobs repo utilisent leur supervision existante et ne sont pas faussement inclus dans la mesure du principal.
+
+Les tests emploient des CLI et événements d'outils factices, avec vrais processus Node et stockage temporaire. Ils couvrent frontières de réponse, gardes humaines, provenance de délégation, cycle repo tardif puis décision ordinaire sur projet stable, fraîcheur, canon/verrou, publication unique et conservation du prompt habituel. Ils ne prouvent ni modèle réel, ni activation, ni affichage dans l'application. Le test blog arrêté par NLR reste arrêté. Aucun réglage vivant, daemon, build partagé, UI ou hook local n'est activé par cette préparation.

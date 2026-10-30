@@ -152,9 +152,21 @@ pub fn wake_now() -> Result<CliRun, String> {
 pub fn always_on() -> Result<CliRun, String> {
     let status = wake(Verb::Status)?;
     let running = serde_json::from_str::<serde_json::Value>(&status.stdout).map(|j| j["data"]["daemon"]["state"] == "running").unwrap_or(false);
+    // This command is an explicit user selection in the panel/tray. Revalidate the
+    // consented policy through reactivate before clearing an emergency stop.
+    if requires_reactivation(&status.stdout) {
+        let reactivated = run(wake_args(&["reactivate"])?, None)?;
+        if reactivated.exit_code != 0 { return Ok(reactivated); }
+    }
     let result = wake(Verb::AlwaysOn)?;
     if result.exit_code == 0 && !running { start_daemon(&status.stdout)?; }
     Ok(result)
+}
+
+fn requires_reactivation(status: &str) -> bool {
+    serde_json::from_str::<serde_json::Value>(status)
+        .map(|j| j["data"]["profile"]["state"] == "stopped" || j["data"]["profile"]["emergencyStopLocked"] == true)
+        .unwrap_or(false)
 }
 
 fn start_daemon(status_json: &str) -> Result<(), String> {
@@ -185,6 +197,52 @@ fn start_daemon(status_json: &str) -> Result<(), String> {
     command.spawn().map(|_| ()).map_err(|e| format!("démarrage du daemon : {e}"))
 }
 
+/// Explicit desktop action: replace the engine, preserving all profile controls.
+/// Dropping the old engine closes its Job Objects and stops its runtime children.
+pub fn restart_daemon() -> Result<CliRun, String> {
+    static RESTART: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _guard = RESTART.try_lock().map_err(|_| "Redémarrage déjà en cours")?;
+    let before = wake(Verb::Status)?;
+    let status: serde_json::Value = serde_json::from_str(&before.stdout).map_err(|e| e.to_string())?;
+    if before.exit_code != 0 || status["ok"] != true {
+        return Err("État du moteur indisponible ; aucun processus arrêté".into());
+    }
+    let old_pid = status["data"]["daemon"]["pid"].as_u64();
+    if status["data"]["daemon"]["state"] == "running" {
+        let pid = old_pid.filter(|p| *p > 0 && *p <= u32::MAX as u64).ok_or("PID du moteur invalide")?;
+        let started = status["data"]["daemon"]["startedAt"].as_str().ok_or("Date du moteur inconnue")?;
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            let output = Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-Command", include_str!("restart-engine.ps1")])
+                .env("WAKE_RESTART_PID", pid.to_string())
+                .env("WAKE_RESTART_STARTED", started)
+                .creation_flags(0x0800_0000)
+                .output().map_err(|e| format!("Arrêt du moteur : {e}"))?;
+            if !output.status.success() {
+                return Err(format!("Moteur non redémarré : {}", String::from_utf8_lossy(&output.stderr).trim()));
+            }
+        }
+        #[cfg(not(windows))]
+        { let _ = (pid, started); return Err("Redémarrage du moteur disponible sous Windows uniquement".into()); }
+    }
+    start_daemon(&before.stdout)?;
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(300));
+        let current = wake(Verb::Status)?;
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&current.stdout) {
+            if current.exit_code == 0 && value["data"]["daemon"]["state"] == "running"
+                && (value["data"]["daemon"]["pid"].as_u64() != old_pid
+                    || value["data"]["daemon"]["startedAt"] != status["data"]["daemon"]["startedAt"]) {
+                return Ok(current);
+            }
+        }
+    }
+    Err("Le nouveau moteur n’a pas confirmé son démarrage. Consulter daemon.log avant de réessayer.".into())
+}
+
 /// Réponse de l'humain à son agent (`mind-wake reply`) : clé vérifiée ici puis par la CLI,
 /// texte par l'entrée standard, jamais en argument.
 pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
@@ -194,6 +252,26 @@ pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
     let mut args = wake_args(&["reply", "--idempotency-key"])?;
     args.push(key.into());
     run(args, Some(text))
+}
+
+pub fn quick_reply(key: String, text: String, point: Option<crate::quick_input::ClickTarget>) -> Result<CliRun, String> {
+    if !idempotency_key(&key) || text.trim().is_empty() || text.chars().count() > 4000 {
+        return Err("Message ou identifiant invalide".into());
+    }
+    let mut args = wake_args(&["reply", "--capture-screen", "--idempotency-key"])?;
+    args.push(key.into());
+    run_with_click(args, Some(text), point)
+}
+
+/// A quick message never lifts Pause/Force-off. The queue survives until resume.
+pub fn wake_after_quick_reply() {
+    if let Ok(status) = wake(Verb::Status) {
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&status.stdout) {
+            if matches!(value["data"]["profile"]["state"].as_str(), Some("ready" | "hibernating")) {
+                let _ = wake_now();
+            }
+        }
+    }
 }
 
 /// Requête vers les fils de l'humain. Les identifiants viennent du webview : formats
@@ -249,9 +327,22 @@ pub fn owner(request: OwnerRequest) -> Result<CliRun, String> {
     run(args, stdin)
 }
 
-fn run(mut args: Vec<OsString>, stdin: Option<String>) -> Result<CliRun, String> {
+fn run(args: Vec<OsString>, stdin: Option<String>) -> Result<CliRun, String> {
+    run_with_click(args, stdin, None)
+}
+
+
+fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<crate::quick_input::ClickTarget>) -> Result<CliRun, String> {
     args.push("--json".into());
     let mut command = Command::new(node());
+    command.env_remove("MIND_WAKE_CAPTURE_CLICK_X").env_remove("MIND_WAKE_CAPTURE_CLICK_Y");
+    command.env_remove("MIND_WAKE_CAPTURE_CLICK_AT_MS").env_remove("MIND_WAKE_CAPTURE_CLICK_ROOT");
+    if let Some(point) = point {
+        command.env("MIND_WAKE_CAPTURE_CLICK_X", point.x.to_string()).env("MIND_WAKE_CAPTURE_CLICK_Y", point.y.to_string());
+        if args.iter().any(|arg| arg.to_string_lossy().starts_with("ui-bumpe-")) {
+            command.env("MIND_WAKE_CAPTURE_CLICK_AT_MS",point.at_ms.to_string()).env("MIND_WAKE_CAPTURE_CLICK_ROOT",point.root_window.to_string());
+        }
+    }
     command
         .args(&args)
         .stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() })
@@ -300,6 +391,14 @@ fn run(mut args: Vec<OsString>, stdin: Option<String>) -> Result<CliRun, String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn explicit_always_on_reactivates_only_a_stopped_or_locked_profile() {
+        assert!(requires_reactivation(r#"{"data":{"profile":{"state":"stopped","emergencyStopLocked":true}}}"#));
+        assert!(requires_reactivation(r#"{"data":{"profile":{"state":"ready","emergencyStopLocked":true}}}"#));
+        assert!(!requires_reactivation(r#"{"data":{"profile":{"state":"paused","emergencyStopLocked":false}}}"#));
+        assert!(!requires_reactivation("invalid"));
+    }
 
     #[test]
     fn formats_d_identifiants() {

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-quick-input-close"
+description = "Enables the quick_input_close command without any pre-configured scope."
+commands.allow = ["quick_input_close"]
+
+[[permission]]
+identifier = "deny-quick-input-close"
+description = "Denies the quick_input_close command without any pre-configured scope."
+commands.deny = ["quick_input_close"]

@@ -2,11 +2,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import type { WakeImage } from "../contracts/wake-image.js";
+import { freshWakeImage } from "../adapters/wake-image.js";
 
 export interface InboxMessage {
   id: string;
   at: string;
   text: string;
+  image?: WakeImage;
 }
 const FILE = "owner-inbox.sqlite";
 /** Hook delivery receipts; delivery does not attest that the model read or understood. */
@@ -47,7 +50,7 @@ function open(dataDir: string): Database.Database {
   const columns = new Set(
     (db.prepare("PRAGMA table_info(inbox)").all() as { name: string }[]).map((c) => c.name),
   );
-  for (const column of ["claimed_session", "claim_id"])
+  for (const column of ["claimed_session", "claim_id", "image_json"])
     if (!columns.has(column)) {
       try {
         db.exec(`ALTER TABLE inbox ADD COLUMN ${column} TEXT`);
@@ -63,16 +66,30 @@ function open(dataDir: string): Database.Database {
   return db;
 }
 export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): void {
+  if (message.image !== undefined && freshWakeImage(message.image, Date.parse(message.image.capturedAt)) === null)
+    throw new Error("Invalid owner image attachment");
   const db = open(dataDir);
   try {
-    db.prepare("INSERT OR IGNORE INTO inbox(id, at, text) VALUES (?, ?, ?)").run(
+    db.prepare("INSERT OR IGNORE INTO inbox(id, at, text, image_json) VALUES (?, ?, ?, ?)").run(
       message.id,
       message.at,
       message.text,
+      message.image === undefined ? null : JSON.stringify(message.image),
     );
   } finally {
     db.close();
   }
+}
+/** Recover an acknowledged-or-queued send after a crash between inbox and history writes. */
+export function readOwnerMessage(dataDir: string, id: string): InboxMessage | null {
+  if (!fs.existsSync(path.join(dataDir, FILE))) return null;
+  const db = open(dataDir);
+  try {
+    const row = db.prepare("SELECT id,at,text,image_json FROM inbox WHERE id=?").get(id) as (InboxMessage & {image_json:string|null}) | undefined;
+    if (row === undefined) return null;
+    const {image_json,...message} = row;
+    return {...message,...(image_json === null ? {} : {image:JSON.parse(image_json) as WakeImage})};
+  } finally { db.close(); }
 }
 export function ownerMessagePending(dataDir: string): boolean {
   if (!fs.existsSync(path.join(dataDir, FILE))) return false;
@@ -99,12 +116,15 @@ export function claimOwnerMessages(
       .transaction(() => {
         const messages = db
           .prepare(
-            "SELECT id,at,text FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid",
+            "SELECT id,at,text,image_json FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid LIMIT 16",
           )
-          .all() as InboxMessage[];
+          .all() as (InboxMessage & { image_json: string | null })[];
         const mark = db.prepare("UPDATE inbox SET claimed_session=?,claim_id=? WHERE id=?");
         for (const message of messages) mark.run(session, claim, message.id);
-        return messages;
+        return messages.map(({ image_json, ...message }) => ({
+          ...message,
+          ...(image_json === null ? {} : { image: JSON.parse(image_json) as WakeImage }),
+        }));
       })
       .immediate();
   } finally {
@@ -115,7 +135,7 @@ export function confirmOwnerClaim(dataDir: string, session: string, claim: strin
   const db = open(dataDir);
   try {
     db.prepare(
-      "UPDATE inbox SET emitted_session=?,emitted_at=?,claimed_session=NULL,claim_id=NULL WHERE claimed_session=? AND claim_id=? AND emitted_session IS NULL",
+      "UPDATE inbox SET emitted_session=?,emitted_at=?,claimed_session=NULL,claim_id=NULL,image_json=NULL WHERE claimed_session=? AND claim_id=? AND emitted_session IS NULL",
     ).run(session, new Date().toISOString(), session, claim);
   } finally {
     db.close();
@@ -166,7 +186,7 @@ export function takeOwnerMessages(dataDir: string, session: string): InboxMessag
       .transaction(() => {
         const rows = db
           .prepare(
-            "SELECT id, at, text FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid",
+            "SELECT id, at, text FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL AND image_json IS NULL ORDER BY rowid",
           )
           .all() as InboxMessage[];
         const mark = db.prepare("UPDATE inbox SET emitted_session=?, emitted_at=? WHERE id=?");

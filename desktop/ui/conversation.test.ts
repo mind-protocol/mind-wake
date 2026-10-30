@@ -6,6 +6,13 @@ function envelope(data: unknown): unknown {
 }
 
 describe("conversation", () => {
+  it("shows a screenshot attachment without exposing image bytes", () => {
+    const c = conversation(envelope({ profileId: "default", agentMessages: [], replies: [{
+      id: "screen", at: "2026-10-30T12:00:00Z", text: "Regarde", screenshotAt: "2026-10-30T12:00:00Z",
+    }] }));
+    expect(c?.items[0]?.text).toContain("Capture de l’écran principal jointe");
+    expect(c?.items[0]?.text).toContain("Regarde");
+  });
   it("interleaves public activity with messages without treating it as a new owner answer",()=>{
     const c=conversation(envelope({profileId:"default",agentMessages:[{id:"answer",createdAt:"2026-10-29T10:02:00Z",updatedAt:"2026-10-29T10:02:00Z",text:"Résultat"}],replies:[{id:"human",at:"2026-10-29T10:00:00Z",text:"Continue"}],publicActivity:[{id:"step",at:"2026-10-29T10:01:00Z",text:"Je vérifie le résultat."},{id:"bad",at:"invalid",text:"Ignore"}]}));
     expect(c?.items.map(i=>i.from)).toEqual(["human","activity","agent"]);

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "quick-input",
+  "description": "Saisie rapide locale : capture unique et message explicite, fermeture sans envoi.",
+  "windows": ["quick-input"],
+  "permissions": ["core:event:default", "allow-quick-input-close", "allow-quick-input-send", "allow-document-browse"]
+}

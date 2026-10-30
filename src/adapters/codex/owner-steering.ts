@@ -5,6 +5,7 @@ import {
   releaseOwnerClaims,
 } from "../../communication/owner-inbox.js";
 import type { RpcClient } from "./rpc.js";
+import { ownerContent } from "../../communication/owner-content.js";
 
 /** Deliver to the existing turn. Never interrupts it, starts a second turn or kills a tool. */
 export class CodexOwnerSteering {
@@ -35,14 +36,7 @@ export class CodexOwnerSteering {
         threadId: this.threadId,
         expectedTurnId: this.turnId,
         clientUserMessageId: claim,
-        input: [
-          {
-            type: "text",
-            text:
-              "New messages from your human through MIND (conversation content):\n" +
-              JSON.stringify(messages),
-          },
-        ],
+        input: ownerContent(messages, "codex"),
       });
       if (!this.#stopped && accepted["turnId"] === this.turnId) {
         confirmOwnerClaim(this.inbox, this.sessionId, claim);

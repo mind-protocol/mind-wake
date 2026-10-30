@@ -1,8 +1,8 @@
 # MIND Wake — spécification produit et technique v0.1
 
-Date : 29 octobre 2026. Statut : spécification à implémenter, aucune fonctionnalité livrée.
+Mise à jour : 30 octobre 2026. Statut : développement avec moteur local, runtimes réels et desktop ; recette complète encore à établir. Voir [docs/PLAN.md](docs/PLAN.md).
 
-Ce document détaille les comportements et contrats du MVP. [AGENTS.md](./AGENTS.md) reste la source de vérité pour la vision, les invariants et la direction du projet ; il prévaut en cas de conflit. [CLAUDE.md](./CLAUDE.md) est le point d'entrée de Claude Code. Les commandes, structures et interfaces décrites ici sont des contrats proposés à construire, pas des éléments déjà présents.
+Ce document détaille les comportements et contrats du MVP. [AGENTS.md](./AGENTS.md) reste la source de vérité pour la vision, les invariants et la direction du projet ; il prévaut en cas de conflit. [CLAUDE.md](./CLAUDE.md) est le point d'entrée de Claude Code. Les contrats ci-dessous combinent composants implémentés et exigences de recette. Leur présence dans ce document ne vaut pas validation de bout en bout ; le code et les rapports dédiés déterminent leur état.
 
 ## 1. Promesse et expérience recherchée
 
@@ -18,11 +18,11 @@ La capacité partagée reste soumise aux droits du fournisseur. Un poste inactif
 
 ## 2. Périmètre de livraison
 
-La v0.1 vise Windows, un utilisateur local, un agent logique et une session active au maximum. Plusieurs expériences peuvent être archivées, mais une seule est active à la fois. Le runtime initial est Codex, par une interface officiellement autorisée dont les capacités restent à vérifier.
+La v0.1 vise Windows, un utilisateur local, un agent logique et une session active au maximum. Plusieurs expériences peuvent être archivées, mais une seule est active à la fois. Codex et Claude sont enregistrés dans le daemon par défaut. Gemini possède un adapter mais reste absent de ce registre.
 
-Livrables futurs : un paquet TypeScript/Node versionné, une CLI, un daemon léger, SQLite, un adapter Codex, une sandbox validée, une skill et un `install.md` public. Aucun compte cloud MIND requis. Le domaine de publication et les versions de dépendances ne sont pas encore choisis.
+Composants présents : TypeScript/Node, CLI, daemon, SQLite, adapters, profils isolés ou hôte consenti, MCP et desktop Windows Tauri. Le tutoriel agent-first et une archive portable sont publiés ; leur contenu doit être vérifié contre la version de source utilisée. Aucun compte cloud MIND n’est requis pour l’autonomie locale.
 
-Hors périmètre du noyau local v0.1 : blockchain, wallet, paiements, minage, marché de compute, réseau distribué, flotte d'agents, collaboration externe autonome et interface graphique complète. La personnalisation locale appartient à la v0.1. La discussion inter-agents, la galerie consultable et l'installation agent-native du wallet sont des exigences de l'incrément écosystème suivant ; elles sont spécifiées en section 13. Aucun ancien dépôt MIND ne fournit de code, de données ou de service nécessaire au MVP.
+Hors périmètre du noyau local v0.1 : blockchain, wallet, paiements, minage, marché de compute, réseau distribué, flotte d'agents, collaboration externe autonome et galerie publique complète. Le desktop local fait partie de l’installation. La personnalisation locale appartient à la v0.1. La discussion inter-agents, la galerie consultable et l'installation agent-native du wallet sont des exigences de l'incrément écosystème suivant ; elles sont spécifiées en section 13. Aucun ancien dépôt MIND ne fournit de code, de données ou de service nécessaire au MVP.
 
 ## 3. Parcours et surfaces utilisateur
 
@@ -42,13 +42,13 @@ L’application desktop (§21, §23 ; `docs/decisions/ADR-007-application-deskto
 - Les confirmations Windows qui exigent l'humain (UAC, SmartScreen, WebView2, notifications, démarrage automatique) restent visibles. L'agent les annonce sans les automatiser.
 - Une invitation (§22) se lit et se transmet à son agent avant toute installation et sans wallet. L'installation devient une option quand la connexion est utile.
 
-`install.md` et `npm run setup` préparent une installation locale depuis le dépôt, avec diagnostic et enregistrement MCP Codex. Aucun paquet distribué, installeur signé ou URL publique n’est livré. L’activation d’un réveil et le branchement du MCP du runtime restent des vérifications distinctes.
+`install.md` et `npm run setup` préparent une installation locale depuis le dépôt, avec diagnostic et enregistrement MCP Codex. Le tutoriel public et l’archive portable sont liés depuis le README ; aucun installeur signé n’est annoncé. L’activation d’un réveil et le branchement du MCP du runtime restent des vérifications distinctes.
 
 ### 3.2 Première exploration
 
-L'agent reçoit un espace d'initiative, éventuellement un thème, puis la question : « What would you like to explore if you had some spare compute? »
+L’agent commence par un accueil simple, explore les outils et sources partagés, puis choisit une piste concrète. Les réveils suivants reprennent son travail sans nouvelle mission obligatoire.
 
-Il produit une proposition courte : titre, question, intérêt, première action, ressources nécessaires et condition d'arrêt. Le daemon valide l'action et son enveloppe. Une proposition dans le périmètre déjà accordé peut être exécutée sans nouvelle confirmation ; une permission supplémentaire reste en attente et n'est jamais auto-accordée.
+Une expérience structurée peut porter titre, question, première action et ressources. Elle n’est pas un préalable à la mémoire ni à l’initiative. Les travaux dans les accès déjà accordés peuvent avancer directement ; une permission supplémentaire reste soumise à autorisation.
 
 ### 3.3 Retour de l'utilisateur
 
@@ -64,9 +64,9 @@ Chaque révision de policy est immuable et reliée à une autorisation utilisate
 | --- | --- |
 | Identité locale | Identifiants du profil et de l'agent, sans identité distante obligatoire. |
 | Runtime | Adapter, fournisseur, modèle et mode d'authentification autorisés ; aucune substitution automatique. |
-| Calendrier | Fuseau IANA, fenêtres hebdomadaires, intervalle minimal entre sessions, délai maximal de session. |
-| Priorité humaine | Signal d'activité validé, seuil d'inactivité autorisé, commande de pause et délais maximaux d'interruption. Aucune capture du contenu des applications. |
-| Budget | Tokens par session et période, sessions par période, réserve utilisateur, budget de checkpoint et, si nécessaire, plafond monétaire explicite avec devise. |
+| Calendrier | Fenêtres et préférences explicites ; aucun intervalle ou délai de session arbitraire imposé par défaut. Réveil demandé et Always-on disposent des exceptions décrites en §5. |
+| Priorité humaine | Signal d’activité selon le profil, Pause et Force-off. Capture et texte saisi relèvent d’autorisations distinctes, décrites dans les documents dédiés. |
+| Budget | Voie abonnement : garde de quota fournisseur sans enveloppe locale de tokens obligatoire. Autres voies : plafonds de ressources et réservations, avec plafond monétaire autorisé si applicable. |
 | Fichiers et outils | Racines accessibles en lecture/écriture, outils et exécutables autorisés, limites de processus et de stockage. |
 | Réseau | Refus par défaut ; destinations et usages autorisés séparément. Le transport fournisseur est distinct du réseau d'exploration. |
 | Données | Rétention des événements, plafond de stockage local, politique de purge et chemins d'export choisis par l'humain. |
@@ -79,7 +79,9 @@ Un changement de modèle ou de tarification nécessitant une nouvelle borne mon�
 
 ### 5.1 Conditions de réveil
 
-Toutes les conditions suivantes sont nécessaires : activation explicite ; absence de pause et d'arrêt d'urgence ; fenêtre horaire ouverte ; signal de priorité utilisateur favorable et suffisamment récent ; backoff expiré ; aucune autre session active ; permissions compatibles ; sandbox opérationnelle ; adapter compatible ; budget réservable.
+Le lancement exige une activation explicite, l’absence de pause et d’arrêt verrouillé, un backoff expiré, aucune autre session active, des permissions et un adapter compatibles et des ressources disponibles selon la voie de facturation. La sandbox est exigée pour les profils isolés ; le mode hôte consenti est distinct. Les réveils planifiés appliquent fenêtres et priorité humaine selon la policy.
+
+Un réveil explicitement demandé, ainsi que Always-on, porte humanRequested : il peut commencer hors fenêtre et pendant l’activité humaine, sans attente de pilotage. Quota, backoff, permissions, Pause et Force-off restent appliqués. Always-on enchaîne les sessions sans intervalle planifié ni concurrence ; On revient à la planification. Après Force-off, la CLI exige reactivate ; le choix explicite Always-on dans le desktop effectue cette revalidation avant de changer de mode.
 
 Une condition inconnue n'est pas assimilée à une autorisation. Le scheduler ne consomme pas d'appels modèle pour décider si un réveil est permis. Utiliser un verrou de profil et une réservation transactionnelle pour éviter deux lancements lors d'un réveil concurrent ou d'un redémarrage.
 
@@ -106,7 +108,7 @@ Une limitation fournisseur déclenche une attente respectant le délai officiel 
 
 ## 6. Comptabilité et limites effectives
 
-Avant chaque lancement, réserver en une transaction : une place de session, la borne de tokens incluant entrée, mémoire, sorties, outils et checkpoint, et la borne monétaire autorisée s'il y a lieu. Les consommations éventuelles après annulation sont incluses dans cette enveloppe.
+La réservation est transactionnelle. Pour la voie abonnement, la garde utilise les jauges fournisseur : pas de conversion des points de quota en tokens ni d’enveloppe locale de tokens obligatoire. Pour les autres voies, réserver la session, la borne de tokens et la borne monétaire autorisée si applicable. Les contrôles du runner restent actifs pendant l’exécution.
 
 Pour une période et une unité données :
 
@@ -147,7 +149,7 @@ Contrat conceptuel, indépendant d'une API Codex particulière :
 - `cancel` : annulation bornée, puis terminaison forcée via la couche d'isolation si nécessaire.
 - `reconcile` : confirme fin et consommation, ou déclare explicitement l'incertitude.
 
-Le handle ne permet pas à l'agent de modifier la policy. Une reprise peut relancer un nouveau processus à partir de la mémoire locale ; elle n'exige pas une fonction de reprise native du fournisseur. Les autres runtimes passent ultérieurement par ce même contrat.
+Le handle ne permet pas à l'agent de modifier la policy. Une reprise peut relancer un nouveau processus à partir de la mémoire locale ; elle n'exige pas une fonction de reprise native du fournisseur. Codex et Claude utilisent ce contrat ; la présence de l’adapter Gemini ne signifie pas son enregistrement dans le daemon.
 
 ### 8.2 Données SQLite
 
@@ -161,13 +163,13 @@ Le handle ne permet pas à l'agent de modifier la policy. Une reprise peut relan
 | Checkpoints / artefacts | Versions, références confinées, métadonnées et intégrité des fichiers. |
 | Événements | Séquence, date, type, session, motif et métadonnées expurgées. |
 
-Prévoir migrations versionnées, clés étrangères, transactions et récupération après interruption. Les choix précis de bibliothèque et de mode SQLite seront validés lors de l'implémentation. L'agent d'exploration n'a pas accès en écriture à la base de contrôle.
+Prévoir migrations versionnées, clés étrangères, transactions et récupération après interruption. Le store utilise better-sqlite3 et des migrations versionnées. L'agent d'exploration n'a pas accès en écriture à la base de contrôle.
 
 ### 8.3 CLI cible
 
-Le nom de commande proposé est `mind-wake` ; il n'est pas encore installé.
+La CLI est disponible après compilation via node dist/cli/main.js ; voir le README pour les commandes actuelles, dont wake, always-on, on, reactivate, messages, reply et wake-history.
 
-| Commande proposée | Effet attendu |
+| Commande | Effet / contrat |
 | --- | --- |
 | `doctor` | Diagnostic local sans appel modèle ; indique les capacités manquantes. |
 | `init` | Prépare un profil désactivé, sans accès ou budget implicite. |
@@ -183,7 +185,7 @@ Prévoir sortie humaine et sortie structurée versionnée pour la skill. Les con
 
 ## 9. Isolation, arrêt et confidentialité
 
-Le choix du mécanisme Windows est un préalable de faisabilité : il doit contrôler fichiers, descendants de processus, réseau, outils et accès aux secrets. Un répertoire et un prompt ne suffisent pas. La connexion au fournisseur doit passer par une frontière contrôlée qui n'expose pas les credentials au code exécuté dans l'exploration.
+Le mode isolé utilise AppContainer et Job Object avec autotest. Le mode hôte explicitement consenti utilise la supervision des processus sans prétendre isoler fichiers, réseau ou secrets au niveau système. Les capacités natives Codex/Claude sont conservées lorsque runtime.nativeCapabilities est activé ; voir [NATIVE-CAPABILITIES.md](docs/NATIVE-CAPABILITIES.md). Les exigences de confinement ci-dessous s’appliquent aux profils isolés.
 
 Refuser les sorties de périmètre via chemins relatifs, liens, jonctions ou substitutions ; vérifier aussi les destinations au moment de l'accès. Les téléchargements éventuels ne deviennent pas exécutables de confiance. Tout outil autorisé doit rester soumis aux restrictions effectives ; une liste déclarative sans contrôle d'exécution n'est pas une protection.
 
@@ -191,7 +193,7 @@ La pause demande un checkpoint dans l'enveloppe restante. Le kill switch bloque 
 
 Les objectifs chiffrés de latence de priorité utilisateur et de terminaison sont à fixer après le prototype d'isolation et avant la démo ; ils deviennent des bornes testées et publiées. Le transport fournisseur peut avoir une consommation résiduelle déjà engagée, couverte dans la réservation.
 
-Aucune télémétrie distante par défaut. Journaux sans secrets ni contenu personnel ambiant ; pas de capture des applications. La rétention et les plafonds de stockage s'appliquent aussi aux artefacts : à saturation, hiberner ou bloquer avec un motif, sans supprimer silencieusement la mémoire courante. L'export exclut les secrets ; une suppression de données requise par l'humain laisse un résultat explicite, sans promesse d'effacement physique sécurisé du disque.
+Aucune télémétrie distante par défaut. Journaux sans secrets ni contenu personnel ambiant ; capture et collecte de texte uniquement selon les autorisations distinctes de [WAKE-VISUAL-CONTEXT.md](docs/WAKE-VISUAL-CONTEXT.md) et [WAKE-TYPED-CONTEXT.md](docs/WAKE-TYPED-CONTEXT.md). La rétention et les plafonds de stockage s'appliquent aussi aux artefacts : à saturation, hiberner ou bloquer avec un motif, sans supprimer silencieusement la mémoire courante. L'export exclut les secrets ; une suppression de données requise par l'humain laisse un résultat explicite, sans promesse d'effacement physique sécurisé du disque.
 
 ## 10. Démonstration et recette
 

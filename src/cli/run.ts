@@ -58,6 +58,8 @@ Commandes :
   messages      Fil avec ton agent : sa note artifacts/questions-for-human.md et tes réponses
   reply         Répond à ton agent : texte lu sur l'entrée standard
                 (--idempotency-key K) ; ne le réveille pas, n'accorde rien
+                --capture-screen joint une capture ponctuelle de l’écran principal
+                (profil natif Codex/Claude), sans modifier la collecte ambiante
   policy configure FICHIER.json
                 Propose une révision validée, sans effet avant \`enable\`
   enable        Active la révision proposée, sans code à saisir (ADR-008) ; --confirm
@@ -127,6 +129,7 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "wake-screenshot": { type: "string" },
         "exit-after-sessions": { type: "string" },
         "idempotency-key": { type: "string" },
+        "capture-screen": { type: "boolean" },
       },
     });
     const [first, second, ...rest] = positionals;
@@ -202,7 +205,7 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         result = wakeHistory(dataDir) as CommandResult<unknown>;
         break;
       case "reply":
-        result = (await reply(ctx, dataDir, values["idempotency-key"])) as CommandResult<unknown>;
+        result = (await reply(ctx, dataDir, values["idempotency-key"], values["capture-screen"] === true)) as CommandResult<unknown>;
         break;
       case "policy configure":
         result = policyConfigure(ctx, dataDir, argument ?? "") as CommandResult<unknown>;
@@ -287,6 +290,7 @@ const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   "wake-screenshot": ["daemon run"],
   "exit-after-sessions": ["daemon run"],
   "idempotency-key": ["reply"],
+  "capture-screen": ["reply"],
 };
 
 function rejectOptions(command: string, values: Readonly<Record<string, unknown>>): void {

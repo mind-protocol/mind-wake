@@ -58,9 +58,10 @@ afterEach(async () => {
   fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   vi.clearAllMocks();
 });
-it("keeps long direct answers complete while preserving the legacy preview limit", async () => {
+it("keeps long answers complete by default and in the persisted thread", async () => {
   const full = "a".repeat(7000) + " final objection";
-  expect(answerText(full)).toHaveLength(4000);
+  expect(answerText(full)).toBe(full);
+  expect(answerText(full, 4000)).toHaveLength(4000);
   expect(answerText(full, null)).toBe(full);
   const q = await queueDirectAdvice(env, input);
   await executeDirectAdvice(

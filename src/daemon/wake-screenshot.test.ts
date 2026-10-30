@@ -2,7 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { configuredWakeScreenshot, parseWakeScreenshotSurface } from "./wake-screenshot.js";
+import { configuredWakeScreenshot, parseWakeScreenshotSurface, captureClickPoint } from "./wake-screenshot.js";
+it("keeps physical signed click coordinates and rejects incomplete or malformed points", () => {
+  expect(captureClickPoint({ MIND_WAKE_CAPTURE_CLICK_X: "-120", MIND_WAKE_CAPTURE_CLICK_Y: "0" })).toEqual({ x: -120, y: 0 });
+  for (const [x, y] of [["1", undefined], ["", "2"], ["1.5", "2"], ["Infinity", "2"], ["2147483648", "0"]]) {
+    expect(captureClickPoint({ MIND_WAKE_CAPTURE_CLICK_X: x, MIND_WAKE_CAPTURE_CLICK_Y: y })).toBeUndefined();
+  }
+});
 let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-image-config-"));

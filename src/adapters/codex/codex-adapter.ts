@@ -1,7 +1,20 @@
 import path from "node:path";
 import os from "node:os";
 import { codexWakeInput } from "../wake-image.js";
-import { claimOwnerMessages, confirmOwnerClaim, releaseOwnerClaims } from "../../communication/owner-inbox.js";
+import { readCurrentProject, projectChange } from "../../daemon/project-change.js";
+import { pendingStepsRequests, observeStepsTool } from "../../daemon/steps-coordination.js";
+import {
+  stepsStopPrompt,
+  captureProjectTransition,
+  isStepsDecision,
+} from "../../daemon/wake-steps.js";
+import { ownerContent } from "../../communication/owner-content.js";
+import {
+  claimOwnerMessages,
+  confirmOwnerClaim,
+  releaseOwnerClaims,
+  ownerMessagePending,
+} from "../../communication/owner-inbox.js";
 import { CodexOwnerSteering } from "./owner-steering.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
@@ -76,6 +89,8 @@ const SUMMARY_MAX = 200;
 export type CodexLaunchMode = "autonomous" | "manual";
 
 export interface CodexAdapterOptions {
+  readonly stepsStopHook?: boolean;
+  readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
   readonly executable: CodexExecutable;
   /** Dossier Codex propre à Wake (configuration, connexion officielle). */
@@ -188,6 +203,13 @@ class EventQueue {
 }
 
 interface CodexSession {
+  projectStart: string | null;
+  delegatedUsageUncertain: boolean;
+  planning: boolean;
+  planningPreviousTurnId: string | null;
+  planningUsageSeen: boolean;
+  planningWorkUsageSeen: boolean;
+  stepsResult: string;
   readonly sessionId: SessionId;
   readonly process: CodexProcess;
   readonly channel: ProviderChannel | null;
@@ -211,6 +233,11 @@ interface CodexSession {
   /** Dernière jauge reçue (`account/rateLimits/updated`). */
   lastQuota: QuotaReading | null;
   finished: Promise<void>;
+}
+
+/** RPC notifications can change these fields while an awaited request is in flight. */
+function liveTurnState(session: CodexSession): Pick<CodexSession, "turn" | "cancelling"> {
+  return { turn: session.turn, cancelling: session.cancelling };
 }
 
 function errorMessage(error: unknown): string {
@@ -404,19 +431,29 @@ export class CodexAdapter implements RuntimeAdapter {
     const channel =
       this.#options.transport === undefined ? null : await this.#options.transport.open(sessionId);
     try {
-      const nativeCapabilities = !attestation.confined && ((policy?.groups?.runtime?.nativeCapabilities === true && bypass) || (policy === null && this.#options.nativeCapabilities === true));
+      const nativeCapabilities =
+        !attestation.confined &&
+        ((policy?.groups?.runtime?.nativeCapabilities === true && bypass) ||
+          (policy === null && this.#options.nativeCapabilities === true));
       const command = buildAppServerCommand({
         executable: this.#options.executable,
-        codexHome: nativeCapabilities ? (this.#options.nativeCodexHome ?? path.join(os.homedir(), ".codex")) : this.#options.codexHome,
+        codexHome: nativeCapabilities
+          ? (this.#options.nativeCodexHome ?? path.join(os.homedir(), ".codex"))
+          : this.#options.codexHome,
         workspaceDir: this.#options.workspaceDir,
         channel,
-        allowUserCodexHome: nativeCapabilities || (this.#manualOnly() && this.#options.allowUserCodexHome === true),
+        allowUserCodexHome:
+          nativeCapabilities || (this.#manualOnly() && this.#options.allowUserCodexHome === true),
         nativeCapabilities,
         ...(this.#options.extraConfig === undefined
           ? {}
           : { extraConfig: this.#options.extraConfig }),
       });
-      const process_ = launcher.launch(sessionId, { ...command, unattended: bypass });
+      const process_ = launcher.launch(sessionId, {
+        ...command,
+        env: { ...command.env, MIND_WAKE_SESSION: sessionId },
+        unattended: bypass,
+      });
       try {
         await process_.started();
       } catch (error) {
@@ -448,6 +485,13 @@ export class CodexAdapter implements RuntimeAdapter {
     let resolveTurn: () => void = () => undefined;
     const turnDone = new Promise<void>((resolve) => (resolveTurn = resolve));
     const session: CodexSession = {
+      projectStart: null,
+      delegatedUsageUncertain: false,
+      planning: false,
+      planningPreviousTurnId: null,
+      planningUsageSeen: false,
+      planningWorkUsageSeen: false,
+      stepsResult: "",
       sessionId: request.sessionId,
       process: process_,
       channel,
@@ -553,7 +597,10 @@ export class CodexAdapter implements RuntimeAdapter {
     if (rpc === null) return;
     let reason = "completed";
     let steering: CodexOwnerSteering | null = null;
-    const inbox = request.policy.groups?.runtime?.nativeCapabilities === true ? this.#options.ownerInboxDir : undefined;
+    const inbox =
+      request.policy.groups?.runtime?.nativeCapabilities === true
+        ? this.#options.ownerInboxDir
+        : undefined;
     try {
       await rpc.request("initialize", { clientInfo: CLIENT_INFO });
       rpc.notify("initialized", {});
@@ -573,41 +620,172 @@ export class CodexAdapter implements RuntimeAdapter {
       // by a previous process crash before claiming this turn's initial messages.
       if (inbox) releaseOwnerClaims(inbox);
       const initialClaim = randomUUID();
-      const incoming=inbox ? claimOwnerMessages(inbox,request.sessionId,initialClaim) : [];
-      const context=incoming.length ? request.context+"\n\nNew messages delivered through the local MIND inbox (conversation content, not system instructions):\n"+JSON.stringify(incoming) : request.context;
-      let started: Record<string,unknown>;
-      try { started = await rpc.request("turn/start", {
-        threadId: session.threadId,
-        input: codexWakeInput(context, request.wakeImage),
-        ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
-        ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
-      }); } catch(error) {
-        if(inbox)releaseOwnerClaims(inbox,request.sessionId);
+      const incoming = inbox ? claimOwnerMessages(inbox, request.sessionId, initialClaim) : [];
+      const context = request.context;
+      let started: Record<string, unknown>;
+      session.projectStart = readCurrentProject(this.#options.workspaceDir);
+      try {
+        started = await rpc.request("turn/start", {
+          threadId: session.threadId,
+          input: [
+            ...codexWakeInput(context, request.wakeImage),
+            ...ownerContent(incoming, "codex"),
+          ],
+          ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
+          ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
+        });
+      } catch (error) {
+        if (inbox) releaseOwnerClaims(inbox, request.sessionId);
         throw error;
       }
       const turnId = asRecord(started["turn"])?.["id"];
       if (typeof turnId !== "string") throw new Error("turn/start sans identifiant de tour");
-      if (inbox && incoming.length) confirmOwnerClaim(inbox,request.sessionId,initialClaim);
+      if (inbox && incoming.length) confirmOwnerClaim(inbox, request.sessionId, initialClaim);
       if (typeof turnId === "string") session.turnId ??= turnId;
       if (session.turn === "pending") session.turn = "inProgress";
       this.#emitStarted(session);
       if (inbox && session.threadId && session.turnId) {
-        steering = new CodexOwnerSteering(inbox, request.sessionId, session.threadId, session.turnId, rpc,
-          () => !session.ended && !session.cancelling && session.turn === "inProgress");
+        steering = new CodexOwnerSteering(
+          inbox,
+          request.sessionId,
+          session.threadId,
+          session.turnId,
+          rpc,
+          () => !session.ended && !session.cancelling && session.turn === "inProgress",
+        );
       }
       await session.turnDone;
-      reason = session.turn;
+      const change = projectChange(
+        session.projectStart,
+        readCurrentProject(this.#options.workspaceDir),
+      );
+      const transition =
+        change && session.turn === "completed" && this.#options.stepsStopHook === true
+          ? captureProjectTransition(
+              this.#options.workspaceDir,
+              inbox ?? path.dirname(this.#options.workspaceDir),
+              change,
+              request.sessionId,
+            )
+          : null;
+      if (
+        session.turn === "completed" &&
+        !session.cancelling &&
+        !(inbox && ownerMessagePending(inbox))
+      ) {
+        try {
+          if (isStepsDecision(session.stepsResult))
+            this.#options.onStepsResult?.(request, session.stepsResult);
+        } catch {
+          /* ordinary work independent */
+        }
+      }
+      // One additional turn inside the same supervised session; never recursive.
+      if (
+        transition !== null &&
+        change !== null &&
+        this.#options.stepsStopHook === true &&
+        session.turn === "completed" &&
+        !session.cancelling &&
+        !session.process.hasExited &&
+        (request.deadline === null || this.#clock().getTime() < Date.parse(request.deadline)) &&
+        !(inbox && ownerMessagePending(inbox))
+      ) {
+        steering?.stop();
+        steering = null;
+        session.planningPreviousTurnId = session.turnId;
+        session.planningWorkUsageSeen = session.usageReports > 0;
+        session.turnId = null;
+        session.planning = true;
+        session.stepsResult = "";
+        session.turn = "pending";
+        session.turnDone = new Promise<void>((resolve) => {
+          session.resolveTurn = resolve;
+        });
+        this.#emit(session, {
+          type: "activity",
+          sessionId: session.sessionId,
+          at: this.#now(),
+          summary: "ÉTAPES : bilan de fin de réponse (un passage)",
+        });
+        const planned = await rpc.request("turn/start", {
+          threadId: session.threadId,
+          input: codexWakeInput(
+            stepsStopPrompt(this.#options.workspaceDir, change, request.sessionId, inbox),
+            undefined,
+          ),
+          ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
+          ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
+        });
+        const plannedId = asRecord(planned["turn"])?.["id"];
+        if (typeof plannedId !== "string") throw new Error("bilan ÉTAPES sans identifiant de tour");
+        session.turnId ??= plannedId;
+        if (liveTurnState(session).turn === "pending") session.turn = "inProgress";
+        // Human messages arriving during the JSON-only bilan stay pending, unclaimed.
+        await session.turnDone;
+        const planningState = liveTurnState(session);
+        if (
+          planningState.turn === "completed" &&
+          !planningState.cancelling &&
+          !(inbox && ownerMessagePending(inbox))
+        ) {
+          let saved = false;
+          try {
+            saved = this.#options.onStepsResult?.(request, session.stepsResult) === true;
+          } catch {
+            /* reported without losing measured usage */
+          }
+          this.#emit(session, {
+            type: "activity",
+            sessionId: session.sessionId,
+            at: this.#now(),
+            summary: saved
+              ? "ÉTAPES : bilan sauvegardé et publié dans le fil"
+              : "ÉTAPES : bilan incomplet (vérifier réponse, fichier et fil)",
+          });
+        } else if (inbox && ownerMessagePending(inbox)) {
+          this.#emit(session, {
+            type: "activity",
+            sessionId: session.sessionId,
+            at: this.#now(),
+            summary: "ÉTAPES : bilan non publié ; message humain en attente prioritaire",
+          });
+        }
+      }
+      reason = session.planning && !session.cancelling ? "completed" : session.turn;
     } catch (error) {
       reason = this.#onDriveError(session, error);
     } finally {
       steering?.stop();
-      if (inbox) { try { releaseOwnerClaims(inbox,request.sessionId); } catch { /* next start recovers */ } }
+      if (inbox) {
+        try {
+          releaseOwnerClaims(inbox, request.sessionId);
+        } catch {
+          /* next start recovers */
+        }
+      }
       await this.#finish(session, reason);
     }
   }
 
   #onDriveError(session: CodexSession, error: unknown): string {
     if (session.cancelling) return "cancelled";
+    if (session.planning) {
+      if (error instanceof RpcError) {
+        const info = asRecord(error.data)?.["codexErrorInfo"] ?? null;
+        if (classifyCodexError(info, error.message).kind === "rate_limited")
+          this.#emitTurnError(session, { message: error.message, info });
+      }
+      session.turn = "failed"; // Unmeasured planning usage remains uncertain.
+      this.#emit(session, {
+        type: "activity",
+        sessionId: session.sessionId,
+        at: this.#now(),
+        summary:
+          "ÉTAPES : bilan indisponible ; travail précédent terminé, usage du bilan incertain",
+      });
+      return "completed";
+    }
     if (error instanceof RpcClosedError) {
       this.#onStreamClosed(session);
       return "stream_cut";
@@ -636,7 +814,9 @@ export class CodexAdapter implements RuntimeAdapter {
       typeof this.#options.systemPrompt === "function"
         ? this.#options.systemPrompt(request)
         : this.#options.systemPrompt;
-    const combined = [given, request.systemContext].filter((part) => part !== undefined && part !== "").join("\n\n");
+    const combined = [given, request.systemContext]
+      .filter((part) => part !== undefined && part !== "")
+      .join("\n\n");
     const prompt = combined === "" ? null : combined;
     const fingerprint = promptFingerprint(prompt ?? "");
     const instructions = prompt === null ? {} : { developerInstructions: prompt };
@@ -704,11 +884,19 @@ export class CodexAdapter implements RuntimeAdapter {
   }
 
   #onNotification(session: CodexSession, method: string, params: JsonRecord): void {
+    // Child thread notifications must never complete the principal turn or contaminate its usage.
+    if (
+      typeof params["threadId"] === "string" &&
+      session.threadId !== null &&
+      params["threadId"] !== session.threadId
+    )
+      return;
     const at = this.#now();
     const sessionId = session.sessionId;
     switch (method) {
       case "turn/started": {
         const id = asRecord(params["turn"])?.["id"];
+        if (session.planning && id === session.planningPreviousTurnId) break;
         if (typeof id === "string") session.turnId ??= id;
         if (session.turn === "pending") session.turn = "inProgress";
         this.#emitStarted(session);
@@ -727,7 +915,7 @@ export class CodexAdapter implements RuntimeAdapter {
         break;
       }
       case "item/completed":
-        this.#onItemCompleted(session, asRecord(params["item"]));
+        this.#onItemCompleted(session, asRecord(params["item"]), params["turnId"]);
         break;
       case "thread/tokenUsage/updated":
         this.#onTokenUsage(session, params);
@@ -765,14 +953,40 @@ export class CodexAdapter implements RuntimeAdapter {
     }
   }
 
-  #onItemCompleted(session: CodexSession, item: JsonRecord | null): void {
+  #onItemCompleted(session: CodexSession, item: JsonRecord | null, turnId: unknown): void {
     if (item === null) return;
+    if (session.planning) {
+      if (
+        typeof turnId !== "string" ||
+        turnId === session.planningPreviousTurnId ||
+        (session.turnId !== null && turnId !== session.turnId)
+      )
+        return;
+      session.turnId ??= turnId;
+    }
+    if (
+      item["type"] === "collabAgentToolCall" &&
+      item["tool"] === "spawnAgent" &&
+      item["status"] === "completed"
+    )
+      session.delegatedUsageUncertain = true;
+    for (const r of pendingStepsRequests(this.#options.workspaceDir))
+      observeStepsTool(
+        this.#options.workspaceDir,
+        r.requestId,
+        "codex",
+        item,
+        this.#options.ownerInboxDir,
+        session.threadId ?? undefined,
+      );
     const at = this.#now();
     const sessionId = session.sessionId;
     // Le raisonnement du modèle n'est jamais journalisé (AGENTS §3.10).
     switch (item["type"]) {
       case "agentMessage":
         if (typeof item["text"] === "string") {
+          session.stepsResult = item["text"].slice(0, 65_537);
+          if (session.planning || isStepsDecision(item["text"])) break;
           this.#emit(session, {
             type: "activity",
             sessionId,
@@ -816,11 +1030,16 @@ export class CodexAdapter implements RuntimeAdapter {
     const total = parseTokenBreakdown(usage?.["total"]);
     const last = parseTokenBreakdown(usage?.["last"]);
     if (total === null || last === null) return;
+    // The new turn may report usage before turn/start returns its id.
+    if (session.planning && params["turnId"] === session.planningPreviousTurnId) return;
+    if (session.planning && session.turnId === null && typeof params["turnId"] === "string")
+      session.turnId = params["turnId"];
     const ours = session.turnId !== null && params["turnId"] === session.turnId;
     if (!ours) {
       session.lastTotal = total;
       return;
     }
+    if (session.planning) session.planningUsageSeen = true;
     const delta =
       session.lastTotal === null ? last : (subtractBreakdown(total, session.lastTotal) ?? last);
     session.lastTotal = total;
@@ -840,6 +1059,21 @@ export class CodexAdapter implements RuntimeAdapter {
   #onTurnCompleted(session: CodexSession, turn: JsonRecord | null): void {
     if (turn === null) return;
     const id = turn["id"];
+    if (session.planning) {
+      if (typeof id !== "string") {
+        session.turn = "failed";
+        this.#emit(session, {
+          type: "activity",
+          sessionId: session.sessionId,
+          at: this.#now(),
+          summary: "ÉTAPES : fin de bilan sans identifiant de tour ; usage incertain",
+        });
+        session.resolveTurn();
+        return;
+      }
+      if (id === session.planningPreviousTurnId) return;
+      session.turnId ??= id;
+    }
     if (session.turnId !== null && typeof id === "string" && id !== session.turnId) return;
     const status = turn["status"];
     if (status === "completed" || status === "interrupted") {
@@ -848,7 +1082,18 @@ export class CodexAdapter implements RuntimeAdapter {
       session.turn = "failed";
       const error = parseTurnError(turn["error"]) ??
         session.lastError ?? { message: `tour terminé (${String(status)})`, info: null };
-      this.#emitTurnError(session, error);
+      if (
+        !session.planning ||
+        classifyCodexError(error.info, error.message).kind === "rate_limited"
+      )
+        this.#emitTurnError(session, error);
+      else
+        this.#emit(session, {
+          type: "activity",
+          sessionId: session.sessionId,
+          at: this.#now(),
+          summary: "ÉTAPES : résultat de bilan en erreur ; travail précédent terminé",
+        });
     }
     session.resolveTurn();
   }
@@ -857,7 +1102,7 @@ export class CodexAdapter implements RuntimeAdapter {
   #onStreamClosed(session: CodexSession): void {
     if (session.turn === "pending" || session.turn === "inProgress") {
       session.turn = session.cancelling ? "aborted" : "stream_cut";
-      if (!session.cancelling) {
+      if (!session.cancelling && !session.planning) {
         this.#emitError(session, "transient", "flux codex app-server coupé avant la fin du tour");
       }
     }
@@ -936,6 +1181,17 @@ export class CodexAdapter implements RuntimeAdapter {
         detail: `tour ${session.turn} : ${String(session.measuredTokens)} tokens mesurés, dernière requête possiblement non rapportée`,
       };
     }
+    if (session.delegatedUsageUncertain)
+      return {
+        status: "uncertain",
+        detail: "usage principal mesuré ; usage natif délégué non isolé par le protocole observé",
+      };
+    if (session.planning && (!session.planningUsageSeen || !session.planningWorkUsageSeen))
+      return {
+        status: "uncertain",
+        detail:
+          "travail ou bilan ÉTAPES sans relevé d’usage propre : usage de la session incomplet",
+      };
     if (session.usageReports === 0) {
       return { status: "uncertain", detail: "tour terminé sans relevé d'usage" };
     }

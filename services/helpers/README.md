@@ -59,7 +59,7 @@ Recette : `test/helpers/helpers.test.ts`. Le réveil réel d'une session n'est p
 
 Parcours local supervisé : `list_repo_sessions` fournit des cibles explicites, `send_repo_request` choisit exactement l’une d’elles, `read_repo_thread` retrouve l’état et le texte dans le même fil. Pas de classement par mots-clés, pas de fallback aléatoire. Les racines helpers autorisées et l’exclusion des espaces Wake restent appliquées avant l’envoi et à l’exécution. Le daemon possède le job ; Pause/Stop arrêtent le processus. Une clé idempotente ne peut pas changer de cible ou de question.
 
-Le worker reçoit le dossier de données par les arguments du job et vérifie qu’il correspond à `MIND_WAKE_JOB_ID/OUTPUT`. Il recharge le profil et uniquement les chemins de configuration capturés lors de l’envoi ; il ne dépend pas d’un héritage large d’environnement. Les réponses directes sont conservées intégralement. L’ancien mécanisme garde son aperçu de 4 000 caractères.
+Le worker reçoit le dossier de données par les arguments du job et vérifie qu’il correspond à `MIND_WAKE_JOB_ID/OUTPUT`. Il recharge le profil et uniquement les chemins de configuration capturés lors de l’envoi ; il ne dépend pas d’un héritage large d’environnement. Les réponses directes et les consultations automatiques sont conservées intégralement. La limite historique de 4 000 caractères a été retirée ; les anciennes réponses déjà coupées ne sont pas reconstituées.
 
 La liste MCP est paginée (30 sessions par défaut, maximum 100) et peut être filtrée par chemin exact `repo`. La CLI renvoie la liste en JSON, à filtrer localement sans charger les transcriptions.
 

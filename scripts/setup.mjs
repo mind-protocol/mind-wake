@@ -8,7 +8,9 @@ import { spawnSync } from "node:child_process";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { prepareInstallation, desktopExecutable } from "./installation.mjs";
-import { ensureHub, nodeArgs, startLocal } from "./start-local.mjs";
+import { ensureHub } from "./start-local.mjs";
+import { windowsIntegration } from "./windows-integration.mjs";
+import { startSupervised } from "./desktop-supervisor.mjs";
 class SetupError extends Error {}
 const repoDir = fileURLToPath(new URL("../", import.meta.url));
 const { values } = parseArgs({
@@ -16,6 +18,7 @@ const { values } = parseArgs({
     apply: { type: "boolean" },
     "data-dir": { type: "string" },
     "no-open": { type: "boolean" },
+    "engine-only": { type: "boolean" },
   },
 });
 const dataDir = path.resolve(
@@ -44,7 +47,7 @@ function command(exe, args, env = process.env) {
 try {
   if (process.platform !== "win32")
     throw new SetupError("Cette première installation locale cible Windows.");
-  if (!fs.existsSync(desktopExe))
+  if (!values["engine-only"] && !fs.existsSync(desktopExe))
     throw new SetupError(
       "Desktop absent : construire le projet (npm run build, npm run desktop:ui, cargo build --manifest-path desktop/src-tauri/Cargo.toml) avant de relancer.",
     );
@@ -80,9 +83,12 @@ try {
             "créer ou réutiliser les deux identités locales",
             "démarrer le hub et vérifier le MCP",
             "enregistrer mind-wake dans Codex sans écraser un autre serveur",
+            ...(values["engine-only"] ? ["engine-only: no desktop, shortcut or Windows autostart"] : [
+            "créer le raccourci bureau et activer le démarrage Windows sauf choix antérieur contraire",
             "ouvrir le desktop sur ce même profil",
+            ]),
           ],
-          apply: "npm run setup -- --apply --data-dir " + JSON.stringify(dataDir),
+          apply: "npm run setup -- --apply " + (values["engine-only"] ? "--engine-only " : "") + "--data-dir " + JSON.stringify(dataDir),
         },
         null,
         2,
@@ -130,19 +136,21 @@ try {
       const confirmed = JSON.parse(command(codex, ["mcp", "get", "mind-wake", "--json"]));
       if (JSON.stringify(confirmed.transport?.args) !== JSON.stringify([m.launcher]))
         throw new SetupError("Enregistrement MCP non confirmé.");
-      if (!values["no-open"]) await startLocal(m.manifestFile, "desktop");
+      const windows = values["engine-only"] ? { installed: false, reason: "engine-only" } : windowsIntegration(m.manifestFile, "install");
+      if (!values["engine-only"] && !values["no-open"]) await startSupervised(m.manifestFile);
       const result = {
         mode: "installed-local",
         dataDir,
         engine: { prepared: true, profileState: init.data.profile.state, activationChanged: false },
         launcherPreflight,
+        windows,
         mcp: {
           registeredIn: "Codex",
           authenticated: true,
           tools: tools.tools.length,
           newSessionRequired: true,
         },
-        desktop: { required: true, present: true, launched: !values["no-open"] },
+        desktop: { required: !values["engine-only"], present: fs.existsSync(desktopExe), launched: !values["engine-only"] && !values["no-open"] },
         runtimeMcpConfig: m.mcpFile,
         manifest: m.manifestFile,
         limits: [

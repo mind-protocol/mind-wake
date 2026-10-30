@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-authorizations-save"
+description = "Enables the authorizations_save command without any pre-configured scope."
+commands.allow = ["authorizations_save"]
+
+[[permission]]
+identifier = "deny-authorizations-save"
+description = "Denies the authorizations_save command without any pre-configured scope."
+commands.deny = ["authorizations_save"]

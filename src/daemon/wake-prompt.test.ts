@@ -84,6 +84,51 @@ function inputs(overrides: Partial<WakeInputs> = {}): WakeInputs {
 }
 
 describe("composition d'un réveil", () => {
+  it("appends ÉTAPES while preserving the entire default prompt and its events", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-steps-compose-"));
+    try {
+      const options = inputs({
+        workspaceDir: dir,
+        events: ["A human message"],
+        agentWakeup: { id: "due", prompt: "agent note" },
+      });
+      const before = composeWake(options);
+      fs.mkdirSync(path.join(dir, "artifacts"));
+      fs.writeFileSync(
+        path.join(dir, "artifacts/projets-compteur.json"),
+        JSON.stringify({
+          current: "P",
+          projects: {
+            P: {
+              estimate: 1,
+              spent: 0,
+              status: "en cours",
+              etapes: {
+                version: 1,
+                sourceSessionId: "session-plan",
+                updatedAt: new Date().toISOString(),
+                travail: "Reprise",
+                statut: "actif",
+                horizonWakes: { nombre: 1, origine: "fixe_agent", source: "un contrôle" },
+                etapes: [
+                  { id: "next", wake: 1, texte: "Tester le prochain appel", statut: "a_faire" },
+                ],
+                prochaineEtape: "next",
+              },
+            },
+          },
+        }),
+      );
+      const after = composeWake(options);
+      expect(after.text.startsWith(`${before.text}\n\nÉTAPES`)).toBe(true);
+      expect(after.text).toContain("Tester le prochain appel");
+      expect(after.systemContext).toBe(before.systemContext);
+      expect(after.nudge).toBe(before.nudge);
+      expect(fs.existsSync(path.join(dir, "wakeups"))).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
   it("sépare configuration système et réveil, sans réinjecter le résumé", () => {
     const wake = composeWake(inputs());
     expect(wake.text).not.toMatch(/\{\{[a-z_]+\}\}/);
@@ -97,7 +142,9 @@ describe("composition d'un réveil", () => {
     expect(wake.text).not.toContain("New events");
     expect(wake.text.split("\n")).toHaveLength(2);
     expect(wake.systemContext).toContain("Your space: C:\\wake\\workspace.");
-    expect(wake.systemContext).toContain("read notes, artifacts; write artifacts (relative to your space)");
+    expect(wake.systemContext).toContain(
+      "read notes, artifacts; write artifacts (relative to your space)",
+    );
     expect(wake.systemContext).toContain("NOT ISOLATED");
     expect(wake.systemContext).toContain("agent-wakeup.schema.json");
     expect(wake.systemContext).toContain("small emergent systems");
@@ -110,7 +157,9 @@ describe("composition d'un réveil", () => {
     const b = composeWake(inputs({ memory: "OTHER SUMMARY" }));
     expect(a.text).toBe(b.text);
     expect(a.systemContext).toBe(b.systemContext);
-    const fresh = composeWake(inputs({ theme: null, memory: null, onSubscription: false, sessionEnd: null }));
+    const fresh = composeWake(
+      inputs({ theme: null, memory: null, onSubscription: false, sessionEnd: null }),
+    );
     expect(fresh.text).toContain("no local time limit");
     expect(fresh.text).toContain("No subscription quota applies.");
     expect(fresh.text).not.toContain("Memory:");

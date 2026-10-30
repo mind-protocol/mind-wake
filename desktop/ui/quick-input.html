@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Parler à Wake</title>
+    <link rel="stylesheet" href="quick-input.css" />
+  </head>
+  <body>
+    <form id="quick-form">
+      <header>
+        <strong>MIND</strong>
+        <nav aria-label="Actions au point du clic">
+          <button id="talk" type="button">Parler à mon agent</button>
+          <button id="bumpe" type="button" disabled title="Inviter ton agent à une relance à partir du point cerclé">Bumpe</button>
+        </nav>
+        <button id="cancel" type="button" aria-label="Fermer">×</button>
+      </header>
+      <label for="message">Votre message</label>
+      <textarea
+        id="message"
+        maxlength="4000"
+        placeholder="Que veux-tu lui dire ?"
+        required
+      ></textarea>
+      <footer>
+        <small>Écran principal joint, point du clic cerclé.</small
+        ><button id="send" type="submit">Envoyer</button>
+      </footer>
+      <p id="status" role="status" aria-live="polite">
+        Entrée : envoyer · Maj+Entrée : nouvelle ligne · Échap : fermer
+      </p>
+    </form>
+    <script type="module" src="build/quick-input.js"></script>
+  </body>
+</html>

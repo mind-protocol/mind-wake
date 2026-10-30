@@ -5,12 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Que fait mon agent ? — MIND Wake</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="loading.css" />
+    <script defer src="loading.js"></script>
     <script type="module" src="build/main.js"></script>
   </head>
   <body>
+    <section id="wake-loading" class="wake-loading" aria-label="Chargement de MIND Wake">
+      <div class="wake-loading-grain" aria-hidden="true"></div>
+      <div class="wake-loading-top"><span class="wake-loading-wordmark">MIND <span>Wake</span></span><span class="wake-loading-caption">UN ESPACE POUR L’INITIATIVE</span></div>
+      <div class="wake-loading-center">
+        <div class="wake-loading-orbits" aria-hidden="true"><i></i><i></i><i></i><span class="wake-loading-symbol">m</span></div>
+        <p class="wake-loading-eyebrow">LA SUITE COMMENCE ICI</p>
+        <h1>Les idées prennent vie.</h1>
+        <p class="wake-loading-subtitle">Un peu de curiosité. De nouvelles possibilités.</p>
+        <div class="wake-loading-progress" aria-hidden="true"><span></span></div>
+        <p id="wake-loading-status" class="wake-loading-status" role="status">Ouverture de ton espace…</p>
+        <button id="wake-loading-skip" type="button">Accéder à l’interface <span aria-hidden="true">↗</span></button>
+      </div>
+      <footer class="wake-loading-footer"><span><b aria-hidden="true"></b> La curiosité continue.</span><span>EXPLORER · CRÉER · REPRENDRE</span></footer>
+    </section>
     <main>
-      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status">Connexion…</span></div>
-      <nav class="tabs" role="tablist" aria-label="Vues">
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status">Connexion…</span>
+      <div class="app-controls" role="group" aria-label="Application">
+        <button id="app-restart" type="button">Redémarrer l’app</button>
+        <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter">Plein écran</button>
+        <span id="app-control-status" role="status"></span>
+      </div>
+      </div>
+      <nav class="tabs" aria-label="Navigation et état de Wake">
+        <header id="state" data-tone="unknown" aria-live="polite">
+          <h1>
+            <span
+              id="light"
+              class="light"
+              data-light="unknown"
+              role="img"
+              aria-label="Voyant : inconnu"
+            ></span>
+            <span id="headline">État indisponible</span>
+          </h1>
+          <p id="agent-active-project" role="status" hidden></p>
+          <p id="input-sharing" class="badge" role="status" hidden></p>
+          <p id="reason">Première lecture en cours.</p>
+          <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
+        </header>
+        <section id="sidebar-project-menu" aria-label="Projet courant">
+          <label for="document-collection">Projet courant</label>
+          <select id="document-collection" aria-label="Projet courant"><option value="">Tous les projets</option></select>
+        </section>
+        <div class="tab-links" role="tablist" aria-label="Vues">
         <button
           id="tab-panel"
           role="tab"
@@ -41,7 +84,84 @@
         </button>
         <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history">Réveils</button>
         <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents">Conseils <span id="agents-count" class="count" hidden></span></button>
+        <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects">Projets et tâches</button>
+        <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents">Documents</button>
+        <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations">Autorisations</button>
+        <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings">Réglages</button>
+        </div>
       </nav>
+
+      <div id="view-projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
+        <div class="projects-toolbar"><h1>Projets et tâches</h1><button id="projects-refresh" type="button">Actualiser</button></div>
+        <p id="projects-status" role="status" class="hint"></p>
+        <iframe id="projects-frame" title="Cartes des projets et tâches" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe>
+      </div>
+
+      <div id="view-authorizations" role="tabpanel" aria-labelledby="tab-authorizations" hidden>
+        <h1>Autorisations de mon agent</h1>
+        <p>Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
+        <div class="authorization-toolbar">
+          <button id="authorization-reload" type="button">Recharger les choix</button>
+          <label class="button">Importer un JSON <input id="authorization-import" type="file" accept=".json,application/json"></label>
+          <button id="authorization-save" type="button" disabled>Enregistrer</button>
+          <input id="authorization-search" type="search" placeholder="Rechercher une action" aria-label="Rechercher une autorisation">
+        </div>
+        <p id="authorization-file" class="hint"></p>
+        <p id="authorization-status" role="status" aria-live="polite"></p>
+        <p id="authorization-summary"></p>
+        <div id="authorization-entries"></div>
+        <details><summary>Exemple et portée</summary><pre id="authorization-context"></pre></details>
+      </div>
+      <aside id="view-documents" aria-label="Navigateur de documents">
+        <header class="reader-header">
+          <div><span class="reader-eyebrow">MIND / L’ATELIER</span><h2 id="document-title">Vos documents, au même endroit.</h2></div>
+          <div class="reader-actions">
+          <button id="document-refresh" class="reader-icon" type="button" aria-label="Actualiser le document et la bibliothèque" title="Actualiser">↻</button>
+        <button id="engine-restart" type="button" title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés.">Redémarrer le moteur</button>
+          </div>
+        </header>
+        <p id="engine-restart-status" role="status" hidden></p>
+        <nav class="reader-controls" aria-label="Navigation du lecteur">
+          <button id="document-back" class="reader-icon" type="button" disabled aria-label="Retour dans l’historique" title="Retour dans l’historique">←</button>
+          <button id="document-forward" class="reader-icon" type="button" disabled aria-label="Avancer dans l’historique" title="Avancer dans l’historique">→</button>
+          <button id="document-explore" type="button" aria-controls="document-library" aria-expanded="false">☰ Explorer</button>
+          <button id="document-latest" type="button">Dernière modification</button>
+          <label class="reader-scope"><span class="sr-only">Espace de documents</span><select id="document-scope" aria-label="Espace de documents"><option value="agent">Mon atelier</option><option value="project">Projet Wake</option></select></label>
+        </nav>
+        <nav id="document-location" class="reader-breadcrumb" aria-label="Chemin du document"></nav>
+        <p id="document-status" role="status"></p>
+        <div class="document-workspace">
+          <section id="document-library" hidden aria-label="Bibliothèque de documents">
+
+            <input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher un document…">
+            <label class="reader-format">Afficher<select id="document-format"><option value="">HTML et Markdown</option><option value="html">Pages HTML</option><option value="md">Textes Markdown</option></select></label>
+            <p id="document-count"></p><nav id="document-files" aria-label="Documents du projet"></nav>
+          </section>
+          <div class="reader-page">
+            <label class="reader-outline">Dans cette page<select id="document-sections" aria-label="Sections du document" disabled><option>Sommaire indisponible</option></select></label>
+            <iframe id="document-frame" title="Document HTML ou Markdown" sandbox="allow-same-origin" referrerpolicy="no-referrer" srcdoc="&lt;p&gt;Ouvrez la bibliothèque pour choisir un document.&lt;/p&gt;"></iframe>
+          </div>
+        </div>
+        <nav class="reader-pagination" aria-label="Parcourir les documents récents">
+          <button id="document-previous" type="button" disabled><span aria-hidden="true">←</span><span><strong>Précédent</strong><small id="document-previous-title">Début de la liste</small></span></button>
+          <button id="document-next" type="button" disabled><span><strong>Suivant</strong><small id="document-next-title">Fin de la liste</small></span><span aria-hidden="true">→</span></button>
+        </nav>
+      </aside>
+
+      <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <h1>Réglages</h1>
+        <section aria-labelledby="h-update">
+          <h2 id="h-update">Mises à jour de l’application</h2>
+          <dl>
+            <dt>Version exécutée</dt><dd id="app-version">Chargement…</dd>
+            <dt>Fraîcheur des sources</dt><dd id="app-revision-date">Chargement…</dd>
+            <dt>Compilation</dt><dd id="app-build-date">Chargement…</dd>
+          </dl>
+          <p>Vérification au démarrage et toutes les 6 heures. Installation en arrière-plan, disponible au prochain lancement.</p>
+          <button id="app-update-check" type="button">Rechercher et installer une mise à jour</button>
+          <p id="app-update-status" role="status"></p>
+        </section>
+      </div>
 
       <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
         <h2>Réveils de l’agent</h2>
@@ -68,21 +188,7 @@
         </article>
       </div>
       <div id="view-panel" role="tabpanel" aria-labelledby="tab-panel">
-        <header id="state" data-tone="unknown" aria-live="polite">
-          <h1>
-            <span
-              id="light"
-              class="light"
-              data-light="unknown"
-              role="img"
-              aria-label="Voyant : inconnu"
-            ></span>
-            <span id="headline">État indisponible</span>
-          </h1>
-          <p id="input-sharing" class="badge" role="status" hidden></p>
-          <p id="reason">Première lecture en cours.</p>
-          <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
-        </header>
+
 
         <section class="switch-section" aria-label="Mode de l'agent">
           <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé">
@@ -115,6 +221,7 @@
           <dl id="activity"></dl>
         </section>
         <details class="technical-details"><summary>Consommation et réglages détaillés</summary>
+
         <section aria-labelledby="h-consumption">
           <h2 id="h-consumption">Consommation</h2>
           <dl id="consumption"></dl>
@@ -135,6 +242,7 @@
         <div class="view-heading"><h2>Toi et ton agent</h2><p class="hint">Votre conversation, au fil des réveils.</p></div>
         <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
         <ol id="chat" class="messages" aria-live="polite"></ol>
+        <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
         <p id="chat-note" class="hint"></p>
         <form id="chat-form">
           <textarea
@@ -145,7 +253,7 @@
             aria-label="Message à ton agent"
             placeholder="Écris à ton agent…"
           ></textarea>
-          <button type="submit">Envoyer</button>
+          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit">Envoyer</button></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>
       </div>

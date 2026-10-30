@@ -42,6 +42,7 @@ export const JOURNAL_EVENT_TYPES = [
   "data_purged",
   "daemon_started",
   "daemon_stopped",
+  "wake_screenshot_decided",
   "error",
 ] as const;
 

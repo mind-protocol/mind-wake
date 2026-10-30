@@ -5,7 +5,7 @@
  * - Claude Code : fork éphémère avec les outils natifs et réglages habituels ;
  * - Codex : reprise éphémère avec les réglages habituels, réponse finale par `-o`.
  *
- * Le prompt passe par l'entrée standard. Délai borné ; la sortie est tronquée.
+ * Le prompt passe par l'entrée standard. Délai borné ; la réponse complète est conservée par défaut.
  */
 
 import { spawn } from "node:child_process";
@@ -15,7 +15,6 @@ import path from "node:path";
 import type { SessionDoc } from "./sessions.js";
 
 export const WAKE_TIMEOUT_MS = 300_000;
-export const MAX_ANSWER_CHARS = 4000;
 
 export interface WakeResult {
   readonly ok: boolean;
@@ -76,7 +75,7 @@ function run(
   });
 }
 
-export const answerText = (s: string, limit: number | null = MAX_ANSWER_CHARS): string =>
+export const answerText = (s: string, limit: number | null = null): string =>
   limit === null ? s.trim() : s.trim().slice(0, limit);
 
 export function claudeAdviceArgs(sessionId: string): string[] {
@@ -99,7 +98,7 @@ export function codexAdviceArgs(sessionId: string, outFile: string): string[] {
 export function createOfficialWaker(
   options: { maxAnswerChars?: number | null; claudeExe?: string; codexBin?: string } = {},
 ): Waker {
-  const limit = options.maxAnswerChars === undefined ? MAX_ANSWER_CHARS : options.maxAnswerChars;
+  const limit = options.maxAnswerChars ?? null;
   return async (session, prompt) => {
     if (!fs.existsSync(session.cwd)) {
       return { ok: false, text: "", detail: `dossier de la session introuvable : ${session.cwd}` };

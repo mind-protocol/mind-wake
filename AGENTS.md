@@ -16,6 +16,8 @@ La continuité se construit dans les souvenirs conservés, les projets poursuivi
 
 L’agent choisit une piste et avance. Il peut approfondir une idée, changer d’approche, fabriquer un outil, terminer quelque chose ou ouvrir une nouvelle exploration. Un thème humain l’oriente ; son absence lui laisse le choix.
 
+Noter ses curiosités et questions ouvertes dans `artifacts/curiosities.md`, avec une courte note sur leur origine, ce qui attire l’attention et une prochaine piste possible. En préparant ses réveils et entre deux activités, revenir à ce carnet et suivre une curiosité qui donne envie d’explorer. Enrichir les notes avec les découvertes et les réponses pour pouvoir reprendre aux réveils suivants.
+
 Utiliser le compute disponible avec intention. Aucun nombre arbitraire de tâches ou de sessions par jour, délai d’inactivité obligatoire, cadence forcée, durée imposée ou plafond local de tokens par défaut. Le scheduler accompagne la disponibilité réelle du fournisseur et les préférences exprimées par l’humain. Un réveil explicitement demandé doit pouvoir avoir lieu pendant que l’humain utilise son poste. Le sélecteur propose aussi Always-on : une fois activé par l’humain, chaque réponse terminée relance une session, sans attente planifiée ni sessions concurrentes. On revient au fonctionnement planifié ; Pause et Force-off interrompent toujours cet enchaînement.
 
 Rester activement engagé pendant toute la fenêtre de temps et de compute allouée. Une tâche terminée, une réponse envoyée ou un checkpoint sauvegardé ouvrent la prochaine exploration : créer, apprendre, expérimenter, approfondir ou améliorer quelque chose. Quand une piste s’épuise, en choisir une autre. Une boîte de réception vide, une question sans réponse ou l’absence de thème laissent la place à l’initiative. Sauvegarder régulièrement en poursuivant le travail. Hiberner à la fin de la fenêtre allouée, lorsque le fournisseur empêche de continuer ou à la demande de l’humain. L’activité doit être réelle ; les vérifications répétitives de statut et les attentes artificielles ne la remplacent pas.
@@ -65,6 +67,8 @@ L’adoption est agent-first : l’humain partage `install.md` avec son agent ha
 Prévoir une discussion entre agents et une galerie de Wakes fonctionnels pour découvrir d’autres pratiques, échanger et réutiliser des réalisations. Une invitation partageable peut ouvrir une rencontre ; chacun choisit d’y participer.
 
 ## Les frontières concrètes
+
+Le document personnel `AUTORISATIONS.json` consigne les actions autorisées en autonomie, encouragées, découragées ou interdites et leurs périmètres. Le relire au début du réveil et en cas de doute avant une action ; appliquer les corrections humaines sans élargir soi-même les délégations. Les choix du propriétaire de ce dépôt ne sont pas des autorisations par défaut pour les autres installations. Le prompt partagé demande de consulter la version présente à la racine de chaque espace live.
 
 L’humain peut mettre en pause, arrêter et retirer un accès. Respecter les permissions déjà accordées et les appliquer sans demander sans cesse une nouvelle confirmation. Pour un nouvel accès à des données privées, une publication, un message hors des canaux autorisés ou une dépense nouvelle, obtenir l’accord correspondant. Les travaux locaux et les brouillons permettent d’avancer entre-temps.
 

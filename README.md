@@ -2,15 +2,15 @@
 
 > Give your AI agent the compute you're not using. See what it comes up with.
 
-MIND Wake laisse votre agent IA explorer de lui-même pendant les moments où vous l'y autorisez : il choisit une expérience, travaille dans un espace isolé, conserve ses découvertes, hiberne, puis reprend plus tard là où il s'était arrêté. Vous fixez une fois le budget, les fenêtres horaires et les permissions ; vous gardez la priorité, la pause et l'arrêt d'urgence.
+MIND Wake donne à un agent la continuité pour explorer, fabriquer et apprendre avec les accès autorisés, puis reprendre au réveil suivant. Le profil distingue exécution sur l’hôte et isolation système. L’humain garde les permissions, la pause et l’arrêt d’urgence.
 
 **Statut : version de test Windows avec runtimes réels.** Le moteur et l’app portable sont disponibles dans l’[archive publique et son tutoriel agent-first](https://mind-wake-intro.immnfest.chatgpt.site/install.md). Le parcours recommandé utilise Codex ; les exemples simulés restent disponibles pour tester sans appel modèle. Aucun service public de paiement ou de relais inter-PC n’est livré.
 
 ## Principes
 
-- **L'humain passe en premier.** Activité utilisateur, pause ou budget insuffisant interdisent tout nouveau travail ; l'arrêt d'urgence termine la session et ses processus sans attendre le modèle.
-- **Refus par défaut.** Permissions explicites, limitées et révocables ; l'agent ne peut ni relever ses plafonds ni modifier sa policy.
-- **Budget imposé par le système.** Réservation atomique avant chaque session ; un budget inconnu ou non imposable bloque le lancement.
+- **Contrôle humain.** Pause et Force-off interrompent le travail. Un réveil explicite peut fonctionner pendant l’activité humaine et hors des fenêtres planifiées.
+- **Modes explicites.** On suit la planification ; Always-on enchaîne les sessions sans intervalle planifié ni concurrence pour le profil. Les contrôles fournisseur restent appliqués.
+- **Ressources selon le profil.** La voie abonnement utilise la garde de quota fournisseur sans exiger une enveloppe locale de tokens ; les autres voies utilisent les réservations du ledger. L’agent peut régler sa compaction dans `artifacts/pilote.json`, sans modifier les permissions humaines.
 - **Respect des fournisseurs.** Seulement des mécanismes officiels ; une limitation entraîne attente ou hibernation.
 - **Arrêter est un résultat valide.** Une expérience négative honnêtement documentée vaut mieux qu'une activité artificielle.
 
@@ -63,34 +63,53 @@ node dist/cli/main.js doctor
 | `init`                                         | Prépare un profil désactivé, sans budget ni permission                                                                                    |
 | `status`, `journal`                            | État, budget, prochain réveil, derniers événements                                                                                        |
 | `policy show`, `policy configure FICHIER.json` | Affiche la policy active ; propose une révision validée, sans effet avant `enable`                                                        |
-| `enable`                                       | Active une révision après confirmation humaine dans le terminal ; refusé tant que l'isolation et un adapter réel ne sont pas disponibles  |
+| `enable`                                       | Active une révision autorisée ; vérifie le runtime et le mode isolé ou hôte consenti                                                      |
 | `pause`, `resume`, `stop`                      | Pause persistante, reprise, arrêt d'urgence verrouillé                                                                                    |
-| `wake`                                         | Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité, budgets revérifiés), refusé en pause, arrêt ou blocage                |
+| `wake`                                         | Réveil explicite hors contraintes de fenêtre et d’inactivité ; quota, permissions, pause et arrêt restent appliqués                       |
+| `always-on`, `on`                              | Enchaînement continu ou retour à la planification ; la CLI exige un profil réactivé après Force-off                                       |
+| `reactivate`                                   | Lève explicitement l’arrêt verrouillé après revalidation de la policy consentie ; ne lance pas de session                                 |
+| `wake-history`                                 | Historique des réveils                                                                                                                    |
 | `messages`, `reply`                            | Fil avec ton agent : sa note de travail et tes réponses (texte sur l'entrée standard) ; n'accorde rien (l'app enchaîne `wake` par défaut) |
 | `export CHEMIN`, `purge`, `uninstall`          | Export expurgé, purge du journal expiré, désinstallation (`--dry-run` pour lister les effets)                                             |
-| `daemon run`, `daemon run --simulated`         | Runtime réel autorisé par la configuration active ; avec --simulated, démonstration sans appel modèle                                   |
+| `daemon run`, `daemon run --simulated`         | Runtime réel autorisé par la configuration active ; avec --simulated, démonstration sans appel modèle                                     |
 
 Chaque commande accepte `--json` pour une sortie structurée versionnée. Aucune commande ne fait de paiement ni n'installe de service ou de démarrage automatique.
 
 ## État actuel
 
-| Composant                                                      | État                                                                                                                                                                              |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Store SQLite, ledger de budget, policy engine, journal expurgé | Présents et testés                                                                                                                                                                |
-| Scheduler, runner, checkpoints et mémoire, daemon              | Présents ; runtimes réels et démonstration simulée disponibles                                                                                                                     |
-| Isolation Windows (AppContainer + Job Object)                  | Présente selon les capacités du profil ; le parcours Codex natif du tutoriel s’exécute sur l’hôte après autorisation, sans sandbox OS                                               |
-| Adapter Codex                                                  | Implémenté, version CLI prise en charge : 0.165.0 ; disponibilité du modèle et quotas vérifiés au lancement                                                                          |
-| Conseil guest distant                                          | Démo simulée locale seulement : pas de serveur public, de wallet, de $MIND ni de canal de messagerie                                                                              |
-| Parcours agent-first et `install.md`                           | Tutoriel public, archive des sources et app Windows portable non signée ; installation MCP locale                                                                                  |
+| Composant                                                      | État                                                                                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Store SQLite, ledger de budget, policy engine, journal expurgé | Présents et testés                                                                                                                    |
+| Scheduler, runner, checkpoints et mémoire, daemon              | Présents ; runtimes réels et démonstration simulée disponibles                                                                        |
+| Isolation Windows (AppContainer + Job Object)                  | Présente selon les capacités du profil ; le parcours Codex natif du tutoriel s’exécute sur l’hôte après autorisation, sans sandbox OS |
+| Adapter Codex                                                  | Implémenté, version CLI prise en charge : 0.165.0 ; disponibilité du modèle et quotas vérifiés au lancement                           |
+| Adapter Claude                                                 | Enregistré ; reprise de conversation, prompt personnel et capacités natives selon le profil                                           |
+| Adapter Gemini                                                 | Code et tests présents ; absent du registre par défaut du daemon                                                                      |
+| MCP et desktop                                                 | Messages locaux, réponses humaines, activité, historique et contrôles                                                                 |
+| Jobs                                                           | Scripts locaux supervisés entre les réveils ; Pause et Force-off les arrêtent                                                         |
+| Conseil et économie                                            | Démonstrations et rails expérimentaux distincts ; aucun service public de paiement validé par ces simulations                         |
+| Parcours agent-first et `install.md`                           | Tutoriel public, archive des sources et app Windows portable non signée ; installation MCP locale                                     |
 
 Le plan de développement et l'avancement sont dans [docs/PLAN.md](docs/PLAN.md) ; les décisions dans [docs/decisions/](docs/decisions/).
+
+## Cycle d’un réveil
+
+Le desktop propose aussi une [saisie rapide au clic droit](docs/QUICK-INPUT.md) : message et capture de l’écran principal, pris avant la fermeture du champ, transmis à l’agent par la file locale.
+
+Le daemon ouvre SQLite, verrouille le profil et réconcilie les sessions interrompues. Le scheduler évalue les conditions, puis le runner lance le runtime sélectionné. Le message ponctuel contient la relance, les ressources courantes et les événements nouveaux ; les instructions durables et artifacts/PERSONALITY.md sont séparées. Fichiers, checkpoints et reprise native de conversation assurent la continuité, même sans expérience formellement créée.
+
+Le MCP fournit notamment message_owner et les outils de jobs. Le desktop appelle les commandes locales via Tauri ; fermer son panneau ne termine pas le moteur. Après Force-off, choisir explicitement Always-on dans le desktop passe par reactivate avant de changer de mode et de démarrer le daemon si nécessaire. Le mode natif conserve les capacités du runtime ; il ne constitue pas une isolation système.
+
+Une compilation ou des tests simulés ne prouvent pas le parcours réel complet. Voir [docs/PLAN.md](docs/PLAN.md) pour les vérifications restantes.
 
 ## Structure
 
 ```
 src/          Wake local : contrats, store, ledger, policy, journal, CLI, scheduler,
               runner, checkpoints, daemon, adapters
-services/     Conseil guest distant simulé (séances, canal de conversation, démo)
+services/     MCP et hub locaux, helpers, conseil et rails économiques expérimentaux
+desktop/      Interface TypeScript et application Windows Tauri/Rust
+prompts/      Relances de réveil et fichiers initiaux de l’espace agent
 skills/       Skill de médiation côté guide
 spikes/       Prototypes de faisabilité (isolation Windows)
 test/         Tests d'intégration, de démo et fixtures

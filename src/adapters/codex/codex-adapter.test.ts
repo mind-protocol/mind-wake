@@ -19,7 +19,10 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import { defaultRegistry } from "../../daemon/registry.js";
-import {enqueueOwnerMessage,readOwnerReceipts} from "../../communication/owner-inbox.js";
+import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
+import { saveStepsResult, nextWakeStep } from "../../daemon/wake-steps.js";
+import { appendRepoMessage } from "../../communication/repo-conversations.js";
+import { readOwnerMessages } from "../../communication/owner-messages.js";
 import { canReadQuota } from "../../runner/host.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
 import { SpawnedCodexProcess } from "../../../test/fixtures/codex/process.js";
@@ -104,6 +107,17 @@ beforeEach(() => {
   fs.mkdirSync(path.join(dir, "codex-home"));
   fs.mkdirSync(path.join(dir, "workspace"));
   h = harness;
+  fs.mkdirSync(path.join(path.join(h.dir, "workspace"), "artifacts"), { recursive: true });
+  fs.writeFileSync(
+    path.join(path.join(h.dir, "workspace"), "artifacts/projets-compteur.json"),
+    JSON.stringify({
+      current: "A",
+      projects: {
+        A: { estimate: 40, spent: 2 },
+        B: { estimate: 30, spent: 0, status: "en cours" },
+      },
+    }),
+  );
 });
 
 afterEach(() => {
@@ -169,6 +183,150 @@ async function collect(a: CodexAdapter, req: StartRequest): Promise<AdapterEvent
 }
 
 describe("protocole app-server", () => {
+  it("accounts for planning usage arriving before the turn/start response", async () => {
+    h.flow = "steps-stop-early-usage.json";
+    let captured = "none";
+    const subject = adapter({
+      stepsStopHook: true,
+      onStepsResult: (_req, raw) => {
+        captured = raw;
+        return false;
+      },
+    });
+    const req = request();
+    const events = await collect(subject, req);
+    expect(
+      events
+        .filter((e) => e.type === "usage")
+        .reduce((n, e) => n + (e.quantity.unit === "tokens" ? e.quantity.amount : 0), 0),
+    ).toBe(460);
+    expect(await subject.reconcile(req.sessionId)).toMatchObject({
+      status: "confirmed",
+      usage: [{ unit: "tokens", amount: 460 }],
+    });
+    expect(captured).toBe("correct planning response");
+  });
+  it.each([
+    "steps-stop-no-usage.json",
+    "steps-stop-no-work-usage.json",
+    "steps-stop-missing-completion-id.json",
+  ])("keeps the entire usage uncertain with missing reading (%s)", async (flow) => {
+    h.flow = flow;
+    const subject = adapter({ stepsStopHook: true });
+    const req = request();
+    const events = await collect(subject, req);
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+    expect(await subject.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+  it("leaves human messages arriving during JSON planning unclaimed", async () => {
+    h.flow = "steps-stop.json";
+    let saved = 0;
+    const subject = adapter({
+      stepsStopHook: true,
+      ownerInboxDir: h.dir,
+      onStepsResult: () => {
+        saved++;
+        return true;
+      },
+    });
+    const req = request();
+    (req.policy.groups.runtime as { nativeCapabilities?: boolean }).nativeCapabilities = true;
+    const handle = await subject.start(req);
+    for await (const event of subject.events(handle)) {
+      if (event.type === "activity" && event.summary.includes("bilan de fin de réponse"))
+        enqueueOwnerMessage(h.dir, {
+          id: "during-plan",
+          at: new Date().toISOString(),
+          text: "Stop this project",
+        });
+    }
+    expect(readOwnerReceipts(h.dir)["during-plan"]).toBeUndefined();
+    expect(h.requests("turn/steer")).toHaveLength(0);
+    expect(saved).toBe(0);
+  });
+  it("keeps work completed when the optional planning result fails, with uncertain usage", async () => {
+    h.flow = "steps-stop-error.json";
+    const subject = adapter({ stepsStopHook: true });
+    const req = request();
+    const events = await collect(subject, req);
+    expect(events.filter((e) => e.type === "error")).toHaveLength(0);
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+    expect(await subject.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+  it("cancels an in-progress planning turn without saving or scheduling a retry", async () => {
+    h.flow = "steps-stop-hang.json";
+    let calls = 0;
+    const subject = adapter({
+      stepsStopHook: true,
+      onStepsResult: () => {
+        calls++;
+        return true;
+      },
+    });
+    const req = request();
+    const handle = await subject.start(req);
+    for await (const event of subject.events(handle)) {
+      if (event.type === "activity" && event.summary.includes("bilan de fin de réponse")) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        await subject.cancel(handle, 1000);
+      }
+    }
+    expect(calls).toBe(0);
+    expect(h.requests("turn/start")).toHaveLength(2);
+    expect(await subject.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  });
+  it.each(["rate-limited.json", "stream-cut.json"])(
+    "never runs the planning hook after %s",
+    async (flow) => {
+      h.flow = flow;
+      let calls = 0;
+      await collect(
+        adapter({
+          stepsStopHook: true,
+          onStepsResult: () => {
+            calls++;
+            return true;
+          },
+        }),
+        request(),
+      );
+      expect(h.requests("turn/start")).toHaveLength(1);
+      expect(calls).toBe(0);
+    },
+  );
+  it("runs exactly one automatic ÉTAPES turn in the same supervised session", async () => {
+    h.flow = "steps-stop.json";
+    let saved = 0;
+    const subject = adapter({
+      stepsStopHook: true,
+      onStepsResult: (req, raw) => {
+        saved++;
+        return saveStepsResult(
+          path.join(h.dir, "workspace"),
+          h.dir,
+          "agent-test",
+          req.sessionId,
+          raw,
+        );
+      },
+    });
+    const req = request();
+    const events = await collect(subject, req);
+    expect(h.requests("turn/start")).toHaveLength(2);
+    expect(h.launches).toHaveLength(1);
+    expect(saved).toBe(1);
+    expect(
+      events.filter((e) => e.type === "activity").some((e) => e.summary.includes('"horizonWakes"')),
+    ).toBe(false);
+    expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
+    expect(
+      events
+        .filter((e) => e.type === "usage")
+        .reduce((n, e) => n + (e.quantity.unit === "tokens" ? e.quantity.amount : 0), 0),
+    ).toBe(460);
+    expect(nextWakeStep(path.join(h.dir, "workspace"))).toContain("orientations à reprendre");
+    expect(readOwnerMessages(h.dir)).toBeNull();
+  });
   it("lit la version de `codex --version`", () => {
     expect(parseCodexVersion("codex-cli 0.165.0\n")).toBe("0.165.0");
     expect(parseCodexVersion("rien")).toBeNull();
@@ -217,17 +375,33 @@ describe("protocole app-server", () => {
 });
 
 describe("commande", () => {
-  it("the active policy model is retained when starting with the default registry",()=>{
-    expect(defaultRegistry({adapterId:"codex",model:"gpt-6.1-sol"}).get("codex" as never)?.runtime().model).toBe("gpt-6.1-sol");
+  it("the active policy model is retained when starting with the default registry", () => {
+    expect(
+      defaultRegistry({ adapterId: "codex", model: "gpt-6.1-sol" })
+        .get("codex" as never)
+        ?.runtime().model,
+    ).toBe("gpt-6.1-sol");
   });
   it("native host runtime uses its configured CLI profile and keeps native settings", async () => {
     h.attestation = { confined: false, selfTestPassed: false, detail: "host" };
     const home = path.join(h.dir, "native-home");
     fs.mkdirSync(home);
-    enqueueOwnerMessage(h.dir,{id:"switch-pending",at:new Date().toISOString(),text:"Pending message during switch"});
-    const subject = adapter({ transport: undefined, nativeCodexHome: home, nativeCapabilities: true,ownerInboxDir:h.dir });
+    enqueueOwnerMessage(h.dir, {
+      id: "switch-pending",
+      at: new Date().toISOString(),
+      text: "Pending message during switch",
+    });
+    const subject = adapter({
+      transport: undefined,
+      nativeCodexHome: home,
+      nativeCapabilities: true,
+      ownerInboxDir: h.dir,
+    });
     const req = request();
-    const policy = { ...req.policy, groups: { runtime: { hostUnsandboxedAcknowledged: true, nativeCapabilities: true } } } as unknown as PolicyRevision;
+    const policy = {
+      ...req.policy,
+      groups: { runtime: { hostUnsandboxedAcknowledged: true, nativeCapabilities: true } },
+    } as unknown as PolicyRevision;
     await collect(subject, { ...req, policy });
     expect(h.launches[0]?.env["CODEX_HOME"]).toBe(home);
     expect(h.launches[0]?.args).not.toContain('shell_environment_policy.inherit="none"');
@@ -333,9 +507,15 @@ describe("lancement et isolation", () => {
     // Environnement demandé par l'adapter : rien d'hérité, seulement CODEX_HOME et le relais.
     // (Le lanceur de test, un `spawn` ordinaire, laisse libuv ajouter PATH, USERPROFILE…
     // les lanceurs de production construisent un bloc d'environnement explicite.)
-    expect(Object.keys(h.launches[0]?.env ?? {}).sort()).toEqual(["CODEX_HOME", "WAKE_RELAY_PIPE"]);
+    expect(Object.keys(h.launches[0]?.env ?? {}).sort()).toEqual([
+      "CODEX_HOME",
+      "MIND_WAKE_SESSION",
+      "WAKE_RELAY_PIPE",
+    ]);
     const launch = h.log().find((e) => e["kind"] === "launch");
-    expect(launch?.["envKeys"]).toEqual(expect.arrayContaining(["CODEX_HOME", "WAKE_RELAY_PIPE"]));
+    expect(launch?.["envKeys"]).toEqual(
+      expect.arrayContaining(["CODEX_HOME", "MIND_WAKE_SESSION", "WAKE_RELAY_PIPE"]),
+    );
     expect(h.launches[0]?.args).toContain('model_provider="wake_relay"');
   });
 
@@ -445,7 +625,7 @@ describe("flux d'événements", () => {
 describe("annulation", () => {
   it("tour interrompu : turn/interrupt coopératif, puis arrêt du serveur", async () => {
     h.flow = "interrupted.json";
-    const a = adapter();
+    const a = adapter({ stepsStopHook: true });
     const req = request();
     const handle = await a.start(req);
     const events: AdapterEvent[] = [];
@@ -462,6 +642,7 @@ describe("annulation", () => {
     expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "interrupted" });
     expect(events.some((e) => e.type === "error")).toBe(false);
     expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+    expect(h.requests("turn/start")).toHaveLength(1);
   });
 
   it("serveur qui ignore l'interruption : terminaison forcée dans le délai", async () => {
@@ -496,13 +677,22 @@ describe("annulation", () => {
 describe("continuité", () => {
   it("garde la configuration durable dans le système et les nouveautés dans le tour", async () => {
     const threads = new FileThreadStore(path.join(h.dir, "environment-threads"));
-    const req = { ...request(), systemContext: "Durable runtime environment", context: "Where was I?\nTime: provider limits only." };
+    const req = {
+      ...request(),
+      systemContext: "Durable runtime environment",
+      context: "Where was I?\nTime: provider limits only.",
+    };
     await collect(adapter({ threads }), req);
     expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
       developerInstructions: expect.stringContaining("Durable runtime environment"),
     });
-    expect(JSON.stringify(h.requests("turn/start")[0]?.["params"])).not.toContain("Durable runtime environment");
-    await collect(adapter({ threads }), { ...req, context: "Let's continue.\nTime: provider limits only." });
+    expect(JSON.stringify(h.requests("turn/start")[0]?.["params"])).not.toContain(
+      "Durable runtime environment",
+    );
+    await collect(adapter({ threads }), {
+      ...req,
+      context: "Let's continue.\nTime: provider limits only.",
+    });
     expect(h.requests("thread/resume")[0]?.["params"]).not.toHaveProperty("developerInstructions");
   });
   it("fil persisté et repris ; prompt système réinjecté seulement s'il change", async () => {
@@ -839,4 +1029,64 @@ describe("alignement ADR-006 et câblage", () => {
     expect(h.launches.length).toBe(before);
     await a.cancel(handle, 500);
   });
+});
+
+it.each(["stable", "roundtrip", "missing"])(
+  "does not coordinate for %s endpoint IDs",
+  async (mode) => {
+    h.flow = "steps-stop.json";
+    const req = { ...request(), context: "project-action:" + mode };
+    await collect(adapter({ stepsStopHook: true }), req);
+    expect(h.requests("turn/start")).toHaveLength(1);
+  },
+);
+it("native proposal plus explicit main decision persists once; child usage remains uncertain", async () => {
+  h.flow = "steps-stop-accepted.json";
+  const req = request();
+  const a = adapter({
+    stepsStopHook: true,
+    onStepsResult: (req, raw) =>
+      saveStepsResult(path.join(h.dir, "workspace"), h.dir, "agent", req.sessionId, raw),
+  });
+  await collect(a, req);
+  expect(h.requests("turn/start")).toHaveLength(2);
+  expect(readOwnerMessages(h.dir)).toHaveLength(1);
+  expect(nextWakeStep(path.join(h.dir, "workspace"))).toContain("Vérifier la reprise réelle");
+  expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
+  expect(h.launches[0]?.env["MIND_WAKE_SESSION"]).toBe(req.sessionId);
+});
+
+it("applies a late repo proposal on an ordinary stable-project response without another coordination turn", async () => {
+  h.flow = "steps-stop-repo.json";
+  const workspace = path.join(h.dir, "workspace");
+  const a = adapter({
+    stepsStopHook: true,
+    ownerInboxDir: h.dir,
+    onStepsResult: (req, raw) => saveStepsResult(workspace, h.dir, "agent", req.sessionId, raw),
+  });
+  await collect(a, request());
+  expect(h.requests("turn/start")).toHaveLength(2);
+  expect(readOwnerMessages(h.dir)).toBeNull();
+  const thread = {
+    id: "direct_" + "a".repeat(32),
+    repo: "C:/fixture",
+    runtime: "codex",
+    sessionId: "peer",
+    transcript: "fixture",
+  };
+  appendRepoMessage(h.dir, {
+    thread,
+    message: {
+      id: "answer",
+      at: new Date().toISOString(),
+      from: "repo",
+      text: "Comparer deux directions ; vérifier la reprise en2wakes TOTAL.",
+    },
+  });
+  expect(nextWakeStep(workspace)).toContain("proposal_ready");
+  h.flow = "steps-repo-decision.json";
+  await collect(a, request());
+  expect(h.requests("turn/start")).toHaveLength(3);
+  expect(readOwnerMessages(h.dir)).toHaveLength(1);
+  expect(nextWakeStep(workspace)).toContain("Vérifier le retour");
 });

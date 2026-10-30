@@ -1,0 +1,157 @@
+{
+  "extends": "common.json",
+  "on": {
+    "turn/start": {
+      "result": {
+        "turn": {
+          "id": "turn_1",
+          "status": "inProgress",
+          "items": [],
+          "error": null
+        }
+      },
+      "then": [
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_0",
+            "tokenUsage": {
+              "last": {
+                "inputTokens": 5000,
+                "cachedInputTokens": 0,
+                "outputTokens": 800,
+                "reasoningOutputTokens": 200,
+                "totalTokens": 5800
+              },
+              "total": {
+                "inputTokens": 5000,
+                "cachedInputTokens": 0,
+                "outputTokens": 800,
+                "reasoningOutputTokens": 200,
+                "totalTokens": 5800
+              },
+              "modelContextWindow": 272000
+            }
+          }
+        },
+        {
+          "notify": "turn/started",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "inProgress",
+              "items": []
+            }
+          }
+        },
+        {
+          "notify": "item/started",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "item": {
+              "id": "i1",
+              "type": "commandExecution",
+              "command": "python sim.py",
+              "commandActions": [],
+              "cwd": "",
+              "status": "inProgress"
+            }
+          }
+        },
+        {
+          "notify": "account/rateLimits/updated",
+          "params": {
+            "rateLimits": {
+              "limitId": "codex",
+              "primary": {
+                "usedPercent": 43,
+                "windowDurationMins": 300,
+                "resetsAt": 1793300000
+              },
+              "secondary": null
+            }
+          }
+        },
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "tokenUsage": {
+              "last": {
+                "inputTokens": 100,
+                "cachedInputTokens": 20,
+                "outputTokens": 50,
+                "reasoningOutputTokens": 10,
+                "totalTokens": 150
+              },
+              "total": {
+                "inputTokens": 5100,
+                "cachedInputTokens": 20,
+                "outputTokens": 850,
+                "reasoningOutputTokens": 210,
+                "totalTokens": 5950
+              },
+              "modelContextWindow": 272000
+            }
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "completedAtMs": 1,
+            "item": {
+              "id": "r1",
+              "type": "reasoning",
+              "summary": ["pensée privée"],
+              "content": []
+            }
+          }
+        },
+        {
+          "stepsRepoDecision": true
+        },
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "tokenUsage": {
+              "last": {
+                "inputTokens": 40,
+                "cachedInputTokens": 30,
+                "outputTokens": 20,
+                "reasoningOutputTokens": 5,
+                "totalTokens": 60
+              },
+              "total": {
+                "inputTokens": 5140,
+                "cachedInputTokens": 50,
+                "outputTokens": 870,
+                "reasoningOutputTokens": 215,
+                "totalTokens": 6010
+              },
+              "modelContextWindow": 272000
+            }
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turn": {
+              "id": "turn_1",
+              "status": "completed",
+              "items": []
+            }
+          }
+        }
+      ]
+    }
+  }
+}

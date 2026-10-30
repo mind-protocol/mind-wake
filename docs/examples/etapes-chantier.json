@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "travail": "Mettre en place le hook ÉTAPES de MIND Wake",
+  "statut": "actif",
+  "horizonWakes": {
+    "nombre": 3,
+    "origine": "fixe_agent",
+    "source": "Un appel pour implémenter, un pour corriger après revue, un pour préparer et vérifier la livraison ; ce budget de projet reste révisable."
+  },
+  "etapes": [
+    { "id": "implementation", "wake": 1, "texte": "Raccorder les deux adapters et vérifier capture, stockage, fil local et ajout au prompt standard avec les CLI factices.", "statut": "en_cours" },
+    { "id": "revue", "wake": 2, "texte": "Lire la revue du pair, corriger les courses ou limites signalées, vérifier de nouveau les scénarios affectés.", "statut": "a_faire" },
+    { "id": "livraison", "wake": 3, "texte": "Préparer le build isolé et les preuves de livraison ; distinguer sources testées et activation réelle, sans reprendre le test blog arrêté.", "statut": "a_faire" }
+  ],
+  "prochaineEtape": "implementation"
+}

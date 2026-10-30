@@ -10,6 +10,9 @@ using System.Text;
 using System.Windows.Forms;
 public static class WakeVisualContext {
   [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+  [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point point);
+  [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr window, uint flags);
   [DllImport("user32.dll")] static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
   [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr desktop);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern bool GetUserObjectInformation(IntPtr h, int n, StringBuilder s, int length, out int needed);
@@ -24,11 +27,42 @@ public static class WakeVisualContext {
       return !GetUserObjectInformation(d,2,name,512,out needed) || name.ToString()!="Default";
     } finally { CloseDesktop(d); }
   }
+  public static void MarkClick(Bitmap image, Rectangle bounds, int x, int y) {
+    if(!bounds.Contains(x,y) || bounds.Width<=0 || bounds.Height<=0) return;
+    float cx=(float)(((double)x-bounds.Left)*image.Width/bounds.Width);
+    float cy=(float)(((double)y-bounds.Top)*image.Height/bounds.Height);
+    using(var g=Graphics.FromImage(image)) {
+      g.SmoothingMode=System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+      // White edging keeps the red ring legible on dark or red screen content.
+      using(var halo=new Pen(Color.White,5)) g.DrawEllipse(halo,cx-14,cy-14,28,28);
+      using(var red=new Pen(Color.Red,3)) g.DrawEllipse(red,cx-14,cy-14,28,28);
+    }
+  }
+  public static bool ClickInsideBounds(Rectangle bounds, string rawX, string rawY) {
+    if(rawX==null && rawY==null) return true;
+    int x,y;
+    return Int32.TryParse(rawX,out x) && Int32.TryParse(rawY,out y) && bounds.Contains(x,y);
+  }
+  public static bool ClickIsFresh(long at, long now) { return at>0 && now>=at && now-at<=30000; }
   public static Bitmap Grab(bool primary, string executable) {
     if(Locked()) return null;
     SetProcessDPIAware();
     if(primary) {
       var b=Screen.PrimaryScreen.Bounds;
+      // The primary screen is the authorized surface. Never send an unmarked
+      // image when the human selected a different screen, or expand the surface.
+      var rawX=Environment.GetEnvironmentVariable("MIND_WAKE_CAPTURE_CLICK_X");
+      var rawY=Environment.GetEnvironmentVariable("MIND_WAKE_CAPTURE_CLICK_Y");
+      if(!ClickInsideBounds(b,rawX,rawY)) return null;
+      var rawAt=Environment.GetEnvironmentVariable("MIND_WAKE_CAPTURE_CLICK_AT_MS");
+      var rawRoot=Environment.GetEnvironmentVariable("MIND_WAKE_CAPTURE_CLICK_ROOT");
+      if(rawAt!=null || rawRoot!=null) {
+        long at,root; int x,y;
+        if(!Int64.TryParse(rawAt,out at) || !Int64.TryParse(rawRoot,out root) || root==0 ||
+           !ClickIsFresh(at,DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) ||
+           !Int32.TryParse(rawX,out x) || !Int32.TryParse(rawY,out y) ||
+           GetAncestor(WindowFromPoint(new Point{X=x,Y=y}),2).ToInt64()!=root) return null;
+      }
       if(b.Width<=0 || b.Height<=0 || (long)b.Width*b.Height>40000000) return null;
       var bitmap=new Bitmap(b.Width,b.Height);
       try { using(var g=Graphics.FromImage(bitmap)) g.CopyFromScreen(b.Left,b.Top,0,0,b.Size); }
@@ -63,6 +97,12 @@ public static class WakeVisualContext {
     try {
       $graphics = [System.Drawing.Graphics]::FromImage($small)
       try { $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic; $graphics.DrawImage($original,0,0,$width,$height) } finally { $graphics.Dispose() }
+      $clickX = 0; $clickY = 0
+      if ($env:MIND_WAKE_CAPTURE_SURFACE -eq 'primary' -and
+          [int]::TryParse($env:MIND_WAKE_CAPTURE_CLICK_X, [ref]$clickX) -and
+          [int]::TryParse($env:MIND_WAKE_CAPTURE_CLICK_Y, [ref]$clickY)) {
+        [WakeVisualContext]::MarkClick($small, [System.Windows.Forms.Screen]::PrimaryScreen.Bounds, $clickX, $clickY)
+      }
       $stream = New-Object System.IO.MemoryStream
       $parameters = New-Object System.Drawing.Imaging.EncoderParameters(1)
       try {

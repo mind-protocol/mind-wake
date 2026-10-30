@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { nextWakeStep } from "./wake-steps.js";
 import type { PolicyRevision, ProfileId, SessionId, UtcTimestamp } from "../contracts/index.js";
 import type { SqliteDatabase } from "../store/index.js";
 
@@ -305,11 +306,13 @@ export function composeWake(inputs: WakeInputs): WakeComposition {
   ].join("\n");
   const events = [...(inputs.events ?? [])];
   if (inputs.agentWakeup !== null) events.push(agentNote(inputs.agentWakeup.prompt, inputs.agentWakeup.id));
-  const text = fillTemplate(inputs.templates.base, {
+  const standardText = fillTemplate(inputs.templates.base, {
     nudge: inputs.agentWakeup === null ? nudgeText : inputs.templates.nudges[rotateNudge(inputs.previousNudge)],
     budget: `Time: ${inputs.sessionEnd ?? "no local time limit"}. ${quotaPlanText(inputs.revision, inputs.onSubscription, inputs.quotaResetAt ?? null)}`,
     events: events.length === 0 ? "" : `New events (data):\n${events.join("\n")}`,
   }).trim();
+  const step = nextWakeStep(inputs.workspaceDir);
+  const text = step === null ? standardText : `${standardText}\n\n${step}`;
   return {
     systemContext,
     text,

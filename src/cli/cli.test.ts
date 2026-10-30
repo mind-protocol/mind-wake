@@ -448,6 +448,7 @@ describe("sortie JSON versionnée", () => {
       },
       hint: null,
       activeExperiment: null,
+      activeProject: null,
       openSessions: 0,
       daemon: {
         state: "never",

@@ -1,0 +1,86 @@
+{
+  "extends": "steps-stop.json",
+  "on": {
+    "turn/steps": {
+      "before": [
+        {
+          "notify": "turn/completed",
+          "params": {
+            "turn": {
+              "id": "turn_1",
+              "status": "completed"
+            }
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "turnId": "turn_1",
+            "item": {
+              "type": "agentMessage",
+              "text": "late old response must not be captured"
+            }
+          }
+        },
+        {
+          "notify": "thread/tokenUsage/updated",
+          "params": {
+            "turnId": "turn_2",
+            "tokenUsage": {
+              "last": {
+                "inputTokens": 200,
+                "cachedInputTokens": 0,
+                "outputTokens": 50,
+                "reasoningOutputTokens": 0,
+                "totalTokens": 250
+              },
+              "total": {
+                "inputTokens": 5340,
+                "cachedInputTokens": 50,
+                "outputTokens": 920,
+                "reasoningOutputTokens": 215,
+                "totalTokens": 6260
+              }
+            }
+          }
+        }
+      ],
+      "result": {
+        "turn": {
+          "id": "turn_2",
+          "status": "inProgress"
+        }
+      },
+      "then": [
+        {
+          "notify": "item/completed",
+          "params": {
+            "item": {
+              "type": "agentMessage",
+              "text": "missing id must not be captured"
+            }
+          }
+        },
+        {
+          "notify": "item/completed",
+          "params": {
+            "turnId": "turn_2",
+            "item": {
+              "type": "agentMessage",
+              "text": "correct planning response"
+            }
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": {
+            "turn": {
+              "id": "turn_2",
+              "status": "completed"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
