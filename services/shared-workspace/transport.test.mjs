@@ -140,11 +140,18 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
   assert.match(second.text, /answer = 2/);
   await deny(
     a,
-    { op: "propose", path: "code.ts", expectedHash: first.hash, text: "stale" },
+    {
+      op: "propose",
+      path: "code.ts",
+      expectedHash: first.hash,
+      text: "stale",
+      idempotencyKey: "stale-test",
+    },
     "hash_conflict",
   );
   const proposal = await call(a, {
     op: "propose",
+    idempotencyKey: "valid-test",
     path: "code.ts",
     expectedHash: second.hash,
     text: "export const answer = 3;\n",
@@ -154,7 +161,13 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
   assert.equal(fs.readFileSync(path.join(one, "code.ts"), "utf8"), second.text);
   await deny(
     b,
-    { op: "propose", path: "code.ts", expectedHash: hash("second selected folder\n"), text: "no" },
+    {
+      op: "propose",
+      path: "code.ts",
+      expectedHash: hash("second selected folder\n"),
+      text: "no",
+      idempotencyKey: "readonly-test",
+    },
     "forbidden",
   );
   for (const op of ["apply", "exec", "delete", "grant"])

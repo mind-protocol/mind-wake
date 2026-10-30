@@ -111,9 +111,36 @@ export function loadState(file) {
 export function saveState(file, state) {
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const temp = `${file}.${randomUUID()}.tmp`;
-  fs.writeFileSync(temp, JSON.stringify(state, null, 2), { mode: 0o600, flag: "wx" });
-  fs.renameSync(temp, file);
+  try {
+    durableFile(temp, JSON.stringify(state, null, 2));
+    fs.renameSync(temp, file);
+  } finally {
+    if (fs.existsSync(temp)) fs.unlinkSync(temp);
+  }
 }
+function durableFile(file, content) {
+  const fd = fs.openSync(file, "wx", 0o600);
+  try {
+    fs.writeFileSync(fd, content);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+function boundedBytes(file) {
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.nlink !== 1 || stat.size > LIMITS.file) fail("file_limit");
+    const bytes = Buffer.alloc(LIMITS.file + 1);
+    const count = fs.readSync(fd, bytes, 0, bytes.length, 0);
+    if (count > LIMITS.file) fail("file_limit");
+    return bytes.subarray(0, count);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+const privateDir = (stateFile) => `${path.resolve(stateFile)}.private`;
 function mutateState(file, update) {
   fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   // Serialize cooperating operator processes; never silently break a stale lock.
@@ -166,6 +193,8 @@ export function grant(stateFile, root, participant, propose = false, selection =
   // Never share the profile root, state, or a parent containing either.
   if (
     inside(root, path.resolve(stateFile)) ||
+    inside(root, privateDir(stateFile)) ||
+    inside(privateDir(stateFile), root) ||
     (process.env.USERPROFILE && inside(root, path.resolve(process.env.USERPROFILE)))
   )
     fail("invalid_selection");
@@ -207,7 +236,7 @@ function authorize(stateFile, req) {
     fail("unauthorized");
   return cap;
 }
-function operate(cap, body) {
+function operate(stateFile, cap, body) {
   if (!body || typeof body !== "object" || !cap.rights.includes("read")) fail("forbidden");
   switch (body.op) {
     case "list": {
@@ -245,27 +274,196 @@ function operate(cap, body) {
     case "read":
       return readText(cap.root, body.path);
     case "propose": {
-      if (!cap.rights.includes("propose")) fail("forbidden");
-      const current = readText(cap.root, body.path);
-      if (current.hash !== body.expectedHash) fail("hash_conflict");
-      if (
-        typeof body.text !== "string" ||
-        Buffer.byteLength(body.text) > LIMITS.file ||
-        body.text.includes("\0")
-      )
-        fail("file_limit");
-      return {
-        kind: "unapplied-replacement",
-        path: body.path,
-        expectedHash: current.hash,
-        proposedHash: hash(body.text),
-        text: body.text,
-        applied: false,
-      };
+      return submitProposal(stateFile, cap, body);
     }
     default:
       fail("forbidden");
   }
+}
+
+function activeCap(state, id, participant) {
+  const cap = state.grants.find((g) => g.id === id && g.participant === participant);
+  if (!cap?.active || !cap.rights.includes("read") || !cap.rights.includes("propose"))
+    fail("forbidden");
+  return cap;
+}
+function proposalView(p) {
+  return { ...p, kind: "durable-proposal", applied: p.status === "applied" };
+}
+function submitProposal(stateFile, authorized, body) {
+  if (
+    typeof body.idempotencyKey !== "string" ||
+    !/^[A-Za-z0-9_-]{1,128}$/.test(body.idempotencyKey)
+  )
+    fail("invalid_request");
+  if (
+    typeof body.text !== "string" ||
+    Buffer.byteLength(body.text) > LIMITS.file ||
+    body.text.includes("\0")
+  )
+    fail("file_limit");
+  return mutateState(stateFile, (state) => {
+    const cap = activeCap(state, authorized.id, authorized.participant);
+    const proposals = (state.proposals ??= []);
+    const fingerprint = hash(JSON.stringify([body.path, body.expectedHash, body.text]));
+    const existing = proposals.find(
+      (p) => p.capability === cap.id && p.idempotencyKey === body.idempotencyKey,
+    );
+    if (existing) {
+      if (existing.fingerprint !== fingerprint) fail("idempotency_conflict");
+      return proposalView(existing);
+    }
+    if (
+      proposals.length >= 64 ||
+      proposals.reduce((n, p) => n + Buffer.byteLength(p.text), 0) + Buffer.byteLength(body.text) >
+        4 * 1024 * 1024
+    )
+      fail("queue_limit");
+    const current = readText(cap.root, body.path);
+    if (current.hash !== body.expectedHash) fail("hash_conflict");
+    const proposal = {
+      id: randomUUID(),
+      capability: cap.id,
+      participant: cap.participant,
+      path: body.path,
+      expectedHash: current.hash,
+      proposedHash: hash(body.text),
+      text: body.text,
+      idempotencyKey: body.idempotencyKey,
+      fingerprint,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    };
+    proposals.push(proposal);
+    return proposalView(proposal);
+  });
+}
+function findProposal(state, id) {
+  const proposal = state.proposals?.find((p) => p.id === id);
+  if (!proposal) fail("unknown_proposal");
+  return proposal;
+}
+function reconcile(state, proposal) {
+  const cap = state.grants.find(
+    (g) => g.id === proposal.capability && g.participant === proposal.participant,
+  );
+  if (["applying", "restoring"].includes(proposal.status)) {
+    const current = readText(cap.root, proposal.path);
+    const completed =
+      proposal.status === "applying" ? proposal.proposedHash : proposal.expectedHash;
+    const previous = proposal.status === "applying" ? proposal.expectedHash : proposal.proposedHash;
+    if (current.hash === completed)
+      proposal.status = proposal.status === "applying" ? "applied" : "restored";
+    else if (current.hash === previous)
+      proposal.status = proposal.status === "applying" ? "pending" : "applied";
+    else {
+      proposal.status = "conflict";
+      proposal.reason = "recovery_hash_conflict";
+    }
+    proposal.reconciledAt = new Date().toISOString();
+    proposal.observedHash = current.hash;
+  }
+  if (
+    proposal.status === "pending" &&
+    (!cap?.active || !cap.rights.includes("read") || !cap.rights.includes("propose"))
+  )
+    proposal.status = "revoked";
+  return proposal;
+}
+
+// Local authority ONLY. These functions are never routed by the HTTPS facade.
+export function localProposals(stateFile, id) {
+  return mutateState(stateFile, (state) => {
+    if (id) return proposalView(reconcile(state, findProposal(state, id)));
+    return {
+      proposals: (state.proposals ?? []).map((p) => {
+        reconcile(state, p);
+        const { text, fingerprint, ...metadata } = proposalView(p);
+        return metadata;
+      }),
+    };
+  });
+}
+export function localReject(stateFile, id) {
+  return mutateState(stateFile, (state) => {
+    const p = reconcile(state, findProposal(state, id));
+    if (p.status === "pending") {
+      p.status = "rejected";
+      p.decidedAt = new Date().toISOString();
+    }
+    return proposalView(p);
+  });
+}
+export function localApply(stateFile, id, restoreHash) {
+  return mutateState(stateFile, (state) => {
+    const p = reconcile(state, findProposal(state, id));
+    const restoring = restoreHash !== undefined;
+    if (restoring && p.status === "restored") {
+      if (restoreHash !== p.proposedHash) fail("hash_conflict");
+      return proposalView(p);
+    }
+    if (!restoring && p.status !== "pending") return proposalView(p);
+    const cap = activeCap(state, p.capability, p.participant);
+    if (restoring && (p.status !== "applied" || restoreHash !== p.proposedHash))
+      fail("hash_conflict");
+    const target = locate(cap.root, p.path);
+    const current = readText(cap.root, p.path);
+    const expected = restoring ? p.proposedHash : p.expectedHash;
+    if (current.hash !== expected) {
+      if (restoring) fail("hash_conflict");
+      p.status = "conflict";
+      p.reason = "hash_conflict";
+      return proposalView(p);
+    }
+    const directory = privateDir(stateFile);
+    fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+    noLinks(directory);
+    const backup = path.join(directory, `${p.id}.before`);
+    if (!restoring) {
+      const bytes = boundedBytes(target);
+      if (hash(bytes) !== expected) {
+        p.status = "conflict";
+        p.reason = "hash_conflict";
+        return proposalView(p);
+      }
+      if (fs.existsSync(backup)) {
+        noLinks(backup);
+        if (hash(boundedBytes(backup)) !== expected) fail("backup_mismatch");
+      } else durableFile(backup, bytes);
+    }
+    if (restoring) noLinks(backup);
+    const replacement = restoring ? boundedBytes(backup) : Buffer.from(p.text, "utf8");
+    const wanted = restoring ? p.expectedHash : p.proposedHash;
+    if (hash(replacement) !== wanted) fail("backup_mismatch");
+    const temp = path.join(path.dirname(target), `.mind-workspace-${randomUUID()}.tmp`);
+    try {
+      durableFile(temp, replacement);
+      fs.chmodSync(temp, fs.statSync(target).mode);
+      // Persist intent AFTER durable backup and BEFORE replacing the selected file.
+      p.status = restoring ? "restoring" : "applying";
+      saveState(stateFile, state);
+      // Best-effort editor conflict check immediately before rename; NOT an OS CAS.
+      locate(cap.root, p.path);
+      if (readText(cap.root, p.path).hash !== expected) {
+        p.status = "conflict";
+        p.reason = "hash_conflict";
+        return proposalView(p);
+      }
+      fs.renameSync(temp, target);
+      const observed = readText(cap.root, p.path);
+      if (observed.hash !== wanted) {
+        p.status = "conflict";
+        p.reason = "post_write_hash_conflict";
+        return proposalView(p);
+      }
+      p.status = restoring ? "restored" : "applied";
+      p.observedHash = observed.hash;
+      p.decidedAt = new Date().toISOString();
+      return proposalView(p);
+    } finally {
+      if (fs.existsSync(temp)) fs.unlinkSync(temp);
+    }
+  });
 }
 
 export function createWorkspaceServer({ stateFile, key, cert }) {
@@ -308,7 +506,7 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
         }
         // Re-authorize AFTER receiving body: revocation during upload takes effect.
         const cap = authorize(stateFile, req);
-        const result = operate(cap, JSON.parse(Buffer.concat(chunks).toString("utf8")));
+        const result = operate(stateFile, cap, JSON.parse(Buffer.concat(chunks).toString("utf8")));
         send(200, { result });
       } catch (error) {
         const known = [
@@ -320,9 +518,26 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
           "hash_conflict",
           "changed_during_read",
           "bad_request",
+          "invalid_request",
+          "idempotency_conflict",
+          "queue_limit",
         ];
-        const code = known.includes(error.message) ? error.message : "operation_failed";
-        send(code === "unauthorized" ? 401 : code === "hash_conflict" ? 409 : 400, { error: code });
+        const code =
+          error.code === "EEXIST"
+            ? "busy"
+            : known.includes(error.message)
+              ? error.message
+              : "operation_failed";
+        send(
+          code === "busy"
+            ? 429
+            : code === "unauthorized"
+              ? 401
+              : ["hash_conflict", "idempotency_conflict"].includes(code)
+                ? 409
+                : 400,
+          { error: code },
+        );
       } finally {
         clearTimeout(timer);
         active--;
