@@ -684,6 +684,26 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
 /* A reserved preview area keeps loading images from moving the conversation. */
 .conversation-body { min-width: 0; }
 .conversation-body > p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Received content keeps the same readable body, with a visible source cue in both themes. */
+:root { --peer-message: #08675e; --session-message: #6940a0; }
+@media (prefers-color-scheme: dark) {
+  :root { --peer-message: #79dbca; --session-message: #c9adff; }
+}
+.messages li[data-from="received"] {
+  border-left: 4px solid var(--peer-message);
+  background: color-mix(in srgb, var(--peer-message) 10%, var(--surface, var(--bg)));
+}
+.messages li[data-from="received"] > small { color: var(--peer-message); }
+.messages li[data-from="session"] {
+  border-left: 4px solid var(--session-message);
+  background: color-mix(in srgb, var(--session-message) 8%, var(--surface, var(--bg)));
+}
+.messages li[data-from="session"] > small { color: var(--session-message); }
+.messages li[data-from="context"] {
+  border-left: 3px dashed var(--muted);
+  background: color-mix(in srgb, var(--muted) 6%, var(--surface, var(--bg)));
+}
 .message-images { display: grid; gap: 12px; margin-top: 10px; white-space: normal; }
 .message-images figure { margin: 0; width: min(100%, 22rem); min-width: 0; }
 .message-images button { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 5px; background: #f0f2ed; border: 1px solid #d7dfd5; border-radius: 8px; cursor: zoom-in; overflow: hidden; }

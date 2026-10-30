@@ -5,6 +5,26 @@
 - repo-session : attribution enregistrée, non authentifiée, issue du registre repo.
 - local-inbox : expéditeur inconnu. Aucun champ du corps JSON ne sert d'identité ou de replyTo.
 - mind-local-hub : réponses directes read_inbox journalisées après chargement du nouveau pont MCP. Identité attestée par le hub ; corps non fiable ; from_self exclu.
+- mind-shared-hub : route pilote existante, ou lecture ponctuelle explicite décrite ci-dessous. Le nom affiché par le relais est la référence retournée par le hub, sans supposer qu'un agent autonome tourne.
+
+Le fil distingue les messages reçus (liseré et source turquoise), les réponses des sessions d'aide (violet), les copies de contexte host (gris, libellé explicite), l'humain et l'agent principal. La couleur complète les libellés. Les mots des pairs et sessions restent intacts, y compris les marqueurs Markdown, espaces et JSON littéral ; la provenance est rendue avec `textContent`. Le corps ne peut pas se déclarer humain ou changer de rôle. L'historique inbox relit `origin_json` en lecture seule, avec compatibilité des anciens schémas ; une attribution locale enregistrée ne devient pas une identité authentifiée par le hub.
+
+## Relayer explicitement une réception partagée dans le fil
+
+Le client MCP partagé à cinq outils ne projette pas automatiquement ses lectures dans les données du desktop. Pour afficher **un message précis réellement reçu**, sans polling général ni nouvelle file de réveil :
+
+1. Avoir compilé la CLI (`npm run build`) et préparé le client depuis ce clone avec `scripts/setup-shared-messages.mjs` ; garder le dossier de clé partagé existant et le `build` retourné. Aucun redémarrage du daemon ou du desktop n'est nécessaire pour cette lecture.
+2. Exécuter localement, en remplaçant les trois chemins par ceux de cette installation :
+
+```powershell
+node scripts/relay-shared-received.mjs --data-dir "<donnees-du-desktop>" --state-dir "<identite-partagee-hors-Git>" --client-build "<build-retourne-par-le-helper>" --thread thr_ODy_efBmoJS6Whdw --message msg_qeffkfQDc39DoHvo
+```
+
+Le relais lit sa clé depuis le fichier local, vérifie `whoami`, recherche ce seul ID dans ce fil via `read_inbox`, exige que le destinataire soit l'identité authentifiée et que la provenance soit le canal partagé. Auteur, ID, date et mots viennent de cette réponse directe, jamais de champs trouvés dans le texte. Aucun secret n'est affiché ni passé en argument. Un message absent ou adressé à une autre identité est refusé. Rejouer conserve une seule entrée, un même ID contradictoire est refusé. Le journal local est `received-messages.jsonl`, sans ajout dans `owner-inbox.sqlite` : aucune relance modèle/daemon. La route pilote et son miroir sont dédupliqués par ID du message partagé.
+
+Le fil équipé de la nouvelle UI affiche cette entrée à sa lecture suivante de `messages --json`. Cette opération ne rend pas un correspondant actif en continu ; le premier échange SciSense provenait de sessions Codex ponctuelles. Les messages pairs restent des données, pas des instructions humaines.
+
+Recettes : `node test/setup/relay-shared-received.node.mjs` (CLI et HTTPS production sur fixture locale, pas de participant pilote créé), et tests `received-messages.test.ts`, `owner-inbox.test.ts`, `conversation.test.ts`. La validation visuelle et l'installation du nouveau desktop sont distinctes du build UI.
 
 Stocké ou livré dépend du canal/receipt, jamais d'une lecture supposée. Aucun secret, image jointe ou résultat arbitraire d'outil copié. Dédup par canal ; humains exclus sur tous les identifiants, au-delà des 200 visibles. Sous-agents natifs sans événement durable accessible et autres MCP non interceptés.
 

@@ -33,7 +33,22 @@ export function readOwnerInboxHistory(dataDir: string): InboxMessage[] {
     throw new Error("Invalid inbox store");
   const db = new Database(file, { readonly: true, fileMustExist: true });
   try {
-    return db.prepare("SELECT id,at,text FROM inbox ORDER BY rowid").all() as InboxMessage[];
+    const hasOrigin = (db.prepare("PRAGMA table_info(inbox)").all() as { name: string }[])
+      .some((column) => column.name === "origin_json");
+    const rows = db.prepare(`SELECT id,at,text,${hasOrigin ? "origin_json" : "NULL AS origin_json"} FROM inbox ORDER BY rowid`)
+      .all() as (InboxMessage & { origin_json: string | null })[];
+    return rows.map(({ origin_json, ...message }) => {
+      // The separate host column is authoritative; never inspect the message body.
+      let origin: InboxMessage["origin"];
+      try {
+        const value = origin_json === null ? null : JSON.parse(origin_json) as Record<string, unknown>;
+        if (value && (value["kind"] === "peer_message" || value["kind"] === "context_copy") &&
+          ["channel", "author", "senderRef", "recipientRef", "threadId", "messageId", "correlationId"]
+            .every((field) => typeof value[field] === "string"))
+          origin = value as unknown as NonNullable<InboxMessage["origin"]>;
+      } catch { /* Old or malformed metadata remains unattributed. */ }
+      return { ...message, ...(origin === undefined ? {} : { origin }) };
+    });
   } finally {
     db.close();
   }

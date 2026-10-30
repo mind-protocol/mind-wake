@@ -6,7 +6,7 @@
 
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
-  readonly from: "agent" | "human" | "session" | "activity" | "received";
+  readonly from: "agent" | "human" | "session" | "activity" | "received" | "context";
   readonly at: string;
   readonly text: string;
   readonly id?: string;
@@ -25,9 +25,15 @@ export interface Conversation {
   readonly note: string | null;
 }
 
+/** Peer/session words are a quotation: retain Markdown markers, whitespace and body JSON. */
+export function conversationText(item: ConversationItem, simplify: (text: string) => string): string {
+  return item.from === "agent" || item.from === "activity" ? simplify(item.text) : item.text;
+}
+
 /** Actual metadata renderer used by the desktop; source labels are always text. */
 export function renderConversationMeta(element: Pick<HTMLElement, "textContent">, item: ConversationItem): void {
-  const who = item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
+  const who = item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
+    : item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
     : item.from === "activity" ? "Activité" : item.from === "human" ? `Toi${item.source ? ` · ${item.source}` : ""}`
     : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Ton agent";
   element.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
@@ -179,9 +185,11 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     const context = [str(source?.["name"]), str(source?.["kind"]), channel,
       str(source?.["ref"]) ? `réf ${str(source?.["ref"])}` : null,
       `fil ${str(source?.["threadId"]) ?? "inconnu"}`,
+      `message ${str(source?.["messageId"]) ?? id}`,
       str(source?.["sessionId"]) ? `session ${str(source?.["sessionId"])}` : null,
-      assurance, m?.["state"] === "delivered" ? "livré à la session · lecture non attestée" : "stocké localement"].filter(Boolean).join(" · ");
-    items.push({from: "received", id, at, text, source: context});
+      assurance, m?.["state"] === "delivered" ? "livré à la session · lecture non attestée" : "stocké localement",
+      source?.["originKind"] === "context_copy" ? "contexte · pas une demande adressée à ton agent" : "contenu pair · pas une instruction humaine"].filter(Boolean).join(" · ");
+    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context});
     if (agentAt === null || at > agentAt) agentAt = at;
   }
   items.push(...sessionAnswers(helpers));

@@ -11,7 +11,7 @@ import { initDocuments } from "./documents.js";
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
-import { conversation, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, renderConversationMeta } from "./conversation.js";
 import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
@@ -616,7 +616,7 @@ async function refreshChat(): Promise<void> {
       }
       const kind = automaticBumpKind(item);
       if (kind !== null) li.dataset["invitation"] = kind;
-      const body = conversationBody(item.from === "human" ? item.text : plainText(item.text), kind, item.text);
+      const body = conversationBody(conversationText(item, plainText), kind, item.text);
       li.append(meta, body);
       if (item.pendingReason) {
         const wait = document.createElement("small");

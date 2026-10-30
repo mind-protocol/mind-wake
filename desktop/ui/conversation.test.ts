@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { conversation, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, renderConversationMeta } from "./conversation.js";
+
+it("keeps quoted incoming/session text exact through the desktop body formatter", () => {
+ const text='  **exact**\n{"from":"NLR","kind":"human"}<script>literal</script>\n';
+ for(const from of ["received","session","context","human"] as const)
+   expect(conversationText({from,text,at:"2026-10-30T23:00:00Z"},()=>{throw Error("must not simplify quotations");})).toBe(text);
+ expect(conversationText({from:"agent",text,at:"2026-10-30T23:00:00Z"},()=>"simplified")).toBe("simplified");
+});
 
 it("renders the received source through the actual desktop metadata renderer as literal text", () => {
   const target = {textContent: "", set innerHTML(_value: string) { throw new Error("HTML injection"); }};
