@@ -11,7 +11,7 @@ import { AGENT_NOTE_FILE, agentText, HUMAN_LOG_FILE } from "./commands/messages.
 import { processContext, type CliContext } from "./context.js";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE } from "./output.js";
 import { runCli } from "./run.js";
-import { ownerMessagePending } from "../communication/owner-inbox.js";
+import { ownerMessagePending, enqueueOwnerMessage } from "../communication/owner-inbox.js";
 import { ownerInboxHook } from "../communication/owner-inbox-hook.js";
 
 let dir: string;
@@ -46,6 +46,16 @@ function data(json: Record<string, unknown>): Record<string, unknown> {
 const note = (): string => path.join(dir, "workspace", "artifacts", AGENT_NOTE_FILE);
 
 describe("fil humain ↔ agent", () => {
+  it("does not reclassify humans outside the 200 visible replies as unattributed inbox senders", async () => {
+    await cli(["init"]);
+    const rows=Array.from({length:205},(_,i)=>({id:`human-${i}`,at:new Date(Date.UTC(2026,9,30,10,0,i)).toISOString(),text:`human ${i}`,noteMtimeBeforeMs:null}));
+    fs.writeFileSync(path.join(dir,HUMAN_LOG_FILE),rows.map(r=>JSON.stringify(r)).join("\n")+"\n");
+    enqueueOwnerMessage(dir,rows[0]!);
+    enqueueOwnerMessage(dir,rows[204]!);
+    const result=data((await cli(["messages"])).json);
+    expect(result["replies"]).toHaveLength(200);
+    expect(result["receivedMessages"]).toEqual([]);
+  });
   it("exposes a desktop receipt only after the hook has emitted that exact message", async () => {
     await cli(["init"]);
     await cli(["reply","--idempotency-key","desktop-receipt-01"],"Bonjour");

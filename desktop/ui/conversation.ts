@@ -25,6 +25,14 @@ export interface Conversation {
   readonly note: string | null;
 }
 
+/** Actual metadata renderer used by the desktop; source labels are always text. */
+export function renderConversationMeta(element: Pick<HTMLElement, "textContent">, item: ConversationItem): void {
+  const who = item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
+    : item.from === "activity" ? "Activité" : item.from === "human" ? "Toi"
+    : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Marco · ton agent";
+  element.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+}
+
 type Rec = Readonly<Record<string, unknown>>;
 
 function rec(value: unknown): Rec | null {
@@ -162,12 +170,12 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     const channel = str(source?.["channel"]);
     if (channel !== "repo-session" && channel !== "mind-local-hub" && channel !== "local-inbox") continue;
     receivedIds.add(id);
-    const assurance = source?.["assurance"] === "hub_authenticated" ? "identit? attest?e par le hub" : "source enregistr?e ? attribution non authentifi?e";
+    const assurance = source?.["assurance"] === "hub_authenticated" ? "identité attestée par le hub" : "source enregistrée · attribution non authentifiée";
     const context = [str(source?.["name"]), str(source?.["kind"]), channel,
-      str(source?.["ref"]) ? `r?f ${str(source?.["ref"])}` : null,
+      str(source?.["ref"]) ? `réf ${str(source?.["ref"])}` : null,
       `fil ${str(source?.["threadId"]) ?? "inconnu"}`,
       str(source?.["sessionId"]) ? `session ${str(source?.["sessionId"])}` : null,
-      assurance, m?.["state"] === "delivered" ? "livr? ? la session ? lecture non attest?e" : "stock? localement"].filter(Boolean).join(" ? ");
+      assurance, m?.["state"] === "delivered" ? "livré à la session · lecture non attestée" : "stocké localement"].filter(Boolean).join(" · ");
     items.push({from: "received", id, at, text, source: context});
     if (agentAt === null || at > agentAt) agentAt = at;
   }

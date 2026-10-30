@@ -11,7 +11,7 @@ import { initDocuments } from "./documents.js";
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
-import { conversation } from "./conversation.js";
+import { conversation, renderConversationMeta } from "./conversation.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
 import { initMessageFileLinks } from "./message-file-links.js";
@@ -579,13 +579,7 @@ async function refreshChat(): Promise<void> {
       if (item.id) li.dataset["messageId"] = item.id;
       const meta = document.createElement("small");
       li.dataset["from"] = item.from;
-      const who =
-        item.from === "activity" ? "Activité" : item.from === "human"
-          ? "Toi"
-          : item.from === "session"
-            ? `Aide · ${item.source ?? "session"}`
-            : "Ton agent";
-      meta.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+      renderConversationMeta(meta, item);
       if (item.delivery) {
         const receipt = document.createElement("span");
         receipt.className = "delivery-receipt";
@@ -651,12 +645,12 @@ byId("chat-bump").addEventListener("click", async () => {
 byId("chat-recipient").addEventListener("change", () => {
   const remote = byId<HTMLSelectElement>("chat-recipient").value === "auroracle";
   byId("chat-recipient-status").textContent = remote
-    ? "Auroracle n?est pas encore raccord?. Aucun message ne sera transmis ; ton brouillon reste ici."
+    ? "Auroracle n’est pas encore raccordé. Aucun message ne sera transmis ; ton brouillon reste ici."
     : "";
 });
 async function sendToAgent(): Promise<void> {
   if (byId<HTMLSelectElement>("chat-recipient").value !== "owner") {
-    byId("chat-status").textContent = "Envoi impossible : route Auroracle non appair?e. Brouillon conserv?. Aucun envoi ni miroir cr??.";
+    byId("chat-status").textContent = "Envoi impossible : route Auroracle non appairée. Brouillon conservé. Aucun envoi ni miroir créé.";
     return;
   }
   const field = byId<HTMLTextAreaElement>("chat-text");

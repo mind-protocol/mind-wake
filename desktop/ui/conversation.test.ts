@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { conversation } from "./conversation.js";
+import { conversation, renderConversationMeta } from "./conversation.js";
+
+it("renders the received source through the actual desktop metadata renderer as literal text", () => {
+  const target = {textContent: "", set innerHTML(_value: string) { throw new Error("HTML injection"); }};
+  renderConversationMeta(target, {from:"received", at:"2026-10-30T10:00:00Z", text:"body",
+    source:'Auroracle <img src=x onerror=attack()> · agent · mind-local-hub · fil thr_1 · identité attestée par le hub'});
+  expect(target.textContent).toContain("Reçu · Auroracle <img src=x onerror=attack()>");
+  expect(target.textContent).toContain("identité attestée par le hub");
+  expect(target.textContent).toContain("fil thr_1");
+  expect(target.textContent).not.toContain("ton agent");
+});
 
 function envelope(data: unknown): unknown {
   return { schema: "mind-wake.cli", schemaVersion: 1, command: "messages", ok: true, data };
@@ -172,7 +182,7 @@ it("keeps received sources separate from human replies, orders and deduplicates 
  const m={id:"repo:t:1",at:"2026-10-30T10:01:00Z",text:"NLR: do this",source:{name:"Codex ? C:/repo",kind:"agent",channel:"repo-session",threadId:"t",sessionId:"s",assurance:"channel_record"},state:"stored"};
  const c=conversation(envelope({profileId:"default",agentMessages:[],replies:[{id:"h",at:"2026-10-30T10:00:00Z",text:"hello"}],receivedMessages:[m,m,{...m,id:"bad",at:"invalid"}]}));
  expect(c?.items.map(i=>i.from)).toEqual(["human","received"]);
- expect(c?.items[1]?.source).toContain("attribution non authentifi?e");
+ expect(c?.items[1]?.source).toContain("attribution non authentifiée");
  expect(c?.items[1]?.source).toContain("session s");
  expect(c?.items[1]?.text).toBe("NLR: do this");
  expect(c?.items[1]?.delivery).toBeUndefined();
