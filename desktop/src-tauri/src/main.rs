@@ -10,6 +10,7 @@ mod quick_input;
 mod windows_startup;
 mod updates;
 mod documents;
+mod conversation_images;
 mod authorizations;
 
 use cli::{CliRun, OwnerRequest, Verb};
@@ -293,6 +294,7 @@ fn main() {
             wake_restart,
             app_fullscreen,
             documents::document_browse,
+            documents::conversation_image,
             authorizations::authorizations_read,
             authorizations::authorizations_save,
             updates::app_update,

@@ -20,6 +20,7 @@ fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "document_browse",
+            "conversation_image",
             "authorizations_read",
             "authorizations_save",
             "app_update",

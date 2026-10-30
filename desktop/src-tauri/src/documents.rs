@@ -19,6 +19,15 @@ fn supported(path: &Path) -> bool {
     matches!(path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref(), Some("md" | "markdown" | "html" | "htm"))
 }
 
+#[tauri::command]
+pub async fn conversation_image(reference: String) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let roots: Vec<PathBuf> = ["agent", "project"].iter().filter_map(|scope| root(scope).ok()).collect();
+        let data_url = crate::conversation_images::read_confined(&reference, &roots)?;
+        Ok(serde_json::json!({"dataUrl": data_url}))
+    }).await.map_err(|e| e.to_string())?
+}
+
 fn resolve(base: &Path, relative: &str) -> Result<PathBuf, String> {
     if Path::new(relative).components().any(|c| !matches!(c, Component::Normal(_) | Component::CurDir)) {
         return Err("Chemin hors de l’espace".into());

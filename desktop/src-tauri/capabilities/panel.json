@@ -6,6 +6,7 @@
   "permissions": [
     "core:event:default",
     "allow-document-browse",
+    "allow-conversation-image",
     "allow-authorizations-read",
     "allow-authorizations-save",
     "allow-app-update",

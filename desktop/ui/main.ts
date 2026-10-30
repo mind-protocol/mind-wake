@@ -3,9 +3,9 @@ import { initDocuments } from "./documents.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
  * par une commande Rust qui exécute la CLI correspondante (`mind-wake … --json`,
- * `owner-main.ts … --json`). Aucun appel modèle, aucun secret, aucun accès réseau : le
- * webview ne parle qu'au processus Tauri. Le texte des messages est inséré comme texte,
- * jamais comme HTML.
+ * `owner-main.ts … --json`). Aucun appel modèle ni secret. Les images HTTP(S) référencées
+ * sont chargées par le webview ; les images locales passent par une lecture native confinée.
+ * Le texte des messages est inséré comme texte, jamais comme HTML.
  */
 
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
@@ -16,6 +16,7 @@ import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
 import { initMessageFileLinks } from "./message-file-links.js";
+import { appendMessageImages } from "./message-images.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
 
 interface TauriGlobal {
@@ -76,6 +77,7 @@ async function setFullscreen(enabled: boolean): Promise<void> {
 }
 byId("app-fullscreen").addEventListener("click", () => { void setFullscreen(!fullscreen); });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && document.querySelector("dialog.message-image-dialog[open]")) return;
   if (event.key === "F11" || (event.key === "Escape" && fullscreen)) {
     event.preventDefault();
     void setFullscreen(event.key === "F11" ? !fullscreen : false);
@@ -119,9 +121,17 @@ let lastMessageId: string | null = null;
 let draftKey: string | null = null;
 const outgoingChat = new Map<string, HTMLLIElement>();
 
-function conversationBody(text: string, kind: BumpKind | null): HTMLParagraphElement {
-  const body = document.createElement("p");
-  if (kind === null) { body.textContent = text; return body; }
+function conversationBody(text: string, kind: BumpKind | null, imageText = text): HTMLDivElement {
+  const body = document.createElement("div"), paragraph = document.createElement("p");
+  body.className = "conversation-body"; body.append(paragraph);
+  if (kind === null) {
+    paragraph.textContent = text;
+    appendMessageImages(body, imageText, (command, args) => {
+      if (!tauri) return Promise.reject(Error("Images locales disponibles dans l’app"));
+      return tauri.core.invoke(command, args);
+    });
+    return body;
+  }
   const icon = document.createElement("span");
   icon.className = "bump-invitation-icon";
   icon.textContent = "↗";
@@ -129,7 +139,7 @@ function conversationBody(text: string, kind: BumpKind | null): HTMLParagraphEle
   icon.setAttribute("aria-label", kind === "bumpe" ? "Bumpe, relance au point cliqué" : "Bump");
   const point = kind === "bumpe" ? /Point choisi par ton humain : \((-?\d+), (-?\d+)\)/.exec(text) : null;
   icon.title = kind === "bumpe" ? `Bumpe · relance ciblée${point ? ` au point (${point[1]}, ${point[2]})` : " au point cliqué"}` : "Bump · invitation à relancer la conversation";
-  body.append(icon);
+  paragraph.append(icon);
   return body;
 }
 
@@ -463,6 +473,7 @@ async function showThread(
         meta.textContent = `${m.from_self ? "Toi" : m.provenance.kind === "agent" ? "Ton agent" : m.provenance.kind} · ${new Date(m.provenance.received_at).toLocaleString("fr-FR")}`;
         const body = document.createElement("p");
         body.textContent = m.text;
+        appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
         li.append(meta, body);
         return li;
       }),
@@ -595,7 +606,7 @@ async function refreshChat(): Promise<void> {
       }
       const kind = automaticBumpKind(item);
       if (kind !== null) li.dataset["invitation"] = kind;
-      const body = conversationBody(item.from === "human" ? item.text : plainText(item.text), kind);
+      const body = conversationBody(item.from === "human" ? item.text : plainText(item.text), kind, item.text);
       li.append(meta, body);
       if (item.pendingReason) {
         const wait = document.createElement("small");
@@ -839,6 +850,7 @@ function renderAgentThreads(): void {
     li.dataset["self"] = String(m.from === "wake");
     li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
     meta.textContent = `${m.from === "system" ? "État de la consultation" : m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
     li.append(meta, body);
     if (m.from === "repo" && m.text.length === 4000 && Date.parse(m.at) < Date.parse("2026-10-30T16:00:00Z")) {
       const notice = document.createElement("p"); notice.className = "hint";
@@ -895,7 +907,7 @@ function renderWakeHistory(): void {
       cue.className="wake-cue";cue.textContent=m.missing?"Début de ce réveil non chargé":m.text.split("\n")[0]??m.text;
       summary.textContent="Voir le prompt complet et son contexte";
       pre.textContent=m.text;details.dataset["turnId"]=m.id;details.open=expanded.has(m.id);details.append(summary,pre);li.append(meta,cue);if(!m.missing)li.append(details);
-    } else { body.textContent=m.text;li.append(meta,body); }
+    } else { body.textContent=m.text;appendMessageImages(body,m.text,(command,args)=>tauri!.core.invoke(command,args));li.append(meta,body); }
     return li;
   }));
   pane.scrollTop=follow?pane.scrollHeight:oldTop;
