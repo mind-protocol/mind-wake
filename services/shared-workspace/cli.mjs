@@ -11,6 +11,7 @@ const {
   options: {
     state: { type: "string" },
     root: { type: "string" },
+    "data-root": { type: "string", multiple: true },
     participant: { type: "string" },
     propose: { type: "boolean" },
     credential: { type: "string" },
@@ -63,6 +64,7 @@ try {
           requireArg("root"),
           requireArg("participant"),
           args.propose,
+          { dataRoots: args["data-root"] ?? [] },
         );
         fs.writeFileSync(
           fd,
@@ -122,7 +124,7 @@ try {
     }
     default:
       console.log(
-        "Commands: grant --state --root --participant [--propose] --credential --endpoint --ca; revoke --state --capability; serve --state --key --cert --port; call --credential --request --output",
+        "Commands: grant --state --root [--data-root LOCAL_INSTALLATION_DATA_DIR] --participant [--propose] --credential --endpoint --ca; revoke --state --capability; serve --state --key --cert --port; call --credential --request --output",
       );
   }
 } catch {

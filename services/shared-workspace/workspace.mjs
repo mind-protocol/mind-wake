@@ -17,9 +17,14 @@ const fail = (code) => {
 const inside = (root, target) =>
   target === root ||
   (!path.relative(root, target).startsWith("..") && !path.isAbsolute(path.relative(root, target)));
+// Layouts from daemon/paths.ts, runner/paths.ts and adapter registration.ts.
+// Names deny access; they NEVER grant permission or identify a trusted installation.
+const sensitiveComponent =
+  /^(?:\.git|\.ssh|\.aws|\.codex|\.claude|profiles?|credentials?|secrets?|auth|runtime|runtimes|installation|codex-home|claude-home)$/i;
 const allowed = (name) =>
   name.length > 0 &&
   !name.startsWith(".") &&
+  !sensitiveComponent.test(name) &&
   !/^(?:node_modules|vendor|credentials|secrets|profiles|AppData)$/i.test(name) &&
   !/(?:secret|credential|private.?key|password|token)/i.test(name) &&
   !/[<>:"\\|?*\x00-\x1f]/.test(name) &&
@@ -124,17 +129,34 @@ function mutateState(file, update) {
     fs.unlinkSync(lock);
   }
 }
-export function grant(stateFile, root, participant, propose = false) {
+export function grant(stateFile, root, participant, propose = false, selection = {}) {
   root = path.resolve(root);
+  const components = root.split(path.sep);
+  if (components.some((part) => sensitiveComponent.test(part))) fail("invalid_selection");
+  noLinks(root);
+  // Explicit local installation metadata, never supplied by the remote API.
+  // Custom --data-dir installations must be declared via --data-root or the existing env.
+  const dataRoots = [...(selection.dataRoots ?? [])];
+  if (process.env.MIND_WAKE_DATA_DIR) dataRoots.push(process.env.MIND_WAKE_DATA_DIR);
+  if (process.env.LOCALAPPDATA) dataRoots.push(path.join(process.env.LOCALAPPDATA, "mind-wake"));
+  const resolvedRoots = dataRoots.map((entry) => path.resolve(entry));
+  for (const dataRoot of resolvedRoots) {
+    if (inside(root, dataRoot)) fail("invalid_selection");
+    if (inside(dataRoot, root)) {
+      const workspace = path.join(dataRoot, "workspace");
+      if (!inside(workspace, root)) fail("invalid_selection");
+      const relative = path.relative(workspace, root);
+      if (relative && relative.split(path.sep).some((part) => !allowed(part)))
+        fail("invalid_selection");
+    }
+  }
+  // AppData itself/Local/Roaming and arbitrary application control trees stay closed.
+  // Only a locally declared installation's workspace subtree can be selected there.
   if (
-    root
-      .split(path.sep)
-      .some((part) =>
-        /^(?:\.git|\.ssh|\.aws|\.codex|\.claude|AppData|profiles|credentials|secrets)$/i.test(part),
-      )
+    components.some((part) => /^AppData$/i.test(part)) &&
+    !resolvedRoots.some((dataRoot) => inside(path.join(dataRoot, "workspace"), root))
   )
     fail("invalid_selection");
-  noLinks(root);
   if (
     !fs.statSync(root).isDirectory() ||
     root === path.parse(root).root ||

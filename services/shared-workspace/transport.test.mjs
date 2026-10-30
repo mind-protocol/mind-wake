@@ -11,11 +11,57 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
   fs.mkdirSync(".local", { recursive: true });
   const base = fs.mkdtempSync(path.resolve(".local/workspace-transport-"));
   t.after(() => fs.rmSync(base, { recursive: true, force: true }));
-  const one = path.join(base, "one"),
-    two = path.join(base, "two"),
+  const dataRoot = path.join(base, "AppData", "Local", "chosen-installation");
+  const workspace = path.join(dataRoot, "workspace");
+  const selection = { dataRoots: [dataRoot] };
+  const one = path.join(workspace, "one"),
+    two = path.join(workspace, "two"),
     stateFile = path.join(base, "private", "state.json");
-  fs.mkdirSync(one);
-  fs.mkdirSync(two);
+  fs.mkdirSync(one, { recursive: true });
+  fs.mkdirSync(two, { recursive: true });
+  fs.writeFileSync(path.join(dataRoot, "config.json"), '{"private":"synthetic"}');
+  fs.writeFileSync(path.join(dataRoot, "auth.json"), '{"key":"synthetic"}');
+  fs.writeFileSync(path.join(dataRoot, "control.sqlite"), "SYNTHETIC ONLY");
+  const protectedNames = [
+    "runtime",
+    "runtimes",
+    "installation",
+    "auth",
+    "profiles",
+    "secrets",
+    "credentials",
+    "codex-home",
+    "claude-home",
+    ".codex",
+    ".ssh",
+    ".hidden",
+  ];
+  for (const name of protectedNames) {
+    for (const parent of [dataRoot, one]) {
+      const folder = path.join(parent, name);
+      fs.mkdirSync(folder);
+      fs.writeFileSync(path.join(folder, "config.json"), '{"key":"synthetic"}');
+      assert.throws(
+        () => grant(stateFile, folder, "refused", false, selection),
+        /invalid_selection/,
+      );
+    }
+  }
+  for (const folder of [
+    base,
+    path.join(base, "AppData"),
+    path.join(base, "AppData", "Local"),
+    path.join(base, "AppData", "Roaming"),
+    path.join(base, "AppData", "LocalLow"),
+    dataRoot,
+  ]) {
+    fs.mkdirSync(folder, { recursive: true });
+    assert.throws(() => grant(stateFile, folder, "refused", false, selection), /invalid_selection/);
+  }
+  // A workspace-shaped filename is not permission: custom data root must be local metadata.
+  assert.throws(() => grant(stateFile, one, "undeclared"), /invalid_selection/);
+  const workspaceCapability = grant(stateFile, workspace, "synthetic-workspace", false, selection);
+  revoke(stateFile, workspaceCapability.capability);
   fs.writeFileSync(path.join(one, "code.ts"), "export const answer = 1;\n");
   fs.writeFileSync(path.join(two, "code.ts"), "second selected folder\n");
   fs.writeFileSync(path.join(base, "outside.txt"), "OUTSIDE");
@@ -26,6 +72,10 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
   fs.linkSync(path.join(base, "outside.txt"), path.join(one, "hard.txt"));
   // Junctions do not require Windows Developer Mode/admin privileges.
   fs.symlinkSync(two, path.join(one, "escape"), process.platform === "win32" ? "junction" : "dir");
+  assert.throws(
+    () => grant(stateFile, path.join(one, "escape"), "linked-root", false, selection),
+    /unsafe_path/,
+  );
   const cert = path.join(base, "cert.pem"),
     key = path.join(base, "key.pem");
   execFileSync(
@@ -63,8 +113,8 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
   });
   const endpoint = `https://127.0.0.1:${server.address().port}/v1/workspace`;
   const ca = fs.readFileSync(cert);
-  const a = { ...grant(stateFile, one, "marco", true), ca, endpoint };
-  const b = { ...grant(stateFile, two, "reader"), ca, endpoint };
+  const a = { ...grant(stateFile, one, "marco", true, selection), ca, endpoint };
+  const b = { ...grant(stateFile, two, "reader", false, selection), ca, endpoint };
   const call = (client, body) => callWorkspace(client, body);
   const deny = (client, body, code) =>
     assert.rejects(call(client, body), (error) => error.message === code);
@@ -75,6 +125,12 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
     ["code.ts"],
   );
   assert.equal(listed.entries[0].hash, hash("export const answer = 1;\n"));
+  for (const name of protectedNames) {
+    await deny(a, { op: "read", path: `${name}/config.json` }, "unsafe_path");
+  }
+  for (const outside of ["../../config.json", "../../auth.json", "../../control.sqlite"]) {
+    await deny(a, { op: "read", path: outside }, "unsafe_path");
+  }
   const first = await call(a, { op: "read", path: "code.ts" });
   assert.equal((await call(b, { op: "read", path: "code.ts" })).text, "second selected folder\n");
   // A REAL local file change is seen by the next remote HTTPS request, with a new hash.
@@ -218,6 +274,8 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
       stateFile,
       "--root",
       two,
+      "--data-root",
+      dataRoot,
       "--participant",
       "unsafe",
       "--credential",
@@ -240,6 +298,8 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
       stateFile,
       "--root",
       two,
+      "--data-root",
+      dataRoot,
       "--participant",
       "cli-reader",
       "--credential",
@@ -283,6 +343,7 @@ test("real TLS, two clients and two selected temporary folders; deny boundary fa
       junctionDenied: true,
       incompleteBodyDeadlineMs,
       cliProcessVerified: true,
+      selectedAppDataWorkspaceVerified: true,
     }),
   );
 });
