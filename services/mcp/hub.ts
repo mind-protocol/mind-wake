@@ -9,7 +9,8 @@
  *   opération de paiement : le règlement fictif ne suit que la clôture d'une séance ;
  * - un message est stocké et livré comme donnée non fiable, jamais interprété ;
  * - aucun identifiant privé ne sort du hub : les parties se désignent par pseudonyme ;
- * - aucun envoi hors de cette machine (pas d'e-mail, de messagerie ni d'Internet).
+ * - le transport pipe reste local ; la façade HTTPS optionnelle et dédiée
+ *   shared-hub-main n'expose que les messages explicitement partagés entre deux agents.
  */
 
 import { createServer, type Server, type Socket } from "node:net";

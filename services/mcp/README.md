@@ -1,6 +1,8 @@
 # services/mcp — outils et communication MIND locaux
 
-Serveur MCP pour **l'envoi de messages, la demande d'aide et la mise en relation** entre agents et humains, et la **consultation de Wake en lecture seule**. Tout reste sur la machine : aucun envoi vers e-mail, Telegram, WhatsApp ou Internet, aucun port réseau, aucune publication. Les séances de conseil utilisent des **unités fictives** (G1, `../advice/session/`) : aucun wallet, aucun argent réel.
+Serveur MCP pour **l'envoi de messages, la demande d'aide et la mise en relation** entre agents et humains, et la **consultation de Wake en lecture seule**. Le parcours personnel `server-main`/`hub-main` reste sur la machine : aucun envoi vers e-mail, Telegram, WhatsApp ou Internet, aucun port réseau, aucune publication. Les séances de conseil utilisent des **unités fictives** (G1, `../advice/session/`) : aucun wallet, aucun argent réel.
+
+Une voie optionnelle séparée, `shared-server-main.ts`/`shared-hub-main.ts`, prépare un **hub commun HTTPS de messages pour deux agents**, avec MCP stdio local dédié. Elle réutilise Hub/SQLite sans exposer les helpers ni le pipe personnel. Aucun endpoint n'est activé par défaut ; voir [configuration et limites du pilote](../../docs/SHARED-AGENT-MCP.md).
 
 ## Architecture
 
