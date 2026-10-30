@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recipient-send"
+description = "Enables the recipient_send command without any pre-configured scope."
+commands.allow = ["recipient_send"]
+
+[[permission]]
+identifier = "deny-recipient-send"
+description = "Denies the recipient_send command without any pre-configured scope."
+commands.deny = ["recipient_send"]

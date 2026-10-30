@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recipient-status"
+description = "Enables the recipient_status command without any pre-configured scope."
+commands.allow = ["recipient_status"]
+
+[[permission]]
+identifier = "deny-recipient-status"
+description = "Denies the recipient_status command without any pre-configured scope."
+commands.deny = ["recipient_status"]
