@@ -11,6 +11,7 @@ mod windows_startup;
 mod updates;
 mod documents;
 mod conversation_images;
+mod external_urls;
 mod authorizations;
 
 use cli::{CliRun, OwnerRequest, Verb};
@@ -100,6 +101,12 @@ async fn wake_history() -> Result<CliRun, String> {
 #[tauri::command]
 async fn wake_open_location(kind: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || cli::open_wake_location(&kind))
+        .await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn open_external_url(url: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || external_urls::open(&url))
         .await.map_err(|e| e.to_string())?
 }
 
@@ -309,6 +316,7 @@ fn main() {
             wake_always_on,
             wake_messages,            wake_history,
             wake_open_location,
+            open_external_url,
             wake_reply,
             quick_input_close,
             quick_input_send,

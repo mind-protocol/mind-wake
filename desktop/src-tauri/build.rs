@@ -39,6 +39,7 @@ fn main() {
             "wake_messages",
             "wake_history",
             "wake_open_location",
+            "open_external_url",
             "wake_reply",
             "quick_input_close",
             "quick_input_send",

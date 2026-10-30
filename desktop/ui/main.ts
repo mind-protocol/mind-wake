@@ -17,6 +17,7 @@ import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
 import { initMessageFileLinks } from "./message-file-links.js";
 import { appendMessageImages } from "./message-images.js";
+import { decorateMessageLinks } from "./message-links.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
 
 interface TauriGlobal {
@@ -121,11 +122,19 @@ let lastMessageId: string | null = null;
 let draftKey: string | null = null;
 const outgoingChat = new Map<string, HTMLLIElement>();
 
+function messageLinks(body: HTMLElement): void {
+  decorateMessageLinks(body, (command, args) => {
+    if (!tauri) return Promise.reject(Error("Ouverture disponible dans l’application MIND Wake"));
+    return tauri.core.invoke(command, args);
+  });
+}
+
 function conversationBody(text: string, kind: BumpKind | null, imageText = text): HTMLDivElement {
   const body = document.createElement("div"), paragraph = document.createElement("p");
   body.className = "conversation-body"; body.append(paragraph);
   if (kind === null) {
     paragraph.textContent = text;
+    messageLinks(paragraph);
     appendMessageImages(body, imageText, (command, args) => {
       if (!tauri) return Promise.reject(Error("Images locales disponibles dans l’app"));
       return tauri.core.invoke(command, args);
@@ -473,6 +482,7 @@ async function showThread(
         meta.textContent = `${m.from_self ? "Toi" : m.provenance.kind === "agent" ? "Ton agent" : m.provenance.kind} · ${new Date(m.provenance.received_at).toLocaleString("fr-FR")}`;
         const body = document.createElement("p");
         body.textContent = m.text;
+        messageLinks(body);
         appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
         li.append(meta, body);
         return li;
@@ -850,6 +860,7 @@ function renderAgentThreads(): void {
     li.dataset["self"] = String(m.from === "wake");
     li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
     meta.textContent = `${m.from === "system" ? "État de la consultation" : m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    messageLinks(body);
     appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
     li.append(meta, body);
     if (m.from === "repo" && m.text.length === 4000 && Date.parse(m.at) < Date.parse("2026-10-30T16:00:00Z")) {
@@ -907,7 +918,7 @@ function renderWakeHistory(): void {
       cue.className="wake-cue";cue.textContent=m.missing?"Début de ce réveil non chargé":m.text.split("\n")[0]??m.text;
       summary.textContent="Voir le prompt complet et son contexte";
       pre.textContent=m.text;details.dataset["turnId"]=m.id;details.open=expanded.has(m.id);details.append(summary,pre);li.append(meta,cue);if(!m.missing)li.append(details);
-    } else { body.textContent=m.text;appendMessageImages(body,m.text,(command,args)=>tauri!.core.invoke(command,args));li.append(meta,body); }
+    } else { body.textContent=m.text;messageLinks(body);appendMessageImages(body,m.text,(command,args)=>tauri!.core.invoke(command,args));li.append(meta,body); }
     return li;
   }));
   pane.scrollTop=follow?pane.scrollHeight:oldTop;

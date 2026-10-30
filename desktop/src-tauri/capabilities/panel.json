@@ -25,6 +25,7 @@
     "allow-wake-messages",
     "allow-wake-history",
     "allow-wake-open-location",
+    "allow-open-external-url",
     "allow-wake-reply",
     "allow-helpers-answers",
     "allow-owner-threads",
