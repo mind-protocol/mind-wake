@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { checkUpdate, development, UPDATE_INTERVAL } from "../../scripts/app-update.mjs";
+import { checkUpdate, development } from "../../scripts/app-update.mjs";
 
 function fixture(t) {
   const scratch = path.resolve(".local/update-tests");
@@ -47,7 +47,6 @@ function fixture(t) {
   return { dir, file, m, calls, run };
 }
 test("development defaults are fail-closed; no fetch even on demand", async (t) => {
-  assert.equal(UPDATE_INTERVAL, 21600000);
   assert.equal(development({}, {}), true);
   assert.equal(development({ development: false }, { MIND_WAKE_DEV: "1" }), true);
   const f = fixture(t);

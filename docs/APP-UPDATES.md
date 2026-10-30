@@ -1,8 +1,10 @@
 # Mises à jour de l’application
 
-Le panneau de production vérifie au démarrage puis six heures après chaque vérification terminée. Dans « Réglages » du menu de gauche, le bouton de mise à jour lance le même parcours immédiatement. Fermer la fenêtre conserve le panneau dans la zone de notification et donc la vérification périodique ; quitter le panneau l’arrête.
+Le panneau de production vérifie au démarrage puis cinq minutes après chaque vérification terminée. Dans « Réglages » du menu de gauche, le bouton de mise à jour lance le même parcours immédiatement. Fermer la fenêtre conserve le panneau dans la zone de notification et donc la vérification périodique ; quitter le panneau l’arrête.
 
 `scripts/app-update.mjs` récupère `main` de `https://github.com/mind-protocol/mind-wake.git` dans un cache Git propre à l’installation. `updateSource` et `updateBranch` dans le manifeste permettent de choisir explicitement un autre canal. Le dépôt de travail n’est ni modifié, ni nettoyé, ni réinitialisé.
+
+L’accès au dépôt source privé doit être déjà configuré pour Git dans le contexte du panneau ; sans cet accès, la récupération échoue et l’installation active est conservée.
 
 Une nouvelle révision est clonée dans `installation/releases/`, puis construite avec `npm ci`, le build du moteur, celui du panneau et `cargo build --locked --release`. Cette première version nécessite Git, npm à côté de Node, Rust/Cargo et les outils de compilation Windows sur le poste. Elle ne télécharge pas encore de binaires précompilés signés.
 

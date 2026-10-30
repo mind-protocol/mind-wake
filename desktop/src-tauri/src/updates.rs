@@ -39,6 +39,6 @@ pub async fn app_update(check: bool) -> Result<serde_json::Value, String> {
 pub fn start() {
     std::thread::spawn(|| loop {
         let _ = run("check");
-        std::thread::sleep(std::time::Duration::from_secs(6 * 60 * 60));
+        std::thread::sleep(std::time::Duration::from_secs(5 * 60));
     });
 }

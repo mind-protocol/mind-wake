@@ -4,7 +4,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
-export const UPDATE_INTERVAL = 6 * 60 * 60 * 1000;
+export const UPDATE_INTERVAL = 5 * 60 * 1000;
 export function development(m, env = process.env) {
   return env.MIND_WAKE_DEV === "1" || m.development !== false;
 }
