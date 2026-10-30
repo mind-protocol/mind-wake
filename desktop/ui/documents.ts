@@ -1,4 +1,5 @@
 import { collectionKey, documentLabel, libraryLabel, modificationAge, visibleDocuments, type LibraryEntry } from './document-library.js';
+import { loadDocumentImages, sanitizeDocument } from './document-images.js';
 type Invoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
 export function initialDocument(entries: readonly LibraryEntry[], saved?: string): string | undefined {
   if (saved) return saved;
@@ -13,11 +14,20 @@ const escape = (text: string): string => text.replaceAll('&', '&amp;').replaceAl
 
 // Small, escaped Markdown renderer. Raw HTML is text, never executable markup.
 export function markdownHtml(source: string): string {
-  const inline = (text: string): string => escape(text)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^\s)]+)\)/g, '<a href="$2">$1</a>');
+  const inline = (text: string): string => {
+    const tokens = /`([^`]+)`|(!?)\[([^\]]*)\]\(<?([^\s)>]+)>?(?:\s+"[^"\n]*")?\)|\*\*([^*]+)\*\*|\*([^*]+)\*/g;
+    let result = '', end = 0;
+    for (const token of text.matchAll(tokens)) {
+      result += escape(text.slice(end, token.index)); end = token.index + token[0].length;
+      if (token[1] !== undefined) result += `<code>${escape(token[1])}</code>`;
+      else if (token[4] !== undefined) result += token[2] === '!'
+        ? `<img src="${escape(token[4])}" alt="${escape(token[3] ?? '')}">`
+        : `<a href="${escape(token[4])}">${escape(token[3] ?? '')}</a>`;
+      else if (token[5] !== undefined) result += `<strong>${escape(token[5])}</strong>`;
+      else result += `<em>${escape(token[6] ?? '')}</em>`;
+    }
+    return result + escape(text.slice(end));
+  };
   const lines = source.replaceAll('\r', '').split('\n');
   const result: string[] = [];
   let code: string[] | null = null;
@@ -176,14 +186,13 @@ export function initDocuments(invoke: Invoke): void {
       const key=collectionKey(relative);
       if(collection.value&&collection.value!==key)collection.value='';
       const parsed=new DOMParser().parseFromString(data.format==='markdown'?markdownHtml(data.text):data.text,'text/html');
-      parsed.querySelectorAll('script,iframe,object,embed,base,meta,link,form').forEach(el=>el.remove());
-      for(const el of parsed.querySelectorAll('*'))for(const attr of [...el.attributes])if(/^on/i.test(attr.name)||['src','srcset','action','formaction','srcdoc'].includes(attr.name))el.removeAttribute(attr.name);
-      const policy=document.createElement('meta');policy.httpEquiv='Content-Security-Policy';policy.content="default-src 'none'; style-src 'unsafe-inline'; script-src 'none'; form-action 'none'; base-uri 'none'";parsed.head.prepend(policy);
+      const images=sanitizeDocument(parsed,relative);
       const style=document.createElement('style');style.textContent='html{color-scheme:light;scroll-padding-top:20px}body{font:15px/1.75 system-ui;margin:28px;color:#203f34;overflow-wrap:anywhere}pre{overflow:auto;padding:16px;background:#8882}table{border-collapse:collapse}td,th{border:1px solid #8886;padding:8px}a{color:#238967}img{max-width:100%}';parsed.head.prepend(style);
       title.textContent=parsed.querySelector('h1')?.textContent??documentLabel(entries.find(e=>e.relative===relative)??{name:relative.split('/').at(-1)??relative,relative});
       frame.onload=()=>{
         if(ticket!==generation)return;
         const doc=frame.contentDocument;if(!doc)return;
+        void loadDocumentImages(images,doc,targetScope,invoke,()=>ticket===generation&&targetScope===scope.value&&frame.contentDocument===doc);
         renderedRelative=relative;renderedScope=targetScope;
         outline.replaceChildren(new Option('Aller à une section…',''));
         const usedHeadingIds=new Set<string>();

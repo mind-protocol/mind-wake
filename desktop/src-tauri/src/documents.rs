@@ -20,9 +20,12 @@ fn supported(path: &Path) -> bool {
 }
 
 #[tauri::command]
-pub async fn conversation_image(reference: String) -> Result<serde_json::Value, String> {
+pub async fn conversation_image(reference: String, scope: Option<String>) -> Result<serde_json::Value, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        let roots: Vec<PathBuf> = ["agent", "project"].iter().filter_map(|scope| root(scope).ok()).collect();
+        let roots: Vec<PathBuf> = match scope {
+            Some(scope) => vec![root(&scope)?],
+            None => ["agent", "project"].iter().filter_map(|scope| root(scope).ok()).collect(),
+        };
         let data_url = crate::conversation_images::read_confined(&reference, &roots)?;
         Ok(serde_json::json!({"dataUrl": data_url}))
     }).await.map_err(|e| e.to_string())?
