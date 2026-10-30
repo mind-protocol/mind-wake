@@ -602,6 +602,7 @@ async function refreshChat(): Promise<void> {
       if (item.id) li.dataset["messageId"] = item.id;
       const meta = document.createElement("small");
       li.dataset["from"] = item.from;
+      if (item.humanRecipient === "Auroracle") li.dataset["recipient"] = "auroracle";
       renderConversationMeta(meta, item);
       if (item.delivery) {
         const receipt = document.createElement("span");

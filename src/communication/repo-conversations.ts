@@ -17,7 +17,7 @@ export function appendRepoMessage(dataDir: string, record: RepoRecord): void {
   }
   fs.appendFileSync(file, JSON.stringify(record) + "\n", "utf8");
 }
-export function readRepoConversations(dataDir: string): RepoConversation[] {
+export function readRepoConversations(dataDir: string, includeOwnerReplies = true): RepoConversation[] {
   const file = path.join(dataDir, FILE);
   if (!fs.existsSync(file)) return [];
   const s = fs.lstatSync(file);
@@ -37,7 +37,7 @@ export function readRepoConversations(dataDir: string): RepoConversation[] {
     if (!thread.messages.some(m => m.id === r.message.id)) thread.messages.push(r.message);
     threads.set(thread.id, thread);
   }
-  const replies = readOwnerMessages(dataDir) ?? [];
+  const replies = includeOwnerReplies ? readOwnerMessages(dataDir) ?? [] : [];
   for (const thread of threads.values()) {
     // The explicit conversation token identifies replies from the real Wake channel.
     for (const r of replies) {

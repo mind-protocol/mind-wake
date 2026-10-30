@@ -6,7 +6,7 @@
 
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
-  readonly from: "agent" | "human" | "session" | "activity" | "received" | "context";
+  readonly from: "agent" | "human" | "session" | "activity" | "received" | "context" | "sent";
   readonly at: string;
   readonly text: string;
   readonly id?: string;
@@ -16,6 +16,8 @@ export interface ConversationItem {
   readonly pendingReason?: string;
   /** Origine d'une réponse de session : outil et dossier du projet. */
   readonly source?: string;
+  /** Host pilot route, never inferred from the message body. The author remains human. */
+  readonly humanRecipient?: "Auroracle";
 }
 
 export interface Conversation {
@@ -32,9 +34,10 @@ export function conversationText(item: ConversationItem, simplify: (text: string
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */
 export function renderConversationMeta(element: Pick<HTMLElement, "textContent">, item: ConversationItem): void {
-  const who = item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
+  const who = item.from === "sent" ? `Vers un pair · ${item.source ?? "source inconnue"}`
+    : item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
     : item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
-    : item.from === "activity" ? "Activité" : item.from === "human" ? `Toi${item.source ? ` · ${item.source}` : ""}`
+    : item.from === "activity" ? "Activité" : item.from === "human" ? `Toi${item.humanRecipient ? ` → ${item.humanRecipient}` : ""}${item.source ? ` · ${item.source}` : ""}`
     : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Ton agent";
   element.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
 }
@@ -168,10 +171,23 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       });
     }
   }
+  const recipientIds = new Set<string>();
   for(const raw of Array.isArray(data["recipientSentMessages"]) ? data["recipientSentMessages"] : []) {
     const m=rec(raw),id=str(m?.["id"]),at=str(m?.["at"]),text=str(m?.["text"]);
-    if(!id || !at || text===null || !Number.isFinite(Date.parse(at)))continue;
-    items.push({from:"human",id,at,text:`NLR à Auroracle: ${text}`,source:`Auroracle · ${m?.["state"]==="remote_stored" ? "stocké sur le hub · réception non attestée" : "stocké localement · envoi non confirmé"}${str(m?.["threadId"]) ? ` · fil ${str(m?.["threadId"])}` : ""}`});
+    if(!id || !at || text===null || !Number.isFinite(Date.parse(at)) || recipientIds.has(id))continue;
+    recipientIds.add(id);
+    items.push({from:"human",humanRecipient:"Auroracle",id,at,text,source:`attribution locale · ${str(m?.["senderRef"]) ?? "référence humaine inconnue"} → ${str(m?.["recipientRef"]) ?? "référence destinataire inconnue"} · ${m?.["state"]==="remote_stored" ? "stocké sur le hub · réception et lecture non attestées" : "stocké localement · envoi non confirmé"}${str(m?.["threadId"]) ? ` · fil ${str(m?.["threadId"])}` : ""}${str(m?.["messageId"]) ? ` · message ${str(m?.["messageId"])}` : ""}`});
+  }
+  const sentIds = new Set<string>();
+  for (const raw of Array.isArray(data["sentMessages"]) ? data["sentMessages"] : []) {
+    const m = rec(raw), sender = rec(m?.["sender"]), recipient = rec(m?.["recipient"]);
+    const id = str(m?.["id"]), at = str(m?.["at"]), text = str(m?.["text"]), channel = str(m?.["channel"]);
+    if (!id || !at || text === null || !Number.isFinite(Date.parse(at)) || sentIds.has(id) ||
+      (channel !== "mind-shared-hub" && channel !== "repo-session")) continue;
+    sentIds.add(id);
+    const status = m?.["state"] === "hub_stored" ? "stocké sur le hub · réception et lecture non attestées" : "trace locale · transmission non attestée";
+    const source = `${str(sender?.["name"]) ?? "Ton agent"} (${str(sender?.["ref"]) ?? "inconnu"}) → ${str(recipient?.["name"]) ?? "pair"} (${str(recipient?.["ref"]) ?? "inconnu"}) · ${channel} · fil ${str(m?.["threadId"]) ?? "inconnu"} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? " · historique réintégré" : ""}`;
+    items.push({ from: "sent", id, at, text, source });
   }
   const receivedIds = new Set<string>();
   for (const raw of Array.isArray(data["receivedMessages"]) ? data["receivedMessages"] : []) {

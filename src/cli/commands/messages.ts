@@ -17,6 +17,7 @@ import { readMessageWait, type MessageWait } from "../../communication/runtime-a
 import { enqueueOwnerMessage, readOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
 import { readRepoConversations, type RepoConversation } from "../../communication/repo-conversations.js";
 import { readReceivedMessages, type ReceivedMessage } from "../../communication/received-messages.js";
+import { readSentMessages, type SentMessage } from "../../communication/sent-messages.js";
 import {recipientEntries} from "../../communication/recipient-history.js";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -54,7 +55,8 @@ interface LogEntry extends HumanReply {
 }
 
 export interface MessagesData {
-  readonly recipientSentMessages?: readonly {id:string;at:string;text:string;state:string;threadId:string|null}[];
+  readonly sentMessages?: readonly SentMessage[];
+  readonly recipientSentMessages?: readonly {id:string;at:string;text:string;state:string;threadId:string|null;messageId:string|null;senderRef:string;recipientRef:string}[];
   readonly receivedMessages?: readonly ReceivedMessage[];
   readonly publicActivity?: readonly PublicActivity[];
   readonly profileId: string | null;
@@ -193,7 +195,7 @@ export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<Messa
   });
   return {
     exitCode: EXIT_OK,
-    data: { profileId: DEFAULT_PROFILE_ID, hint: null, recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId})), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)), publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
+    data: { profileId: DEFAULT_PROFILE_ID, hint: null, recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)), publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
     human: formatMessages,
   };
 }

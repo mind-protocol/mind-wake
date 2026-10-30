@@ -704,6 +704,22 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
   border-left: 3px dashed var(--muted);
   background: color-mix(in srgb, var(--muted) 6%, var(--surface, var(--bg)));
 }
+
+:root { --sent-peer-message: #91480b; }
+@media (prefers-color-scheme: dark) { :root { --sent-peer-message: #ffc486; } }
+.messages li[data-from="sent"] {
+  border-left: 4px solid var(--sent-peer-message);
+  background: color-mix(in srgb, var(--sent-peer-message) 9%, var(--surface, var(--bg)));
+}
+.messages li[data-from="sent"] > small { color: var(--sent-peer-message); }
+
+:root { --human-peer-message: #284cc6; }
+@media (prefers-color-scheme: dark) { :root { --human-peer-message: #a6bbff; } }
+.messages li[data-from="human"][data-recipient="auroracle"] {
+  border-left: 4px solid var(--human-peer-message);
+  background: color-mix(in srgb, var(--human-peer-message) 12%, var(--surface, var(--bg)));
+}
+.messages li[data-from="human"][data-recipient="auroracle"] > small { color: var(--human-peer-message); }
 .message-images { display: grid; gap: 12px; margin-top: 10px; white-space: normal; }
 .message-images figure { margin: 0; width: min(100%, 22rem); min-width: 0; }
 .message-images button { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 5px; background: #f0f2ed; border: 1px solid #d7dfd5; border-radius: 8px; cursor: zoom-in; overflow: hidden; }
