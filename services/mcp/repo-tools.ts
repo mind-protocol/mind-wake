@@ -69,11 +69,12 @@ export function registerRepoTools(
     "send_repo_request",
     {
       description:
-        "Ask the exact target returned by list_repo_sessions, as a daemon-supervised background consultation. Returns queued/running and a thread_id. No automatic matching or random fallback. Pause/Stop apply. Read the answer with read_repo_thread; sending is not a reply received.",
+        "Delegate to the exact target returned by list_repo_sessions in one supervised call. Optional wakes runs up to that many sequential turns with persisted checkpoints, stopping early on done/blocked. Roots and policy rechecked each turn. No extra permissions or automatic replay after interruption. On return YOU must verify evidence against the task, then accept or redelegate the precise remaining work within the existing mandate. Read progress and final work_state with read_repo_thread; answered/done never means independently verified completion.",
       inputSchema: z.strictObject({
         target: z.string().min(1).max(200),
         topic: z.string().min(3).max(160),
         context: z.string().max(6000).default(""),
+        wakes: z.int().min(1).optional(),
         idempotency_key: z.string().min(8).max(128),
       }),
       annotations: { openWorldHint: false },
@@ -85,6 +86,7 @@ export function registerRepoTools(
           topic: a.topic,
           context: a.context,
           idempotencyKey: a.idempotency_key,
+          ...(a.wakes === undefined ? {} : { wakes: a.wakes }),
         }),
       ),
   );

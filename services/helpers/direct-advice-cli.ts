@@ -61,7 +61,8 @@ try {
       raw["context"].length > 6000 ||
       typeof raw["idempotency_key"] !== "string" ||
       raw["idempotency_key"].length < 8 ||
-      raw["idempotency_key"].length > 128
+      raw["idempotency_key"].length > 128 ||
+      (raw["wakes"] !== undefined && typeof raw["wakes"] !== "number")
     )
       throw new Error(
         "Input requires target, topic (3–160 chars), context (0–6000), idempotency_key (8–128)",
@@ -71,6 +72,7 @@ try {
       topic: raw["topic"],
       context: raw["context"],
       idempotencyKey: raw["idempotency_key"],
+      ...(raw["wakes"] === undefined ? {} : { wakes: raw["wakes"] }),
     });
   } else throw new Error("Unknown command or missing --input / --thread");
   process.stdout.write(JSON.stringify(result, null, 2) + "\n");

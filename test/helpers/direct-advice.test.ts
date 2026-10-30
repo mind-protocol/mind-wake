@@ -186,6 +186,36 @@ it("selects the explicit session even when no keywords match, never another targ
   expect(selectDirectSession([session], input.target)).toBe(session);
   expect(() => selectDirectSession([session], "claude:other")).toThrow("unavailable");
 });
+it("persists a multi-wake delegation and sends only its final report to the principal", async () => {
+  const q = await queueDirectAdvice(env, { ...input, wakes: 3 });
+  await expect(queueDirectAdvice(env, { ...input, wakes: 2 })).rejects.toThrow(
+    "different target or question",
+  );
+  const wake = vi
+    .fn()
+    .mockResolvedValueOnce({ ok: true, text: "Checkpoint\nMIND_WAKE: continue", detail: "test" })
+    .mockImplementationOnce(() => {
+      expect(readDirectThread(env, q.thread_id).status).not.toBe("answered");
+      return Promise.resolve({ ok: true, text: "Final evidence\nMIND_WAKE: done", detail: "test" });
+    });
+  const result = await executeDirectAdvice(
+    dir,
+    { id: q.thread_id, ...input, createdAt: "now", wakes: 3 },
+    [session],
+    wake,
+  );
+  expect(result).toMatchObject({
+    status: "answered",
+    wakes_used: 2,
+    work_state: "done",
+    review_required: true,
+    completion_verified: false,
+  });
+  const thread = readDirectThread(env, q.thread_id);
+  expect(thread.status).toBe("answered");
+  expect(thread).toMatchObject({ review_required: true, completion_verified: false });
+  expect(thread.messages.filter((m) => m.from === "repo")).toHaveLength(3);
+});
 it("queues immediately, deduplicates a retry, and refuses a conflicting key", async () => {
   const first = await queueDirectAdvice(env, input);
   expect(first.status).toBe("queued");

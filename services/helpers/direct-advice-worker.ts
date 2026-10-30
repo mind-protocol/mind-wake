@@ -6,6 +6,7 @@ import {
   directSessions,
   executeDirectAdvice,
   recordDirectState,
+  selectDirectSession,
   type DirectRequest,
 } from "./direct-advice.js";
 import { createOfficialWaker } from "./wake.js";
@@ -34,7 +35,17 @@ try {
   };
   directProfile(env, true);
   const wake = createOfficialWaker({ maxAnswerChars: null, ...request.cli });
-  const result = await executeDirectAdvice(dir, request, await directSessions(env), wake);
+  const result = await executeDirectAdvice(
+    dir,
+    request,
+    await directSessions(env),
+    wake,
+    async () => {
+      directProfile(env, true);
+      // Roots and profile may have been revoked while the previous wake was running.
+      selectDirectSession(await directSessions(env), request.target);
+    },
+  );
   fs.writeFileSync(
     path.join(output, "result.json"),
     JSON.stringify({ thread_id: id, ...result }, null, 2),
