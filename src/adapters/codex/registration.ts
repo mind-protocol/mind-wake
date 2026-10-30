@@ -7,6 +7,7 @@
  * accordé qu'avec `runtime.hostUnsandboxedAcknowledged` (ADR-006), constaté par le runner.
  */
 
+import { withFilResume } from "../../communication/fil-continuity.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
@@ -60,7 +61,14 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
     create: (context) =>
       new CodexAdapter({
         stepsStopHook: true,
-        onStepsResult: (request, raw) => saveStepsResult(context.workspaceDir, context.dataDir, request.policy.groups.identity.agentId, request.sessionId, raw),
+        onStepsResult: (request, raw) =>
+          saveStepsResult(
+            context.workspaceDir,
+            context.dataDir,
+            request.policy.groups.identity.agentId,
+            request.sessionId,
+            raw,
+          ),
         executable: executable(),
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,
@@ -76,8 +84,17 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         ),
         model: config.model,
         ...(config.effort === undefined ? {} : { effort: config.effort }),
-        systemPrompt: (request) => withWakePersonality(context.workspaceDir,
-          typeof config.systemPrompt === "function" ? config.systemPrompt(request) : config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
+        systemPrompt: (request) =>
+          withFilResume(
+            context.dataDir,
+            context.workspaceDir,
+            withWakePersonality(
+              context.workspaceDir,
+              typeof config.systemPrompt === "function"
+                ? config.systemPrompt(request)
+                : (config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
+            ),
+          ),
       }),
   };
 }

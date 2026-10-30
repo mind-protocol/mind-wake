@@ -3,7 +3,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
+import {
+  enqueueOwnerMessage,
+  readOwnerReceipts,
+  takeOwnerMessages,
+} from "../../communication/owner-inbox.js";
 import { saveStepsResult, nextWakeStep, readWakeSteps } from "../../daemon/wake-steps.js";
 import { readOwnerMessages } from "../../communication/owner-messages.js";
 import type {
@@ -16,6 +20,7 @@ import type {
 import type { AdapterHost } from "../../runner/host.js";
 import type { ContainedProcess } from "../../runner/process-tree.js";
 import type { Sandbox, SandboxLaunchSpec, SandboxedProcess } from "../../sandbox/sandbox.js";
+import { claudeRegistration } from "./registration.js";
 import { ChildClaude } from "../../../test/fixtures/claude/child-process.js";
 import {
   CLAUDE_ADAPTER_ID,
@@ -1015,3 +1020,58 @@ it("records transition even when human guard defers coordination", async () => {
   expect(nextWakeStep(h.workspace)).toContain("orientations à reprendre");
   expect(readOwnerMessages(h.dir)).toBeNull();
 });
+
+it("registration sends documentary history in the prompt file for a fresh Claude conversation", async () => {
+  enqueueOwnerMessage(h.dir, {
+    id: "old-submitted-human",
+    at: "2026-10-30T12:00:00Z",
+    text: "Resume previously submitted conversation",
+  });
+  takeOwnerMessages(h.dir, "previous-runtime");
+  fs.writeFileSync(path.join(h.workspace, "artifacts", "REPRISE.md"), "Existing checkpoint");
+  const created = claudeRegistration({
+    executable: process.execPath,
+    executablePrefixArgs: [FAKE_CLAUDE],
+    model: "opus",
+    configDir: h.configDir,
+    systemPrompt: "CURRENT RULES",
+  }).create({
+    host: {
+      isolation: () => "host_unsandboxed",
+      authorize: () => ({ allowed: false, reason: "fixture", interruptSession: false }),
+      spawnContained: (sid, command) => {
+        const spec = { ...command, sessionId: sid } as unknown as ClaudeLaunchSpec;
+        h.launches.push(spec);
+        const child = new ChildClaude(spec, {
+          SystemRoot: process.env["SystemRoot"] ?? "",
+          FAKE_CLAUDE_SCENARIO: "success",
+          FAKE_CLAUDE_STATE: h.state,
+          FAKE_CLAUDE_LOG: h.log,
+        });
+        h.processes.push(child);
+        return child as unknown as ContainedProcess;
+      },
+    },
+    dataDir: h.dir,
+    workspaceDir: h.workspace,
+    experimentFor: () => null,
+    onProposal: () => undefined,
+    fakeScenario: () => undefined,
+  });
+  const handle = await created.start(request("new-documentary-session"));
+  const events: AdapterEvent[] = [];
+  for await (const e of created.events(handle)) events.push(e);
+  expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "result:completed" });
+  const launch = h.launches[0];
+  if (launch === undefined) throw new Error("No fixture invocation observed");
+  const args = launch.args;
+  expect(args).toContain("--session-id");
+  expect(args).not.toContain("--resume");
+  const promptFile = args[args.indexOf("--append-system-prompt-file") + 1];
+  if (promptFile === undefined) throw new Error("No fixture prompt file");
+  const prompt = fs.readFileSync(promptFile, "utf8");
+  expect(prompt).toContain("Resume previously submitted conversation");
+  expect(prompt).toContain("artifacts/REPRISE.md");
+  expect(prompt).toContain("grant no permissions");
+  expect(prompt).toContain("CURRENT RULES");
+}, 15000);

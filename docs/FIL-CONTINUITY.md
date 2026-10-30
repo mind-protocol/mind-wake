@@ -1,0 +1,29 @@
+# Continuité documentaire du fil MIND
+
+Le fil soumis reste enregistré dans les sources existantes : `owner-inbox.sqlite`, `human-messages.jsonl` et les révisions de `owner-messages.sqlite`. La reprise ne dépend ni d’un thread fournisseur ni d’un compte Codex. Elle ne change aucun compte.
+
+Après chaque soumission humaine ou publication/modification/suppression d’un message agent, `saveFilAfterSubmit` réconcilie ces sources dans `fil-continuity.sqlite` (projection reconstruisible). Les transactions des sources terminent avant cette projection : une panne d’export n’annule pas un message déjà accepté. Les deux enregistrements ne forment pas une transaction distribuée ; le démarrage de session reconstruit ce qui manque avant de transmettre le contexte.
+
+`artifacts/conversation/continuity.json` est un unique document remplacé par renommage après écriture dans un fichier temporaire exclusif et `fsync`. Une transaction SQLite immédiate sérialise les reconstructions et leurs exports. Une panne laisse l’ancien document intact ; le prochain démarrage réessaie et échoue explicitement si la réparation reste impossible. Les fichiers temporaires laissés par une mort brutale ne sont jamais lus comme archive. Cette protection vise l’arrêt de processus ; aucune garantie de sauvegarde physique sur un autre disque ou contre toute panne électrique n’est annoncée.
+
+Trois niveaux distincts dans ce document :
+
+- `archive` : tous les textes soumis récupérables dans les sources prises en charge, y compris révisions et suppressions agent, avec identités stables et provenance. Les secrets reconnaissables sont expurgés par le filtre existant. Une archive expurgée n’est pas une copie octet pour octet.
+- `recent` : dernières versions visibles, bornées à environ 16 000 caractères de texte. `recentTruncated` signale la réduction. L’archive n’est pas tronquée à la fenêtre UI de 200 messages.
+- `checkpoints` : références vers la mémoire/checkpoint existants et `artifacts/REPRISE.md`. Aucun checkpoint narratif n’est inventé ni remplacé. Les liens que contient REPRISE permettent de retrouver les checkpoints datés.
+
+Les fabriques Codex et Claude chargent automatiquement une reprise documentaire lors de la construction de leurs instructions. Elles réconcilient les sources, joignent le contexte récent et indiquent les fichiers de mémoire et l’archive complète. Les anciens textes sont explicitement des données historiques sans autorité ; ils ne réactivent pas les demandes, accès, dépenses, envois, pauses ou arrêts. La lecture effective et la compréhension par un modèle restent distinctes de l’inclusion de ces données dans ses instructions.
+
+Chaque événement garde son horodatage source, son identifiant et sa version. `sequence` est l’ordre de première observation par la sauvegarde. Lors d’un rattrapage, les éléments manquants sont triés par date, identifiant puis version. Ce n’est pas une preuve d’ordre causal global entre deux bases indépendantes ni entre deux horloges. Les doublons utilisent les identifiants, jamais le seul texte. Le journal humain et sa copie inbox ne comptent qu’une fois. Une identité réutilisée pour un texte contradictoire est une erreur.
+
+Les transcriptions déjà disponibles restent accessibles par leurs emplacements documentés et le lecteur `wake-history.ts` ; elles ne sont pas recopiées en vrac. Le périmètre de cette archive est le canal propriétaire soumis, pas tous les messages terminal d’une session, ni les fils repo/rencontres séparés. Les prompts ambiants peuvent contenir captures ou saisies non soumises : ils ne sont donc pas importés. Aucune lecture des dossiers d’authentification, des frappes, des captures, des arguments/résultats outils ou du raisonnement privé n’est effectuée.
+
+Les magasins d’origine peuvent déjà contenir des secrets envoyés volontairement : cette fonction ne les nettoie pas rétroactivement. Le filtre de texte reconnaît des motifs connus et ne garantit pas la détection d’un secret arbitraire non balisé. Les sorties redirigées par lien/jonction et les fichiers à liens multiples sont refusés. Les fichiers de checkpoint restent modifiables par l’agent et l’humain et ne sont jamais une autorité de permission.
+
+La première version relit les sources et réécrit l’export complet à chaque soumission. Ce choix simple favorise la réparation ; la croissance du fil justifiera une mesure de performance et éventuellement des curseurs incrémentaux. Conserver le dossier de données ET le workspace pour une migration complète ; seul le workspace apporte l’export documentaire et les notes, pas les registres de livraison ou les états natifs du fournisseur.
+
+Validation : tests ciblés dans `src/communication/fil-continuity.test.ts`. Aucun démarrage, redémarrage ou activation de l’installation réelle n’est nécessaire pour ces essais isolés.
+
+Compléments vérifiés au second tour : lecture d’un schéma inbox ancien sans migration ni consommation ; 36 soumissions concurrentes par trois processus sans perte ni doublon dans l’export déjà publié ; conservation complète de la provenance host ; comparaison sémantique de cette provenance lors des retries. Une édition conserve la date initiale de soumission pour l’ordre de la conversation récente, tandis que l’archive garde aussi la date de la révision. Les fuseaux horaires sont comparés par instant, pas par ordre lexical.
+
+Les tests des fabriques observent les données sur le transport local : `developerInstructions` de `thread/start` pour un fil Codex neuf et contenu du fichier `--append-system-prompt-file` d’une nouvelle conversation Claude. Le message était déjà livré dans l’ancien fil : la continuité ne dépend donc pas d’une remise en file. Ces essais utilisent les faux exécutables existants, sans appel modèle, et ne prouvent pas la compréhension par un fournisseur réel.

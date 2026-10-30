@@ -1,4 +1,5 @@
 /** Durable delivery queue, separate from the human conversation history. */
+import { saveFilAfterSubmit } from "./fil-continuity.js";
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
@@ -90,6 +91,22 @@ function open(dataDir: string): Database.Database {
     }
   return db;
 }
+function sameOrigin(raw: string | null, origin: InboxMessage["origin"]): boolean {
+  if (raw === null) return origin === undefined;
+  if (origin === undefined) return false;
+  const stored = JSON.parse(raw) as NonNullable<InboxMessage["origin"]>;
+  const fields: readonly (keyof NonNullable<InboxMessage["origin"]>)[] = [
+    "kind",
+    "channel",
+    "author",
+    "senderRef",
+    "recipientRef",
+    "threadId",
+    "messageId",
+    "correlationId",
+  ];
+  return fields.every((key) => stored[key] === origin[key]);
+}
 export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): void {
   if (
     message.image !== undefined &&
@@ -107,9 +124,16 @@ export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): voi
       message.image === undefined ? null : JSON.stringify(message.image),
       message.origin === undefined ? null : JSON.stringify(message.origin),
     );
+    const stored = db.prepare("SELECT text,origin_json FROM inbox WHERE id=?").get(message.id) as {
+      text: string;
+      origin_json: string | null;
+    };
+    if (stored.text !== message.text || !sameOrigin(stored.origin_json, message.origin))
+      throw new Error("Conflicting owner message identity");
   } finally {
     db.close();
   }
+  saveFilAfterSubmit(dataDir);
 }
 /** Recover an acknowledged-or-queued send after a crash between inbox and history writes. */
 export function readOwnerMessage(dataDir: string, id: string): InboxMessage | null {

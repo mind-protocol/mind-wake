@@ -19,7 +19,11 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import { defaultRegistry } from "../../daemon/registry.js";
-import { enqueueOwnerMessage, readOwnerReceipts } from "../../communication/owner-inbox.js";
+import {
+  enqueueOwnerMessage,
+  readOwnerReceipts,
+  takeOwnerMessages,
+} from "../../communication/owner-inbox.js";
 import { saveStepsResult, nextWakeStep } from "../../daemon/wake-steps.js";
 import { appendRepoMessage } from "../../communication/repo-conversations.js";
 import { readOwnerMessages } from "../../communication/owner-messages.js";
@@ -1090,3 +1094,60 @@ it("applies a late repo proposal on an ordinary stable-project response without 
   expect(readOwnerMessages(h.dir)).toHaveLength(1);
   expect(nextWakeStep(workspace)).toContain("Vérifier le retour");
 });
+
+it("registration sends documentary history to a fresh Codex transport after previous delivery", async () => {
+  enqueueOwnerMessage(h.dir, {
+    id: "old-submitted-human",
+    at: "2026-10-30T12:00:00Z",
+    text: "Resume the saved submitted conversation",
+  });
+  takeOwnerMessages(h.dir, "old-thread");
+  fs.writeFileSync(path.join(h.dir, "workspace", "artifacts", "REPRISE.md"), "Existing checkpoint");
+  const created = codexRegistration({
+    executable: { path: process.execPath, prefixArgs: [FAKE] },
+    codexHome: path.join(h.dir, "codex-home"),
+    model: "gpt-test",
+    systemPrompt: "CURRENT RULES",
+  }).create({
+    host: {
+      isolation: () => "host_unsandboxed",
+      authorize: () => ({ allowed: false, reason: "fixture", interruptSession: false }),
+      spawnContained: (_sid, command) =>
+        new SpawnedCodexProcess(
+          {
+            executable: command.executable,
+            args: command.args,
+            env: command.env ?? {},
+            cwd: command.cwd ?? h.dir,
+          },
+          {
+            FAKE_CODEX_FLOW: path.join(FLOWS, "success.json"),
+            FAKE_CODEX_LOG: h.logPath,
+          },
+        ) as never,
+    },
+    dataDir: h.dir,
+    workspaceDir: path.join(h.dir, "workspace"),
+    experimentFor: () => null,
+    onProposal: () => undefined,
+    fakeScenario: () => undefined,
+  });
+  const req = request();
+  const consented = {
+    ...req,
+    policy: {
+      ...req.policy,
+      groups: { runtime: { hostUnsandboxedAcknowledged: true } },
+    } as unknown as PolicyRevision,
+  };
+  const handle = await created.start(consented);
+  const events: AdapterEvent[] = [];
+  for await (const e of created.events(handle)) events.push(e);
+  expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+  expect(h.requests("thread/resume")).toHaveLength(0);
+  const params = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
+  expect(params["developerInstructions"]).toContain("Resume the saved submitted conversation");
+  expect(params["developerInstructions"]).toContain("artifacts/REPRISE.md");
+  expect(params["developerInstructions"]).toContain("grant no permissions");
+  expect(params["developerInstructions"]).toContain("CURRENT RULES");
+}, 15000);

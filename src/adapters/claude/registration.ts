@@ -10,6 +10,7 @@ import { observeClaudeTools } from "../../communication/runtime-activity.js";
  * `runtime.hostUnsandboxedAcknowledged` (ADR-006) ; sinon refus du mode autonome.
  */
 
+import { withFilResume } from "../../communication/fil-continuity.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import os from "node:os";
 import path from "node:path";
@@ -126,7 +127,14 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
       let supervisor: ProcessTreeSupervisor | null = null;
       return new ClaudeAdapter({
         stepsStopHook: true,
-        onStepsResult: (request, raw) => saveStepsResult(context.workspaceDir, context.dataDir, request.policy.groups.identity.agentId, request.sessionId, raw),
+        onStepsResult: (request, raw) =>
+          saveStepsResult(
+            context.workspaceDir,
+            context.dataDir,
+            request.policy.groups.identity.agentId,
+            request.sessionId,
+            raw,
+          ),
         // Le runner confine selon la session ; le consentement au mode non isolé vient de la
         // policy (session `host_unsandboxed`), relu à chaque lancement.
         launcher: hostClaudeLauncher(context.host),
@@ -152,12 +160,18 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
         promptDir: path.join(dir, "prompts"),
         ownerInboxDir: context.dataDir,
         systemPrompt: () =>
-          withWakePersonality(
+          withFilResume(
+            context.dataDir,
             context.workspaceDir,
-            config.systemPrompt ?? CLAUDE_WAKE_SYSTEM_PROMPT,
+            withWakePersonality(
+              context.workspaceDir,
+              config.systemPrompt ?? CLAUDE_WAKE_SYSTEM_PROMPT,
+            ),
           ),
         systemPromptMode: "append",
-        onStreamLine: (sessionId,line) => observeClaudeTools(context.dataDir,sessionId,line),
+        onStreamLine: (sessionId, line) => {
+          observeClaudeTools(context.dataDir, sessionId, line);
+        },
         onTools: (sessionId, tools) => {
           fs.mkdirSync(dir, { recursive: true });
           fs.writeFileSync(

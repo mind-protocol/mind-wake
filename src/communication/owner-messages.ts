@@ -1,4 +1,5 @@
 /** Local agent→owner messages. Human replies remain in their separate, immutable log. */
+import { saveFilAfterSubmit } from "./fil-continuity.js";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -61,7 +62,7 @@ export function readOwnerMessages(dataDir: string): OwnerMessage[] | null {
 export class OwnerMessages {
   readonly #db: Database.Database;
   constructor(
-    dataDir: string,
+    readonly dataDir: string,
     readonly agentId: string,
   ) {
     this.#db = new Database(filename(dataDir));
@@ -82,9 +83,11 @@ export class OwnerMessages {
   }
   adoptLegacy(text: string, version: number, at: string): void {
     this.#db
-      .prepare(`INSERT INTO messages VALUES('legacy-note',?,?,?,?,?,0,'legacy-note')
+      .prepare(
+        `INSERT INTO messages VALUES('legacy-note',?,?,?,?,?,0,'legacy-note')
         ON CONFLICT(id) DO UPDATE SET agent_id=excluded.agent_id,text=excluded.text,created_at=excluded.created_at,updated_at=excluded.updated_at,version=excluded.version
-        WHERE NOT EXISTS (SELECT 1 FROM channel_state WHERE active=1)`)
+        WHERE NOT EXISTS (SELECT 1 FROM channel_state WHERE active=1)`,
+      )
       .run(this.agentId, text, at, at, version);
     this.#db
       .prepare("INSERT OR IGNORE INTO edits VALUES(?,?,?,?,0)")
@@ -98,7 +101,7 @@ export class OwnerMessages {
     ).map(project);
   }
   publish(text: string, requestKey: string, createdAt?: string): OwnerMessage {
-    return this.#db
+    const result = this.#db
       .transaction(() => {
         const existing = this.#db
           .prepare("SELECT * FROM messages WHERE request_key=?")
@@ -108,7 +111,8 @@ export class OwnerMessages {
             throw new OwnerMessageError("conflict", "This request key was already used.");
           return project(existing);
         }
-        const at = createdAt === undefined ? new Date().toISOString() : new Date(createdAt).toISOString(),
+        const at =
+            createdAt === undefined ? new Date().toISOString() : new Date(createdAt).toISOString(),
           id = `own_${randomUUID()}`;
         this.#db
           .prepare(
@@ -120,13 +124,15 @@ export class OwnerMessages {
         return { id, text, createdAt: at, updatedAt: at, version: 1 };
       })
       .immediate();
+    saveFilAfterSubmit(this.dataDir);
+    return result;
   }
   change(
     id: string,
     expectedVersion: number,
     text: string | null,
   ): OwnerMessage & { deleted: boolean } {
-    return this.#db
+    const result = this.#db
       .transaction(() => {
         const row = this.#db
           .prepare("SELECT * FROM messages WHERE id=? AND agent_id=?")
@@ -159,5 +165,7 @@ export class OwnerMessages {
         };
       })
       .immediate();
+    saveFilAfterSubmit(this.dataDir);
+    return result;
   }
 }
