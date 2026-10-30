@@ -3,5 +3,5 @@
   "identifier": "quick-input",
   "description": "Saisie rapide locale : capture unique et message explicite, fermeture sans envoi.",
   "windows": ["quick-input"],
-  "permissions": ["core:event:default", "allow-quick-input-close", "allow-quick-input-send", "allow-document-browse"]
+  "permissions": ["core:event:default", "core:window:allow-start-dragging", "allow-quick-input-close", "allow-quick-input-send", "allow-document-browse"]
 }

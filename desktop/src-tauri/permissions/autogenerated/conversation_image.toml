@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-conversation-image"
+description = "Enables the conversation_image command without any pre-configured scope."
+commands.allow = ["conversation_image"]
+
+[[permission]]
+identifier = "deny-conversation-image"
+description = "Denies the conversation_image command without any pre-configured scope."
+commands.deny = ["conversation_image"]

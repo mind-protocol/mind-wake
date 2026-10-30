@@ -73,6 +73,7 @@ mod native {
     #[repr(C)] struct Message { hwnd: Handle, message: u32, wparam: usize, lparam: isize, time: u32, point: Point, private: u32 }
     enum InputAction { Open(ClickTarget), Dismiss }
     static CLICKS: OnceLock<mpsc::SyncSender<InputAction>> = OnceLock::new();
+    static DISMISS_RIGHT_UP: AtomicBool = AtomicBool::new(false);
     #[link(name="user32")]
     unsafe extern "system" {
         fn SetWindowsHookExW(kind: i32, callback: Option<unsafe extern "system" fn(i32,usize,isize)->isize>, module: Handle, thread: u32) -> Handle;
@@ -99,14 +100,20 @@ mod native {
         if code >= 0 && matches!(wparam, 0x201 | 0x204 | 0x207) {
             let event = &*(lparam as *const Mouse);
             let input = INPUT_HWND.load(Ordering::Relaxed);
+            if wparam == 0x204 && event.flags & 1 == 0 { DISMISS_RIGHT_UP.store(false, Ordering::Relaxed); }
             if event.flags & 1 == 0 && IsWindowVisible(input as Handle) != 0 &&
                 GetAncestor(WindowFromPoint(event.point), 2) as isize != input {
+                if wparam == 0x204 { DISMISS_RIGHT_UP.store(true, Ordering::Relaxed); }
                 if let Some(tx) = CLICKS.get() { let _ = tx.try_send(InputAction::Dismiss); }
             }
         }
         // WM_RBUTTONUP, physical events only. Ignore the input itself and native menus.
         if code >= 0 && wparam == 0x205 && ENABLED.load(Ordering::Relaxed) {
             let event = &*(lparam as *const Mouse);
+            // The same outside right-click must not close on down and reopen on up.
+            if event.flags & 1 == 0 && DISMISS_RIGHT_UP.swap(false, Ordering::Relaxed) {
+                return CallNextHookEx(std::ptr::null_mut(), code, wparam, lparam);
+            }
             let target = GetAncestor(WindowFromPoint(event.point), 2);
             let mut class = [0u16; 32];
             let count = GetClassNameW(target, class.as_mut_ptr(), class.len() as i32);

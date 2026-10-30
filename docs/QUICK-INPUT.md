@@ -1,5 +1,7 @@
 # Saisie rapide au clic droit
 
+L'en-tête et la poignée à côté de MIND permettent de déplacer le menu. Les boutons gardent leur comportement normal. Le déplacement ne change pas le point original joint à l'envoi. Un clic extérieur ferme le menu ; un clic droit extérieur ne le rouvre pas au relâchement du même bouton.
+
 Fermeture : un clic extérieur ou Échap masque le menu, même s'il n'a jamais reçu le focus. La croix reste disponible pendant l'envoi ; fermer conserve le brouillon et ne révoque pas un message déjà soumis. Une fermeture explicite empêche la réouverture automatique sur erreur. L'observateur clavier ne retient aucune saisie : il reconnaît seulement Échap lorsque le menu est visible, et transmet les événements à l'application.
 
 Implémentation Windows, 30 octobre 2026. Le panneau desktop observe le relâchement du bouton droit sur le bureau interactif et ouvre une petite fenêtre près du pointeur, contenue dans le moniteur visé. Les clics restent transmis aux applications : leur menu contextuel habituel peut rester visible derrière Wake. Les clics dans la saisie elle-même, dans un menu natif déjà ouvert et les événements injectés ne déclenchent pas le raccourci.

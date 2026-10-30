@@ -24,7 +24,11 @@ footer {
 }
 header {
   margin-bottom: 10px;
+  cursor: grab;
+  user-select: none;
 }
+header:active { cursor: grabbing; }
+header strong span { color: #bac7d4; margin-left: 5px; }
 label {
   position: absolute;
   width: 1px;
@@ -60,6 +64,8 @@ button:disabled {
   cursor: wait;
 }
 #cancel {
+  flex: 0 0 32px;
+  min-height: 32px;
   background: transparent;
   color: inherit;
   padding: 0 6px;

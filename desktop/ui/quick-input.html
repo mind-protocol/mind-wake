@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Parler à Wake</title>
     <link rel="stylesheet" href="quick-input.css" />
+    <script defer src="quick-input-close.js"></script>
   </head>
   <body>
     <form id="quick-form">
-      <header>
-        <strong>MIND</strong>
+      <header data-tauri-drag-region title="Glisser pour déplacer le menu">
+        <strong data-tauri-drag-region>MIND <span aria-hidden="true" data-tauri-drag-region>⠿</span></strong>
         <nav aria-label="Actions au point du clic">
           <button id="talk" type="button">Parler à mon agent</button>
           <button id="bumpe" type="button" disabled title="Inviter ton agent à une relance à partir du point cerclé">Bumpe</button>
         </nav>
-        <button id="cancel" type="button" aria-label="Fermer">×</button>
+        <button id="cancel" type="button" data-tauri-drag-region="false" aria-label="Fermer" title="Fermer (Échap)">×</button>
       </header>
       <label for="message">Votre message</label>
       <textarea

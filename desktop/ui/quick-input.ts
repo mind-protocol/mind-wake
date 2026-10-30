@@ -23,10 +23,6 @@ const status = element("#status") as HTMLParagraphElement;
 const intent = new PointSendIntent();
 let clickId: number | null = null;
 let busy = false;
-async function close(): Promise<void> {
-  try { await api.core.invoke("quick_input_close"); }
-  catch (error) { status.textContent = `Fermeture impossible : ${String(error)}`; }
-}
 async function submit(kind: PointIntent["kind"]): Promise<void> {
   if (busy || (kind === "message" && !input.value.trim())) return;
   if (kind === "message" && intent.isUnconfirmed()) { status.textContent = "Bumpe précédent non confirmé. Cliquer Bumpe pour vérifier cet envoi avant un nouveau message."; return; }
@@ -70,12 +66,7 @@ form.addEventListener("submit", (event) => {
 });
 bumpe.addEventListener("click", () => void submit("bumpe"));
 talk.addEventListener("click", () => input.focus());
-cancel.addEventListener("click", () => void close());
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    event.preventDefault();
-    void close();
-  }
   if (event.target === input && event.key === "Enter" && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     if (!busy) form.requestSubmit();

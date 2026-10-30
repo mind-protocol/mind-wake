@@ -4,6 +4,7 @@
     "lib": ["es2024", "dom"],
     "types": [],
     "noEmit": false,
+    "noEmitOnError": true,
     "outDir": "build",
     "rootDir": "."
   },
