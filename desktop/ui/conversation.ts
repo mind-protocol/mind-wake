@@ -6,7 +6,7 @@
 
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
-  readonly from: "agent" | "human" | "session" | "activity";
+  readonly from: "agent" | "human" | "session" | "activity" | "received";
   readonly at: string;
   readonly text: string;
   readonly id?: string;
@@ -153,6 +153,23 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
         ...(deliveredAt === null && pendingReason !== null ? { pendingReason } : {}),
       });
     }
+  }
+  const receivedIds = new Set<string>();
+  for (const raw of Array.isArray(data["receivedMessages"]) ? data["receivedMessages"] : []) {
+    const m = rec(raw), source = rec(m?.["source"]);
+    const id = str(m?.["id"]), at = str(m?.["at"]), text = str(m?.["text"]);
+    if (!id || !at || text === null || !Number.isFinite(Date.parse(at)) || receivedIds.has(id)) continue;
+    const channel = str(source?.["channel"]);
+    if (channel !== "repo-session" && channel !== "mind-local-hub" && channel !== "local-inbox") continue;
+    receivedIds.add(id);
+    const assurance = source?.["assurance"] === "hub_authenticated" ? "identit? attest?e par le hub" : "source enregistr?e ? attribution non authentifi?e";
+    const context = [str(source?.["name"]), str(source?.["kind"]), channel,
+      str(source?.["ref"]) ? `r?f ${str(source?.["ref"])}` : null,
+      `fil ${str(source?.["threadId"]) ?? "inconnu"}`,
+      str(source?.["sessionId"]) ? `session ${str(source?.["sessionId"])}` : null,
+      assurance, m?.["state"] === "delivered" ? "livr? ? la session ? lecture non attest?e" : "stock? localement"].filter(Boolean).join(" ? ");
+    items.push({from: "received", id, at, text, source: context});
+    if (agentAt === null || at > agentAt) agentAt = at;
   }
   items.push(...sessionAnswers(helpers));
   for(const raw of Array.isArray(data["publicActivity"])?data["publicActivity"]:[]) {

@@ -11,6 +11,9 @@
  * de la partie), MIND_WAKE_DATA_DIR (facultatif, données Wake à consulter).
  */
 
+import { recordHubReceived } from "../../src/communication/received-messages.js";
+import { resolveDataDir } from "../../src/cli/paths.js";
+import { processContext } from "../../src/cli/context.js";
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
@@ -76,14 +79,19 @@ async function run(tool: string, work: () => unknown): Promise<ToolResult> {
 }
 
 function viaHub(tool: string, request: HubCall): Promise<ToolResult> {
-  return run(tool, () => {
+  return run(tool, async () => {
     if (hub === null) {
       throw new HubError(
         "permission_denied",
         "Hub MIND non configuré (MIND_MCP_HUB_PIPE, MIND_MCP_LINK_KEY) : seules les lectures Wake sont disponibles.",
       );
     }
-    return hub.call(request);
+    const result = await hub.call(request);
+    if (tool === "read_inbox") {
+      try { recordHubReceived(resolveDataDir(processContext(), undefined).path, result); }
+      catch { process.stderr.write("MIND: received-message mirror unavailable; hub result preserved.\n"); }
+    }
+    return result;
   });
 }
 

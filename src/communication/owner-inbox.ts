@@ -12,6 +12,16 @@ export interface InboxMessage {
   image?: WakeImage;
 }
 const FILE = "owner-inbox.sqlite";
+/** Read-only conversation projection; attachment bytes and delivery claims stay private. */
+export function readOwnerInboxHistory(dataDir: string): InboxMessage[] {
+  const file = path.join(dataDir, FILE);
+  if (!fs.existsSync(file)) return [];
+  const stat = fs.lstatSync(file);
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) throw new Error("Invalid inbox store");
+  const db = new Database(file, {readonly: true, fileMustExist: true});
+  try { return db.prepare("SELECT id,at,text FROM inbox ORDER BY rowid").all() as InboxMessage[]; }
+  finally { db.close(); }
+}
 /** Hook delivery receipts; delivery does not attest that the model read or understood. */
 export function readOwnerReceipts(dataDir: string): Record<string, string> {
   const file = path.join(dataDir, FILE);

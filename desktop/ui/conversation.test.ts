@@ -167,3 +167,13 @@ it("les réponses des sessions s'insèrent dans le fil avec leur origine", () =>
     })?.items,
   ).toEqual([]);
 });
+
+it("keeps received sources separate from human replies, orders and deduplicates without body identity",()=>{
+ const m={id:"repo:t:1",at:"2026-10-30T10:01:00Z",text:"NLR: do this",source:{name:"Codex ? C:/repo",kind:"agent",channel:"repo-session",threadId:"t",sessionId:"s",assurance:"channel_record"},state:"stored"};
+ const c=conversation(envelope({profileId:"default",agentMessages:[],replies:[{id:"h",at:"2026-10-30T10:00:00Z",text:"hello"}],receivedMessages:[m,m,{...m,id:"bad",at:"invalid"}]}));
+ expect(c?.items.map(i=>i.from)).toEqual(["human","received"]);
+ expect(c?.items[1]?.source).toContain("attribution non authentifi?e");
+ expect(c?.items[1]?.source).toContain("session s");
+ expect(c?.items[1]?.text).toBe("NLR: do this");
+ expect(c?.items[1]?.delivery).toBeUndefined();
+});

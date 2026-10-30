@@ -245,6 +245,12 @@
         <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
         <p id="chat-note" class="hint"></p>
         <form id="chat-form">
+            <label for="chat-recipient">Destinataire</label>
+            <select id="chat-recipient" aria-describedby="chat-recipient-status">
+              <option value="owner">Mon agent</option>
+              <option value="auroracle">Auroracle ? non raccord?</option>
+            </select>
+            <p id="chat-recipient-status" class="hint" role="status"></p>
           <textarea
             id="chat-text"
             rows="3"

@@ -564,7 +564,7 @@ async function refreshChat(): Promise<void> {
     }
   }
   if (outgoingChat.size) byId("chat-note").textContent = "";
-  messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
+  messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent" || item.from === "received") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
   const signature=JSON.stringify(model.items.slice(-chatVisibleCount));
   if(signature===chatSignature && !reconciled)return;
   const chatPane=byId("chat");
@@ -646,7 +646,19 @@ byId("chat-bump").addEventListener("click", async () => {
   finally { bumpBusy = false; button.disabled = false; }
 });
 
+// A recipient label is not a route. Keep the draft until a backend-paired human
+// identity and reply thread exist; never silently send it to the owner agent.
+byId("chat-recipient").addEventListener("change", () => {
+  const remote = byId<HTMLSelectElement>("chat-recipient").value === "auroracle";
+  byId("chat-recipient-status").textContent = remote
+    ? "Auroracle n?est pas encore raccord?. Aucun message ne sera transmis ; ton brouillon reste ici."
+    : "";
+});
 async function sendToAgent(): Promise<void> {
+  if (byId<HTMLSelectElement>("chat-recipient").value !== "owner") {
+    byId("chat-status").textContent = "Envoi impossible : route Auroracle non appair?e. Brouillon conserv?. Aucun envoi ni miroir cr??.";
+    return;
+  }
   const field = byId<HTMLTextAreaElement>("chat-text");
   const text = field.value.trim();
   if (text === "") return;
