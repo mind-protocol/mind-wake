@@ -749,6 +749,11 @@ byId("mode-off").addEventListener("click", () => {
 
 void refresh();
 setInterval(() => void refresh(), POLL_MS);
+// Conversation streaming must not wait for status, charts or remote thread reads.
+setInterval(() => {
+  if (byId<HTMLSelectElement>("chat-recipient").value !== "auroracle")
+    void specializedChat.refresh();
+}, POLL_MS);
 
 // Repo-agent conversations: read-only observation of the actual exchanged messages.
 let agentThreads: RepoThread[] = [];

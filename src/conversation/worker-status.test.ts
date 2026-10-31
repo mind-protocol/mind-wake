@@ -31,6 +31,20 @@ it("reports a proven exit of this exact worker, including the process limit reas
   fs.writeFileSync(path.join(dir, "conversation-worker.log"), "non-json log\n" + receipt() + "\n");
   expect(recordedWorkerExit(dir, "main")).toContain("limite de processus");
 });
+it("does not turn a successful owner exit into a result-missing error", () => {
+  const dir = fixture();
+  const successful = JSON.parse(receipt()) as Record<string, unknown>;
+  successful["stopReason"] = null;
+  successful["exit"] = { mainExitCode: 0, killReason: null };
+  fs.writeFileSync(
+    path.join(dir, "conversation-worker.log"),
+    receipt() + "\n" + JSON.stringify(successful),
+  );
+  expect(recordedWorkerExit(dir, "main")).toBeNull();
+  successful["exit"] = { mainExitCode: 7, killReason: null };
+  fs.writeFileSync(path.join(dir, "conversation-worker.log"), JSON.stringify(successful));
+  expect(recordedWorkerExit(dir, "main")).toContain("avant de rendre");
+});
 it("does not treat a missing receipt, another worker or another conversation as an exit", () => {
   const dir = fixture();
   expect(recordedWorkerExit(dir, "main")).toBeNull();

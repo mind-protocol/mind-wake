@@ -138,6 +138,8 @@ export interface CodexAdapterOptions {
   readonly allowUserCodexHome?: boolean;
   readonly nativeCodexHome?: string;
   readonly nativeCapabilities?: boolean;
+  /** Text-only specialist calls retain remote tools but do not bootstrap local tool processes. */
+  readonly threadConfig?: (effective: Record<string, unknown>) => Record<string, unknown>;
   /** Surcharges `-c` supplémentaires ; les réglages de sûreté Wake priment. */
   readonly extraConfig?: Readonly<Record<string, string>>;
   readonly requestTimeoutMs?: number;
@@ -256,12 +258,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
 
+const pendingVersions = new Map<string, Promise<string>>();
+
 function defaultVersionCheck(
   executable: CodexExecutable,
   codexHome: string,
 ): () => Promise<string> {
-  return () =>
-    new Promise((resolve, reject) => {
+  return () => {
+    const key = JSON.stringify([executable.path, executable.prefixArgs ?? [], codexHome]);
+    const existing = pendingVersions.get(key);
+    if (existing) return existing;
+    const pending = new Promise<string>((resolve, reject) => {
       const env: Record<string, string> = { CODEX_HOME: codexHome };
       for (const key of ["SystemRoot", "SystemDrive", "windir", "PATH"]) {
         const value = process.env[key];
@@ -277,6 +284,13 @@ function defaultVersionCheck(
         },
       );
     });
+    pendingVersions.set(key, pending);
+    const clear = () => {
+      if (pendingVersions.get(key) === pending) pendingVersions.delete(key);
+    };
+    void pending.then(clear, clear);
+    return pending;
+  };
 }
 
 export class CodexAdapter implements RuntimeAdapter {
@@ -848,10 +862,21 @@ export class CodexAdapter implements RuntimeAdapter {
     const prompt = combined === "" ? null : combined;
     const fingerprint = promptFingerprint(prompt ?? "");
     const instructions = prompt === null ? {} : { developerInstructions: prompt };
+    let threadConfig: Record<string, unknown> | undefined;
+    if (this.#options.threadConfig) {
+      const effective = await rpc.request("config/read", {
+        cwd: this.#options.workspaceDir,
+        includeLayers: false,
+      });
+      const config = asRecord(effective["config"]);
+      if (!config) throw Error("Effective native tool configuration unavailable");
+      threadConfig = this.#options.threadConfig(config);
+    }
     const common = {
       cwd: this.#options.workspaceDir,
       approvalPolicy: session.permissions.approvalPolicy,
       sandbox: session.permissions.sandbox,
+      ...(threadConfig ? { config: threadConfig } : {}),
       ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
     };
     const previous = this.#options.threads.load(key);

@@ -431,7 +431,7 @@ fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<
         .args(&args)
         .stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() })
         .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+        .stderr(Stdio::piped());
     // MIND_WAKE_DATA_DIR, MIND_MCP_HUB_PIPE et MIND_MCP_LINK_KEY sont hérités tels quels.
     #[cfg(windows)]
     {
@@ -448,6 +448,11 @@ fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<
     let reader = std::thread::spawn(move || {
         let mut out = String::new();
         stdout.read_to_string(&mut out).map(|_| out)
+    });
+    let mut stderr = child.stderr.take().ok_or("erreurs de la CLI indisponibles")?;
+    let error_reader = std::thread::spawn(move || {
+        let mut out = String::new();
+        stderr.read_to_string(&mut out).map(|_| out)
     });
 
     let started = Instant::now();
@@ -466,8 +471,11 @@ fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<
         .join()
         .map_err(|_| "lecture de la sortie interrompue".to_string())?
         .map_err(|e| format!("sortie illisible : {e}"))?;
+    let stderr = error_reader.join().ok().and_then(Result::ok).unwrap_or_default();
     if stdout.trim().is_empty() {
-        return Err(format!("la CLI n'a rien renvoyé (code {:?})", status.code()));
+        let detail: String = stderr.trim().chars().take(1200).collect();
+        return Err(format!("la CLI n'a rien renvoyé (code {:?}){}", status.code(),
+            if detail.is_empty() { String::new() } else { format!(" : {detail}") }));
     }
     Ok(CliRun { exit_code: status.code().unwrap_or(-1), stdout })
 }

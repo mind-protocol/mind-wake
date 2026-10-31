@@ -33,10 +33,13 @@ it.runIf(process.platform === "win32")(
       maxProcesses: 16,
     });
     try {
-      await child.started();
+      const mainPid = await child.started();
       expect(await child.readLine()).toBe("at-limit");
       const before = supervisor.query(profile, session).active;
       expect(before).toBe(16);
+      const details = supervisor.query(profile, session, true);
+      expect(details.processes).toHaveLength(16);
+      expect(details.processes).toContainEqual({ pid: mainPid, name: "node" });
       child.send("attempt-extra");
       expect(await child.readLine()).toBe("creation-refused");
       expect(supervisor.query(profile, session).active).toBe(before);

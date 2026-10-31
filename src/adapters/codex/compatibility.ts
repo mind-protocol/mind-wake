@@ -151,9 +151,23 @@ export function inspectCodexSchemas(documents: readonly unknown[]): CodexCompati
   };
 }
 
-export async function checkCodexCompatibility(
-  executable: CodexExecutable,
-): Promise<CodexCompatibility> {
+const pendingChecks = new Map<string, Promise<CodexCompatibility>>();
+
+/** Parallel roles inspect the same executable once; no result survives the in-flight check. */
+export function checkCodexCompatibility(executable: CodexExecutable): Promise<CodexCompatibility> {
+  const key = JSON.stringify([executable.path, executable.prefixArgs ?? []]);
+  const existing = pendingChecks.get(key);
+  if (existing) return existing;
+  const pending = loadCodexCompatibility(executable);
+  pendingChecks.set(key, pending);
+  const clear = () => {
+    if (pendingChecks.get(key) === pending) pendingChecks.delete(key);
+  };
+  void pending.then(clear, clear);
+  return pending;
+}
+
+async function loadCodexCompatibility(executable: CodexExecutable): Promise<CodexCompatibility> {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "wake-codex-schema-"));
   try {
     await new Promise<void>((resolve, reject) => {

@@ -144,7 +144,7 @@ static class Launcher
         try
         {
             if (args.Length == 0) throw new ArgumentException("mode manquant");
-            string jobName = null; int maxProcs = 0; int timeoutMs = 1000; string cwd = null;
+            string jobName = null; int maxProcs = 0; int timeoutMs = 1000; string cwd = null; bool details = false;
             var env = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             int i = 1;
             for (; i < args.Length; i++)
@@ -155,11 +155,12 @@ static class Launcher
                 else if (a == "--max-procs") maxProcs = int.Parse(args[++i]);
                 else if (a == "--timeout-ms") timeoutMs = int.Parse(args[++i]);
                 else if (a == "--cwd") cwd = args[++i];
+                else if (a == "--details") details = true;
                 else if (a == "--env") { string kv = args[++i]; int eq = kv.IndexOf('='); env[kv.Substring(0, eq)] = kv.Substring(eq + 1); }
                 else throw new ArgumentException("option inconnue: " + a);
             }
             if (string.IsNullOrEmpty(jobName)) throw new ArgumentException("--job-name requis");
-            if (args[0] == "query") return Query(jobName);
+            if (args[0] == "query") return Query(jobName, details);
             if (args[0] == "terminate") return TerminateNamed(jobName, timeoutMs);
             if (args[0] != "run") throw new ArgumentException("mode inconnu: " + args[0]);
             if (i >= args.Length) throw new ArgumentException("commande manquante après --");
@@ -281,13 +282,27 @@ static class Launcher
         Emit("{\"event\":\"kill-issued\",\"reason\":" + Json(reason) + ",\"ok\":" + (ok ? "true" : "false") + "}");
     }
 
-    static int Query(string jobName)
+    static int Query(string jobName, bool details)
     {
         IntPtr job = Native.OpenJobObject(Native.JOB_OBJECT_QUERY, false, jobName);
         if (job == IntPtr.Zero) { Console.Out.WriteLine("{\"found\":false,\"active\":0}"); return 0; }
         uint active = QueryAccounting(job).ActiveProcesses;
+        var members = new StringBuilder();
+        IntPtr ids = details ? Marshal.AllocHGlobal(65536) : IntPtr.Zero;
+        try {
+            if (details && Native.QueryInformationJobObject(job, 3, ids, 65536, IntPtr.Zero)) {
+                int count = Marshal.ReadInt32(ids, 4);
+                for (int i = 0; i < count && i < (65536 - 8) / IntPtr.Size; i++) {
+                    int pid = (int)Marshal.ReadIntPtr(ids, 8 + i * IntPtr.Size).ToInt64();
+                    string name = "exited";
+                    try { using (var process = Process.GetProcessById(pid)) name = process.ProcessName; } catch (Exception) { }
+                    if (members.Length > 0) members.Append(',');
+                    members.Append("{\"pid\":").Append(pid).Append(",\"name\":").Append(Json(name)).Append('}');
+                }
+            }
+        } finally { if (ids != IntPtr.Zero) Marshal.FreeHGlobal(ids); }
         Native.CloseHandle(job);
-        Console.Out.WriteLine("{\"found\":true,\"active\":" + active + "}");
+        Console.Out.WriteLine("{\"found\":true,\"active\":" + active + ",\"processes\":[" + members + "]}");
         return 0;
     }
 

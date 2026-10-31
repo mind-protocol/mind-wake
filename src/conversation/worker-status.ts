@@ -32,6 +32,17 @@ export function recordedWorkerExit(dataDir: string, conversationId: string): str
           value["pid"] !== owner.pid
         )
           continue;
+        const exit = value["exit"];
+        if (
+          !value["stopReason"] &&
+          exit &&
+          typeof exit === "object" &&
+          "mainExitCode" in exit &&
+          exit.mainExitCode === 0 &&
+          "killReason" in exit &&
+          exit.killReason === null
+        )
+          return null;
         return value["stopReason"] === "global_process_limit_exceeded"
           ? "Le moteur s’est arrêté : la limite de processus a été dépassée. Les résultats reçus sont conservés."
           : "Le moteur de conversation s’est arrêté avant de rendre son résultat.";

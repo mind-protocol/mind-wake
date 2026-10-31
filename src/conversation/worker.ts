@@ -110,6 +110,7 @@ export async function serveConversation(
       controller.abort(options.signal?.reason);
     };
   let ownedStore: ConversationStore | undefined;
+  let ownedRuntime: RoleRuntime | undefined;
   let maintenance: ConversationMaintenance | undefined;
   const temporary = `${file}.${token}.tmp`;
   options.signal?.addEventListener("abort", abort, { once: true });
@@ -131,6 +132,7 @@ export async function serveConversation(
     const store = new ConversationStore(dataDir),
       runtime = options.runtime ?? createRoleRuntime({ dataDir });
     ownedStore = store;
+    ownedRuntime = runtime;
     store.recoverInterruptedCalls(id);
     maintenance = startConversationMaintenance(dataDir, {
       signal: controller.signal,
@@ -198,6 +200,7 @@ export async function serveConversation(
     }
   } finally {
     controller.abort();
+    await ownedRuntime?.dispose?.();
     await maintenance?.stop();
     options.signal?.removeEventListener("abort", abort);
     ownedStore?.close();

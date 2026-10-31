@@ -5,6 +5,7 @@
  */
 
 import fs from "node:fs";
+import { roleThreadConfig } from "../../conversation/role-thread-config.js";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -185,6 +186,20 @@ async function collect(a: CodexAdapter, req: StartRequest): Promise<AdapterEvent
   for await (const event of a.events(handle)) events.push(event);
   return events;
 }
+
+it("limits only local process tools in a specialist thread without changing the personal configuration", async () => {
+  h.flow = "process-free.json";
+  const a = adapter({ threadConfig: (effective) => roleThreadConfig(effective, "lead", 1) });
+  const events = await collect(a, request());
+  expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+  const params = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
+  const config = params["config"] as Record<string, unknown>;
+  expect(config["mcp_servers"]).toEqual({ local_tool: { enabled: false } });
+  expect(config["features"]).toMatchObject({ shell_tool: false });
+  expect(config["plugins"]).toEqual({ "unified-computer-use@openai-bundled": { enabled: false } });
+  expect(JSON.stringify(config)).not.toContain("private-command.exe");
+  expect(h.requests("config/write")).toHaveLength(0);
+});
 
 describe("protocole app-server", () => {
   it("returns complete public messages and text deltas on fresh calls without exposing reasoning", async () => {
@@ -426,7 +441,7 @@ describe("commande", () => {
   it("the active policy model is retained when starting with the default registry", () => {
     expect(
       defaultRegistry({ adapterId: "codex", model: "gpt-6.1-sol" })
-        .get("codex" as never)
+        .get("codex")
         ?.runtime().model,
     ).toBe("gpt-6.1-sol");
   });
@@ -775,9 +790,8 @@ describe("continuité", () => {
       context: "Where was I?\nTime: provider limits only.",
     };
     await collect(adapter({ threads }), req);
-    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
-      developerInstructions: expect.stringContaining("Durable runtime environment"),
-    });
+    const initialParams = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
+    expect(initialParams["developerInstructions"]).toContain("Durable runtime environment");
     expect(JSON.stringify(h.requests("turn/start")[0]?.["params"])).not.toContain(
       "Durable runtime environment",
     );

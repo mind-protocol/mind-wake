@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 import { checkCodexCompatibility, inspectCodexSchemas } from "./compatibility.js";
@@ -9,6 +11,29 @@ const schemaText = fs.readFileSync(
   "utf8",
 );
 const inspect = (text: string) => inspectCodexSchemas([JSON.parse(text) as unknown]);
+it("shares a simultaneous schema export between roles, then rechecks on a later call", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-shared-schema-"));
+  try {
+    const count = path.join(dir, "exports.txt"),
+      script = path.join(dir, "export.cjs");
+    const schema = fileURLToPath(
+      new URL("../../../test/fixtures/codex/schema.json", import.meta.url),
+    );
+    fs.writeFileSync(
+      script,
+      `const fs=require('node:fs'),path=require('node:path');fs.appendFileSync(${JSON.stringify(count)},'export\\n');const out=process.argv[process.argv.indexOf('--out')+1];fs.copyFileSync(${JSON.stringify(schema)},path.join(out,'schema.json'));`,
+    );
+    const executable = { path: process.execPath, prefixArgs: [script] };
+    expect(
+      await Promise.all(Array.from({ length: 3 }, () => checkCodexCompatibility(executable))),
+    ).toEqual([{ steering: true }, { steering: true }, { steering: true }]);
+    expect(fs.readFileSync(count, "utf8")).toBe("export\n");
+    await checkCodexCompatibility(executable);
+    expect(fs.readFileSync(count, "utf8")).toBe("export\nexport\n");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 it("checks a CLI schema export with a real fixture process, without an account", async () => {
   const executable = {
     path: process.execPath,

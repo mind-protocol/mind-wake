@@ -23,8 +23,11 @@ import type {
 import { canReadQuota } from "../runner/host.js";
 import { CodexAdapter } from "../adapters/codex/codex-adapter.js";
 import { discoverCodex } from "../adapters/codex/executable.js";
+import { SharedCodexServerPool } from "./shared-codex-server.js";
+import { roleThreadConfig } from "./role-thread-config.js";
+import type { ConversationRole } from "./contracts.js";
 import { MemoryThreadStore } from "../adapters/codex/continuity.js";
-import { hostLauncher, supervisorLauncher } from "../adapters/codex/launch.js";
+import { hostLauncher } from "../adapters/codex/launch.js";
 import { ClaudeAdapter } from "../adapters/claude/claude-adapter.js";
 import { MemoryConversationStore } from "../adapters/claude/conversation.js";
 import { hostClaudeLauncher, supervisorClaudeLauncher } from "../adapters/claude/launch.js";
@@ -38,7 +41,7 @@ export interface RoleCall {
   callId: string;
   conversationId: string;
   revision: number;
-  role: string;
+  role: ConversationRole;
   pass: 1 | 2;
   systemPrompt: string;
   messages: readonly RoleCallMessage[];
@@ -55,10 +58,16 @@ export interface RoleRuntimeResult {
   simulated: boolean;
 }
 export interface RoleRuntime {
+  dispose?(): Promise<void>;
   run(
     call: RoleCall,
     options?: { signal?: AbortSignal; onEvent?: (event: RoleRuntimeEvent) => void },
   ): Promise<RoleRuntimeResult>;
+}
+interface SharedCodexState {
+  pools: Map<string, SharedCodexServerPool>;
+  users: Map<SharedCodexServerPool, number>;
+  closing: Map<string, Promise<void>>;
 }
 export type RuntimeInspection =
   | { allowed: true; revision: PolicyRevision; workspaceDir: string; profileId: ProfileId }
@@ -155,13 +164,22 @@ export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
   const inspect = options.inspect ?? (() => inspectConversationRuntime(options.dataDir));
   const now = () => new Date().toISOString() as UtcTimestamp;
   const preflightQuotas = new Map<string, Promise<readonly ProviderQuotaSnapshot[]>>();
+  const sharedCodex: SharedCodexState = { pools: new Map(), users: new Map(), closing: new Map() };
   return {
+    async dispose() {
+      await Promise.allSettled([
+        ...sharedCodex.closing.values(),
+        ...[...sharedCodex.pools.values()].map((pool) => pool.dispose()),
+      ]);
+      sharedCodex.pools.clear();
+    },
     async run(call, hooks = {}) {
       const initial = inspect();
       if (!initial.allowed) throw new ConversationRuntimeBlocked(initial.reason);
       if (hooks.signal?.aborted) throw new DOMException("Call cancelled", "AbortError");
       const sessionId = randomUUID() as SessionId;
       const revision = initial.revision;
+      await sharedCodex.closing.get(revision.id);
       let adapter: RuntimeAdapter;
       let closeOwned = async () => {};
       let handle: SessionHandle | undefined;
@@ -191,7 +209,7 @@ export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
       };
       if (options.adapterFactory) adapter = options.adapterFactory(call, initial);
       else {
-        const built = officialAdapter(call, initial, sessionId, options, checkControl);
+        const built = officialAdapter(call, initial, sessionId, options, checkControl, sharedCodex);
         adapter = built.adapter;
         closeOwned = built.close;
       }
@@ -357,6 +375,7 @@ function officialAdapter(
   sessionId: SessionId,
   options: RoleRuntimeOptions,
   checkControl: () => void,
+  sharedCodex: SharedCodexState,
 ): { adapter: RuntimeAdapter; close: () => Promise<void> } {
   const env = options.env ?? process.env;
   const supervisor = new ProcessTreeSupervisor(path.join(options.dataDir, "runtime"));
@@ -431,8 +450,55 @@ function officialAdapter(
   if (revision.groups.runtime.adapterId === "codex") {
     const executable = discoverCodex(env);
     if (!executable) throw new ConversationRuntimeBlocked("codex_missing");
+    let shared = sharedCodex.pools.get(revision.id);
+    if (!shared || shared.closed) {
+      // The shared server belongs to the worker, never to one role's abort signal.
+      const base = hostLauncher({
+        authorize: (id, action) => host.authorize(id, action),
+        isolation: () => "host_unsandboxed",
+        spawnContained: (id, command) => {
+          const current = inspectConversationRuntime(options.dataDir);
+          if (!current.allowed) throw new ConversationRuntimeBlocked(current.reason);
+          if (current.revision.id !== revision.id)
+            throw new ConversationRuntimeBlocked("policy_changed");
+          return supervisor.spawn(profile, id, {
+            ...command,
+            // Reserve worker + native launcher, and one possible Windows console
+            // helper per provider descendant. Refuse creation before the parent cap.
+            maxProcesses: Math.max(
+              1,
+              Math.floor((revision.groups.filesAndTools.maxProcesses - 2) / 2),
+            ),
+          });
+        },
+      });
+      shared = new SharedCodexServerPool(base);
+      sharedCodex.pools.set(revision.id, shared);
+    }
+    const pooled = shared;
+    sharedCodex.users.set(pooled, (sharedCodex.users.get(pooled) ?? 0) + 1);
+    let released = false;
     return {
-      close,
+      close: async () => {
+        await close();
+        if (released) return;
+        released = true;
+        const users = (sharedCodex.users.get(pooled) ?? 1) - 1;
+        if (users > 0) {
+          sharedCodex.users.set(pooled, users);
+          return;
+        }
+        sharedCodex.users.delete(pooled);
+        if (sharedCodex.pools.get(revision.id) === pooled) sharedCodex.pools.delete(revision.id);
+        const closing = pooled.dispose();
+        sharedCodex.closing.set(revision.id, closing);
+        try {
+          await closing;
+        } finally {
+          if (sharedCodex.closing.get(revision.id) === closing)
+            sharedCodex.closing.delete(revision.id);
+        }
+      },
       adapter: new CodexAdapter({
         executable,
         codexHome: path.join(options.dataDir, "codex-home"),
@@ -440,11 +506,13 @@ function officialAdapter(
         nativeCodexHome:
           env["CODEX_HOME"] ?? path.join(env["USERPROFILE"] ?? os.homedir(), ".codex"),
         workspaceDir: state.workspaceDir,
-        launcher: hostLauncher(host),
-        quotaLauncher: supervisorLauncher(trackedSupervisor, "conversation-quota" as ProfileId),
+        launcher: shared,
+        quotaLauncher: shared,
         threads: new MemoryThreadStore(),
         continuityKey: () => sessionId,
         ephemeralThreads: true,
+        threadConfig: (effective: Record<string, unknown>) =>
+          roleThreadConfig(effective, call.role, call.pass),
         systemPrompt: call.systemPrompt,
         model: revision.groups.runtime.model,
         publicMessages: true,

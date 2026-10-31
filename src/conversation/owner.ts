@@ -22,7 +22,12 @@ interface OwnerSupervisor {
   query(
     profileId: ProfileId,
     sessionId: SessionId,
-  ): { found: boolean | null; active: number | null };
+    details?: boolean,
+  ): {
+    found: boolean | null;
+    active: number | null;
+    processes?: readonly { pid: number; name: string }[];
+  };
 }
 export interface ConversationOwnerStarted {
   pid: number;
@@ -159,7 +164,19 @@ export async function serveConversationOwner(
               /* Owned main process exited. */
             }
           if (!child.hasExited && mainAlive) stop("global_process_count_unknown");
-        } else if (processes.active > maxProcesses) stop("global_process_limit_exceeded");
+        } else if (processes.active > maxProcesses) {
+          const details = supervisor.query(initial.profileId, sessionId, true);
+          process.stdout.write(
+            JSON.stringify({
+              schema: "mind.conversation/process-limit",
+              conversationId: id,
+              active: processes.active,
+              limit: maxProcesses,
+              processes: details.processes ?? [],
+            }) + "\n",
+          );
+          stop("global_process_limit_exceeded");
+        }
       }
     } catch {
       stop("control_unavailable");
