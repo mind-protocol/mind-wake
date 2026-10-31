@@ -619,6 +619,31 @@ it("a streamed Lead response is editable and its draft survives a final result a
   expect(preview.textContent).toContain("brouillon conservé");
 });
 
+it("clears a recovered polling error while preserving an open editor and its draft", async () => {
+  const fixture = uiFixture();
+  let fail = false;
+  const current = envelope({ messages: [message("lead", "lead", "Réponse initiale")] });
+  const mounted = mountConversationMode({
+    ...fixture,
+    invoke: () => (fail ? Promise.reject(Error("CLI unavailable")) : Promise.resolve(current)),
+  });
+  await mounted.refresh();
+  const chat = required(fixture.elements.get("chat"));
+  const entry = required(chat.children.at(-1));
+  required(entry.children.find((n) => n.textContent === "Modifier")).click();
+  const field = required(entry.children[0]);
+  field.value = "Brouillon humain à conserver";
+  fail = true;
+  await mounted.refresh();
+  const note = required(fixture.elements.get("chat-note"));
+  expect(note.textContent).toContain("Conversation indisponible");
+  fail = false;
+  await mounted.refresh();
+  expect(note.textContent).not.toContain("Conversation indisponible");
+  expect(chat.children.at(-1)).toBe(entry);
+  expect(field.value).toBe("Brouillon humain à conserver");
+});
+
 it("shows the confirmed human message in Lead immediately even while an older read is pending", async () => {
   const fixture = uiFixture();
   let readCount = 0;
@@ -653,3 +678,33 @@ it("shows the confirmed human message in Lead immediately even while an older re
   expect(chat.textContent).toContain("Mon nouveau message");
   expect(readCount).toBe(2);
 });
+
+it.each([false, true])(
+  "clears a recovered read error even when the message DOM is cached or being edited (%s)",
+  async (editing) => {
+    const fixture = uiFixture();
+    let fail = false;
+    const current = envelope({ messages: [message("lead", "lead", "Réponse visible")] });
+    const mounted = mountConversationMode({
+      ...fixture,
+      invoke: () => (fail ? Promise.reject(Error("CLI vide code1")) : Promise.resolve(current)),
+    });
+    await mounted.refresh();
+    const chat = required(fixture.elements.get("chat"));
+    let draft: Node | undefined;
+    if (editing) {
+      const item = required(chat.children[0]);
+      required(item.children.find((n) => n.textContent === "Modifier")).click();
+      draft = required(item.children[0]);
+      draft.value = "Brouillon conservé";
+    }
+    fail = true;
+    await mounted.refresh();
+    const note = required(fixture.elements.get("chat-note"));
+    expect(note.textContent).toContain("Conversation indisponible");
+    fail = false;
+    await mounted.refresh();
+    expect(note.textContent).not.toContain("Conversation indisponible");
+    if (draft) expect(draft.value).toBe("Brouillon conservé");
+  },
+);

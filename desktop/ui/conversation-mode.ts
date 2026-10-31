@@ -457,6 +457,20 @@ export function mountConversationMode(options: {
   function render(): void {
     if (!snapshot || !visible) return;
     const state = snapshot;
+    const ownMessages =
+      selectedThread === "lead"
+        ? mainMessages(state)
+        : state.messages.filter((m) => m.role === selectedThread);
+    // A successful poll clears an earlier read error even if the message DOM is
+    // unchanged or an editor must keep its current draft and selection.
+    note.textContent =
+      selectedThread !== "lead" && !ownMessages.length
+        ? `${ROLE_LABELS[selectedThread]} · aucune contribution pour le moment. ${conversationStatus(state)}`
+        : conversationStatus(state);
+    element<HTMLButtonElement>("conversation-stop").disabled = state.status !== "active";
+    element<HTMLButtonElement>("conversation-resume").hidden =
+      state.status !== "stopped" && unresolvedFailures(state).length === 0;
+    element("chat-presence").hidden = !conversationBusy(state);
     for (const [thread, tab] of tabButtons) {
       const active = thread === selectedThread;
       tab.setAttribute("aria-selected", String(active));
@@ -479,10 +493,6 @@ export function mountConversationMode(options: {
     lastSignature = next;
     const follow =
       chat.scrollHeight - chat.scrollTop - chat.clientHeight < 100 || chat.children.length === 0;
-    const ownMessages =
-      selectedThread === "lead"
-        ? mainMessages(state)
-        : state.messages.filter((m) => m.role === selectedThread);
     const nodes = ownMessages.map((m) => {
       const li = doc.createElement("li"),
         meta = doc.createElement("small");
@@ -522,14 +532,6 @@ export function mountConversationMode(options: {
       chat.scrollTop = scrollPositions.get(selectedThread) ?? chat.scrollHeight;
     else if (follow) chat.scrollTop = chat.scrollHeight;
     renderedThread = selectedThread;
-    note.textContent =
-      selectedThread !== "lead" && !ownMessages.length
-        ? `${ROLE_LABELS[selectedThread]} · aucune contribution pour le moment. ${conversationStatus(state)}`
-        : conversationStatus(state);
-    element<HTMLButtonElement>("conversation-stop").disabled = state.status !== "active";
-    element<HTMLButtonElement>("conversation-resume").hidden =
-      state.status !== "stopped" && unresolvedFailures(state).length === 0;
-    element("chat-presence").hidden = !conversationBusy(state);
     element("chat-older").hidden = true;
     roles.replaceChildren(
       ...(["pattern", "context", "expertise", "work"] as const).map((r) => {
