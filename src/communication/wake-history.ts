@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "../daemon/paths.js";
 /** Local visible runtime conversation: actual prompts and assistant text, no reasoning blocks. */
 import fs from "node:fs";
 import path from "node:path";
@@ -22,7 +23,7 @@ export function readWakeLocations(dataDir: string): {workspace: string; systemPr
       }
     }
   } catch { /* No generated prompt yet: expose the unavailable state explicitly. */ }
-  return {workspace:path.join(dataDir,"workspace"),systemPrompt};
+  return {workspace:workspaceDirFor(dataDir),systemPrompt};
 }
 export function parseWakeTranscript(raw: string, sessionId: string): WakeTurn[] {
   const turns: WakeTurn[] = [];
@@ -87,7 +88,7 @@ export function readWakeHistory(dataDir: string, configDir=process.env["MIND_WAK
   if(!fs.existsSync(stateFile))return {runtime:"claude",turns:[],partial:false,note:"Aucun historique Claude disponible pour ce profil."};
   const records=JSON.parse(fs.readFileSync(stateFile,"utf8")) as Record<string,{key:string;generation:number}>;
   const ids=new Set(Object.values(records).filter(r=>typeof r.key==="string" && Number.isInteger(r.generation)).map(r=>claudeSessionUuid(r.key,r.generation)));
-  const workspace=path.join(dataDir,"workspace").replace(/[^a-zA-Z0-9]/g,"-");
+  const workspace=workspaceDirFor(dataDir).replace(/[^a-zA-Z0-9]/g,"-");
   const dir=path.join(configDir,"projects",workspace);
   if(!fs.existsSync(dir))return {runtime:"claude",turns:[],partial:false,note:"Le runtime n’a pas conservé de transcription locale accessible."};
   const files=fs.readdirSync(dir).filter(n=>n.endsWith(".jsonl") && ids.has(n.slice(0,-6))).flatMap(n=>{

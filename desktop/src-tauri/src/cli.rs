@@ -114,6 +114,23 @@ pub fn wake(verb: Verb) -> Result<CliRun, String> {
     run(wake_args(verb.args())?, None)
 }
 
+/// Fixed profile-local operations. Values are separate argv entries, never shell text.
+pub fn workspace_sync(action: &str, configuration: Option<(String, String, bool)>) -> Result<CliRun, String> {
+    if !matches!(action, "status" | "configure" | "now") {
+        return Err("Action de synchronisation inconnue".into());
+    }
+    let mut args = wake_args(&["workspace-sync", action])?;
+    if action == "configure" {
+        let (workspace, github, enabled) = configuration.ok_or("Réglages manquants")?;
+        if !std::path::Path::new(&workspace).is_absolute() || workspace.contains('\0') || github.contains('\0') {
+            return Err("Dossier absolu et URL valides requis".into());
+        }
+        args.extend(["--workspace".into(), workspace.into(), "--github-url".into(), github.into(),
+            "--enabled".into(), if enabled { "true" } else { "false" }.into()]);
+    }
+    run(args, None)
+}
+
 /// Opens only fixed locations resolved by the local Wake CLI, never a webview-supplied path.
 pub fn open_wake_location(kind: &str) -> Result<(), String> {
     if kind != "workspace" && kind != "systemPrompt" { return Err("Emplacement inconnu".into()); }

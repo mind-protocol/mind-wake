@@ -1,4 +1,5 @@
 import { initProjects } from "./projects.js";
+import { initWorkspaceSync } from "./workspace-sync.js";
 import { initDocuments } from "./documents.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
@@ -998,6 +999,7 @@ async function showAppVersion(): Promise<void> {
 void showAppVersion();
 
 byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
+if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
 if (tauri) initDocuments((command, args) => tauri.core.invoke(command, args));

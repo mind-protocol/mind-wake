@@ -1,4 +1,5 @@
-﻿/** Rebuildable continuity of submitted owner-channel text; no provider/auth capture. */
+import { workspaceDirFor } from "../daemon/paths.js";
+/** Rebuildable continuity of submitted owner-channel text; no provider/auth capture. */
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -235,7 +236,7 @@ function checkpointPaths(workspace: string): string[] {
  */
 export function reconcileFil(
   dataDir: string,
-  workspace = path.join(dataDir, "workspace"),
+  workspace = workspaceDirFor(dataDir),
 ): FilDocument {
   const dir = outputDir(workspace);
   const file = path.join(dataDir, FIL_ARCHIVE);
@@ -324,7 +325,7 @@ export function reconcileFil(
 }
 /** An accepted source message stays accepted even when its derived export fails. */
 export function saveFilAfterSubmit(dataDir: string): void {
-  if (!fs.existsSync(path.join(dataDir, "workspace"))) return;
+  if (!fs.existsSync(workspaceDirFor(dataDir))) return;
   try {
     reconcileFil(dataDir);
   } catch {

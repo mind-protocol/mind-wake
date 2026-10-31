@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { BackgroundJobs, BackgroundJobStore, jobOutputDir } from "./background-jobs.js";
+import { activateWorkspace } from "./workspace-config.js";
+import { configureWorkspaceSync } from "./workspace-git-sync.js";
 let dir: string;
 let manager: BackgroundJobs | undefined;
 beforeEach(() => {
@@ -38,6 +40,34 @@ it("deduplicates submissions, rejects conflicting keys and paths outside jobs", 
     store.close();
   }
 });
+it.skipIf(process.platform !== "win32")(
+  "uses the selected workspace for real job cwd and results, preserving historical result paths",
+  async () => {
+    script("");
+    const oldStore = new BackgroundJobStore(dir);
+    const old = oldStore.submit("old", "jobs/test.mjs", [], "old-workspace-job");
+    const oldOutput = jobOutputDir(dir, old.id);
+    oldStore.close();
+    const custom = path.join(dir, "custom-home");
+    fs.mkdirSync(path.join(custom, "jobs"), { recursive: true });
+    fs.writeFileSync(
+      path.join(custom, "jobs", "selected.mjs"),
+      `import fs from 'node:fs';import path from 'node:path';fs.writeFileSync(path.join(process.env.MIND_WAKE_JOB_OUTPUT,'cwd.txt'),process.cwd());`,
+    );
+    await configureWorkspaceSync(dir, { workspaceDir: custom, githubUrl: "", enabled: false });
+    activateWorkspace(dir);
+    manager = new BackgroundJobs(dir, () => true);
+    manager.store.cancel(old.id);
+    const job = manager.store.submit("selected", "jobs/selected.mjs", [], "selected-workspace-job");
+    await manager.tick();
+    const active = manager;
+    await until(() => active.store.get(job.id).status === "succeeded");
+    expect(fs.readFileSync(path.join(jobOutputDir(dir, job.id), "cwd.txt"), "utf8")).toBe(custom);
+    expect(jobOutputDir(dir, old.id)).toBe(oldOutput);
+    expect(jobOutputDir(dir, job.id)).toBe(path.join(custom, "jobs", "runs", job.id));
+  },
+  30_000,
+);
 it.skipIf(process.platform !== "win32")(
   "runs real Node work between wakes, stores logs/results, announces completion once",
   async () => {

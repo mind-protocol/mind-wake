@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "../../src/daemon/paths.js";
 import fs from "node:fs";import path from "node:path";import os from "node:os";import {createHash} from "node:crypto";import {fileURLToPath,pathToFileURL} from "node:url";
 import {BackgroundJobStore} from "../../src/daemon/background-jobs.js";
 import {openStoreReadOnly} from "../../src/store/index.js";
@@ -33,7 +34,7 @@ export function queueAdvice(env:Readonly<Record<string,string|undefined>>,reques
  const worker=path.join(repo,"services/helpers/advice-worker.ts"),hooks=pathToFileURL(path.join(repo,"test/fixtures/store-ledger/ts-hooks.ts")).href;
  const script=`import {spawn} from 'node:child_process';\nconst child=spawn(process.execPath,${JSON.stringify(["--experimental-transform-types","--disable-warning=ExperimentalWarning","--import",hooks,worker])}.concat(process.argv.slice(2)),{stdio:'inherit',windowsHide:true,env:process.env});\nchild.on('error',()=>process.exit(1));child.on('exit',code=>process.exit(code??1));\n`;
  const name="mind-advice-"+createHash("sha256").update(script).digest("hex").slice(0,16)+".mjs";
- const jobScript=path.join(dataDir,"workspace","jobs",name);fs.mkdirSync(path.dirname(jobScript),{recursive:true});
+ const jobScript=path.join(workspaceDirFor(dataDir),"jobs",name);fs.mkdirSync(path.dirname(jobScript),{recursive:true});
  if(fs.existsSync(jobScript)){if(fs.readFileSync(jobScript,"utf8")!==script)throw Error("Advice launcher modified");}else fs.writeFileSync(jobScript,script,{flag:"wx"});
  appendRepoMessage(dataDir,{thread:{id:request.id,repo:"Conseils/Recherche d’un interlocuteur",runtime:"MIND",sessionId:"",transcript:""},
    message:{id:request.id+"-question",at:request.createdAt,from:"wake",text:request.topic+"\n\n"+request.context}});

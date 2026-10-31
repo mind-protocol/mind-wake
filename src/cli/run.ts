@@ -7,6 +7,7 @@ import { parseWakeScreenshotSurface } from "../daemon/wake-screenshot.js";
 import { parseArgs } from "node:util";
 import { daemonRun } from "./commands/daemon.js";
 import { changeExecutionMode } from "./commands/execution-mode.js";
+import { workspaceSync } from "./commands/workspace-sync.js";
 import { doctor } from "./commands/doctor.js";
 import { enable } from "./commands/enable.js";
 import { exportCommand } from "./commands/export.js";
@@ -130,10 +131,13 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "exit-after-sessions": { type: "string" },
         "idempotency-key": { type: "string" },
         "capture-screen": { type: "boolean" },
+        workspace: { type: "string" },
+        "github-url": { type: "string" },
+        enabled: { type: "string" },
       },
     });
     const [first, second, ...rest] = positionals;
-    const grouped = (first === "policy" || first === "daemon") && second !== undefined;
+    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync") && second !== undefined;
     command = grouped ? `${first} ${second}` : (first ?? "help");
     const args = grouped ? rest : positionals.slice(1);
     // Seuls `export` et `policy configure` prennent un argument positionnel.
@@ -157,6 +161,15 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     const dataDir = resolveDataDir(ctx, values["data-dir"]);
     let result: CommandResult<unknown>;
     switch (command) {
+      case "workspace-sync status":
+      case "workspace-sync configure":
+      case "workspace-sync now":
+        result=await workspaceSync(ctx,dataDir,second??"status",{
+          ...(values.workspace===undefined?{}:{workspaceDir:values.workspace}),
+          ...(values["github-url"]===undefined?{}:{githubUrl:values["github-url"]}),
+          ...(values.enabled===undefined?{}:{enabled:values.enabled}),
+        }) as CommandResult<unknown>;
+        break;
       case "doctor":
         result = (await doctor(ctx, dataDir)) as CommandResult<unknown>;
         break;
@@ -278,6 +291,9 @@ const MAX_RETENTION_DAYS = 36_500;
 
 /** Options propres à certaines commandes : ailleurs, refusées plutôt qu'ignorées. */
 const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
+  workspace:["workspace-sync configure"],
+  "github-url":["workspace-sync configure"],
+  enabled:["workspace-sync configure"],
   confirm: ["enable"],
   revision: ["enable"],
   "older-than-days": ["purge"],

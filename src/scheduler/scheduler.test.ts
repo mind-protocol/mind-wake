@@ -795,3 +795,10 @@ it("always-on enchaîne les réponses sans intervalle ni chevauchement, puis res
   expect(b.launcher.tickets).toHaveLength(3);
   always=false;
 });
+
+it('runs maintenance even when AI wake eligibility is paused',async()=>{
+  const controller=new AbortController();let polls=0;
+  setup({state:'paused'},{overrides:{maintenance:()=>{polls++;},sleep:()=>{controller.abort();return Promise.resolve();}}});
+  await b.scheduler.run(controller.signal);
+  expect(polls).toBe(1);expect(b.launcher.tickets).toHaveLength(0);
+});

@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "./paths.js";
 /** Local Node jobs owned by the daemon, independently of individual model turns. */
 import fs from "node:fs";
 import path from "node:path";
@@ -10,6 +11,7 @@ import { runtimeDirFor } from "../runner/paths.js";
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "interrupted";
 export interface BackgroundJob {
+  workspaceDir?: string;
   id: string;
   title: string;
   script: string;
@@ -30,10 +32,29 @@ interface Row {
 }
 export function jobOutputDir(dataDir: string, id: string): string {
   if (!/^job_[0-9a-f-]{36}$/.test(id)) throw new Error("Invalid job ID");
-  return path.join(dataDir, "workspace", "jobs", "runs", id);
+  let workspace = workspaceDirFor(dataDir);
+  const file = path.join(dataDir, "background-jobs.sqlite");
+  if (fs.existsSync(file)) {
+    const db = new Database(file, { readonly: true, fileMustExist: true });
+    try {
+      const row = db.prepare("SELECT payload FROM jobs WHERE id=?").get(id) as
+        { payload: string } | undefined;
+      if (row)
+        workspace =
+          (JSON.parse(row.payload) as BackgroundJob).workspaceDir ??
+          path.join(dataDir, "workspace");
+    } finally {
+      db.close();
+    }
+  }
+  return path.join(workspace, "jobs", "runs", id);
 }
-export function resolveJobScript(dataDir: string, script: string): string {
-  const root = fs.realpathSync(path.join(dataDir, "workspace"));
+export function resolveJobScript(
+  dataDir: string,
+  script: string,
+  workspace = workspaceDirFor(dataDir),
+): string {
+  const root = fs.realpathSync(workspace);
   const normalized = script.replaceAll("\\", "/");
   if (!normalized.startsWith("jobs/") || !normalized.endsWith(".mjs"))
     throw new Error("Create a Node .mjs script under workspace/jobs/ first");
@@ -90,6 +111,7 @@ export class BackgroundJobStore {
         }
         resolveJobScript(this.dataDir, script);
         const job: BackgroundJob = {
+          workspaceDir: workspaceDirFor(this.dataDir),
           id: `job_${randomUUID()}`,
           title,
           script,
@@ -182,7 +204,11 @@ export class BackgroundJobs {
     this.#busy = true;
     try {
       let allowed = false;
-      try { allowed = this.allowed(); } catch { /* Unreadable controls must stop work too. */ }
+      try {
+        allowed = this.allowed();
+      } catch {
+        /* Unreadable controls must stop work too. */
+      }
       if (!allowed) {
         for (const [id, active] of this.running)
           await this.#stop(id, active.process, "Wake paused, stopped or no longer authorized");
@@ -202,7 +228,8 @@ export class BackgroundJobs {
   }
   async #launch(job: BackgroundJob): Promise<void> {
     try {
-      const script = resolveJobScript(this.dataDir, job.script);
+      const workspace = job.workspaceDir ?? path.join(this.dataDir, "workspace");
+      const script = resolveJobScript(this.dataDir, job.script, workspace);
       const out = jobOutputDir(this.dataDir, job.id);
       fs.mkdirSync(out, { recursive: true });
       // No shell or implicit credentials. This is the existing authorized host mode.
@@ -214,7 +241,7 @@ export class BackgroundJobs {
           out,
           ...job.args,
         ],
-        cwd: path.join(this.dataDir, "workspace"),
+        cwd: workspace,
         env: {
           PATH: process.env["PATH"] ?? process.env["Path"] ?? "",
           MIND_WAKE_JOB_ID: job.id,

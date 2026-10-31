@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "../../src/daemon/paths.js";
 /**
  * Aide des sessions : pour chaque nouveau message de l'agent Wake à son humain (id et
  * version non encore traités), choisir la session Claude Code / Codex autorisée la plus
@@ -163,7 +164,7 @@ export function wakePrompt(message: OwnerMessage, shared: readonly string[]): st
 }
 
 function appendAgentCopy(dataDir: string, answer: HelperAnswer, message: OwnerMessage): void {
-  const file = path.join(dataDir, AGENT_COPY);
+  const file = path.join(workspaceDirFor(dataDir), "artifacts", "aide-des-sessions.md");
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const block = [
     `## Aide d'une session ${answer.runtime === "claude" ? "Claude Code" : "Codex"} — ${answer.at}`,

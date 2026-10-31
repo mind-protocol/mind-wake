@@ -744,3 +744,11 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
 .message-provenance summary { cursor: pointer; width: fit-content; }
 .message-inline-code { color: #7751a4; background: #f4eef9; border-radius: 3px; }
 @media (prefers-color-scheme: dark) { .message-inline-code { color: #d7b6fa; background: #30273b; } }
+
+.workspace-sync-form { display:grid; gap:10px; max-width:820px; }
+.workspace-sync-form > label { font-weight:600; }
+.workspace-sync-form > input { width:100%; box-sizing:border-box; padding:10px 12px; font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+.workspace-sync-form .hint { margin:0 0 6px; }
+.workspace-sync-toggle { display:flex; align-items:center; gap:10px; }
+.workspace-sync-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.workspace-sync-details dd { overflow-wrap:anywhere; white-space:pre-wrap; }

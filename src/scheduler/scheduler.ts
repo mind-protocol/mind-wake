@@ -82,6 +82,8 @@ export interface CoveringLedger {
 }
 
 export interface SchedulerOptions {
+  /** Daemon maintenance, independent of AI wake eligibility. Must not block the poll. */
+  readonly maintenance?: () => void;
   readonly profileId: ProfileId;
   readonly uow: UnitOfWork & { readonly ledger: UnitOfWork["ledger"] & CoveringLedger };
   readonly state: SchedulerStateRepository;
@@ -374,6 +376,7 @@ export class Scheduler {
     const sleep = this.#o.sleep ?? defaultSleep;
     await this.recover();
     while (!signal.aborted) {
+      this.#o.maintenance?.();
       const result = await this.tick();
       const completion = this.#o.alwaysOn?.() === true ? this.#inFlight : null;
       if (completion !== null) await Promise.race([completion, sleep(this.#delayAfter(result), signal)]);

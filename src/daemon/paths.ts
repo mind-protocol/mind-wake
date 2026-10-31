@@ -5,6 +5,7 @@
  */
 
 import path from "node:path";
+import { workspaceConfig } from "./workspace-config.js";
 
 /** Base de contrôle, partagée avec la CLI (`src/cli/store/index.ts`). */
 export const CONTROL_DB_FILE = "control.sqlite";
@@ -15,7 +16,7 @@ export function controlDbPath(dataDir: string): string {
 
 /** Espace d'exploration : racine des chemins relatifs de la policy (`writeRoots`…). */
 export function workspaceDirFor(dataDir: string): string {
-  return path.join(dataDir, "workspace");
+  return workspaceConfig(dataDir).activeWorkspace;
 }
 
 /** Préfixe, relatif à l'espace d'exploration, de la racine d'artefacts. */

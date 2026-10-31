@@ -99,6 +99,21 @@ async fn wake_history() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn workspace_sync_status() -> Result<CliRun, String> {
+    blocking(|| cli::workspace_sync("status", None)).await
+}
+
+#[tauri::command]
+async fn workspace_sync_configure(workspace_dir: String, github_url: String, enabled: bool) -> Result<CliRun, String> {
+    blocking(move || cli::workspace_sync("configure", Some((workspace_dir, github_url, enabled)))).await
+}
+
+#[tauri::command]
+async fn workspace_sync_now() -> Result<CliRun, String> {
+    blocking(|| cli::workspace_sync("now", None)).await
+}
+
+#[tauri::command]
 async fn wake_open_location(kind: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || cli::open_wake_location(&kind))
         .await.map_err(|e| e.to_string())?
@@ -315,6 +330,9 @@ fn main() {
             wake_on,
             wake_always_on,
             wake_messages,            wake_history,
+            workspace_sync_status,
+            workspace_sync_configure,
+            workspace_sync_now,
             wake_open_location,
             open_external_url,
             wake_reply,

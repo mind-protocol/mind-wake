@@ -28,6 +28,8 @@ import {
 
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import { activateWorkspace } from "./workspace-config.js";
+import { WorkspaceGitSync } from "./workspace-git-sync.js";
 import { FAKE_ADAPTER_ID, emergenceScenario, type FakeScenario } from "../adapters/fake/index.js";
 import {
   utf8TokenBound,
@@ -253,6 +255,7 @@ export class WakeDaemon implements SessionLauncher {
   #stopReason = "arrêt demandé";
   #scheduler: Scheduler | null = null;
   #backgroundJobs: BackgroundJobs | null = null;
+  #workspaceSync: WorkspaceGitSync | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -384,6 +387,7 @@ export class WakeDaemon implements SessionLauncher {
         }
         throw error;
       }
+      activateWorkspace(options.dataDir);
       const resolution = resolvePolicy(store.uow.policies, options.profileId);
       const registry = options.registry ?? defaultRegistry(resolution.status==="active"?resolution.revision.groups.runtime:undefined);
       const wanted: AdapterId | null =
@@ -573,6 +577,11 @@ export class WakeDaemon implements SessionLauncher {
     this.#quota =
       environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
     const scheduler = new Scheduler({
+      maintenance: () => {
+        void this.#workspaceSync?.tick().catch(() => {
+          this.#log("Workspace Git settings unavailable; inspect Settings.");
+        });
+      },
       profileId,
       uow: this.#store.uow,
       state: new SqliteSchedulerStateRepository(db),
@@ -600,6 +609,17 @@ export class WakeDaemon implements SessionLauncher {
     this.#scheduler = scheduler;
     try {
       if (real !== null && real.sandbox === null) {
+        this.#workspaceSync = new WorkspaceGitSync(this.#o.dataDir, () => {
+          const profile = uow.profiles.get(profileId);
+          const policy = resolvePolicy(uow.policies, profileId);
+          return policy.status === "active" &&
+            policy.revision.groups.runtime.hostUnsandboxedAcknowledged === true &&
+            !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists() &&
+            profile !== null && !profile.emergencyStopLocked &&
+            !["paused", "checkpointing", "stopped", "disabled"].includes(profile.state);
+        });
+      }
+      if (real !== null && real.sandbox === null) {
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
           const profile = uow.profiles.get(profileId);
           const policy = resolvePolicy(uow.policies,profileId);
@@ -611,6 +631,7 @@ export class WakeDaemon implements SessionLauncher {
       }
       await scheduler.run(this.#abort.signal);
     } finally {
+      await this.#workspaceSync?.close();
       await this.#backgroundJobs?.close();
       this.#close();
     }

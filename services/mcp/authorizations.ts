@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "../../src/daemon/paths.js";
 import fs from "node:fs";
 import path from "node:path";
 import * as z from "zod";
@@ -30,7 +31,7 @@ export type Authorizations = z.infer<typeof authorizationSchema>;
 /** Never fall back to the repository owner's choices for an installed profile. */
 export function authorizationPath(env: NodeJS.ProcessEnv, cwd = process.cwd()): string {
   return path.join(
-    env["MIND_WAKE_DATA_DIR"] ? path.join(env["MIND_WAKE_DATA_DIR"], "workspace") : cwd,
+    env["MIND_WAKE_DATA_DIR"] ? workspaceDirFor(env["MIND_WAKE_DATA_DIR"]) : cwd,
     "AUTORISATIONS.json",
   );
 }

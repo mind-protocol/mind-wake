@@ -150,6 +150,29 @@
 
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
         <h1>Réglages</h1>
+        <section aria-labelledby="h-workspace-sync">
+          <h2 id="h-workspace-sync">Dossier de Wake et dépôt GitHub</h2>
+          <form id="workspace-sync-form" class="workspace-sync-form">
+            <label for="workspace-sync-folder">Dossier de travail de l’agent</label>
+            <input id="workspace-sync-folder" type="text" required spellcheck="false" autocomplete="off" placeholder="C:\Users\…\workspace" />
+            <p class="hint">Choisir un dossier existant. Le changement prendra effet au prochain lancement du moteur ; ses fichiers ne sont pas déplacés.</p>
+            <label for="workspace-sync-url">URL du dépôt GitHub</label>
+            <input id="workspace-sync-url" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git" />
+            <label class="workspace-sync-toggle"><input id="workspace-sync-enabled" type="checkbox" /> Synchroniser automatiquement toutes les 5 minutes</label>
+            <p class="hint">Pull, commit des modifications et push dans ce dépôt existant, selon son .gitignore. Le remote origin et la branche suivie doivent être configurés. Pause et Force-off arrêtent la synchronisation. Aucun dépôt GitHub n’est créé.</p>
+            <div class="workspace-sync-actions"><button id="workspace-sync-save" type="submit">Enregistrer</button><button id="workspace-sync-now" type="button" disabled>Synchroniser maintenant</button></div>
+          </form>
+          <p id="workspace-sync-feedback" role="status"></p>
+          <p id="workspace-sync-effect" class="hint"></p>
+          <dl class="workspace-sync-details">
+            <dt>Dossier utilisé par le moteur</dt><dd id="workspace-sync-active">Chargement…</dd>
+            <dt>Synchronisation</dt><dd id="workspace-sync-state">Chargement…</dd>
+            <dt>Dernière tentative</dt><dd id="workspace-sync-last-attempt">—</dd>
+            <dt>Dernière réussite</dt><dd id="workspace-sync-last-success">—</dd>
+            <dt>Prochain passage</dt><dd id="workspace-sync-next">—</dd>
+            <dt>Erreur ou blocage</dt><dd id="workspace-sync-error">—</dd>
+          </dl>
+        </section>
         <section aria-labelledby="h-update">
           <h2 id="h-update">Mises à jour de l’application</h2>
           <dl>

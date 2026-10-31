@@ -1,3 +1,4 @@
+import { workspaceDirFor } from "../../src/daemon/paths.js";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -156,7 +157,7 @@ export async function queueDirectAdvice(
   const script = `import {spawn} from 'node:child_process';\nconst c=spawn(process.execPath,${JSON.stringify(["--experimental-transform-types", "--disable-warning=ExperimentalWarning", "--import", hooks, worker])}.concat(process.argv.slice(2)),{stdio:'inherit',windowsHide:true,env:process.env});\nc.on('error',()=>process.exit(1));c.on('exit',code=>process.exit(code??1));\n`;
   const name =
     "mind-direct-advice-" + createHash("sha256").update(script).digest("hex").slice(0, 16) + ".mjs";
-  const launcher = path.join(dir, "workspace/jobs", name);
+  const launcher = path.join(workspaceDirFor(dir), "jobs", name);
   fs.mkdirSync(path.dirname(launcher), { recursive: true });
   if (fs.existsSync(launcher)) {
     if (fs.readFileSync(launcher, "utf8") !== script)
