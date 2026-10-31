@@ -16,6 +16,7 @@ import { writeRuntimeReceipt } from "../../src/communication/runtime-receipt.js"
 import { resolveDataDir } from "../../src/cli/paths.js";
 import { processContext } from "../../src/cli/context.js";
 import { registerOwnerTools } from "./owner-tools.js";
+import { registerConnectorTools } from "./connector-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
 import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
@@ -526,6 +527,7 @@ server.registerTool(
 );
 
 registerOwnerTools(server, process.env);
+registerConnectorTools(server, process.env);
 registerBackgroundTools(server, process.env);
 registerRepoTools(server, process.env);
 registerPeerTaskLocalTools(server, process.env, async () => {

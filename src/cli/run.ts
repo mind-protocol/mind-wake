@@ -5,6 +5,7 @@ import { parseWakeScreenshotSurface } from "../daemon/wake-screenshot.js";
  */
 
 import { parseArgs } from "node:util";
+import { connectors } from "./commands/connectors.js";
 import { daemonRun } from "./commands/daemon.js";
 import { changeExecutionMode } from "./commands/execution-mode.js";
 import { workspaceSync } from "./commands/workspace-sync.js";
@@ -43,6 +44,9 @@ de transaction ou de session guest. Seul \`daemon run\` lance des sessions, au p
 plan, et seulement avec l'adapter factice (--simulated).
 
 Commandes :
+  connectors status Affiche les états Gmail locaux, sans appel fournisseur
+  connectors gmail-setup FICHIER.json Connexion Gmail explicite dans un terminal humain
+  connectors gmail-disconnect Révoque immédiatement l'accès Gmail local
   doctor        Diagnostic local, sans appel modèle ni accès réseau
   init          Prépare un profil désactivé, sans budget ni permission
   always-on     Enchaîne les réveils dès la fin de chaque réponse
@@ -137,11 +141,13 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       },
     });
     const [first, second, ...rest] = positionals;
-    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync") && second !== undefined;
+    const grouped =
+      (first === "policy" || first === "daemon" || first === "workspace-sync" || first === "connectors") &&
+      second !== undefined;
     command = grouped ? `${first} ${second}` : (first ?? "help");
     const args = grouped ? rest : positionals.slice(1);
-    // Seuls `export` et `policy configure` prennent un argument positionnel.
-    const takesArgument = command === "export" || command === "policy configure";
+    const takesArgument =
+      command === "export" || command === "policy configure" || command === "connectors gmail-setup";
     const argument = takesArgument ? args[0] : undefined;
     const extra = takesArgument ? args.slice(1) : args;
 
@@ -161,6 +167,11 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     const dataDir = resolveDataDir(ctx, values["data-dir"]);
     let result: CommandResult<unknown>;
     switch (command) {
+      case "connectors status":
+      case "connectors gmail-setup":
+      case "connectors gmail-disconnect":
+        result = await connectors(ctx, dataDir, second ?? "status", argument);
+        break;
       case "workspace-sync status":
       case "workspace-sync configure":
       case "workspace-sync now":

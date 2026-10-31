@@ -15,6 +15,10 @@ const TIMEOUT = 60_000;
 
 const EXPECTED_TOOLS = [
   "close_help_request",
+  "gmail_read_message",
+  "gmail_read_thread",
+  "gmail_search",
+  "gmail_status",
   "invite_guide",
   "list_directory",
   "list_help_requests",
@@ -70,7 +74,7 @@ describe("surface d'outils", { timeout: TIMEOUT }, () => {
       );
     }
     for (const tool of tools) {
-      expect(tool.annotations?.openWorldHint).toBe(false);
+      expect(tool.annotations?.openWorldHint).toBe(tool.name.startsWith("gmail_"));
       expect(tool.inputSchema["additionalProperties"]).toBe(false);
     }
     const { resources } = await party.client.listResources().catch(() => ({ resources: [] }));

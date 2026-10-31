@@ -1,0 +1,14 @@
+{
+  "config": {
+    "account": "owner@example.invalid",
+    "clientId": "REPLACE-WITH-OPERATOR-CLIENT.apps.googleusercontent.com",
+    "labelIds": ["INBOX"],
+    "after": 1790812800,
+    "before": 1793491200,
+    "query": "subject:chosen-project",
+    "selectedIds": [],
+    "maxResults": 10,
+    "maxPages": 2,
+    "maxReads": 5
+  }
+}
