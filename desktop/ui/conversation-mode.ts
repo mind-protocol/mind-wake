@@ -711,10 +711,16 @@ export function mountConversationMode(options: {
     },
     async submit(text) {
       status.textContent = "Enregistrement du message…";
-      await client.submit(text);
+      const result = await client.submit(text);
+      const confirmed = conversationSnapshot(result);
+      if (!confirmed) throw Error("Format de conversation inattendu. Le brouillon est conservé.");
+      if (!snapshot || confirmed.revision >= snapshot.revision) snapshot = confirmed;
+      selectThread("lead");
+      lastSignature = "";
+      render();
+      chat.scrollTop = chat.scrollHeight;
       status.textContent =
         "Message enregistré. Le cycle est pris en charge ; aucun réveil autonome.";
-      await refresh();
     },
   };
 }

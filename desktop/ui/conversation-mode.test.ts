@@ -122,9 +122,10 @@ it("does not present an obsolete running call as current work, and preserves the
 
 it("does not show infinite work indicators when the worker is no longer running", async () => {
   const fixture = uiFixture();
-  const payload = envelope({ workerRunning: false, calls: [
-    { id: "dead", role: "lead", revision: 1, pass: 1, status: "running", text: "" },
-  ] });
+  const payload = envelope({
+    workerRunning: false,
+    calls: [{ id: "dead", role: "lead", revision: 1, pass: 1, status: "running", text: "" }],
+  });
   const model = required(conversationSnapshot(payload));
   expect(conversationBusy(model)).toBe(false);
   expect(conversationStatus(model)).toContain("À reprendre : Lead");
@@ -616,4 +617,39 @@ it("a streamed Lead response is editable and its draft survives a final result a
   });
   expect(field.value).toBe("Ma meilleure réponse");
   expect(preview.textContent).toContain("brouillon conservé");
+});
+
+it("shows the confirmed human message in Lead immediately even while an older read is pending", async () => {
+  const fixture = uiFixture();
+  let readCount = 0;
+  let release!: (value: unknown) => void;
+  const old = envelope({ revision: 1, messages: [message("old", "human", "Ancien", 1, 1)] });
+  const fresh = envelope({
+    revision: 2,
+    messages: [message("new", "human", "Mon nouveau message", 1, 2)],
+  });
+  const mounted = mountConversationMode({
+    ...fixture,
+    invoke: (_command, args) => {
+      if (args?.["action"] === "submit") return Promise.resolve(fresh);
+      if (++readCount === 1) return Promise.resolve(old);
+      return new Promise((resolve) => {
+        release = resolve;
+      });
+    },
+  });
+  await mounted.refresh();
+  const tabs = required(fixture.elements.get("conversation-tabs"));
+  required(tabs.children.find((n) => n.dataset["agent"] === "context")).click();
+  const pending = mounted.refresh();
+  await mounted.submit("Mon nouveau message");
+  const chat = required(fixture.elements.get("chat"));
+  expect(chat.textContent).toContain("Mon nouveau message");
+  expect(
+    required(tabs.children.find((n) => n.dataset["agent"] === "lead")).attributes["aria-selected"],
+  ).toBe("true");
+  release(old);
+  await pending;
+  expect(chat.textContent).toContain("Mon nouveau message");
+  expect(readCount).toBe(2);
 });
