@@ -217,6 +217,8 @@ interface CodexSession {
   readonly queue: EventQueue;
   readonly permissions: ThreadPermissions;
   rpc: RpcClient | null;
+  readonly initialized: Promise<void>;
+  readonly markInitialized: () => void;
   threadId: string | null;
   turnId: string | null;
   turn: TurnState;
@@ -483,6 +485,8 @@ export class CodexAdapter implements RuntimeAdapter {
     } = await this.#launch(request.sessionId, request.policy);
     let resolveTurn: () => void = () => undefined;
     const turnDone = new Promise<void>((resolve) => (resolveTurn = resolve));
+    let markInitialized: () => void = () => undefined;
+    const initialized = new Promise<void>((resolve) => (markInitialized = resolve));
     const session: CodexSession = {
       projectStart: null,
       delegatedUsageUncertain: false,
@@ -497,6 +501,8 @@ export class CodexAdapter implements RuntimeAdapter {
       queue: new EventQueue(),
       permissions: threadPermissions(bypass, this.#options.hostSandbox),
       rpc: null,
+      initialized,
+      markInitialized,
       threadId: null,
       turnId: null,
       turn: "pending",
@@ -605,6 +611,7 @@ export class CodexAdapter implements RuntimeAdapter {
       if (typeof initialized["userAgent"] !== "string" || !initialized["userAgent"])
         throw new Error("initialize : userAgent absent, protocole Codex incompatible");
       rpc.notify("initialized", {});
+      session.markInitialized();
       const account = await rpc.request("account/read", { refreshToken: false });
       if (account["account"] === null && account["requiresOpenaiAuth"] === true) {
         this.#emitError(
@@ -1296,6 +1303,31 @@ export class CodexAdapter implements RuntimeAdapter {
         (s) => now - Date.parse(s.observedAt) <= reuseMs,
       );
       if (!session.ended && recent !== undefined && recent.length > 0) return recent;
+    }
+    // The active app-server already exposes this account method. A quota poll
+    // must not start another native process tree beside every running turn.
+    const active = [...this.#sessions.values()].find(
+      (session) => !session.ended && session.rpc !== null,
+    );
+    if (active?.rpc) {
+      try {
+        await Promise.race([
+          active.initialized,
+          active.finished.then(() => {
+            throw new Error("Session ended before quota read");
+          }),
+        ]);
+        if (active.ended) return [];
+        const result = await active.rpc.request("account/rateLimits/read", {});
+        const reading = quotaFromRateLimitsResponse(result, this.#now());
+        active.lastQuota = reading;
+        this.#options.onQuota?.(reading);
+        return reading.snapshots;
+      } catch {
+        // Keep the fail-closed contract; do not hide a broken live connection
+        // by spawning a replacement process during an active turn.
+        return [];
+      }
     }
     try {
       return (await this.readProviderQuota()).snapshots;

@@ -265,7 +265,7 @@ it("exposes Claude text and text deltas while excluding thinking, tool inputs an
   });
 });
 
-it("serializes complete native lifetimes and skips a cancelled queued call", async () => {
+it("runs independent roles concurrently and rejects an already cancelled call", async () => {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -274,36 +274,38 @@ it("serializes complete native lifetimes and skips a cancelled queued call", asy
   const started = new Promise<void>((resolve) => {
     entered = resolve;
   });
-  const adapter = fakeAdapter(async function* (request) {
-    entered();
-    await gate;
-    yield {
-      type: "assistant_message",
-      sessionId: request.sessionId,
-      at: new Date().toISOString() as never,
-      messageId: "answer",
-      phase: "final",
-      text: "Done",
-    };
-    yield {
-      type: "ended",
-      sessionId: request.sessionId,
-      at: new Date().toISOString() as never,
-      exitReason: "completed",
-    };
-  });
-  const factory = vi.fn(() => adapter);
+  const factory = vi.fn(() =>
+    fakeAdapter(async function* (request) {
+      entered();
+      await gate;
+      yield {
+        type: "assistant_message",
+        sessionId: request.sessionId,
+        at: new Date().toISOString() as never,
+        messageId: "answer",
+        phase: "final",
+        text: "Done",
+      };
+      yield {
+        type: "ended",
+        sessionId: request.sessionId,
+        at: new Date().toISOString() as never,
+        exitReason: "completed",
+      };
+    }),
+  );
   const runtime = createRoleRuntime({ dataDir: dir, inspect: allowed, adapterFactory: factory });
   const first = runtime.run(call);
   await started;
   const abort = new AbortController();
-  const second = runtime.run({ ...call, callId: "queued" }, { signal: abort.signal });
-  const rejected = expect(second).rejects.toMatchObject({ name: "AbortError" });
+  const second = runtime.run({ ...call, callId: "parallel" });
   await Promise.resolve();
-  expect(factory).toHaveBeenCalledTimes(1);
+  expect(factory).toHaveBeenCalledTimes(2);
   abort.abort();
+  await expect(
+    runtime.run({ ...call, callId: "cancelled" }, { signal: abort.signal }),
+  ).rejects.toMatchObject({ name: "AbortError" });
   release();
-  await first;
-  await rejected;
-  expect(factory).toHaveBeenCalledTimes(1);
+  await Promise.all([first, second]);
+  expect(factory).toHaveBeenCalledTimes(2);
 });

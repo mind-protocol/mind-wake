@@ -76,7 +76,7 @@ it("preserves native runtime configuration and builds a source worker import as 
 });
 
 it.runIf(process.platform === "win32")(
-  "fails closed on an aggregate limit violation across nested role jobs and kills the entire cooperation",
+  "refuses an extra process across nested role jobs without killing the active cooperation",
   async () => {
     // Real Windows Job Objects, disposable Node fixtures only. No model or account use.
     const nestedDir = path.join(dir, "nested-runtime");
@@ -110,9 +110,15 @@ it.runIf(process.platform === "win32")(
     let owner: ConversationOwnerStarted | undefined;
     let workerPid: number | undefined, nestedPid: number | undefined;
     const counts: number[] = [];
+    const cancel = new AbortController();
+    const safety = setTimeout(() => {
+      cancel.abort();
+    }, 8000);
+    safety.unref();
     const observed: string[] = [];
     const result = await serveConversationOwner(dir, "main", {
       inspect,
+      signal: cancel.signal,
       supervisor: {
         available: supervisor.available,
         spawn: (p, s, c) => supervisor.spawn(p, s, c),
@@ -147,6 +153,10 @@ it.runIf(process.platform === "win32")(
         } catch {
           return;
         }
+        if (row["event"] === "over_limit_error")
+          setTimeout(() => {
+            cancel.abort();
+          }, 100);
         if (row["event"] === "nested_started") {
           workerPid = Number(row["workerPid"]);
           nestedPid = Number(row["nestedPid"]);
@@ -154,17 +164,19 @@ it.runIf(process.platform === "win32")(
       },
     });
     expect(
-      counts.some((n) => n > 3),
+      counts.some((n) => n === 3),
       JSON.stringify({ observed, result, counts }),
     ).toBe(true);
     expect(owner?.maxProcesses).toBe(3); // Caller/nested limits cannot loosen the parent policy.
-    expect(result.stopReason).toBe("global_process_limit_exceeded");
+    clearTimeout(safety);
+    expect(observed.some((line) => line.includes("over_limit_error"))).toBe(true);
+    expect(result.stopReason).toBe("owner_cancelled");
     expect(result.processControl).toMatchObject({
       enforcement: "observed_fail_closed",
       transientOvershootPossible: true,
       aggregateLimit: 3,
     });
-    expect(result.processControl.largestObserved).toBeGreaterThan(3);
+    expect(result.processControl.largestObserved).toBe(3);
     // A limit can be detected before the nested worker has time to print its PID.
     for (const pid of [result.pid, workerPid, nestedPid].filter(
       (n): n is number => n !== undefined,
@@ -221,4 +233,67 @@ it.runIf(process.platform === "win32")(
     expect(result.stopReason).toBeUndefined();
   },
   20_000,
+);
+
+it.runIf(process.platform === "win32")(
+  "keeps three simultaneous role jobs alive within the global limit of 16",
+  async () => {
+    const nestedDir = path.join(dir, "parallel-runtime");
+    expect(new ProcessTreeSupervisor(nestedDir).available).toBe(true);
+    const source = pathToFileURL(
+      fileURLToPath(new URL("../runner/process-tree.ts", import.meta.url)),
+    ).href;
+    const hooks = pathToFileURL(
+      fileURLToPath(new URL("../../test/fixtures/store-ledger/ts-hooks.ts", import.meta.url)),
+    ).href;
+    const fixture = path.join(dir, "parallel-worker.mjs");
+    fs.writeFileSync(
+      fixture,
+      `import {ProcessTreeSupervisor} from ${JSON.stringify(source)};
+      const s=new ProcessTreeSupervisor(${JSON.stringify(nestedDir)});
+      const roles=Array.from({length:3},(_,i)=>s.spawn(${JSON.stringify(profileId)},'parallel-'+i,{
+        executable:process.execPath,args:['-e',"console.log('ready');process.stdin.resume();process.stdin.once('data',()=>process.exit(0))"],env:${JSON.stringify(env())},maxProcesses:16}));
+      await Promise.all(roles.map(async p=>{await p.started();if(await p.readLine()!=='ready')throw Error('Role not ready')}));
+      console.log('three-roles-active');
+      await new Promise(r=>setTimeout(r,300));
+      if(roles.some(p=>p.hasExited))throw Error('Parallel role was terminated');
+      roles.forEach(p=>p.send('finish'));
+      const exits=await Promise.all(roles.map(p=>p.exited));
+      if(exits.some(e=>e.mainExitCode!==0))throw Error('Role failed');
+      console.log('three-roles-completed');`,
+    );
+    const observed: string[] = [];
+    const result = await serveConversationOwner(dir, "main", {
+      inspect: () => ({
+        ...inspect(),
+        revision: {
+          id: "parallel-16",
+          groups: { filesAndTools: { maxProcesses: 16 } },
+        } as PolicyRevision,
+      }),
+      pollMs: 20,
+      command: {
+        executable: process.execPath,
+        args: [
+          "--experimental-transform-types",
+          "--disable-warning=ExperimentalWarning",
+          "--import",
+          hooks,
+          fixture,
+        ],
+        env: env(),
+        cwd: dir,
+      },
+      onLog: (line) => {
+        observed.push(line);
+      },
+    });
+    expect(result.stopReason).toBeUndefined();
+    expect(result.exit.mainExitCode).toBe(0);
+    expect(observed).toContain("three-roles-active");
+    expect(observed).toContain("three-roles-completed");
+    expect(result.processControl.largestObserved).toBeGreaterThanOrEqual(4);
+    expect(result.processControl.largestObserved).toBeLessThanOrEqual(16);
+  },
+  40_000,
 );

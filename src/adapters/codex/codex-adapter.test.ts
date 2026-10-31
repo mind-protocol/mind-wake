@@ -1106,6 +1106,25 @@ describe("alignement ADR-006 et câblage", () => {
     expect(spawned[1]?.env).toEqual({ CODEX_HOME: h.dir });
   });
 
+  it.each(["quota-live.json", "quota-live-error.json"])(
+    "reads quota on the starting server without extra processes (%s)",
+    async (flow) => {
+      h.flow = flow;
+      const a = adapter({ quotaReuseMs: 0 });
+      const handle = await a.start(request());
+      try {
+        const before = h.launches.length;
+        const snapshots = await a.readQuota();
+        if (flow === "quota-live-error.json") expect(snapshots).toEqual([]);
+        else expect(snapshots.map((s) => s.windowKey)).toContain("codex:primary");
+        expect(h.requests("account/rateLimits/read")).toHaveLength(1);
+        expect(h.launches.length).toBe(before);
+      } finally {
+        await a.cancel(handle, 500);
+      }
+    },
+  );
+
   it("pendant une session, readQuota réutilise la jauge reçue en fin de tour", async () => {
     const a = adapter();
     const handle = await a.start(request());

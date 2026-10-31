@@ -154,7 +154,8 @@ export function roleCallContext(call: RoleCall): string {
 export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
   const inspect = options.inspect ?? (() => inspectConversationRuntime(options.dataDir));
   const now = () => new Date().toISOString() as UtcTimestamp;
-  const runtime: RoleRuntime = {
+  const preflightQuotas = new Map<string, Promise<readonly ProviderQuotaSnapshot[]>>();
+  return {
     async run(call, hooks = {}) {
       const initial = inspect();
       if (!initial.allowed) throw new ConversationRuntimeBlocked(initial.reason);
@@ -257,7 +258,16 @@ export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
           throw new ConversationRuntimeBlocked(probe.unavailableReason ?? "runtime_unavailable");
         if (options.adapterFactory === undefined) {
           if (!canReadQuota(adapter)) throw new ConversationRuntimeBlocked("quota_unreadable");
-          quota = await adapter.readQuota();
+          let reading = preflightQuotas.get(revision.id);
+          if (!reading) {
+            reading = adapter.readQuota();
+            preflightQuotas.set(revision.id, reading);
+            const clear = () => {
+              if (preflightQuotas.get(revision.id) === reading) preflightQuotas.delete(revision.id);
+            };
+            void reading.then(clear, clear);
+          }
+          quota = await reading;
           const capabilities = await adapter.capabilities();
           const store = openStore(options.dataDir, "read");
           try {
@@ -339,19 +349,6 @@ export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
       }
     },
   };
-  // Native CLIs and their quota probes create process trees. Keep a single tree
-  // alive through cleanup; the global human process limit remains authoritative.
-  let tail: Promise<unknown> = Promise.resolve();
-  return {
-    run(call, hooks = {}) {
-      const result = tail.then(() => {
-        if (hooks.signal?.aborted) throw new DOMException("Call cancelled", "AbortError");
-        return runtime.run(call, hooks);
-      });
-      tail = result.catch(() => undefined);
-      return result;
-    },
-  };
 }
 
 function officialAdapter(
@@ -418,7 +415,10 @@ function officialAdapter(
       command: Parameters<ProcessTreeSupervisor["spawn"]>[2],
     ) => {
       checkControl();
-      const child = supervisor.spawn(p, id, command);
+      const child = supervisor.spawn(p, id, {
+        ...command,
+        maxProcesses: revision.groups.filesAndTools.maxProcesses,
+      });
       children.add(child);
       return child;
     },
