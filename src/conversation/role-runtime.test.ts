@@ -264,3 +264,46 @@ it("exposes Claude text and text deltas while excluding thinking, tool inputs an
     text,
   });
 });
+
+it("serializes complete native lifetimes and skips a cancelled queued call", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let entered!: () => void;
+  const started = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const adapter = fakeAdapter(async function* (request) {
+    entered();
+    await gate;
+    yield {
+      type: "assistant_message",
+      sessionId: request.sessionId,
+      at: new Date().toISOString() as never,
+      messageId: "answer",
+      phase: "final",
+      text: "Done",
+    };
+    yield {
+      type: "ended",
+      sessionId: request.sessionId,
+      at: new Date().toISOString() as never,
+      exitReason: "completed",
+    };
+  });
+  const factory = vi.fn(() => adapter);
+  const runtime = createRoleRuntime({ dataDir: dir, inspect: allowed, adapterFactory: factory });
+  const first = runtime.run(call);
+  await started;
+  const abort = new AbortController();
+  const second = runtime.run({ ...call, callId: "queued" }, { signal: abort.signal });
+  const rejected = expect(second).rejects.toMatchObject({ name: "AbortError" });
+  await Promise.resolve();
+  expect(factory).toHaveBeenCalledTimes(1);
+  abort.abort();
+  release();
+  await first;
+  await rejected;
+  expect(factory).toHaveBeenCalledTimes(1);
+});

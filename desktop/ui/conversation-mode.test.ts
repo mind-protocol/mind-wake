@@ -120,6 +120,19 @@ it("does not present an obsolete running call as current work, and preserves the
   expect(conversationStatus(model)).toBe("Force-off actif : aucune exécution.");
 });
 
+it("does not show infinite work indicators when the worker is no longer running", async () => {
+  const fixture = uiFixture();
+  const payload = envelope({ workerRunning: false, calls: [
+    { id: "dead", role: "lead", revision: 1, pass: 1, status: "running", text: "" },
+  ] });
+  const model = required(conversationSnapshot(payload));
+  expect(conversationBusy(model)).toBe(false);
+  expect(conversationStatus(model)).toContain("À reprendre : Lead");
+  const mounted = mountConversationMode({ ...fixture, invoke: () => Promise.resolve(payload) });
+  await mounted.refresh();
+  expect(required(fixture.elements.get("conversation-tabs")).textContent).not.toContain("···");
+});
+
 it("streams only the current Lead draft, replaces a preview with complete text and retains it until final publication", () => {
   const event = (
     sequence: number,

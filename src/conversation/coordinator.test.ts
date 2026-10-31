@@ -353,3 +353,53 @@ it("only one queue owner runs a cycle even when two services start together", as
   await Promise.all(owners);
   expect(fake.calls.filter((c) => c.role === "pattern" && c.pass === 1)).toHaveLength(1);
 });
+
+it.each(["finish", "submit"])(
+  "%s cancels the running cycle and the next message starts fresh",
+  async (action) => {
+    const first = store.submit("main", "Première demande", "first");
+    let started!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    let cancelled = 0;
+    const runtime: RoleRuntime = {
+      run: async (_call, hooks) => {
+        started();
+        return new Promise((_resolve, reject) => {
+          const abort = () => {
+            cancelled++;
+            reject(Error("Fixture cancelled"));
+          };
+          if (hooks?.signal?.aborted) abort();
+          else hooks?.signal?.addEventListener("abort", abort, { once: true });
+        });
+      },
+    };
+    const running = new ConversationCoordinator(store, runtime).run("main", first.revision);
+    const rejected = expect(running).rejects.toThrow();
+    await ready;
+    if (action === "finish") {
+      await conversationCommand(
+        dir,
+        "finish",
+        { expectedRevision: first.revision },
+        { allow: () => true },
+      );
+      expect(store.current("main")?.status).toBe("completed");
+    }
+    const next = store.submit("main", "Nouvelle demande", "next");
+    await rejected;
+    expect(cancelled).toBeGreaterThan(0);
+    expect(
+      store
+        .calls("main")
+        .filter((c) => c.revision === first.revision)
+        .every((c) => !c.published),
+    ).toBe(true);
+    const fake = fakeRuntime();
+    await new ConversationCoordinator(store, fake.runtime).run("main", next.revision);
+    expect(store.current("main")?.status).toBe("completed");
+    expect(fake.calls.every((c) => c.revision === next.revision)).toBe(true);
+  },
+);

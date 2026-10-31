@@ -154,7 +154,7 @@ export function roleCallContext(call: RoleCall): string {
 export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
   const inspect = options.inspect ?? (() => inspectConversationRuntime(options.dataDir));
   const now = () => new Date().toISOString() as UtcTimestamp;
-  return {
+  const runtime: RoleRuntime = {
     async run(call, hooks = {}) {
       const initial = inspect();
       if (!initial.allowed) throw new ConversationRuntimeBlocked(initial.reason);
@@ -337,6 +337,19 @@ export function createRoleRuntime(options: RoleRuntimeOptions): RoleRuntime {
         if (handle) await adapter.cancel(handle, 1000).catch(() => undefined);
         await closeOwned();
       }
+    },
+  };
+  // Native CLIs and their quota probes create process trees. Keep a single tree
+  // alive through cleanup; the global human process limit remains authoritative.
+  let tail: Promise<unknown> = Promise.resolve();
+  return {
+    run(call, hooks = {}) {
+      const result = tail.then(() => {
+        if (hooks.signal?.aborted) throw new DOMException("Call cancelled", "AbortError");
+        return runtime.run(call, hooks);
+      });
+      tail = result.catch(() => undefined);
+      return result;
     },
   };
 }

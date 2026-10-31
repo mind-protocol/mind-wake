@@ -317,7 +317,7 @@ pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
 /// The webview can address only the conversation CLI's closed action set.
 /// Paths, credentials and executable arguments remain owned by the installation.
 pub fn conversation(action: String, input: serde_json::Value) -> Result<CliRun, String> {
-    if !matches!(action.as_str(), "submit" | "read" | "edit" | "stop" | "resume" | "activate" | "events") {
+    if !matches!(action.as_str(), "submit" | "read" | "edit" | "stop" | "finish" | "resume" | "activate" | "events") {
         return Err("Action de conversation inconnue".into());
     }
     if !input.is_object() { return Err("Corps de conversation invalide".into()); }

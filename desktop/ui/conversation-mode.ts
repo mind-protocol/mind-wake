@@ -144,11 +144,15 @@ export function conversationSnapshot(envelope: unknown): ConversationSnapshot | 
     calls.push({
       id,
       role: c["role"],
-      status,
+      status: data["workerRunning"] === false && status === "running" ? "interrupted" : status,
       revision: c["revision"],
       pass: c["pass"],
       text: str(c["text"]) ?? "",
-      ...(error ? { error } : {}),
+      ...(data["workerRunning"] === false && status === "running"
+        ? { error: error ?? "Le moteur de conversation s’est arrêté avant de rendre son résultat." }
+        : error
+          ? { error }
+          : {}),
       messages: c["messages"],
       ...(systemPrompt ? { systemPrompt } : {}),
       ...(typeof c["usage"] === "number" && Number.isFinite(c["usage"]) && c["usage"] >= 0
@@ -360,7 +364,7 @@ export class ConversationClient {
 export interface MountedConversation {
   refresh(): Promise<void>;
   submit(text: string): Promise<void>;
-  control(action: "stop" | "resume" | "activate"): Promise<void>;
+  control(action: "stop" | "finish" | "resume" | "activate"): Promise<void>;
   busy(): boolean;
   setVisible(visible: boolean): void;
 }
@@ -499,6 +503,12 @@ export function mountConversationMode(options: {
         }
         li.append(meta, body);
       } else li.append(meta, options.renderBody(m.text));
+      if (m.role === "lead" && m.revision === state.revision && state.status === "active")
+        li.append(
+          button("Terminer l’activité", () => {
+            void control("finish", m.revision);
+          }),
+        );
       if (m.role === "human" || m.role === "lead")
         li.append(
           button("Modifier", () => {
@@ -649,21 +659,26 @@ export function mountConversationMode(options: {
       reading = false;
     }
   }
-  async function control(action: "stop" | "resume" | "activate"): Promise<void> {
+  async function control(
+    action: "stop" | "finish" | "resume" | "activate",
+    expectedRevision?: number,
+  ): Promise<void> {
     status.textContent =
-      action === "stop"
+      action === "stop" || action === "finish"
         ? "Arrêt du travail…"
         : action === "activate"
           ? "Activation manuelle des conversations…"
           : "Reprise de la conversation…";
     try {
-      await client.command(action);
+      await client.command(action, expectedRevision === undefined ? {} : { expectedRevision });
       status.textContent =
-        action === "stop"
-          ? "Travail de la conversation arrêté."
-          : action === "activate"
-            ? "Conversations activées. Aucun réveil autonome."
-            : "Reprise demandée. Les arrêts du profil restent appliqués.";
+        action === "finish"
+          ? "Activité terminée. Le prochain message lancera un nouveau cycle."
+          : action === "stop"
+            ? "Travail de la conversation arrêté."
+            : action === "activate"
+              ? "Conversations activées. Aucun réveil autonome."
+              : "Reprise demandée. Les arrêts du profil restent appliqués.";
       await refresh();
     } catch (e) {
       status.textContent = e instanceof Error ? e.message : String(e);

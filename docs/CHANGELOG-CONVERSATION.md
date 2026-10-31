@@ -130,6 +130,8 @@ Le contrôle de livraison suivant a révélé une régression : la synchronisati
 
 La relecture du guide a aussi précisé la portée de la réutilisation de Work : elle est déterministe pour une même révision et des dépendances identiques. Un arrêt suivi d’une reprise crée une nouvelle révision ; les résultats précédents sont transmis, mais le code ne garantit pas encore la déduplication des effets techniques entre révisions. Le guide expose cette limite pour éviter de confondre conservation des résultats et exécution exactement une fois.
 
+Le bouton « Terminer l’activité » appartient désormais à la réponse Lead courante : il termine son cycle, conserve le texte et laisse le prochain message démarrer une nouvelle révision. Un nouvel envoi annule aussi le cycle précédent ; les tests vérifient l’annulation et l’absence de publication périmée. Un essai réel a révélé un dépassement de processus (20 observés pour 16 autorisés) : les durées de vie natives, probes et nettoyage compris, sont maintenant sérialisées par worker, sans relever la limite humaine. Cette borne conservatrice réduit temporairement le parallélisme ; sa validation avec le fournisseur réel reste distincte des tests de fixtures.
+
 ## Points encore ouverts à vérifier
 
 - Tester le trajet réel avec le runtime autorisé, puis l’usage de la version réécrite au message suivant, sans continuation native.

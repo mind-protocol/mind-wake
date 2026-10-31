@@ -7,6 +7,7 @@ import { ConversationStore } from "./store.js";
 import { inspectConversationRuntime } from "./role-runtime.js";
 import { enableConversationMode, inspectConversationMode } from "./mode.js";
 import { workerAlive } from "./worker.js";
+import { recordedWorkerExit } from "./worker-status.js";
 import { processContext } from "../cli/context.js";
 import { reactivate } from "../cli/commands/reactivate.js";
 import { resume } from "../cli/commands/resume.js";
@@ -17,7 +18,7 @@ import { prepareJournalEvent } from "../journal/index.js";
 import { StopFlag } from "../runner/controls.js";
 import type { UtcTimestamp } from "../contracts/index.js";
 
-const ACTIONS = ["submit", "read", "edit", "stop", "resume", "activate", "events"];
+const ACTIONS = ["submit", "read", "edit", "stop", "finish", "resume", "activate", "events"];
 export async function launchWorker(dataDir: string, conversationId: string): Promise<void> {
   if (await workerAlive(dataDir, conversationId)) return;
   const entry = fileURLToPath(
@@ -116,6 +117,8 @@ export async function conversationCommand(
         );
     }
     if (action === "stop") store.stopConversation(conversationId);
+    if (action === "finish")
+      store.completeConversation(conversationId, expected ?? current().revision);
     if (action === "activate") {
       await (options.enableMode ?? enableConversationMode)(dataDir);
       // This branch is a dedicated, explicit human action. Submission/read never lift a stop.
@@ -205,6 +208,10 @@ export async function conversationCommand(
       await (options.enableMode ?? enableConversationMode)(dataDir);
       await (options.launch ?? launchWorker)(dataDir, conversationId);
     }
+    const workerRunning = await workerAlive(dataDir, conversationId);
+    const workerExit = !workerRunning && ["read", "events"].includes(action)
+      ? recordedWorkerExit(dataDir, conversationId) : null;
+    if (workerExit) store.recoverInterruptedCalls(conversationId, workerExit);
     const snapshot = store.snapshot(conversationId);
     return {
       ...snapshot,
@@ -215,7 +222,8 @@ export async function conversationCommand(
             allowed: false,
             reason: "reason" in inspection ? inspection.reason : "Runtime stopped",
           },
-      workerRunning: await workerAlive(dataDir, conversationId),
+      workerRunning,
+      ...(workerExit ? { controlReason: workerExit } : {}),
       ...(action === "events"
         ? { events: store.events(conversationId, number(input, "after") ?? 0) }
         : {}),
