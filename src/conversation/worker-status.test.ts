@@ -66,18 +66,18 @@ it("recovers abandoned calls on read only with a matching exit receipt, without 
   let launches = 0;
   const options = {
     allow: () => true,
-    launch: async () => {
+    launch: () => {
       launches++;
+      return Promise.resolve();
     },
   };
   const initial = await conversationCommand(dir, "read", {}, options);
   expect((initial["calls"] as { status: string }[])[0]?.status).toBe("running");
   fs.writeFileSync(path.join(dir, "conversation-worker.log"), receipt());
   const recovered = await conversationCommand(dir, "read", {}, options);
-  expect((recovered["calls"] as { status: string; error: string }[])[0]).toMatchObject({
-    status: "interrupted",
-    error: expect.stringContaining("limite de processus"),
-  });
+  const call = (recovered["calls"] as { status: string; error: string }[])[0];
+  expect(call?.status).toBe("interrupted");
+  expect(call?.error).toContain("limite de processus");
   expect(recovered["controlReason"]).toContain("limite de processus");
   expect(launches).toBe(0);
 });
