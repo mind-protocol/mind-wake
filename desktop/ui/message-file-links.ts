@@ -162,7 +162,7 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   },()=>{refreshReadiness();scheduleDecoration();settleNewMessages();});
   const accept=(messages:readonly FileMessage[],historical=false,live=false):void=>{
     const fresh=state.observe(messages,historical,live);
-    if(fresh.some(message=>/\.(?:md|markdown|html?|htm)\b/i.test(message.text))){catalogsReady=false;void refreshGate.request();}
+    if(fresh.some(message=>/\.(?:md|markdown|html?|htm|txt)\b/i.test(message.text))){catalogsReady=false;void refreshGate.request();}
     else settleNewMessages();
     scheduleDecoration();
   };

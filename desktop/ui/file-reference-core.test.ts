@@ -66,3 +66,18 @@ it('ne transforme pas un courriel connu même en code inline',()=>{
  const known:FileCatalog={scope:'agent',entries:[{relative:'a@b.md'}]};
  expect(findFileMentions('`a@b.md`', [known])).toEqual([]);
 });
+
+it('detects txt paths and unique or ambiguous basenames with punctuation and backticks',()=>{
+ const path='artifacts/projets/delegation-entre-ateliers/machinetomachine-draft.txt';
+ const textFiles:FileCatalog[]=[
+  {scope:'agent',entries:[{relative:path},{relative:'artifacts/shared.txt'},{relative:'artifacts/tool.txt.exe'}]},
+  {scope:'project',entries:[{relative:'shared.txt'},{relative:'../outside.txt'}]},
+ ];
+ const text='Voir `'+path+'`, puis machinetomachine-draft.TXT. (shared.txt)!';
+ const refs=findFileMentions(text,textFiles);
+ expect(refs.map(ref=>[ref.text,ref.files.length])).toEqual([[path,1],['machinetomachine-draft.TXT',1],['shared.txt',2]]);
+ expect(refs[0]?.files[0]?.relative).toBe(path);
+ for(const ref of refs)expect(text.slice(ref.start,ref.end)).toBe(ref.text);
+ expect(findFileMentions('unknown/shared.txt ../shared.txt /shared.txt https://host/shared.txt tool.txt.exe outside.txt',textFiles)).toEqual([]);
+ expect(findFileMentions('```\nshared.txt\n```\n`cat shared.txt`',textFiles)).toEqual([]);
+});

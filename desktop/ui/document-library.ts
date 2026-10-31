@@ -6,7 +6,7 @@ export function collectionKey(relative:string):string {
 }
 export function libraryLabel(value:string):string {
   if(value==='@root')return 'Repères';
-  return (value.split('/').at(-1)??value).replace(/\.(?:md|markdown|html?)$/i,'').replace(/[-_]/g,' ');
+  return (value.split('/').at(-1)??value).replace(/\.(?:md|markdown|html?|txt)$/i,'').replace(/[-_]/g,' ');
 }
 export function documentLabel(entry:LibraryEntry):string {
   return /^index\.html?$/i.test(entry.name)?libraryLabel(entry.relative.split('/').slice(0,-1).join('/')):libraryLabel(entry.name);
@@ -16,7 +16,7 @@ export function visibleDocuments(entries:LibraryEntry[],collection:string,query:
   const search=normalize(query.trim());
   return entries.filter(e=>!e.directory&&(!collection||collectionKey(e.relative)===collection)
     &&(!search||normalize(e.relative).includes(search))
-    &&(!format||(format==='html'?/\.html?$/i:/\.(?:md|markdown)$/i).test(e.relative)))
+    &&(!format||(format==='html'?/\.html?$/i:format==='txt'?/\.txt$/i:/\.(?:md|markdown)$/i).test(e.relative)))
     .sort((a,b)=>(b.modifiedAt??0)-(a.modifiedAt??0)||a.relative.localeCompare(b.relative));
 }
 

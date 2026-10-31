@@ -15,7 +15,7 @@ function normalizeReference(value:string):string|null {
   const parts=slash.split('/');
   if(parts.some(p=>p==='..'||p===''))return null;
   const normalized=parts.filter(p=>p!=='.').join('/');
-  return /\.(?:md|markdown|html?|htm)$/i.test(normalized)?normalized:null;
+  return /\.(?:md|markdown|html?|htm|txt)$/i.test(normalized)?normalized:null;
 }
 const key=(value:string):string=>value.toLowerCase();
 const escapeRegex=(value:string):string=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');

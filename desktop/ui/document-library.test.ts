@@ -31,3 +31,13 @@ it('ages filesystem modification times without inventing unknown dates',()=>{
  for(const value of [undefined,0,-1,NaN,Infinity]) expect(modificationAge(value,now)).toEqual({label:'date inconnue'});
  expect(modificationAge(now+1000,now).label).toBe('date future');
 });
+
+it('includes txt in all documents and filters plain text independently from Markdown and HTML',()=>{
+ const draft={name:'machine-draft.TXT',relative:'artifacts/creations/blog/machine-draft.TXT',modifiedAt:50};
+ const library=[...entries,draft];
+ expect(visibleDocuments(library,'artifacts/creations/blog','','')[0]).toEqual(draft);
+ expect(visibleDocuments(library,'','','txt')).toEqual([draft]);
+ expect(visibleDocuments(library,'','','md')).not.toContain(draft);
+ expect(visibleDocuments(library,'','','html')).not.toContain(draft);
+ expect(documentLabel(draft)).toBe('machine draft');
+});

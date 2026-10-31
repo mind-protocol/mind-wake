@@ -134,12 +134,12 @@
           <section id="document-library" hidden aria-label="Bibliothèque de documents">
 
             <input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher un document…">
-            <label class="reader-format">Afficher<select id="document-format"><option value="">HTML et Markdown</option><option value="html">Pages HTML</option><option value="md">Textes Markdown</option></select></label>
+            <label class="reader-format">Afficher<select id="document-format"><option value="">Tous les documents</option><option value="html">Pages HTML</option><option value="md">Textes Markdown</option><option value="txt">Textes bruts (.txt)</option></select></label>
             <p id="document-count"></p><nav id="document-files" aria-label="Documents du projet"></nav>
           </section>
           <div class="reader-page">
             <label class="reader-outline">Dans cette page<select id="document-sections" aria-label="Sections du document" disabled><option>Sommaire indisponible</option></select></label>
-            <iframe id="document-frame" title="Document HTML ou Markdown" sandbox="allow-same-origin" referrerpolicy="no-referrer" srcdoc="&lt;p&gt;Ouvrez la bibliothèque pour choisir un document.&lt;/p&gt;"></iframe>
+            <iframe id="document-frame" title="Document HTML, Markdown ou texte brut" sandbox="allow-same-origin" referrerpolicy="no-referrer" srcdoc="&lt;p&gt;Ouvrez la bibliothèque pour choisir un document.&lt;/p&gt;"></iframe>
           </div>
         </div>
         <nav class="reader-pagination" aria-label="Parcourir les documents récents">

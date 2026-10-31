@@ -72,3 +72,15 @@ it('resolves catalogue paths inside inert inline backtick spans and preserves am
  expect(parts.map(part=>findFileMentions(part,catalogs).map(m=>[m.text,m.files.length]))).toEqual([[['artifacts/alpha.md',1]],[['README.md',2]]]);
  expect(findFileMentions('`C:/outside/not-in-catalog.md`',catalogs)).toEqual([]);
 });
+
+it('queues new txt messages in order without replaying history or polling or choosing ambiguous names',()=>{
+ const txt:FileCatalog[]=[{scope:'agent',entries:[{relative:'artifacts/first.txt'},{relative:'artifacts/next.txt'},{relative:'shared.txt'}]},
+  {scope:'project',entries:[{relative:'shared.txt'}]}];
+ const state=new MessageFileQueue(started);
+ state.observe([item('history','first.txt')]);expect(state.resolve(txt)).toEqual([]);
+ const fresh=item('fresh','`artifacts/first.txt`, shared.txt puis next.txt.');
+ state.observe([fresh]);expect(state.resolve(txt).map(file=>file.relative)).toEqual(['artifacts/first.txt']);
+ expect(state.entries.map(file=>file.relative)).toEqual(['artifacts/first.txt','artifacts/next.txt']);
+ state.observe([fresh]);expect(state.resolve(txt)).toEqual([]);
+ state.observe([item('older','next.txt')],true);expect(state.resolve(txt)).toEqual([]);
+});

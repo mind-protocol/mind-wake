@@ -13,6 +13,14 @@ export function initialDocument(entries: readonly LibraryEntry[], saved?: string
 }
 const escape = (text: string): string => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
+/** Plain text never passes through either the HTML or Markdown source parser. */
+export function parseDocument(source:string,format:string):Document {
+  if(format==='html'||format==='markdown')return new DOMParser().parseFromString(format==='markdown'?markdownHtml(source):source,'text/html');
+  const parsed=new DOMParser().parseFromString('','text/html');
+  const pre=parsed.createElement('pre');pre.style.whiteSpace='pre-wrap';pre.textContent=source;parsed.body.append(pre);
+  return parsed;
+}
+
 // Small, escaped Markdown renderer. Raw HTML is text, never executable markup.
 export function markdownHtml(source: string): string {
   const inline = (text: string): string => {
@@ -143,7 +151,7 @@ export function initDocuments(invoke: Invoke): void {
       const button=document.createElement('button');button.type='button';button.className='reader-file';button.title=entry.relative;
       button.setAttribute('aria-current',String(entry.relative===current));
       const name=document.createElement('strong');name.textContent=documentLabel(entry);
-      const meta=document.createElement('small');const ext=/\.html?$/i.test(entry.relative)?'HTML':'MD';
+      const meta=document.createElement('small');const ext=/\.html?$/i.test(entry.relative)?'HTML':/\.txt$/i.test(entry.relative)?'TXT':'MD';
       meta.textContent=ext+' · '+entry.relative.split('/').slice(0,-1).join('/');
       const age=document.createElement('time');age.dataset['modifiedAt']=String(entry.modifiedAt??0);age.className='reader-file-age';
       button.append(name,meta,age);button.addEventListener('click',()=>{contextMode=false;renderQueue();void open(entry.relative);if(host.clientWidth<720)setLibrary(false);});files.append(button);
@@ -193,7 +201,7 @@ export function initDocuments(invoke: Invoke): void {
       else if(historyIndex!==undefined)position=historyIndex;
       const key=collectionKey(relative);
       if(collection.value&&collection.value!==key)collection.value='';
-      const parsed=new DOMParser().parseFromString(data.format==='markdown'?markdownHtml(data.text):data.text,'text/html');
+      const parsed=parseDocument(data.text,data.format);
       const images=sanitizeDocument(parsed,relative);
       const style=document.createElement('style');style.textContent='html{color-scheme:light;scroll-padding-top:20px}body{font:15px/1.75 system-ui;margin:28px;color:#203f34;overflow-wrap:anywhere}pre{overflow:auto;padding:16px;background:#8882}table{border-collapse:collapse}td,th{border:1px solid #8886;padding:8px}a{color:#238967}img{max-width:100%}';parsed.head.prepend(style);
       title.textContent=parsed.querySelector('h1')?.textContent??documentLabel(entries.find(e=>e.relative===relative)??{name:relative.split('/').at(-1)??relative,relative});
@@ -218,16 +226,16 @@ export function initDocuments(invoke: Invoke): void {
           const link=(event.target as Element|null)?.closest('a');if(!link)return;event.preventDefault();const href=link.getAttribute('href')??'';
           try{
             if(href.startsWith('#')){doc.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();return;}
-            if(/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith('/')||href.startsWith(String.fromCharCode(92))){status.textContent='Ce lecteur ouvre les documents locaux HTML et Markdown.';return;}
+            if(/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith('/')||href.startsWith(String.fromCharCode(92))){status.textContent='Ce lecteur ouvre les documents locaux HTML, Markdown et texte brut.';return;}
             const url=new URL(href,'https://documents.invalid/'+relative),path=decodeURIComponent(url.pathname.slice(1));
-            if(!/\.(md|markdown|html?|htm)$/i.test(path)){status.textContent='Ce lien ne pointe pas vers un document HTML ou Markdown.';return;}
+            if(!/\.(md|markdown|html?|htm|txt)$/i.test(path)){status.textContent='Ce lien ne pointe pas vers un document HTML, Markdown ou texte brut.';return;}
             void open(path,true,decodeURIComponent(url.hash.slice(1)));
           }catch(error){feedback(error);}
         });
       };
       frame.srcdoc='<!doctype html>'+parsed.documentElement.outerHTML;
       breadcrumbs();renderFiles();try{localStorage.setItem(stateKey(),current);}catch{/* Storage is optional. */}
-      status.textContent=data.format==='html'?'Page HTML · lecture seule':'';
+      status.textContent=data.format==='html'?'Page HTML · lecture seule':data.format==='text'?'Texte brut · lecture seule':'';
     }catch(error){if(ticket===generation&&scopeState.accepts(scopeTicket))feedback(error);}
     finally{if(ticket===generation)pendingOpen=false;}
   }

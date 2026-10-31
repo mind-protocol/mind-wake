@@ -16,7 +16,16 @@ fn root(scope: &str) -> Result<PathBuf, String> {
 }
 
 fn supported(path: &Path) -> bool {
-    matches!(path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref(), Some("md" | "markdown" | "html" | "htm"))
+    document_format(path).is_some()
+}
+
+fn document_format(path: &Path) -> Option<&'static str> {
+    match path.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref() {
+        Some("md" | "markdown") => Some("markdown"),
+        Some("html" | "htm") => Some("html"),
+        Some("txt") => Some("text"),
+        _ => None,
+    }
 }
 
 #[tauri::command]
@@ -46,10 +55,10 @@ pub async fn document_browse(scope: String, relative: String, read: bool, recurs
         let base = root(&scope)?;
         let target = resolve(&base, &relative)?;
         if read {
-            if !supported(&target) || !target.is_file() { return Err("Choisir un fichier HTML ou Markdown".into()); }
+            if !supported(&target) || !target.is_file() { return Err("Choisir un fichier HTML, Markdown ou texte brut (.txt)".into()); }
             if target.metadata().map_err(|e| e.to_string())?.len() > 2_000_000 { return Err("Document trop volumineux (maximum 2 Mo)".into()); }
             let text = std::fs::read_to_string(&target).map_err(|e| e.to_string())?;
-            return Ok(serde_json::json!({"text": text, "format": if matches!(target.extension().and_then(|e| e.to_str()).map(str::to_ascii_lowercase).as_deref(), Some("md" | "markdown")) { "markdown" } else { "html" }}));
+            return Ok(serde_json::json!({"text": text, "format": document_format(&target).ok_or("Format de document inconnu")?}));
         }
         if recursive.unwrap_or(false) {
             return catalog(&base, &target);
@@ -111,6 +120,10 @@ mod tests {
         assert!(resolve(&base, "../Cargo.toml").is_err());
         assert!(resolve(&base, "C:\\Windows\\win.ini").is_err());
         assert!(supported(Path::new("notes.MD")));
+        assert_eq!(document_format(Path::new("draft.TXT")), Some("text"));
+        assert_eq!(document_format(Path::new("notes.markdown")), Some("markdown"));
+        assert_eq!(document_format(Path::new("index.htm")), Some("html"));
+        assert!(!supported(Path::new("draft.txt.exe")));
         assert!(!supported(Path::new("keys.json")));
     }
     #[test]
@@ -118,13 +131,14 @@ mod tests {
         let unique = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
         let dir = std::env::temp_dir().join(format!("wake-document-catalog-{unique}"));
         for name in ["creations/blog", ".private", "node_modules"] { std::fs::create_dir_all(dir.join(name)).unwrap(); }
-        for name in ["creations/blog/index.html", "notes.md", ".private/secret.md", "node_modules/readme.md", "credentials.json"] { std::fs::write(dir.join(name), "sample").unwrap(); }
+        for name in ["creations/blog/index.html", "notes.md", "creations/blog/draft.TXT", ".private/secret.md", ".private/secret.txt", "node_modules/readme.md", "node_modules/readme.txt", "credentials.json", "draft.txt.exe"] { std::fs::write(dir.join(name), "sample").unwrap(); }
         let base = dir.canonicalize().unwrap();
         let result = catalog(&base, &base).unwrap();
         let files: Vec<_> = result["entries"].as_array().unwrap().iter().map(|e| e["relative"].as_str().unwrap()).collect();
-        assert_eq!(files.len(), 2);
+        assert_eq!(files.len(), 3);
         assert!(files.contains(&"notes.md"));
         assert!(files.contains(&"creations/blog/index.html"));
+        assert!(files.contains(&"creations/blog/draft.TXT"));
         assert_eq!(result["truncated"], false);
         std::fs::remove_dir_all(&dir).unwrap();
     }
