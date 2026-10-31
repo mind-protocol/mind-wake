@@ -4,6 +4,8 @@
  * texte ; les réponses de l'humain viennent du registre tenu hors de l'espace de l'agent.
  */
 
+import { inlineCodeRanges } from "./message-links.js";
+
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
   readonly from: "agent" | "human" | "session" | "activity" | "received" | "context" | "sent";
@@ -33,8 +35,25 @@ export interface Conversation {
 }
 
 /** Peer/session words are a quotation: retain Markdown markers, whitespace and body JSON. */
-export function conversationText(item: ConversationItem, simplify: (text: string) => string): string {
-  return item.from === "agent" || item.from === "activity" ? simplify(item.text) : item.text;
+export function conversationText(item: ConversationItem, simplify: (text: string, preserveInline?: boolean) => string): string {
+  return item.from === "agent" || item.from === "activity" ? simplify(item.text, true) : item.text;
+}
+
+/** Existing plain Markdown formatting, with optional exact inline-code preservation.
+ * Only removed delimiters are checked: bold around code still simplifies normally.
+ * No placeholders or HTML interpretation; fenced/multiline code keeps legacy behaviour.
+ */
+export function plainText(markdown: string, preserveInline = false): string {
+  let text = markdown;
+  let ranges = preserveInline ? inlineCodeRanges(text) : [];
+  const protectedAt = (start: number, end: number): boolean => ranges.some(range => start < range.end && end > range.start);
+  text = text.replace(/^#{1,6}\s+/gm, (match: string, offset: number) => protectedAt(offset, offset + match.length) ? match : "");
+  ranges = preserveInline ? inlineCodeRanges(text) : [];
+  text = text.replace(/\*\*(.+?)\*\*/g, (match: string, content: string, offset: number) =>
+    protectedAt(offset, offset + 2) || protectedAt(offset + match.length - 2, offset + match.length) ? match : content);
+  ranges = preserveInline ? inlineCodeRanges(text) : [];
+  return text.replace(/`([^`]+)`/g, (match: string, content: string, offset: number) =>
+    protectedAt(offset, offset + 1) || protectedAt(offset + match.length - 1, offset + match.length) ? match : content);
 }
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { conversation, conversationText, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, plainText, renderConversationMeta } from "./conversation.js";
+import { inlineCodeRanges } from "./message-links.js";
 import type { ConversationItem } from "./conversation.js";
 
 // Minimal inert DOM surface exercises the same strong/span renderer used by main.ts.
@@ -297,4 +298,25 @@ it("keeps repo runtime titles short while preserving the full supplied route",()
  const node=renderMeta(item),details=node.children.find(c=>c instanceof MetaNode&&c.tag==="details");
  const title=node.children.filter(c=>c!==details).map(c=>typeof c==="string"?c:c.textContent).join("");
  expect(title).not.toContain("C:/project");expect(title).not.toContain("session-id");
+});
+
+it("keeps inline code exact through the real agent/activity simplifier and decoration detector",()=>{
+ const text='# Titre\n**Texte** **autour de `backticks`** puis `**gras literal** <img src=x>` et ``a ` b``.';
+ const expected='Titre\nTexte autour de `backticks` puis `**gras literal** <img src=x>` et ``a ` b``.';
+ for(const from of ["agent","activity"] as const){
+  const actual=conversationText({from,text,at:"2026-10-31T00:00:00Z"},plainText);
+  expect(actual).toBe(expected);
+  expect(inlineCodeRanges(actual).map(r=>actual.slice(r.start,r.end))).toEqual(['`backticks`','`**gras literal** <img src=x>`','``a ` b``']);
+ }
+ expect(conversationText({from:"agent",text:'`code`# milieu',at:"2026-10-31T00:00:00Z"},plainText)).toBe('`code`# milieu');
+});
+it("leaves quoted roles exact and preserves legacy fence/multiline simplification",()=>{
+ const text='# Titre\n**Texte** `code`\n```ts\n**bold** `nested`\n```\n`sur\ndeux lignes`';
+ for(const from of ["human","received","session","context","sent"] as const)
+  expect(conversationText({from,text,at:"2026-10-31T00:00:00Z"},plainText)).toBe(text);
+ const legacy=(value:string)=>value.replace(/^#{1,6}\s+/gm,"").replace(/\*\*(.+?)\*\*/g,"$1").replace(/`([^`]+)`/g,"$1");
+ for(const value of ['# Titre\n**gras**','```ts\n**gras** `code`\n```','`across\nlines`']){
+  expect(plainText(value)).toBe(legacy(value));
+  expect(conversationText({from:"agent",text:value,at:"2026-10-31T00:00:00Z"},plainText)).toBe(legacy(value));
+ }
 });

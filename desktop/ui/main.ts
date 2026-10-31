@@ -11,7 +11,7 @@ import { initDocuments } from "./documents.js";
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
-import { conversation, conversationText, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, plainText, renderConversationMeta } from "./conversation.js";
 import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
@@ -542,12 +542,6 @@ function markChatSeen(at: string): void {
 }
 
 /** Markdown de l'agent affiché sans ses marques (titres, gras, code) ; jamais interprété. */
-function plainText(markdown: string): string {
-  return markdown
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/`([^`]+)`/g, "$1");
-}
 
 let chatVisibleCount = 30;
 let chatSignature = "";
