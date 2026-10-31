@@ -23,6 +23,11 @@ const EXPECTED_TOOLS = [
   "list_directory",
   "list_help_requests",
   "list_invitations",
+  "notion_list",
+  "notion_read",
+  "notion_read_property",
+  "notion_search",
+  "notion_status",
   "propose_matches",
   "publish_help_request",
   "read_inbox",
@@ -74,7 +79,9 @@ describe("surface d'outils", { timeout: TIMEOUT }, () => {
       );
     }
     for (const tool of tools) {
-      expect(tool.annotations?.openWorldHint).toBe(tool.name.startsWith("gmail_"));
+      expect(tool.annotations?.openWorldHint).toBe(
+        tool.name.startsWith("gmail_") || tool.name.startsWith("notion_"),
+      );
       expect(tool.inputSchema["additionalProperties"]).toBe(false);
     }
     const { resources } = await party.client.listResources().catch(() => ({ resources: [] }));

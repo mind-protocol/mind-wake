@@ -16,6 +16,7 @@ import { ConnectorRecords, wakeConnectorControl } from "../../connectors/local.j
 import { gmailConfigSchema, GMAIL_HOSTS, type GmailConfig } from "../../connectors/gmail.js";
 import { beginGmailOAuth } from "../../connectors/oauth.js";
 import { isTrustedUserChannel, openTrustedUserChannel } from "../../policy/index.js";
+import { notionCommand } from "./notion.js";
 
 /** System browser through Windows ShellExecute; URL only in private stdin, no logging. */
 async function systemBrowser(url: string): Promise<void> {
@@ -62,6 +63,7 @@ export async function connectors(
     transport?: typeof fetch;
   } = {},
 ): Promise<CommandResult<unknown>> {
+  if (action.startsWith("notion-")) return notionCommand(ctx, dir, action, filename);
   const records = seams.records ?? new ConnectorRecords(dir.path);
   const control = seams.control ?? (() => wakeConnectorControl(dir.path, GMAIL_HOSTS));
   try {

@@ -1,5 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
+import { registerNotionTools } from "./notion-tools.js";
+import {
+  NOTION_HOSTS,
+  NotionLocal,
+  notionPublicScope,
+  type NotionConfig,
+} from "../../src/connectors/notion/local.js";
+import type { NotionTransport } from "../../src/connectors/notion/transport.js";
+import type { NotionReadonly } from "../../src/connectors/notion/client.js";
 import {
   ConnectorError,
   ConnectorGate,
@@ -17,11 +26,59 @@ import {
 export function registerConnectorTools(
   server: McpServer,
   env: Readonly<Record<string, string | undefined>>,
-  seams: { records?: ConnectorRecords; control?: () => LiveControl; transport?: typeof fetch } = {},
+  seams: {
+    records?: ConnectorRecords;
+    control?: () => LiveControl;
+    transport?: typeof fetch;
+    notionTransport?: NotionTransport;
+  } = {},
 ): void {
   const dir = env["MIND_WAKE_DATA_DIR"];
   if (!dir) return;
   const records = seams.records ?? new ConnectorRecords(dir);
+  const notionControl = seams.control ?? (() => wakeConnectorControl(dir, NOTION_HOSTS));
+  const notion = new NotionLocal(records, notionControl, seams.notionTransport);
+  let notionObserved: { ref: string; at: number } | null = null;
+  const notionRead = async <T>(work: (reader: NotionReadonly) => Promise<T>): Promise<T> => {
+    const ref = records.currentRef("notion");
+    try {
+      const result = await notion.run(work);
+      if (records.currentRef("notion") !== ref || !notionControl().allowed)
+        throw new ConnectorError("stopped");
+      notionObserved = { ref, at: Date.now() };
+      return result;
+    } catch (error) {
+      notionObserved = null;
+      throw error;
+    }
+  };
+  registerNotionTools(
+    server,
+    () =>
+      Promise.resolve({
+        search: (query) => notionRead((reader) => reader.search(query)),
+        get: (path) => notionRead((reader) => reader.get(path)),
+        list: (path) => notionRead((reader) => reader.list(path)),
+        property: (path, propertyId) => notionRead((reader) => reader.property(path, propertyId)),
+      }),
+    async () => {
+      const record = await records.read<NotionConfig>("notion");
+      return {
+        installed: true,
+        configured: record !== null,
+        authorized: record?.grant.enabled === true,
+        available:
+          record?.grant.enabled === true &&
+          !!record.tokenRef &&
+          notionControl().allowed &&
+          notionObserved !== null &&
+          notionObserved.ref === records.currentRef("notion") &&
+          Date.now() - notionObserved.at < 30_000,
+        availabilityMeaning: "recent_success_and_current_controls",
+        scope: notionPublicScope(record),
+      };
+    },
+  );
   const control = seams.control ?? (() => wakeConnectorControl(dir, GMAIL_HOSTS));
   let observed: { generation: string; tokenRef: string; at: number } | null = null;
   const call = async (work: () => Promise<unknown>) => {

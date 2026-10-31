@@ -47,6 +47,9 @@ Commandes :
   connectors status Affiche les états Gmail locaux, sans appel fournisseur
   connectors gmail-setup FICHIER.json Connexion Gmail explicite dans un terminal humain
   connectors gmail-disconnect Révoque immédiatement l'accès Gmail local
+  connectors notion-status Affiche identité, portée et états Notion locaux
+  connectors notion-setup FICHIER.json Connexion interne Notion, token saisi masqué
+  connectors notion-disconnect Révoque immédiatement l'accès Notion local
   doctor        Diagnostic local, sans appel modèle ni accès réseau
   init          Prépare un profil désactivé, sans budget ni permission
   always-on     Enchaîne les réveils dès la fin de chaque réponse
@@ -147,7 +150,7 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     command = grouped ? `${first} ${second}` : (first ?? "help");
     const args = grouped ? rest : positionals.slice(1);
     const takesArgument =
-      command === "export" || command === "policy configure" || command === "connectors gmail-setup";
+      command === "export" || command === "policy configure" || command === "connectors gmail-setup" || command === "connectors notion-setup";
     const argument = takesArgument ? args[0] : undefined;
     const extra = takesArgument ? args.slice(1) : args;
 
@@ -170,6 +173,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "connectors status":
       case "connectors gmail-setup":
       case "connectors gmail-disconnect":
+      case "connectors notion-status":
+      case "connectors notion-setup":
+      case "connectors notion-disconnect":
         result = await connectors(ctx, dataDir, second ?? "status", argument);
         break;
       case "workspace-sync status":

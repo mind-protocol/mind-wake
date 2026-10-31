@@ -1,11 +1,44 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { it, expect } from "vitest";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { CLI_MAIN, MCP_DIR, NODE_ARGS, minimalEnv } from "./harness.js";
+
+it("normal CLI routes Notion status and refuses noninteractive setup without reading its file", () => {
+  const directory = path.resolve(".local/notion-cli/" + randomUUID());
+  fs.mkdirSync(directory, { recursive: true });
+  try {
+    const setup = spawnSync(
+      process.execPath,
+      [
+        ...NODE_ARGS,
+        CLI_MAIN,
+        "connectors",
+        "notion-setup",
+        "MUST_NOT_BE_READ.json",
+        "--data-dir",
+        directory,
+        "--json",
+      ],
+      { env: minimalEnv(), encoding: "utf8", windowsHide: true },
+    );
+    expect(setup.status).toBe(1);
+    expect(setup.stdout).toContain("disabled");
+    expect(fs.existsSync(path.join(directory, "connectors"))).toBe(false);
+    const status = spawnSync(
+      process.execPath,
+      [...NODE_ARGS, CLI_MAIN, "connectors", "notion-status", "--data-dir", directory, "--json"],
+      { env: minimalEnv(), encoding: "utf8", windowsHide: true },
+    );
+    expect(status.status).toBe(0);
+    expect(status.stdout).toContain('"authorized": false');
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}, 60_000);
 
 it("actual MCP process exposes reads only, refuses absent grants, and CLI refuses noninteractive connection", async () => {
   const directory = path.resolve(".local/connector-mcp/" + randomUUID());
