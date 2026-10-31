@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
 import { ConnectorError, type ConnectorGrant, type LiveControl, type SecretVault } from "./core.js";
 import { WindowsVault } from "./windows-vault.js";
 import { openStoreReadOnly } from "../store/index.js";
@@ -56,6 +57,29 @@ export class ConnectorRecords {
     if (!/^[a-z][a-z0-9-]{0,31}$/.test(provider)) throw new ConnectorError("invalid_input");
     return path.join(this.directory, provider + ".ref");
   }
+  /** Cross-process commit/revoke serialization; never hold across vault or network I/O. */
+  private async locked<T>(provider: string, work: () => T): Promise<T> {
+    const lock = this.file(provider) + ".lock";
+    fs.mkdirSync(this.directory, { recursive: true });
+    const deadline = Date.now() + 1000;
+    let fd: number;
+    for (;;) {
+      try {
+        fd = fs.openSync(lock, "wx", 0o600);
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST" || Date.now() >= deadline)
+          throw new ConnectorError("vault_unavailable");
+        await delay(5);
+      }
+    }
+    try {
+      return work();
+    } finally {
+      fs.closeSync(fd);
+      fs.unlinkSync(lock);
+    }
+  }
   async read<T>(provider: string): Promise<ConnectorRecord<T> | null> {
     const file = this.file(provider);
     if (!fs.existsSync(file)) return null;
@@ -64,6 +88,8 @@ export class ConnectorRecords {
       const cached = this.cache.get(provider);
       if (cached?.ref === ref) return cached.record as ConnectorRecord<T>;
       const record = JSON.parse(await this.vault.get(ref)) as ConnectorRecord<T>;
+      // A disconnect/replacement may complete while DPAPI is decrypting.
+      if (!fs.existsSync(file) || fs.readFileSync(file, "utf8") !== ref) return null;
       this.cache.set(provider, { ref, record });
       return record;
     } catch {
@@ -76,30 +102,44 @@ export class ConnectorRecords {
     expectedRef?: string,
   ): Promise<void> {
     const file = this.file(provider);
-    const old = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
     const ref = await this.vault.put(JSON.stringify(record));
-    if (
-      expectedRef !== undefined &&
-      (!fs.existsSync(file) || fs.readFileSync(file, "utf8") !== expectedRef)
-    ) {
-      await this.vault.delete(ref);
-      throw new ConnectorError("stopped");
+    let old: string | null;
+    try {
+      old = await this.locked(provider, () => {
+        if (expectedRef !== undefined && this.currentRef(provider) !== expectedRef)
+          throw new ConnectorError("stopped");
+        const previous = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
+        const temp = file + "." + randomUUID() + ".tmp";
+        fs.writeFileSync(temp, ref, { mode: 0o600, flag: "wx" });
+        fs.renameSync(temp, file);
+        return previous;
+      });
+    } catch (error) {
+      await this.vault.delete(ref).catch(() => undefined);
+      throw error;
     }
-    fs.mkdirSync(this.directory, { recursive: true });
-    const temp = file + "." + randomUUID() + ".tmp";
-    fs.writeFileSync(temp, ref, { mode: 0o600, flag: "wx" });
-    fs.renameSync(temp, file);
     if (old) await this.vault.delete(old);
   }
   currentRef(provider: string): string {
-    return fs.readFileSync(this.file(provider), "utf8");
+    const file = this.file(provider);
+    const epoch = file + ".epoch";
+    return (
+      (fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "") +
+      ":" +
+      (fs.existsSync(epoch) ? fs.readFileSync(epoch, "utf8") : "")
+    );
   }
   /** Local closure first, even if vault deletion or remote revocation fails. */
   async remove(provider: string): Promise<void> {
     const file = this.file(provider);
-    if (!fs.existsSync(file)) return;
-    const ref = fs.readFileSync(file, "utf8");
-    fs.unlinkSync(file);
-    await this.vault.delete(ref);
+    const ref = await this.locked(provider, () => {
+      fs.writeFileSync(file + ".epoch", randomUUID(), { mode: 0o600 });
+      this.cache.delete(provider);
+      if (!fs.existsSync(file)) return null;
+      const previous = fs.readFileSync(file, "utf8");
+      fs.unlinkSync(file);
+      return previous;
+    });
+    if (ref) await this.vault.delete(ref);
   }
 }

@@ -62,3 +62,7 @@ La transmission des lectures vers un fournisseur de modèle doit faire partie de
 ## Vérification et limites de cette livraison
 
 Tests synthétiques : transport HTTP injectable, coffre injectable, vrais sockets loopback locaux pour les callbacks simulés, vrais contrôles SQLite temporaires, test DPAPI Windows sur secret synthétique et vrai client/processus MCP refusant les grants absents. Un échange OAuth simulé n'est pas une connexion Google. Aucun compte, consentement, navigateur système ou credential personnel n'a été utilisé pour ces tests. Aucun pixel desktop n'a été observé et aucun build release Windows n'a été lancé. Les résultats exacts et limites de publication figurent dans `output/gmail-readonly/verification.json` et `RESULTAT.md`.
+
+## Independent review integration
+
+Pending owner setups use a compare-and-swap revision including a local revocation epoch, even when no grant existed. Disconnect invalidates confirmations already in progress. Decrypted records are checked against the current slot before use. MCP binds a read to its original grant generation and token reference. The CLI dependency seams exist only as in-process test arguments; no flag or environment variable can enable them.

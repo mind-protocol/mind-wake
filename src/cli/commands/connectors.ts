@@ -10,6 +10,7 @@ import {
   ConnectorGate,
   newGeneration,
   safeConnectorError,
+  type LiveControl,
 } from "../../connectors/core.js";
 import { ConnectorRecords, wakeConnectorControl } from "../../connectors/local.js";
 import { gmailConfigSchema, GMAIL_HOSTS, type GmailConfig } from "../../connectors/gmail.js";
@@ -52,9 +53,17 @@ export async function connectors(
   dir: DataDir,
   action: string,
   filename?: string,
+  // In-process dependency injection only; never read from CLI flags/environment.
+  seams: {
+    records?: ConnectorRecords;
+    control?: () => LiveControl;
+    interactive?: () => boolean;
+    browser?: (url: string) => Promise<void>;
+    transport?: typeof fetch;
+  } = {},
 ): Promise<CommandResult<unknown>> {
-  const records = new ConnectorRecords(dir.path);
-  const control = () => wakeConnectorControl(dir.path, GMAIL_HOSTS);
+  const records = seams.records ?? new ConnectorRecords(dir.path);
+  const control = seams.control ?? (() => wakeConnectorControl(dir.path, GMAIL_HOSTS));
   try {
     if (action === "status") {
       const record = await records.read<GmailConfig>("gmail");
@@ -73,7 +82,7 @@ export async function connectors(
       };
     }
     // Exactly the existing trusted CLI channel; no auth command registered with MCP.
-    if (!ctx.prompt || !process.stdin.isTTY || !process.stdout.isTTY)
+    if (!ctx.prompt || !(seams.interactive?.() ?? (process.stdin.isTTY && process.stdout.isTTY)))
       throw new ConnectorError("disabled");
     const channel = openTrustedUserChannel();
     if (!isTrustedUserChannel(channel)) throw new ConnectorError("disabled");
@@ -112,6 +121,7 @@ export async function connectors(
         clientSecret: z.string().min(1).max(4096).optional(),
       })
       .parse(JSON.parse(fs.readFileSync(filename, "utf8")) as unknown);
+    const setupRef = records.currentRef("gmail");
     const answer = await ctx.prompt(
       "Google gmail.readonly is RESTRICTED and covers your mailbox/settings, not just a label. " +
         "Wake will additionally restrict reads to this local scope:\n" +
@@ -121,16 +131,15 @@ export async function connectors(
     );
     if (answer !== "CONNECT" || !control().allowed) throw new ConnectorError("disabled");
     const old = await records.read<GmailConfig>("gmail");
-    await records.remove("gmail");
-    if (old?.tokenRef) await records.vault.delete(old.tokenRef);
     const grant = {
       provider: "gmail",
       account: setup.config.account,
       generation: newGeneration(),
       enabled: true,
     };
-    await records.write("gmail", { config: setup.config, grant, tokenRef: null });
+    await records.write("gmail", { config: setup.config, grant, tokenRef: null }, setupRef);
     const expectedRef = records.currentRef("gmail");
+    if (old?.tokenRef) await records.vault.delete(old.tokenRef);
     const gate = new ConnectorGate(
       control,
       async () => (await records.read<GmailConfig>("gmail"))?.grant ?? null,
@@ -147,9 +156,10 @@ export async function connectors(
             ...(setup.clientSecret ? { clientSecret: setup.clientSecret } : {}),
             signal,
             check,
+            ...(seams.transport ? { transport: seams.transport } : {}),
           });
           try {
-            await systemBrowser(pending.authorizationUrl);
+            await (seams.browser ?? systemBrowser)(pending.authorizationUrl);
             const tokens = await pending.complete();
             await check();
             stored.tokenRef = await records.vault.put(JSON.stringify(tokens));

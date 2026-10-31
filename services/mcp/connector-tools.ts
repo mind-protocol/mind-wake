@@ -41,10 +41,13 @@ export function registerConnectorTools(
       gmailConfigSchema.parse(record.config),
       record.tokenRef,
       records.vault,
-      new ConnectorGate(
-        control,
-        async () => (await records.read<GmailConfig>("gmail"))?.grant ?? null,
-      ),
+      new ConnectorGate(control, async () => {
+        const current = await records.read<GmailConfig>("gmail");
+        return current?.grant.generation === record.grant.generation &&
+          current.tokenRef === record.tokenRef
+          ? current.grant
+          : null;
+      }),
       seams.transport,
     );
     try {
