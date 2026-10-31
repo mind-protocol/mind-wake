@@ -2,6 +2,7 @@ import { initProjects } from "./projects.js";
 import { initWorkspaceSync } from "./workspace-sync.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
+import { mountConversationMode } from "./conversation-mode.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
  * par une commande Rust qui exécute la CLI correspondante (`mind-wake … --json`,
@@ -10,7 +11,7 @@ import { bindChatDraft } from "./chat-draft.js";
  * Le texte des messages est inséré comme texte, jamais comme HTML.
  */
 
-import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
+import { agentIsWorking, automaticBumpKind, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
 import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
@@ -105,12 +106,12 @@ byId("engine-restart").addEventListener("click", async () => {
   button.disabled = true;
   const status = byId("engine-restart-status");
   status.hidden = false;
-  status.textContent = "Redémarrage du moteur… La session en cours sera interrompue.";
+  status.textContent = "Reprise de la conversation…";
   try {
     const result = await tauri.core.invoke("wake_restart") as CliRun;
     const envelope = JSON.parse(result.stdout) as Envelope;
-    if (result.exitCode !== 0 || envelope.ok !== true) throw new Error(String(envelope.error?.message ?? "Redémarrage non confirmé"));
-    status.textContent = "Moteur redémarré. Réglages conservés.";
+    if (result.exitCode !== 0 || envelope.ok !== true) throw new Error(typeof envelope.error?.message === "string" ? envelope.error.message : "Reprise non confirmée");
+    status.textContent = "Reprise demandée. Les contrôles du profil restent appliqués.";
     await refresh();
   } catch (error) { status.textContent = String(error); }
   finally { button.disabled = false; }
@@ -122,7 +123,6 @@ let tick = 0;
 let openThread: string | null = null;
 let lastMessageId: string | null = null;
 let draftKey: string | null = null;
-const outgoingChat = new Map<string, HTMLLIElement>();
 
 function messageLinks(body: HTMLElement): void {
   decorateMessageLinks(body, (command, args) => {
@@ -154,25 +154,6 @@ function conversationBody(text: string, kind: BumpKind | null, imageText = text)
   return body;
 }
 
-function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement {
-  const li = document.createElement("li");
-  li.dataset["self"] = "true";
-  li.dataset["messageId"] = key;
-  li.className = "message-outgoing";
-  const meta = document.createElement("small");
-  meta.textContent = "Toi · Envoi en cours…";
-  meta.setAttribute("role", "status");
-  const kind = automaticBumpKind({from:"human",id:key,text});
-  if (kind !== null) li.dataset["invitation"] = kind;
-  const body = conversationBody(text, kind);
-  li.append(meta, body);
-  outgoingChat.set(key, li);
-  byId("chat").append(li);
-  if (kind === null) messageFileLinks?.observe([{id:key,at:new Date().toISOString(),text}],false,true);
-  byId("chat-note").textContent = "";
-  if (follow) byId("chat").scrollTop = byId("chat").scrollHeight;
-  return li;
-}
 let chatOpen = false;
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- type d'élément choisi par l'appelant
@@ -266,14 +247,14 @@ function render(view: PanelView): void {
   const wake = byId<HTMLButtonElement>("mode-wake");
   const off = byId<HTMLButtonElement>("mode-off");
   const always = byId<HTMLButtonElement>("mode-always");
-  always.setAttribute("aria-pressed", String(view.alwaysOn));
-  always.disabled = !view.canAlwaysOn;
-  always.title = view.light === "forced_off" ? "Réactiver Wake et enchaîner les réveils" : "Enchaîner les réveils après chaque réponse";
-  on.setAttribute("aria-pressed", String(view.light === "on" && !view.alwaysOn));
-  wake.setAttribute("aria-pressed", String(view.light === "awake" && !view.alwaysOn));
+  always.setAttribute("aria-pressed", "false");
+  always.disabled = true;
+  always.hidden = true;
+  on.setAttribute("aria-pressed", "false");
+  wake.setAttribute("aria-pressed", "false");
   off.setAttribute("aria-pressed", String(view.light === "forced_off"));
-  on.disabled = !view.canResume && !view.alwaysOn;
-  wake.disabled = !view.canWake;
+  on.disabled = false;
+  wake.disabled = view.light === "forced_off";
   off.disabled = !view.canStop;
   byId<HTMLButtonElement>("pause").disabled = !view.canPause;
   const armed = Date.now() < stopArmedUntil;
@@ -549,9 +530,16 @@ let chatVisibleCount = 30;
 let chatSignature = "";
 let chatLoadingOlder = false;
 let chatHasOpened = false;
+const specializedChat = mountConversationMode({document,invoke,renderBody:text=>conversationBody(text,null,text),onUpdated:at=>{
+  byId("chat-new").hidden=chatOpen || at<=chatSeenAt();
+  if(chatOpen)markChatSeen(at);
+}});
 byId("chat-older").addEventListener("click", () => { chatVisibleCount += 30; chatLoadingOlder = true; void refreshChat(); });
 async function refreshChat(): Promise<void> {
   void refreshRecipient();
+  const specialized=byId<HTMLSelectElement>("chat-recipient").value!=="auroracle";
+  specializedChat.setVisible(specialized);
+  if(specialized){await specializedChat.refresh();return;}
   let model;
   try {
     // Réponses des sessions réveillées pour aider l'agent : facultatives, jamais bloquantes.
@@ -573,19 +561,9 @@ async function refreshChat(): Promise<void> {
   if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
   byId("chat-note").textContent = model.note ?? "";
   byId("chat-older").hidden = model.items.length <= chatVisibleCount;
-  // Keep local bubbles through polling until the persisted ID appears.
-  let reconciled = false;
-  for (const item of model.items) {
-    if (item.id && item.from === "human") {
-      if (outgoingChat.delete(item.id)) reconciled = true;
-      // Persistence is authoritative even if the send acknowledgement was lost.
-      if (pendingBump?.key === item.id) pendingBump = null;
-    }
-  }
-  if (outgoingChat.size) byId("chat-note").textContent = "";
   messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent" || item.from === "received") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
   const signature=JSON.stringify(model.items.slice(-chatVisibleCount));
-  if(signature===chatSignature && !reconciled)return;
+  if(signature===chatSignature)return;
   const chatPane=byId("chat");
   const firstRender=chatSignature==="";
   const follow=!chatLoadingOlder && (firstRender || chatPane.scrollHeight-chatPane.scrollTop-chatPane.clientHeight < 100);
@@ -623,13 +601,15 @@ async function refreshChat(): Promise<void> {
       return li;
     }),
   );
-  chatPane.append(...outgoingChat.values());
   chatPane.scrollTop=follow?chatPane.scrollHeight:oldTop+(chatPane.scrollHeight-oldHeight);
   chatLoadingOlder=false;
 }
 
 // Presence is UI state, never a persisted conversation item.
 function renderChatPresence(): void {
+  if(byId<HTMLSelectElement>("chat-recipient").value!=="auroracle") {
+    byId("chat-presence").hidden=!specializedChat.busy();return;
+  }
   const visible = agentIsWorking(lastRead, Date.now());
   const presence = byId("chat-presence");
   if (presence.hidden !== !visible) presence.hidden = !visible;
@@ -637,32 +617,12 @@ function renderChatPresence(): void {
 // Expire the indication even if a status request is stuck.
 setInterval(renderChatPresence, 1000);
 
-let bumpBusy = false;
-let pendingBump: { key: string; text: string; bubble: HTMLLIElement } | null = null;
-byId("chat-bump").addEventListener("mousedown", event => event.preventDefault());
-byId("chat-bump").addEventListener("click", async () => {
-  if (bumpBusy || pendingBump?.bubble.dataset["sending"] === "true") return;
-  bumpBusy = true;
-  const button = byId<HTMLButtonElement>("chat-bump");
-  button.disabled = true;
-  if (pendingBump === null) {
-    const text = await resolveBumpText(() => {
-      if (!tauri) throw new Error("Application indisponible");
-      return tauri.core.invoke("document_browse", {scope:"agent",relative:BUMP_PROMPT_PATH,read:true});
-    });
-    const key = `ui-bump-${crypto.randomUUID()}`;
-    pendingBump = {key, text, bubble:outgoingBubble(key, text, false)};
-  }
-  const {key, text, bubble} = pendingBump;
-  // Bump invites a contribution; it cannot lift Pause or start a stopped daemon.
-  try { await transmitChat(key, text, bubble, false); }
-  finally { bumpBusy = false; button.disabled = false; }
-});
 
 // A recipient label is not a route. Keep the draft until a backend-paired human
 // identity and reply thread exist; never silently send it to the owner agent.
 byId("chat-recipient").addEventListener("change", () => {
   void refreshRecipient();
+  chatSignature="";void refreshChat();
 });
 let recipientConfigured=false,recipientChecking=false,recipientPolledAt=0;
 async function refreshRecipient():Promise<void> {
@@ -673,7 +633,7 @@ async function refreshRecipient():Promise<void> {
     recipientConfigured=status.ok===true && status.data?.["configured"]===true;
     const option=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="auroracle"]');
     const ownerOption=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="owner"]');
-    if(ownerOption)ownerOption.textContent=status.data?.["localOwnerName"]==="Marco" ? "Marco · mon agent" : "Mon agent";
+    if(ownerOption)ownerOption.textContent="Lead · conversation";
     if(option instanceof HTMLOptionElement) {
       // Never change a chosen recipient after route removal: that could send a
       // retained peer draft to the local owner on the next click.
@@ -706,52 +666,15 @@ async function sendToAgent(): Promise<void> {
     return;
   }
   const field = byId<HTMLTextAreaElement>("chat-text");
-  const text = field.value.trim();
-  if (text === "") return;
-  const key = `ui-${crypto.randomUUID()}`;
-  const bubble = outgoingBubble(key, text);
-  field.value = "";
-  saveChatDraft();
-  field.focus();
-  await transmitChat(key, text, bubble);
+  const text = field.value;
+  if (text.trim() === "") return;
+  try {
+    await specializedChat.submit(text);
+    if(field.value===text)field.value="";
+    saveChatDraft();field.focus();
+  } catch(error) {byId("chat-status").textContent=message(error);}
 }
 
-async function transmitChat(key: string, text: string, bubble: HTMLLIElement, requestWake = true): Promise<void> {
-  const meta = bubble.querySelector("small")!;
-  bubble.querySelector("button")?.remove();
-  bubble.dataset["sending"] = "true";
-  meta.textContent = "Toi · Envoi en cours…";
-  try {
-    const envelope = await invoke("wake_reply", { idempotencyKey: key, text });
-    const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
-    if (envelope.ok !== true) throw new Error(detail || errorText(envelope));
-  } catch (error) {
-    bubble.dataset["sending"] = "false";
-    meta.textContent = `Toi · Envoi non confirmé : ${message(error)}`;
-    const retry = document.createElement("button");
-    retry.type = "button";
-    retry.textContent = "Réessayer";
-    retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake); });
-    bubble.append(retry);
-    return;
-  }
-  bubble.dataset["sending"] = "false";
-  meta.textContent = "Toi · Envoyé · en attente de réception";
-  if (pendingBump?.key === key) pendingBump = null;
-  // Refresh independently: waking the agent must never delay the sent receipt.
-  void refreshChat();
-  if (!requestWake) { tick = 0; return; }
-  try {
-    const wake = await invoke("wake_now");
-    if (wake.ok !== true) {
-      const detail = typeof wake.data?.["detail"] === "string" ? wake.data["detail"] : errorText(wake);
-      byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${detail}.`;
-    }
-  } catch (error) {
-    byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${message(error)}.`;
-  }
-  tick = 0;
-}
 
 byId("chat-form").addEventListener("submit", (event) => {
   event.preventDefault();
@@ -808,13 +731,9 @@ byId("reply-form").addEventListener("submit", (event) => {
 
 byId("mode-on").addEventListener(
   "click",
-  () => void control("wake_on", "Allumé : réveils autorisés."),
+  () => void specializedChat.control("activate"),
 );
-byId("mode-always").addEventListener(
-  "click",
-  () => void control("wake_always_on", "Always-on activé."),
-);
-byId("mode-wake").addEventListener("click", () => void control("wake_now", "Réveil demandé."));
+byId("mode-wake").addEventListener("click", () => { selectTab("chat"); byId<HTMLTextAreaElement>("chat-text").focus(); });
 byId("pause").addEventListener("click", () => void control("wake_pause", "Pause appliquée."));
 byId("mode-off").addEventListener("click", () => {
   // Deux clics rapprochés : l'arrêt d'urgence ne se lève que par une action explicite
@@ -930,8 +849,8 @@ async function refreshWakeHistory(): Promise<void> {
     const data=env.data;
     if(!data || !Array.isArray(data["turns"]))throw new Error("Format inattendu");
     const locations=data["locations"] as {workspace?:string;systemPrompt?:string|null} | undefined;
-    byId<HTMLButtonElement>("open-system-prompt").disabled=!locations?.systemPrompt;
-    byId("open-system-prompt").title=locations?.systemPrompt ?? "Aucun prompt MIND chargé disponible.";
+    byId<HTMLButtonElement>("open-system-prompt").disabled=false;
+    byId("open-system-prompt").title="Instructions communes et prompts courts des six rôles.";
     byId("open-agent-folder").title=locations?.workspace ?? "Dossier de travail de l’agent";
     wakeTurns=data["turns"] as WakeTurnView[];
     wakeHistoryNote=typeof data["note"]==="string"?data["note"]:"";

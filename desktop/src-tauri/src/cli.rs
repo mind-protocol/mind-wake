@@ -140,6 +140,12 @@ pub fn workspace_sync(action: &str, configuration: Option<(String, String, bool)
 /// Opens only fixed locations resolved by the local Wake CLI, never a webview-supplied path.
 pub fn open_wake_location(kind: &str) -> Result<(), String> {
     if kind != "workspace" && kind != "systemPrompt" { return Err("Emplacement inconnu".into()); }
+    if kind == "systemPrompt" {
+        let target = repo().join("prompts/conversation").canonicalize().map_err(|e| e.to_string())?;
+        if !target.is_dir() { return Err("Prompts des rôles introuvables".into()); }
+        Command::new("explorer.exe").arg(target).spawn().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
     let history = wake(Verb::WakeHistory)?;
     let envelope: serde_json::Value = serde_json::from_str(&history.stdout).map_err(|e| e.to_string())?;
     if history.exit_code != 0 { return Err("Emplacements de l’agent indisponibles".into()); }
@@ -300,15 +306,26 @@ pub fn restart_daemon() -> Result<CliRun, String> {
     Err("Le nouveau moteur n’a pas confirmé son démarrage. Consulter daemon.log avant de réessayer.".into())
 }
 
-/// Réponse de l'humain à son agent (`mind-wake reply`) : clé vérifiée ici puis par la CLI,
-/// texte par l'entrée standard, jamais en argument.
+/// Compatibility entrypoint for the owner's main conversation. Text stays on stdin.
 pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
     if !idempotency_key(&key) {
         return Err("clé d'idempotence invalide".into());
     }
-    let mut args = wake_args(&["reply", "--idempotency-key"])?;
-    args.push(key.into());
-    run(args, Some(text))
+    conversation("submit".into(),serde_json::json!({"conversationId":"main","text":text,"idempotencyKey":key}))
+}
+
+/// The webview can address only the conversation CLI's closed action set.
+/// Paths, credentials and executable arguments remain owned by the installation.
+pub fn conversation(action: String, input: serde_json::Value) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "submit" | "read" | "edit" | "stop" | "resume" | "activate" | "events") {
+        return Err("Action de conversation inconnue".into());
+    }
+    if !input.is_object() { return Err("Corps de conversation invalide".into()); }
+    let script = repo().join("dist/conversation/cli.js");
+    if !script.is_file() { return Err("Mode conversation indisponible : reconstruire le runtime Wake".into()); }
+    let data_dir = env_path("MIND_WAKE_DATA_DIR").ok_or("Profil Wake inconnu")?;
+    let body = serde_json::to_string(&input).map_err(|e| e.to_string())?;
+    run(vec![script.into(), action.into(), "--data-dir".into(), data_dir.into()], Some(body))
 }
 
 /// Fixed recipient alias only. No endpoint or credential is accepted from the webview.
@@ -330,20 +347,15 @@ pub fn quick_reply(key: String, text: String, point: Option<crate::quick_input::
     if !idempotency_key(&key) || text.trim().is_empty() || text.chars().count() > 4000 {
         return Err("Message ou identifiant invalide".into());
     }
-    let mut args = wake_args(&["reply", "--capture-screen", "--idempotency-key"])?;
-    args.push(key.into());
-    run_with_click(args, Some(text), point)
+    if point.is_some() {
+        return Err("Capture jointe non raccordée au nouveau mode conversation. Aucun message envoyé ; brouillon conservé. Utiliser le fil principal pour envoyer du texte.".into());
+    }
+    conversation("submit".into(), serde_json::json!({"conversationId":"main","text":text,"idempotencyKey":key}))
 }
 
 /// A quick message never lifts Pause/Force-off. The queue survives until resume.
 pub fn wake_after_quick_reply() {
-    if let Ok(status) = wake(Verb::Status) {
-        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&status.stdout) {
-            if matches!(value["data"]["profile"]["state"].as_str(), Some("ready" | "hibernating")) {
-                let _ = wake_now();
-            }
-        }
-    }
+    // Submission owns its manual conversation cycle; never start the old scheduler.
 }
 
 /// Requête vers les fils de l'humain. Les identifiants viennent du webview : formats

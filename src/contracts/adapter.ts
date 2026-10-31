@@ -76,6 +76,17 @@ export type AdapterEvent =
   | (AdapterEventBase & { readonly type: "started" })
   | (AdapterEventBase & { readonly type: "activity"; readonly summary: string })
   | (AdapterEventBase & {
+      readonly type: "assistant_message";
+      readonly messageId: string;
+      readonly text: string;
+      readonly phase: "commentary" | "final" | "unknown";
+    })
+  | (AdapterEventBase & {
+      readonly type: "assistant_message_delta";
+      readonly messageId: string;
+      readonly delta: string;
+    })
+  | (AdapterEventBase & {
       readonly type: "usage";
       readonly quantity: BudgetQuantity;
       readonly provenance: UsageProvenance;

@@ -1,0 +1,5 @@
+Reprends ta conversation avec la compréhension acquise pendant ce cycle. Réécris les réponses comme si les informations utiles avaient été disponibles dès leur rédaction : meilleur cadrage, meilleurs liens, alternatives mieux pensées et position plus éclairée. Une assurance de ton ou un embellissement ne constituent pas une amélioration de fond. Garde les incertitudes qui changent la décision et les sources utiles.
+
+Conserve exactement les messages humains, leur ordre et leur nombre. Réécris les messages assistant correspondants, sans en ajouter ni en supprimer. N'invente aucun ancien accord, résultat, accès ou action. Ce travail est une réécriture du contenu public, pas une demande de dévoiler un raisonnement privé.
+
+Retourne uniquement un objet JSON : {"messages":[{"role":"user ou assistant","content":"..."}],"improvements":["transformations substantielles apportées"],"repository":[{"key":"identifiant stable","text":"information ou méthode réutilisable","sources":["..."],"status":"retained"}]}.

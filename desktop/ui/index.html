@@ -117,7 +117,7 @@
           <div><span class="reader-eyebrow">MIND / L’ATELIER</span><h2 id="document-title">Vos documents, au même endroit.</h2></div>
           <div class="reader-actions">
           <button id="document-refresh" class="reader-icon" type="button" aria-label="Actualiser le document et la bibliothèque" title="Actualiser">↻</button>
-        <button id="engine-restart" type="button" title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés.">Redémarrer le moteur</button>
+        <button id="engine-restart" type="button" title="Reprend le cycle de conversation autorisé. Pause et Force-off restent respectés.">Reprendre le travail</button>
           </div>
         </header>
         <p id="engine-restart-status" role="status" hidden></p>
@@ -189,7 +189,7 @@
       <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
         <h2>Réveils de l’agent</h2>
         <p class="runtime-links">
-          <button id="open-system-prompt" type="button" class="link" disabled>Prompt système MIND ↗</button>
+          <button id="open-system-prompt" type="button" class="link">Prompts des rôles ↗</button>
           <span aria-hidden="true"> · </span>
           <button id="open-agent-folder" type="button" class="link">Dossier de l’agent ↗</button>
         </p>
@@ -214,14 +214,15 @@
 
 
         <section class="switch-section" aria-label="Mode de l'agent">
-          <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé">
-            <button id="mode-on" type="button" aria-pressed="false">On</button>
-            <button id="mode-wake" type="button" aria-pressed="false">Réveil</button>
+          <div class="switch" role="group" aria-label="Conversation manuelle ou arrêt forcé">
+            <button id="mode-on" type="button" aria-pressed="false">Activer les conversations</button>
+            <button id="mode-wake" type="button" aria-pressed="false">Écrire au Lead</button>
             <button
               id="mode-always"
               type="button"
               aria-pressed="false"
-              title="Relance dès la fin de chaque réponse"
+              hidden disabled
+              title="Les réveils autonomes sont désactivés"
             >
               Always-on
             </button>
@@ -262,15 +263,24 @@
       </div>
 
       <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
-        <div class="view-heading"><h2>Toi et ton agent</h2><p class="hint">Votre conversation, au fil des réveils.</p></div>
+        <div class="view-heading"><h2>Conversation</h2><p class="hint">Lead et spécialistes, à partir de tes messages.</p></div>
+        <div id="conversation-toolbar" class="conversation-toolbar">
+          <button id="conversation-activate" type="button" title="Action explicite pour activer les conversations et lever l’arrêt du profil, sans réveil autonome">Activer les conversations</button>
+          <button id="conversation-stop" type="button">Arrêter le travail</button>
+          <button id="conversation-resume" type="button" hidden>Reprendre</button>
+          <span class="hint">Aucun réveil autonome</span>
+        </div>
+        <nav id="conversation-tabs" class="conversation-tabs" role="tablist" aria-label="Fils des agents"></nav>
         <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
         <ol id="chat" class="messages" aria-live="polite"></ol>
         <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
         <p id="chat-note" class="hint"></p>
+        <details id="conversation-role-container"><summary>Fils des spécialistes</summary><div id="conversation-roles"></div></details>
+        <details id="conversation-version-container"><summary>Versions et appels</summary><div id="conversation-history"></div></details>
         <form id="chat-form">
             <label for="chat-recipient">Destinataire</label>
             <select id="chat-recipient" aria-describedby="chat-recipient-status">
-              <option value="owner">Mon agent</option>
+              <option value="owner">Lead · conversation</option>
               <option value="auroracle" hidden disabled>Correspondant non configuré</option>
             </select>
             <p id="chat-recipient-status" class="hint" role="status"></p>
@@ -280,9 +290,9 @@
             maxlength="4000"
             required
             aria-label="Message à ton agent"
-            placeholder="Écris à ton agent…"
+            placeholder="Écris au Lead…"
           ></textarea>
-          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit">Envoyer</button></div>
+          <div class="chat-actions"><button id="chat-bump" type="button" hidden disabled title="Les réveils automatiques sont désactivés dans cette conversation">Bump</button><button type="submit">Envoyer</button></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>
       </div>

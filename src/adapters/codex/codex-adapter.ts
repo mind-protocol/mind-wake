@@ -89,6 +89,8 @@ const SUMMARY_MAX = 200;
 export type CodexLaunchMode = "autonomous" | "manual";
 
 export interface CodexAdapterOptions {
+  /** Public text for conversation orchestration; private reasoning is never emitted. */
+  readonly publicMessages?: boolean;
   readonly stepsStopHook?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
@@ -936,6 +938,20 @@ export class CodexAdapter implements RuntimeAdapter {
       case "item/completed":
         this.#onItemCompleted(session, asRecord(params["item"]), params["turnId"]);
         break;
+      case "item/agentMessage/delta":
+        if (
+          this.#options.publicMessages &&
+          !session.planning &&
+          typeof params["delta"] === "string"
+        )
+          this.#emit(session, {
+            type: "assistant_message_delta",
+            sessionId,
+            at,
+            messageId: typeof params["itemId"] === "string" ? params["itemId"] : "assistant",
+            delta: params["delta"],
+          });
+        break;
       case "thread/tokenUsage/updated":
         this.#onTokenUsage(session, params);
         break;
@@ -1005,7 +1021,25 @@ export class CodexAdapter implements RuntimeAdapter {
       case "agentMessage":
         if (typeof item["text"] === "string") {
           session.stepsResult = item["text"].slice(0, 65_537);
-          if (session.planning || isStepsDecision(item["text"])) break;
+          if (
+            session.planning ||
+            (this.#options.stepsStopHook === true && isStepsDecision(item["text"]))
+          )
+            break;
+          if (this.#options.publicMessages)
+            this.#emit(session, {
+              type: "assistant_message",
+              sessionId,
+              at,
+              messageId: typeof item["id"] === "string" ? item["id"] : "assistant",
+              text: item["text"],
+              phase:
+                item["phase"] === "commentary"
+                  ? "commentary"
+                  : item["phase"] === "final_answer" || item["phase"] === "final"
+                    ? "final"
+                    : "unknown",
+            });
           this.#emit(session, {
             type: "activity",
             sessionId,

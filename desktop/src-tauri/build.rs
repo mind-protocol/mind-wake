@@ -44,6 +44,7 @@ fn main() {
             "wake_open_location",
             "open_external_url",
             "wake_reply",
+            "conversation_command",
             "quick_input_close",
             "quick_input_send",
             "helpers_answers",

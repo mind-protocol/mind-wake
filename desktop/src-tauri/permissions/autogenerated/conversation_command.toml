@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-conversation-command"
+description = "Enables the conversation_command command without any pre-configured scope."
+commands.allow = ["conversation_command"]
+
+[[permission]]
+identifier = "deny-conversation-command"
+description = "Denies the conversation_command command without any pre-configured scope."
+commands.deny = ["conversation_command"]
