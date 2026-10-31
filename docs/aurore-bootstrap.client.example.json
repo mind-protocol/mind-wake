@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "role": "client",
+  "operatorApproved": false,
+  "manifestFile": "C:/LOCAL_CLIENT/WakeData/installation/manifest.json",
+  "manifestSha256": "REPLACE_WITH_LOCAL_MANIFEST_SHA256_LOWERCASE",
+  "transactionRoot": "C:/LOCAL_CLIENT/WakePrivate/bootstrap-transactions",
+  "client": {
+    "credentialFile": "C:/LOCAL_CLIENT/WakePrivate/scoped-credential.json",
+    "nativeConfig": "C:/LOCAL_CLIENT/NativePrivate/config.toml",
+    "nativeConfigSha256": "REPLACE_WITH_LOCAL_NATIVE_CONFIG_SHA256_LOWERCASE",
+    "scope": "LOCAL_CHOSEN_SCOPE",
+    "participant": "LOCAL_CHOSEN_PARTICIPANT",
+    "probe": "LOCAL_CHOSEN_RELATIVE_TEXT_FILE.md"
+  }
+}

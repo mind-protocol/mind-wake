@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "role": "target",
+  "operatorApproved": false,
+  "manifestFile": "C:/LOCAL_OWNER/WakeData/installation/manifest.json",
+  "manifestSha256": "REPLACE_WITH_LOCAL_MANIFEST_SHA256_LOWERCASE",
+  "transactionRoot": "C:/LOCAL_OWNER/WakePrivate/bootstrap-transactions",
+  "release": {
+    "approved": false,
+    "source": "https://github.com/LOCAL_APPROVED_ORG/LOCAL_APPROVED_WAKE.git",
+    "branch": "main",
+    "expectedRevision": "REPLACE_WITH_APPROVED_FULL_GIT_REVISION"
+  },
+  "maintenance": {
+    "policyFile": "C:/LOCAL_OWNER/WakePrivate/maintenance-policy.json",
+    "bindingFile": "C:/LOCAL_OWNER/WakePrivate/maintenance-binding.json",
+    "storeFile": "C:/LOCAL_OWNER/WakePrivate/maintenance.sqlite"
+  },
+  "filesystem": {
+    "configFile": "C:/LOCAL_OWNER/WakePrivate/scoped-server.json",
+    "workspace": "C:/LOCAL_OWNER/WakeData/workspace",
+    "scope": "LOCAL_CHOSEN_SCOPE",
+    "root": "C:/LOCAL_OWNER/WakeData/workspace/LOCAL_CHOSEN_PROJECT",
+    "participant": "LOCAL_CHOSEN_PARTICIPANT",
+    "rights": ["list", "read"]
+  }
+}

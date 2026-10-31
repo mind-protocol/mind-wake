@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "role": "workspace",
+  "operatorApproved": false,
+  "transactionRoot": "C:/LOCAL_OWNER/WakePrivate/bootstrap-transactions",
+  "workspace": {
+    "approved": false,
+    "root": "C:/LOCAL_OWNER/ACTIVE_AURORE_WORKSPACE",
+    "origin": "https://github.com/mind-protocol/scisense-aurore-workspace.git",
+    "expectedHead": "REPLACE_WITH_LOCAL_FULL_HEAD",
+    "expectedRevision": "REPLACE_WITH_APPROVED_FULL_COMMIT_FOR_352dd86",
+    "ownerInstructions": {
+      "approvedAfterLocalReview": false,
+      "path": "artifacts/PERSONALITY.md",
+      "beforeRevision": "REPLACE_WITH_LOCAL_FULL_HEAD",
+      "afterRevision": "REPLACE_WITH_APPROVED_FULL_COMMIT_FOR_352dd86",
+      "beforeBlob": "REPLACE_WITH_REVIEWED_BEFORE_GIT_BLOB",
+      "afterBlob": "REPLACE_WITH_REVIEWED_AFTER_GIT_BLOB",
+      "beforeSha256": "REPLACE_WITH_REVIEWED_BEFORE_RAW_BYTES_SHA256",
+      "afterSha256": "REPLACE_WITH_REVIEWED_AFTER_RAW_BYTES_SHA256"
+    }
+  }
+}
