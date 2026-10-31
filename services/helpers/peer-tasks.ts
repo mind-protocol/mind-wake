@@ -1,3 +1,4 @@
+import { persistPeerHookAck } from "../../src/communication/peer-hook-ack-store.js";
 /** Durable, locally decided peer tasks. No timer, scheduler, shell or automatic dispatch. */
 import fs from "node:fs";
 import path from "node:path";
@@ -15,6 +16,8 @@ import {
   type TaskInput,
   type RequestEnvelope,
   type ReplyEnvelope,
+  type HookAckEnvelope,
+  validHookAck,
 } from "../mcp/peer-task-protocol.js";
 
 export const peerTaskPolicy = z.strictObject({
@@ -50,6 +53,7 @@ interface ResultVersion {
 export interface PeerTask {
   id: string;
   direction: "incoming" | "outgoing";
+  sharedEndpoint?: string;
   localRef: string;
   peerRef: string;
   request: RequestEnvelope;
@@ -63,6 +67,7 @@ export interface PeerTask {
   results: ResultVersion[];
   decision?: { actor: LocalActor; promptHash: string; target: string; at: string };
   reply?: ReplyEnvelope;
+  hookAck?: HookAckEnvelope;
   lastError?: string;
   previousAttempts?: { attempt: number; helperThreadId: string | null; results: ResultVersion[] }[];
 }
@@ -171,14 +176,15 @@ export class PeerTasks {
     if (task.direction !== "incoming")
       throw Error("Only an incoming proposal can be locally decided");
   }
-  async request(to: string, input: TaskInput, key: string): Promise<PeerTask> {
+  async request(to: string, input: TaskInput, key: string, hookAck = false): Promise<PeerTask> {
     const from = await this.#identity(),
-      request = makeRequest(from, to, input, key);
+      request = makeRequest(from, to, input, key, hookAck);
     wire(request);
     this.#once("request:" + request.request_id, { to, request }, () => {
       this.#save({
         id: request.request_id,
         direction: "outgoing",
+        sharedEndpoint: this.#configured().sharedEndpoint,
         localRef: from,
         peerRef: to,
         request,
@@ -255,6 +261,18 @@ export class PeerTasks {
           });
           added++;
         })();
+        continue;
+      }
+      const ack = validHookAck(m.text);
+      if (ack) {
+        persistPeerHookAck(
+          this.dir,
+          p.localAgentRef,
+          o.senderRef,
+          o.threadId,
+          ack,
+          p.sharedEndpoint,
+        );
         continue;
       }
       const reply = validReply(m.text);

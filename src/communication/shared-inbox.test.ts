@@ -22,6 +22,7 @@ function transport(messages: ReturnType<typeof entry>[], identity = {ref:agent,k
   const calls: SharedInboxCall[] = [];
   const wire: SharedInboxTransport = {async call<T>(call: SharedInboxCall): Promise<T> {
     calls.push(call);
+    if (call.op === "reply") throw Error("Unexpected publication in read-only test");
     return (call.op === "whoami" ? identity : (() => {
       const page = messages.filter(m => m.sequence > call.after).slice(0,call.limit);
       return {messages:page,next:page.at(-1)?.sequence ?? call.after};
