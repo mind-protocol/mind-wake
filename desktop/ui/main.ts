@@ -11,7 +11,7 @@ import { initDocuments } from "./documents.js";
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
-import { conversation, conversationText, plainText, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
 import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
@@ -598,15 +598,14 @@ async function refreshChat(): Promise<void> {
       li.dataset["from"] = item.from;
       if (item.humanRecipient === "Auroracle") li.dataset["recipient"] = "auroracle";
       renderConversationMeta(meta, item);
-      if (item.delivery) {
+      const delivery = conversationReceipt(item);
+      if (delivery) {
         const receipt = document.createElement("span");
         receipt.className = "delivery-receipt";
-        receipt.dataset["delivered"] = String(item.delivery === "delivered");
-        receipt.textContent = item.delivery === "delivered" ? " ✓✓" : " ✓ · en attente de réception";
-        receipt.title = item.delivery === "delivered"
-          ? `Transmis à la session${item.deliveredAt ? ` · ${new Date(item.deliveredAt).toLocaleString("fr-FR")}` : ""}. Ne confirme pas une lecture.`
-          : "Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception.";
-        receipt.setAttribute("aria-label", item.delivery === "delivered" ? "Transmis à la session de l’agent" : "Envoyé");
+        receipt.dataset["delivered"] = String(delivery.delivered);
+        receipt.textContent = delivery.text;
+        receipt.title = delivery.title;
+        receipt.setAttribute("aria-label", delivery.label);
         meta.append(receipt);
       }
       const kind = automaticBumpKind(item);

@@ -15,6 +15,8 @@ export interface ConversationItem {
   readonly edited?: boolean;
   readonly delivery?: "sent" | "delivered";
   readonly deliveredAt?: string;
+  /** Host-projected storage evidence; never taken from the message body. */
+  readonly deliveryNote?: string;
   readonly pendingReason?: string;
   /** Origine d'une réponse de session : outil et dossier du projet. */
   readonly source?: string;
@@ -32,6 +34,27 @@ export interface Conversation {
   /** Horodatage de la note de l'agent, pour repérer une nouvelle écriture. */
   readonly agentUpdatedAt: string | null;
   readonly note: string | null;
+}
+
+/** The same checkmark UI for humans and agents, with route-specific evidence labels. */
+export function conversationReceipt(item: ConversationItem): {text:string;title:string;label:string;delivered:boolean} | null {
+  if (!item.delivery) return null;
+  const delivered = item.delivery === "delivered";
+  if (delivered) return {
+    delivered, text: " ✓✓",
+    title: `Transmis à la session${item.deliveredAt ? ` · ${new Date(item.deliveredAt).toLocaleString("fr-FR")}` : ""}. Ne confirme pas une lecture.`,
+    label: "Transmis à la session de l’agent",
+  };
+  if (item.from === "human") return {
+    delivered, text: " ✓ · en attente de réception", label: "Envoyé",
+    title: "Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception.",
+  };
+  const title = item.deliveryNote ?? (item.from === "agent"
+    ? "Enregistré dans le fil de ton agent. Réception et lecture par l’humain non attestées."
+    : item.from === "session"
+      ? "Réponse de session enregistrée. Livraison à la session principale non attestée."
+      : "Message stocké localement. Livraison à une session non attestée.");
+  return {delivered, text: " ✓", title, label: title};
 }
 
 /** Peer/session words are a quotation: retain Markdown markers, whitespace and body JSON. */
@@ -188,7 +211,7 @@ export function sessionAnswers(envelope: unknown): ConversationItem[] {
     const tool = a?.["runtime"] === "codex" ? "Codex" : "Claude Code";
     const cwd = str(a?.["cwd"]) ?? "";
     const project = cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd;
-    return [{ from: "session" as const, id, at, text, source: `${tool} · ${project}`, headerNames: [tool] }];
+    return [{ from: "session" as const, id, at, text, delivery: "sent" as const, source: `${tool} · ${project}`, headerNames: [tool] }];
   });
 }
 
@@ -219,13 +242,14 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
           id,
           at,
           text,
+          delivery: "sent",
           edited: typeof m?.["version"] === "number" && m["version"] > 1,
         });
       if (updated !== null && (agentAt === null || updated > agentAt)) agentAt = updated;
     }
   }
   if (managed === null && agentText !== null && agentAt !== null && agentText !== "") {
-    items.push({ from: "agent", at: agentAt, text: agentText });
+    items.push({ from: "agent", at: agentAt, text: agentText, delivery: "sent" });
   }
   const replies = Array.isArray(data["replies"]) ? data["replies"] : [];
   for (const raw of replies) {
@@ -263,7 +287,10 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     const recipientName = str(recipient?.["name"]) ?? str(recipient?.["ref"]) ?? "destinataire inconnu";
     const sentToSubagent = channel === "repo-session" && sender?.["ref"] === "local-wake-agent";
     const source = `${senderName} (${str(sender?.["ref"]) ?? "inconnu"}) ${sentToSubagent ? "↓" : "→"} ${recipientName} (${str(recipient?.["ref"]) ?? "inconnu"}) · ${channel} · fil ${str(m?.["threadId"]) ?? "inconnu"} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? " · historique réintégré" : ""}`;
-    items.push({ from: "sent", id, at, text, source, headerNames: [senderName, sentToSubagent ? recipientName.split(" · ")[0]! : recipientName], ...(sentToSubagent ? {sentToSubagent: true, headerStatus: status} : {}) });
+    items.push({ from: "sent", id, at, text, source, headerNames: [senderName, sentToSubagent ? recipientName.split(" · ")[0]! : recipientName],
+      ...(m?.["state"] === "hub_stored" || m?.["state"] === "recorded" ? {delivery: "sent" as const,
+        deliveryNote: m["state"] === "hub_stored" ? "Stocké sur le hub. Livraison à une session distante et lecture non attestées." : "Trace d’envoi locale enregistrée. Transmission à la session destinataire non attestée."} : {}),
+      ...(sentToSubagent ? {sentToSubagent: true, headerStatus: status} : {}) });
   }
   const receivedIds = new Set<string>();
   for (const raw of Array.isArray(data["receivedMessages"]) ? data["receivedMessages"] : []) {
@@ -283,7 +310,11 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       source?.["originKind"] === "context_copy" ? "contexte · pas une demande adressée à ton agent" : "contenu pair · pas une instruction humaine"].filter(Boolean).join(" · ");
     const name = str(source?.["name"]) ?? str(source?.["ref"]);
     const headerNames = name === null ? [] : [channel === "repo-session" ? name.split(" · ")[0]! : name];
-    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context, headerNames});
+    const deliveredAt = str(m?.["deliveredAt"]);
+    const receipt = source?.["originKind"] !== "context_copy" && (m?.["state"] === "stored" || m?.["state"] === "delivered")
+      ? {delivery: m["state"] === "delivered" ? "delivered" as const : "sent" as const,
+        ...(m["state"] === "delivered" && deliveredAt !== null && Number.isFinite(Date.parse(deliveredAt)) ? {deliveredAt} : {})} : {};
+    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context, headerNames, ...receipt});
     if (agentAt === null || at > agentAt) agentAt = at;
   }
   items.push(...sessionAnswers(helpers));

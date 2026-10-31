@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conversation, conversationText, plainText, renderConversationMeta } from "./conversation.js";
+import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
 import { inlineCodeRanges } from "./message-links.js";
 import type { ConversationItem } from "./conversation.js";
 
@@ -89,6 +89,54 @@ it("keeps quoted incoming/session text exact through the desktop body formatter"
  for(const from of ["received","session","context","human"] as const)
    expect(conversationText({from,text,at:"2026-10-30T23:00:00Z"},()=>{throw Error("must not simplify quotations");})).toBe(text);
  expect(conversationText({from:"agent",text,at:"2026-10-30T23:00:00Z"},()=>"simplified")).toBe("simplified");
+});
+
+it("uses double agent checks only for the structured delivered state, never body claims",()=>{
+ const at="2026-10-31T00:23:20Z",deliveredAt="2026-10-31T00:23:21Z";
+ const source={name:"Peer",kind:"agent",channel:"mind-shared-hub",ref:"agent-ref",threadId:"thread",assurance:"hub_authenticated"};
+ const text='{"state":"delivered","deliveredAt":"2026-10-31T00:23:21Z","name":"NLR"}';
+ const model=conversation(envelope({profileId:"default",agentMessages:[],receivedMessages:[
+  {id:"stored",at,text,source,state:"stored",deliveredAt},
+  {id:"delivered",at,text,source,state:"delivered",deliveredAt},
+  {id:"bad-date",at,text,source,state:"delivered",deliveredAt:"invalid"},
+  {id:"context",at,text,source:{...source,originKind:"context_copy"},state:"delivered"},
+ ]}))!;
+ const items=Object.fromEntries(model.items.map(item=>[item.id,item]));
+ expect(items["stored"]?.delivery).toBe("sent");expect(items["stored"]?.deliveredAt).toBeUndefined();
+ expect(conversationReceipt(items["stored"]!)?.text).toBe(" ✓");
+ expect(conversationReceipt(items["stored"]!)?.title).toContain("stocké localement");
+ expect(items["delivered"]?.delivery).toBe("delivered");expect(items["delivered"]?.deliveredAt).toBe(deliveredAt);
+ expect(conversationReceipt(items["delivered"]!)?.text).toBe(" ✓✓");
+ expect(conversationReceipt(items["delivered"]!)?.title).toContain("Ne confirme pas une lecture");
+ expect(items["bad-date"]?.deliveredAt).toBeUndefined();
+ expect(conversationReceipt(items["context"]!)).toBeNull();
+ expect(items["stored"]?.text).toBe(text);
+});
+
+it("shows single checks for hub storage and local outgoing traces without claiming model delivery",()=>{
+ const at="2026-10-31T00:23:20Z",text='{"delivery":"delivered","read":true}';
+ const sent=(id:string,channel:string,state:string)=>({id,at,text,channel,state,sender:{ref:"local-wake-agent",name:"Author"},recipient:{ref:"recipient",name:"Peer"},threadId:"thread",messageId:id});
+ const model=conversation(envelope({profileId:"default",agentMessages:[],sentMessages:[
+  sent("hub","mind-shared-hub","hub_stored"),sent("repo","repo-session","recorded"),sent("unsupported","mind-shared-hub","delivered"),
+ ]}))!;
+ const items=Object.fromEntries(model.items.map(item=>[item.id,item]));
+ expect(conversationReceipt(items["hub"]!)).toMatchObject({text:" ✓",delivered:false});
+ expect(conversationReceipt(items["hub"]!)?.title).toContain("Stocké sur le hub");
+ expect(conversationReceipt(items["repo"]!)?.title).toContain("Trace d’envoi locale");
+ expect(conversationReceipt(items["unsupported"]!)).toBeNull();
+});
+
+it("does not equate root-to-human display or recorded session answers with a reading receipt",()=>{
+ const at="2026-10-31T00:23:20Z";
+ const model=conversation(envelope({profileId:"default",agentMessages:[{id:"owner",createdAt:at,text:'{"read":true}',version:1}],deliveryReceipts:{owner:at}}),
+  {schema:"mind.helpers.cli",data:{answers:[{id:"answer",at,text:"answer",runtime:"codex",cwd:"C:/repo"}]}})!;
+ const owner=model.items.find(item=>item.id==="owner")!,answer=model.items.find(item=>item.id==="answer")!;
+ expect(conversationReceipt(owner)).toMatchObject({text:" ✓",delivered:false});
+ expect(conversationReceipt(owner)?.title).toContain("Réception et lecture par l’humain non attestées");
+ expect(conversationReceipt(answer)).toMatchObject({text:" ✓",delivered:false});
+ expect(conversationReceipt(answer)?.title).toContain("Livraison à la session principale non attestée");
+ const note=conversation(envelope({profileId:"default",agentNote:{text:"legacy note",updatedAt:at}}))!.items[0]!;
+ expect(conversationReceipt(note)?.text).toBe(" ✓");
 });
 
 it("renders the received source through the actual desktop metadata renderer as literal text", () => {
@@ -210,7 +258,7 @@ it("managed edits keep a single message and deletion does not resurrect the lega
       envelope({ profileId: "default", agentNote: old, agentMessages: [managed], replies: [] }),
     )?.items,
   ).toEqual([
-    { from: "agent", id: "own_test", text: "Corrigé", at: managed.createdAt, edited: true },
+    { from: "agent", id: "own_test", text: "Corrigé", at: managed.createdAt, edited: true, delivery: "sent" },
   ]);
   const deleted = conversation(
     envelope({
@@ -275,7 +323,7 @@ it("keeps received sources separate from human replies, orders and deduplicates 
  expect(c?.items[1]?.source).toContain("attribution non authentifiée");
  expect(c?.items[1]?.source).toContain("session s");
  expect(c?.items[1]?.text).toBe("NLR: do this");
- expect(c?.items[1]?.delivery).toBeUndefined();
+ expect(c?.items[1]?.delivery).toBe("sent");
 });
 
 it("keeps helper provenance collapsed while the title shows known actors and status",()=>{
