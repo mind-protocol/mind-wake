@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import * as z from "zod";
 import { RemoteHubLink } from "./shared-https.js";
+import { registerPeerTaskSender } from "./peer-task-tools.js";
 import {
   HubError,
   partyRefSchema,
@@ -134,4 +135,5 @@ server.registerTool(
       ...(in_reply_to === undefined ? {} : { inReplyTo: in_reply_to }),
     }),
 );
+registerPeerTaskSender(server, process.env, { call: (r) => hub.call(r as never) });
 await server.connect(new StdioServerTransport());

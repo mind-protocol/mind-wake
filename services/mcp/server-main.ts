@@ -17,6 +17,7 @@ import { processContext } from "../../src/cli/context.js";
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
+import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
@@ -523,5 +524,11 @@ server.registerTool(
 registerOwnerTools(server, process.env);
 registerBackgroundTools(server, process.env);
 registerRepoTools(server, process.env);
+registerPeerTaskLocalTools(server, process.env, async () => {
+  if (hub === null) throw Error("Authenticated local hub required for peer decisions");
+  const self = (await hub.call({ op: "whoami" })) as { kind: string; ref: string };
+  if (self.kind !== "agent" && self.kind !== "human") throw Error("Invalid local decision actor");
+  return { kind: self.kind, ref: self.ref };
+});
 
 await server.connect(new StdioServerTransport());
