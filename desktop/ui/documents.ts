@@ -1,7 +1,8 @@
-import { collectionKey, documentLabel, libraryLabel, modificationAge, visibleDocuments, type LibraryEntry } from './document-library.js';
+import { auroreDocumentStatus, collectionKey, documentLabel, libraryLabel, modificationAge, visibleDocuments, type LibraryEntry, type AuroreSyncStatus } from './document-library.js';
 import { loadDocumentImages, sanitizeDocument } from './document-images.js';
 import { DocumentScopeState, documentScopeLabel } from './document-scope.js';
 import { atelierUrl, createAtelierFrame } from './local-atelier.js';
+import { refreshAuroreCatalog, type AuroreCatalog } from './document-refresh.js';
 type Invoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
 export function initialDocument(entries: readonly LibraryEntry[], saved?: string): string | undefined {
   if (saved) return saved;
@@ -96,6 +97,7 @@ export function initDocuments(invoke: Invoke): void {
   const previous=byId<HTMLButtonElement>('document-previous'),next=byId<HTMLButtonElement>('document-next');
   let entries:LibraryEntry[]=[],current='',documentScope='agent',generation=0,catalogGeneration=0,pendingOpen=false;
   let renderedRelative='',renderedScope='agent',cloneVersion:string|undefined;
+  let cloneSync:AuroreSyncStatus|undefined;
   const scopeHistories=new Map<string,{history:string[];position:number}>();
   let history:string[]=[],position=-1,truncated=false;
   type ContextFile={scope:'agent'|'project';relative:string;name:string};
@@ -140,13 +142,48 @@ export function initDocuments(invoke: Invoke): void {
     const now=Date.now();
     for(const time of files.querySelectorAll<HTMLTimeElement>('time[data-modified-at]')) {
       const age=modificationAge(Number(time.dataset['modifiedAt']),now);
-      time.textContent=age.label;
-      time.setAttribute('aria-label','Dernière modification : '+age.label);
-      if(age.date){time.dateTime=age.date;time.title='Modifié le '+new Date(age.date).toLocaleString('fr-FR');}
-      else {time.removeAttribute('datetime');time.title='Date de modification indisponible';}
+      const git=scopeState.current==='aurore',prefix=git?'Modifié dans Git : ':'Dernière modification : ';
+      time.textContent=(git?'Git · ':'')+age.label;
+      time.setAttribute('aria-label',prefix+age.label);
+      if(age.date){time.dateTime=age.date;time.title=prefix+age.date;}
+      else {time.removeAttribute('datetime');time.title=prefix+(time.dataset['dateReason']??'date indisponible');}
     }
   }
-  setInterval(refreshFileAges,60_000);
+  let autoRefreshPending=false;
+  async function refreshAurore(probe=false):Promise<void>{
+    if(scopeState.current!=='aurore'||pendingOpen||autoRefreshPending)return;
+    if(probe&&!cloneVersion)return;
+    autoRefreshPending=true;
+    const scopeTicket=scopeState.capture(),docTicket=generation,catalogTicket=catalogGeneration;
+    try{
+      await refreshAuroreCatalog(
+        async()=>await invoke('document_browse',{scope:'aurore',relative:'',read:false,recursive:true,...(probe?{version:cloneVersion}:{})}) as AuroreCatalog,
+        ()=>scopeState.accepts(scopeTicket)&&docTicket===generation&&catalogTicket===catalogGeneration,
+        async data=>{
+          if(data.state==='unchanged'){cloneSync=data.sync;status.textContent=auroreDocumentStatus(cloneVersion,cloneSync);return;}
+          if(data.state==='version-changed'){
+            const relative=current;await loadCatalog();
+            if(scopeState.accepts(scopeTicket)&&relative&&entries.some(e=>e.relative===relative))await open(relative,false);
+            return;
+          }
+          if(data.state!=='available'){showCloneState(data.state);return;}
+          if(data.version===cloneVersion){cloneSync=data.sync;status.textContent=auroreDocumentStatus(cloneVersion,cloneSync);return;}
+          const relative=current;
+          await loadCatalog(false,data);
+          if(scopeState.accepts(scopeTicket)&&relative&&entries.some(e=>e.relative===relative))await open(relative,false);
+          else if(scopeState.accepts(scopeTicket)&&relative)status.textContent=auroreDocumentStatus(cloneVersion,cloneSync)+' · document retiré du catalogue, aperçu précédent conservé';
+        });
+    }catch{/* Keep the visible document; the next local probe can recover. */}
+    finally{autoRefreshPending=false;}
+  }
+  // Reuse the reader's existing minute cadence. This only reads local Git; the daemon owns fetch.
+  setInterval(()=>{refreshFileAges();void refreshAurore();},60_000);
+  // Reuse the desktop's status refresh event to notice a completed daemon cycle promptly.
+  // A version probe reads HEAD/status only, never the network or full history when unchanged.
+  let lastProbeAt=0;
+  window.addEventListener('wake-interface-ready',()=>{
+    const now=Date.now();if(now-lastProbeAt<5000)return;lastProbeAt=now;void refreshAurore(true);
+  });
   function renderFiles():void{
     const list=shown();files.replaceChildren();
     byId('document-count').textContent=list.length+' document'+(list.length===1?'':'s')+(scopeState.current==='aurore'?' · catalogue Git':' · plus récents en premier')+(truncated?' · catalogue partiel':'');
@@ -158,6 +195,7 @@ export function initDocuments(invoke: Invoke): void {
       const meta=document.createElement('small');const ext=/\.html?$/i.test(entry.relative)?'HTML':/\.txt$/i.test(entry.relative)?'TXT':'MD';
       meta.textContent=ext+' · '+entry.relative.split('/').slice(0,-1).join('/');
       const age=document.createElement('time');age.dataset['modifiedAt']=String(entry.modifiedAt??0);age.className='reader-file-age';
+      age.dataset['dateReason']=entry.dateUnavailableReason==='shallow-history-boundary'||entry.dateUnavailableReason==='shallow-history-unavailable'?'historique Git superficiel : dernier commit du chemin non vérifiable':entry.dateUnavailableReason?'historique Git indisponible ou limite de collecte atteinte':'date indisponible';
       button.append(name,meta,age);button.addEventListener('click',()=>{contextMode=false;renderQueue();void open(entry.relative);if(host.clientWidth<720)setLibrary(false);});files.append(button);
     }
     refreshFileAges();
@@ -174,24 +212,25 @@ export function initDocuments(invoke: Invoke): void {
     const leaf=document.createElement('span');leaf.textContent=current.split('/').at(-1)??current;leaf.setAttribute('aria-current','page');
     const separator2=document.createElement('span');separator2.textContent='›';location.append(separator2,leaf);
   }
-  async function loadCatalog(restore=false):Promise<void>{
+  async function loadCatalog(restore=false,loaded?:AuroreCatalog):Promise<void>{
     generation++;pendingOpen=false;
     const ticket=++catalogGeneration,scopeTicket=scopeState.capture(),targetScope=scopeState.current;
     status.textContent='Ouverture de la bibliothèque…';
     try{
-      const data=await invoke('document_browse',{scope:targetScope,relative:'',read:false,recursive:true}) as {entries:LibraryEntry[];truncated?:boolean;state?:string;version?:string};
+      const data=loaded??await invoke('document_browse',{scope:targetScope,relative:'',read:false,recursive:true}) as AuroreCatalog;
       if(ticket!==catalogGeneration||!scopeState.accepts(scopeTicket))return;
       if(targetScope==='aurore'&&data.state!=='available'){
         showCloneState(data.state==='empty'&&data.truncated?'partial':data.state);return;
       }
       cloneVersion=targetScope==='aurore'?data.version:undefined;
+      cloneSync=targetScope==='aurore'?data.sync:undefined;
       entries=data.entries;truncated=Boolean(data.truncated);
       // Aurore names must not enter the owner's conversation catalog/context queue.
       if(targetScope!=='aurore')window.dispatchEvent(new CustomEvent('wake-document-catalog',{detail:{scope:targetScope,entries,truncated}}));
       const selected=collection.value;collection.replaceChildren(new Option('Tous les projets',''));
       for(const key of [...new Set(entries.map(e=>collectionKey(e.relative)))].sort((a,b)=>libraryLabel(a).localeCompare(libraryLabel(b))))collection.add(new Option(libraryLabel(key),key));
       if([...collection.options].some(o=>o.value===selected))collection.value=selected;
-      renderFiles();breadcrumbs();status.textContent=truncated?'Une partie du catalogue est affichée.':targetScope==='aurore'?'Clone lié · '+(cloneVersion??'version inconnue')+' · lecture seule':'';
+      renderFiles();breadcrumbs();status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync)+(truncated?' · catalogue partiel':''):truncated?'Une partie du catalogue est affichée.':'';
       if(restore&&!current&&!pendingOpen){
         let saved='';try{saved=localStorage.getItem(stateKey())??'';}catch{/* No saved document. */}
         const initial=entries.find(e=>e.relative===saved)??entries.find(e=>e.relative==='artifacts/projets.html')??shown()[0];
@@ -258,7 +297,7 @@ export function initDocuments(invoke: Invoke): void {
       };
       frame.srcdoc='<!doctype html>'+parsed.documentElement.outerHTML;
       breadcrumbs();renderFiles();try{localStorage.setItem(stateKey(),current);}catch{/* Storage is optional. */}
-      status.textContent=targetScope==='aurore'?'Clone lié · '+(cloneVersion??'version inconnue')+' · lecture seule':data.format==='html'?'Page HTML · lecture seule':data.format==='text'?'Texte brut · lecture seule':'';
+      status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync):data.format==='html'?'Page HTML · lecture seule':data.format==='text'?'Texte brut · lecture seule':'';
     }catch(error){if(ticket===generation&&scopeState.accepts(scopeTicket)){if(targetScope==='aurore')showCloneState('unavailable');else feedback(error);}}
     finally{if(ticket===generation)pendingOpen=false;}
   }
@@ -273,6 +312,9 @@ export function initDocuments(invoke: Invoke): void {
   next.addEventListener('click',()=>pageClick(next));
   byId('document-latest').addEventListener('click',()=>{contextMode=false;renderQueue();const first=shown()[0];if(first)void open(first.relative);});
   function showCloneState(state:unknown):void{
+    if(state==='syncing'||state==='version-changed'){
+      status.textContent=(cloneVersion?auroreDocumentStatus(cloneVersion,cloneSync)+' · ':'')+(state==='syncing'?'Synchronisation en cours · document conservé, actualisez ensuite.':'Version du clone modifiée · document conservé, actualisez le catalogue.');return;
+    }
     generation++;pendingOpen=false;current='';renderedRelative='';entries=[];history=[];position=-1;
     frame.onload=null;closeApp();frame.srcdoc='';outline.replaceChildren(new Option('Sommaire indisponible',''));outline.disabled=true;
     collection.replaceChildren(new Option('Tous les projets',''));

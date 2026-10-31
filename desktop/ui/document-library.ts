@@ -1,4 +1,9 @@
-export interface LibraryEntry { name:string; relative:string; modifiedAt?:number; directory?:boolean }
+export interface LibraryEntry { name:string; relative:string; modifiedAt?:number|null; directory?:boolean; modifiedAtSource?:string; dateUnavailableReason?:string }
+export interface AuroreSyncStatus {status:string; lastSuccessAt:string|null; error:string|null}
+export function auroreDocumentStatus(version:string|undefined,sync?:AuroreSyncStatus):string {
+  return 'Dépôt mind-protocol/scisense-aurore-workspace · révision chargée '+(version??'inconnue')+' · lecture seule'
+    +(sync?' · synchronisation : '+sync.status+(sync.lastSuccessAt?' · dernier succès '+sync.lastSuccessAt:'')+(sync.error?' · '+sync.error:''):' · synchronisation non observée');
+}
 export function collectionKey(relative:string):string {
   const parts=relative.split('/');
   if(parts[0]==='artifacts'&&parts[1]==='creations'&&parts[2])return parts.slice(0,3).join('/');
@@ -20,9 +25,9 @@ export function visibleDocuments(entries:LibraryEntry[],collection:string,query:
     .sort((a,b)=>(b.modifiedAt??0)-(a.modifiedAt??0)||a.relative.localeCompare(b.relative));
 }
 
-/** Catalogue timestamps are filesystem modification times in milliseconds. */
-export function modificationAge(modifiedAt: number | undefined, now: number): {label:string; date?:string} {
-  if (modifiedAt === undefined || !Number.isFinite(modifiedAt) || modifiedAt <= 0 || !Number.isFinite(new Date(modifiedAt).getTime())) return {label:'date inconnue'};
+/** Epoch milliseconds: filesystem for local scopes, path commit for Aurore. */
+export function modificationAge(modifiedAt: number | null | undefined, now: number): {label:string; date?:string} {
+  if (modifiedAt == null || !Number.isFinite(modifiedAt) || modifiedAt <= 0 || !Number.isFinite(new Date(modifiedAt).getTime())) return {label:'date inconnue'};
   const date = new Date(modifiedAt).toISOString();
   const elapsed = now - modifiedAt;
   if (elapsed < 0) return {label:'date future',date};

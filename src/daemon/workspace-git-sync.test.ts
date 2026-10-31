@@ -251,11 +251,12 @@ it("honors an exclusive live-owner repository lock without committing", async ()
   fs.writeFileSync(path.join(work, "new.txt"), "WIP");
   fs.writeFileSync(
     path.join(work, ".git", "mind-wake-workspace-sync.lock"),
-    JSON.stringify({ pid: process.pid }),
+    JSON.stringify({ pid: process.pid, token: "synthetic-aurore-owner" }),
   );
   requestWorkspaceSync(dir);
   await sync.tick();
   expect(await git(work, ["rev-parse", "HEAD"])).toBe(before);
+  expect(workspaceSyncStatus(dir).state.status).not.toBe("blocked");
   expect(fs.readFileSync(path.join(work, "new.txt"), "utf8")).toBe("WIP");
 });
 it("cancels Git and a hook grandchild by owned Job Object, keeping WIP", async () => {

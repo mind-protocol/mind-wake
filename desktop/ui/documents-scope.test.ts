@@ -104,6 +104,34 @@ it('shows wrong origin and changed version distinctly without a local fallback',
   expect(f.requests.every(r=>r.args['scope']==='aurore')).toBe(true);
 });
 
+it('refreshes the active Aurore revision on the existing minute tick, keeps the current page and rejects a late scope response',async()=>{
+  const f=fixture('aurore');
+  f.parse.mockReturnValue({querySelectorAll:()=>[],querySelector:()=>null,createElement:()=>new Element(),head:{prepend:()=>{}},documentElement:{outerHTML:'<html>rendered fixture</html>'}});
+  f.requests[0]!.resolve({state:'available',version:'old',entries:[{name:'old.md',relative:'old.md',modifiedAt:1000}]});await tick();
+  f.requests.at(-1)!.resolve({state:'available',format:'markdown',text:'old'});await tick();
+  const before=f.requests.length;vi.advanceTimersByTime(59999);expect(f.requests).toHaveLength(before);
+  vi.advanceTimersByTime(1);expect(f.requests.at(-1)!.args).toMatchObject({scope:'aurore',read:false,relative:''});
+  f.requests.at(-1)!.resolve({state:'available',version:'new',entries:[{name:'new.md',relative:'new.md',modifiedAt:3000},{name:'old.md',relative:'old.md',modifiedAt:2000}],sync:{status:'ok',lastSuccessAt:'2026-10-31T00:00:00Z',error:null}});
+  // Probe -> catalogue -> reopening the same page is intentionally asynchronous.
+  await tick();await tick();
+  expect(f.requests.at(-1)!.args).toMatchObject({relative:'old.md',version:'new',read:true});
+  f.requests.at(-1)!.resolve({state:'available',format:'markdown',text:'updated'});await tick();await tick();
+  expect(f.node('document-scope').value).toBe('aurore');
+  expect(f.node('document-status').textContent).toContain('révision chargée new');
+  expect(f.node('document-status').textContent).toContain('dernier succès 2026-10-31');
+  const buttons=f.node('document-files').children;
+  expect(buttons[0]!.title).toBe('new.md');expect(buttons[1]!.title).toBe('old.md');
+  expect(buttons[1]!.children[2]!.dataset['modifiedAt']).toBe('2000');
+  f.event('wake-interface-ready',undefined);
+  expect(f.requests.at(-1)!.args).toMatchObject({scope:'aurore',read:false,relative:'',version:'new'});
+  f.requests.at(-1)!.resolve({state:'unchanged',version:'new',sync:{status:'error',lastSuccessAt:null,error:'network unavailable'}});await tick();await tick();
+  expect(f.node('document-status').textContent).toContain('network unavailable');
+  expect(f.node('document-frame').srcdoc).toContain('rendered fixture');
+  vi.advanceTimersByTime(60000);const late=f.requests.at(-1)!;
+  f.select('agent');late.resolve({state:'available',version:'late',entries:[{name:'late.md',relative:'late.md'}]});await tick();
+  expect(f.node('document-scope').value).toBe('agent');expect(f.node('document-files').textContent).not.toContain('late');
+});
+
 it('keeps Aurore Next and history across a visit to another scope',async()=>{
   const f=fixture('aurore');
   f.parse.mockReturnValue({querySelectorAll:()=>[],querySelector:()=>null,createElement:()=>new Element(),head:{prepend:()=>{}},documentElement:{outerHTML:'<html>fixture</html>'}});

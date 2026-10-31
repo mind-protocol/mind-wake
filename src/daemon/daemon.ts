@@ -31,6 +31,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { activateWorkspace } from "./workspace-config.js";
 import { WorkspaceGitSync } from "./workspace-git-sync.js";
+import { AuroreGitSync } from "./aurore-git-sync.js";
 import { FAKE_ADAPTER_ID, emergenceScenario, type FakeScenario } from "../adapters/fake/index.js";
 import {
   utf8TokenBound,
@@ -257,6 +258,7 @@ export class WakeDaemon implements SessionLauncher {
   #scheduler: Scheduler | null = null;
   #backgroundJobs: BackgroundJobs | null = null;
   #workspaceSync: WorkspaceGitSync | null = null;
+  #auroreSync: AuroreGitSync | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -580,6 +582,9 @@ export class WakeDaemon implements SessionLauncher {
       environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
     const scheduler = new Scheduler({
       maintenance: () => {
+        void this.#auroreSync?.tick().catch(() => {
+          this.#log("Aurore sync controls unavailable; inspect aurore-sync-state.json.");
+        });
         void this.#workspaceSync?.tick().catch(() => {
           this.#log("Workspace Git settings unavailable; inspect Settings.");
         });
@@ -611,7 +616,7 @@ export class WakeDaemon implements SessionLauncher {
     this.#scheduler = scheduler;
     try {
       if (real !== null && real.sandbox === null) {
-        this.#workspaceSync = new WorkspaceGitSync(this.#o.dataDir, () => {
+        const syncAllowed = () => {
           const profile = uow.profiles.get(profileId);
           const policy = resolvePolicy(uow.policies, profileId);
           return policy.status === "active" &&
@@ -619,7 +624,9 @@ export class WakeDaemon implements SessionLauncher {
             !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists() &&
             profile !== null && !profile.emergencyStopLocked &&
             !["paused", "checkpointing", "stopped", "disabled"].includes(profile.state);
-        });
+        };
+        this.#workspaceSync = new WorkspaceGitSync(this.#o.dataDir, syncAllowed);
+        this.#auroreSync = new AuroreGitSync(this.#o.dataDir, syncAllowed);
       }
       if (real !== null && real.sandbox === null) {
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
@@ -633,6 +640,7 @@ export class WakeDaemon implements SessionLauncher {
       }
       await scheduler.run(this.#abort.signal);
     } finally {
+      await this.#auroreSync?.close();
       await this.#workspaceSync?.close();
       await this.#backgroundJobs?.close();
       this.#close();

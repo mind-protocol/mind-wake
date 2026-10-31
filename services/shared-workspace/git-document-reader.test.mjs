@@ -70,3 +70,10 @@ test('origin comparison preserves whitespace and rejects duplicate or empty valu
  f.git('config','remote.origin.url',ORIGIN);f.git('config','--add','remote.origin.url','');assert.equal(f.browse().state,'invalid-origin');
  f.git('config','--unset-all','remote.origin.url');f.git('config','--add','remote.origin.url',ORIGIN);f.git('config','--add','remote.origin.url',ORIGIN);assert.equal(f.browse().state,'invalid-origin');
 });
+
+test('dirty deletion keeps the committed catalogue, content and Git path date',()=>{
+ const f=fixture();f.enable();fs.writeFileSync(path.join(f.clone,'kept.md'),'committed fixture');const version=f.commit();
+ const original=f.browse();fs.unlinkSync(path.join(f.clone,'kept.md'));
+ const catalog=f.browse();assert.equal(catalog.version,version);assert.deepEqual(catalog.entries,original.entries);
+ assert.equal(f.browse({relative:'kept.md',read:true,version}).text,'committed fixture');
+});
