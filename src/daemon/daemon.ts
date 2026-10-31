@@ -114,6 +114,7 @@ import { AgentWakeups, type QuotaSource } from "./wakeups.js";
 import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
 import { currentContextEvent } from "./current-context.js";
+import { openSharedInboxSession, type SharedInboxSession } from "../communication/shared-inbox.js";
 import { ownerMessagePending } from "../communication/owner-inbox.js";
 import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
 import { BackgroundJobs } from "./background-jobs.js";
@@ -582,14 +583,14 @@ export class WakeDaemon implements SessionLauncher {
       wakeRequests: {
         nextRequestedWake: async (now) => {
           if (this.#backgroundJobs?.store.events().length) return now;
-          if (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir)) return now;
+          if (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir, true)) return now;
           if (executionMode(this.#o.dataDir) === "always-on") return now;
           const agent = await this.#wakeups.nextDue(now, this.#quota);
           const human = pendingHumanWake(this.#o.dataDir, now);
           return agent === null ? human : human === null ? agent : Math.min(agent, human);
         },
       },
-      humanWakePending: (now) => pendingHumanWake(this.#o.dataDir, now) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir)),
+      humanWakePending: (now) => pendingHumanWake(this.#o.dataDir, now) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir, true)),
       alwaysOn: () => executionMode(this.#o.dataDir) === "always-on",
       priority: this.#signal,
       launcher: this,
@@ -706,7 +707,7 @@ export class WakeDaemon implements SessionLauncher {
           }));
     const billing: BillingFacts = this.#registration.billing();
     // Lu avant `#composeWake`, qui consomme la demande.
-    const humanRequested = pendingHumanWake(this.#o.dataDir, Date.now()) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir));
+    const humanRequested = pendingHumanWake(this.#o.dataDir, Date.now()) !== null || executionMode(this.#o.dataDir) === "always-on" || (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir, true));
     const wake = await this.#composeWake(ticket, memory, billing, keyboardContext === null ? [] : [keyboardContext]);
     this.#sessions.set(ticket.sessionId, {
       revisionId: ticket.policyRevisionId,
@@ -721,6 +722,7 @@ export class WakeDaemon implements SessionLauncher {
     const quotaAtStart = guard === null ? undefined : await this.#quota?.().catch(() => undefined);
     const startedAtMs = Date.now();
     let result: SessionResult;
+    let sharedInbox: SharedInboxSession | null = null;
     try {
       const visual = await collectAgentScreenshot({
         artifactsDir: this.#root.real,
@@ -748,6 +750,24 @@ export class WakeDaemon implements SessionLauncher {
             ? "contexte visuel indisponible : réveil sans image"
             : `contexte visuel ${wakeImage.width}x${wakeImage.height}, ${wakeImage.capturedAt} (${wakeImage.surface})`,
         );
+      // Collect only for this already-authorised session, never from the scheduler.
+      if (this.#real !== null && this.#real.sandbox === null) {
+        const inboxActive = (): boolean => {
+          const profile = uow.profiles.get(ticket.profileId);
+          const policy = resolvePolicy(uow.policies, ticket.profileId);
+          return !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists() &&
+            this.#sessions.has(ticket.sessionId) && profile !== null && !profile.emergencyStopLocked &&
+            !["paused", "checkpointing", "stopped", "disabled"].includes(profile.state) &&
+            policy.status === "active" && policy.revision.groups.runtime.hostUnsandboxedAcknowledged === true;
+        };
+        try {
+          sharedInbox = openSharedInboxSession(this.#o.dataDir, ticket.profileId, inboxActive);
+          sharedInbox?.start(() => this.#log("shared inbox unavailable; retry remains inside the active session"));
+          await sharedInbox?.sync();
+        } catch {
+          this.#log("shared inbox unavailable; Wake continues without importing remote messages");
+        }
+      }
       const running = await this.#runner.launch({
         profileId: ticket.profileId,
         sessionId: ticket.sessionId,
@@ -779,6 +799,8 @@ export class WakeDaemon implements SessionLauncher {
         outcome: "orphaned",
         failure: { kind: "fatal", detail },
       };
+    } finally {
+      sharedInbox?.stop();
     }
     this.#sessions.delete(ticket.sessionId);
     this.#results.push(result);

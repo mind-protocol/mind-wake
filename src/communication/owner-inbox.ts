@@ -172,12 +172,13 @@ export function readOwnerMessage(dataDir: string, id: string): InboxMessage | nu
     db.close();
   }
 }
-export function ownerMessagePending(dataDir: string): boolean {
+/** Automatic shared imports may steer a live turn but never request a new wake. */
+export function ownerMessagePending(dataDir: string, wakeEligibleOnly = false): boolean {
   if (!fs.existsSync(path.join(dataDir, FILE))) return false;
   const db = open(dataDir);
   try {
     return (
-      db.prepare("SELECT 1 FROM inbox WHERE emitted_session IS NULL LIMIT 1").get() !== undefined
+      db.prepare("SELECT 1 FROM inbox WHERE emitted_session IS NULL" + (wakeEligibleOnly ? " AND id NOT LIKE 'shared-inbox:%'" : "") + " LIMIT 1").get() !== undefined
     );
   } finally {
     db.close();
