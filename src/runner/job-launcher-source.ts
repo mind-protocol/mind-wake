@@ -35,7 +35,7 @@ static class Native
     public const uint CREATE_SUSPENDED = 0x4;
     public const uint CREATE_UNICODE_ENVIRONMENT = 0x400;
     public const uint EXTENDED_STARTUPINFO_PRESENT = 0x80000;
-    public const uint CREATE_NO_WINDOW = 0x08000000;
+    public const uint DETACHED_PROCESS = 0x00000008;
     public const int STARTF_USESTDHANDLES = 0x100;
     public static readonly IntPtr PROC_THREAD_ATTRIBUTE_HANDLE_LIST = (IntPtr)0x00020002;
     public static readonly IntPtr PROC_THREAD_ATTRIBUTE_JOB_LIST = (IntPtr)0x0002000D;
@@ -215,7 +215,7 @@ static class Launcher
         si.StartupInfo.dwFlags = Native.STARTF_USESTDHANDLES;
         si.StartupInfo.hStdInput = inRead; si.StartupInfo.hStdOutput = outDup; si.StartupInfo.hStdError = nul;
         si.lpAttributeList = attrs;
-        uint flags = Native.CREATE_SUSPENDED | Native.CREATE_UNICODE_ENVIRONMENT | Native.EXTENDED_STARTUPINFO_PRESENT | Native.CREATE_NO_WINDOW;
+        uint flags = Native.CREATE_SUSPENDED | Native.CREATE_UNICODE_ENVIRONMENT | Native.EXTENDED_STARTUPINFO_PRESENT | Native.DETACHED_PROCESS;
         Native.PROCESS_INFORMATION pi;
         if (!Native.CreateProcess(null, cmd, IntPtr.Zero, IntPtr.Zero, true, flags, envPtr, cwd, ref si, out pi))
             throw new Exception("CreateProcess " + Marshal.GetLastWin32Error());

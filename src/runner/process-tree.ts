@@ -181,7 +181,11 @@ export class ContainedProcess implements SessionProcess {
       args.push("--env", `${key}=${value}`);
     }
     args.push("--", command.executable, ...command.args);
-    this.#child = spawn(launcherPath, args, { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    this.#child = spawn(launcherPath, args, {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+      detached: true,
+    });
     // Lanceur déjà terminé : une écriture tardive sur son entrée n'a plus d'objet.
     this.#child.stdin?.on("error", () => undefined);
 
