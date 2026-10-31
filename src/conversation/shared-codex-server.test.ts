@@ -90,10 +90,12 @@ async function threads(f: ReturnType<typeof fixture>) {
   await initialize(f);
   for (const c of [f.a, f.b])
     c.send(JSON.stringify({ id: 1, method: "thread/start", params: { ephemeral: true } }));
-  const requests = f.server.sent.filter((m) => m["method"] === "thread/start");
-  for (const [index, request] of requests.entries())
+  for (const [index, client] of [f.a, f.b].entries()) {
+    const request = f.server.sent.filter((m) => m["method"] === "thread/start")[index];
+    if (!request) throw Error("Thread start not admitted");
     f.server.emit({ id: request["id"], result: { thread: { id: `thread-${String(index)}` } } });
-  await Promise.all([read(f.a), read(f.b)]);
+    await read(client);
+  }
 }
 it("shares one launch and handshake but maps independent RPC IDs and fresh thread starts", async () => {
   const f = fixture();
@@ -264,6 +266,43 @@ it("waits for a late cancelled turn to finish before releasing its thread resour
     });
     await stopped;
     expect(f.server.sent.filter((m) => m["method"] === "thread/unsubscribe")).toHaveLength(1);
+  } finally {
+    await f.pool.dispose();
+  }
+});
+
+it("admits thread bootstraps one at a time while forwarding generation during the next bootstrap", async () => {
+  const f = fixture();
+  try {
+    await initialize(f);
+    for (const client of [f.a, f.b])
+      client.send(JSON.stringify({ id: 1, method: "thread/start", params: { ephemeral: true } }));
+    let starts = f.server.sent.filter((m) => m["method"] === "thread/start");
+    expect(starts).toHaveLength(1);
+    f.server.emit({ id: starts[0]?.["id"], result: { thread: { id: "first" } } });
+    await read(f.a);
+    starts = f.server.sent.filter((m) => m["method"] === "thread/start");
+    expect(starts).toHaveLength(2);
+    f.a.send(JSON.stringify({ id: 2, method: "turn/start", params: { threadId: "first" } }));
+    expect(f.server.sent.at(-1)?.["method"]).toBe("turn/start");
+    // The second thread has not replied yet: generation was not queued behind it.
+    f.server.emit({ id: starts[1]?.["id"], result: { thread: { id: "second" } } });
+    await read(f.b);
+  } finally {
+    await f.pool.dispose();
+  }
+});
+it("does not start a queued thread after its client was cancelled", async () => {
+  const f = fixture();
+  try {
+    await initialize(f);
+    for (const client of [f.a, f.b])
+      client.send(JSON.stringify({ id: 1, method: "thread/start", params: { ephemeral: true } }));
+    await f.b.terminateTree();
+    const first = f.server.sent.find((m) => m["method"] === "thread/start");
+    f.server.emit({ id: first?.["id"], result: { thread: { id: "first" } } });
+    await read(f.a);
+    expect(f.server.sent.filter((m) => m["method"] === "thread/start")).toHaveLength(1);
   } finally {
     await f.pool.dispose();
   }

@@ -76,6 +76,8 @@ export class SharedCodexServerPool implements CodexLauncher {
   private nextId = 1;
   private clients = new Set<Client>();
   private pending = new Map<number, Pending>();
+  private threadStarts: { id: number; client: Client; message: Row }[] = [];
+  private startingThread: number | undefined;
   private threads = new Map<string, Client>();
   private seenThreads = new Set<string>();
   private turns = new Map<string, string>();
@@ -187,11 +189,35 @@ export class SharedCodexServerPool implements CodexLauncher {
     }
     const globalId = this.nextId++;
     this.pending.set(globalId, { client, localId: id, method, ...(thread ? { thread } : {}) });
+    if (method === "thread/start") {
+      this.threadStarts.push({ id: globalId, client, message: { ...message, id: globalId } });
+      this.flushThreadStarts();
+      return;
+    }
     this.write({ ...message, id: globalId });
+  }
+  private flushThreadStarts(): void {
+    if (this.disposed || this.startingThread !== undefined) return;
+    for (;;) {
+      const next = this.threadStarts.shift();
+      if (!next) return;
+      if (next.client.hasExited) {
+        this.pending.delete(next.id);
+        continue;
+      }
+      this.startingThread = next.id;
+      this.write(next.message);
+      return;
+    }
   }
   release(client: Client): void {
     this.clients.delete(client);
     client.close();
+    this.threadStarts = this.threadStarts.filter((request) => {
+      if (request.client !== client) return true;
+      this.pending.delete(request.id);
+      return false;
+    });
     this.initializationWaiters = this.initializationWaiters.filter((w) => w.client !== client);
     for (const [id, p] of this.pending)
       if (p.client === client && p.method !== "turn/start" && p.method !== "thread/start")
@@ -267,6 +293,8 @@ export class SharedCodexServerPool implements CodexLauncher {
   }
   private closeClients(): void {
     this.disposed = true;
+    this.threadStarts = [];
+    this.startingThread = undefined;
     for (const request of this.unsubscribing.values()) clearTimeout(request.timer);
     this.unsubscribing.clear();
     for (const client of [...this.clients]) this.release(client);
@@ -293,6 +321,12 @@ export class SharedCodexServerPool implements CodexLauncher {
         method = m["method"];
       if (typeof method !== "string") {
         if (typeof id !== "number") continue;
+        if (id === this.startingThread) {
+          this.startingThread = undefined;
+          queueMicrotask(() => {
+            this.flushThreadStarts();
+          });
+        }
         const unload = this.unsubscribing.get(id);
         if (unload) {
           clearTimeout(unload.timer);
