@@ -208,8 +208,10 @@ fn start_daemon(status_json: &str) -> Result<(), String> {
     if manifest.is_file() {
         let installation: serde_json::Value = serde_json::from_slice(&std::fs::read(&manifest).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
         let repo = installation["repoDir"].as_str().ok_or("Source installée inconnue")?;
+        let hooks = PathBuf::from(repo).join("test/fixtures/store-ledger/ts-hooks.ts");
+        let hooks_url = format!("file:///{}", hooks.to_string_lossy().replace('\\', "/").trim_start_matches('/'));
         command.args(["--experimental-transform-types", "--disable-warning=ExperimentalWarning", "--import"])
-            .arg(PathBuf::from(repo).join("test/fixtures/store-ledger/ts-hooks.ts"))
+            .arg(hooks_url)
             .arg(PathBuf::from(repo).join("scripts/engine-supervisor.mjs"))
             .arg("--manifest").arg(manifest);
     } else { command.args(wake_args(&["daemon", "run"]) ?); }
@@ -244,8 +246,10 @@ pub fn restart_daemon() -> Result<CliRun, String> {
             let installation: serde_json::Value = serde_json::from_slice(&std::fs::read(&manifest).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
             if let Some(repo) = installation["repoDir"].as_str() {
                 let mut owner = Command::new(node());
+                let hooks = PathBuf::from(repo).join("test/fixtures/store-ledger/ts-hooks.ts");
+                let hooks_url = format!("file:///{}", hooks.to_string_lossy().replace('\\', "/").trim_start_matches('/'));
                 owner.args(["--experimental-transform-types", "--disable-warning=ExperimentalWarning", "--import"])
-                    .arg(PathBuf::from(repo).join("test/fixtures/store-ledger/ts-hooks.ts"))
+                    .arg(hooks_url)
                     .arg(PathBuf::from(repo).join("scripts/owned-runtime-control.mjs"))
                     .arg("--manifest").arg(&manifest).args(["--role","daemon","--action","restart"]);
                 #[cfg(windows)] { use std::os::windows::process::CommandExt; owner.creation_flags(0x0800_0000); }
