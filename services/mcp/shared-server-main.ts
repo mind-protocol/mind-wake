@@ -20,6 +20,25 @@ const hub = new RemoteHubLink(endpoint, key);
 const server = new McpServer({ name: "mind-shared-messages", version: "0.1.0" });
 async function call(tool: string, request: HubCall) {
   try {
+    const result = await hub.call<Record<string, unknown>>(request);
+    // Local journal is optional; its failure must never turn a stored send into a retry.
+    if (process.env["MIND_WAKE_DATA_DIR"] && (request.op === "send_message" || request.op === "reply")) {
+      try {
+        const { recordHubSent } = await import("../../src/communication/sent-messages.js");
+        const self = await hub.call<{ref:string;kind:string}>({op:"whoami"});
+        let to = request.op === "send_message" ? request.to : undefined;
+        if (!to && typeof result["thread_id"] === "string") {
+          const history = await hub.call<{messages:{from:string;to:string}[]}>({op:"read_inbox",threadId:result["thread_id"],after:0,limit:1});
+          const first = history.messages[0];
+          if (first) to = first.from === self.ref ? first.to : first.to === self.ref ? first.from : undefined;
+        }
+        if (self.kind === "agent" && to && typeof result["message_id"] === "string" && typeof result["thread_id"] === "string")
+          recordHubSent(process.env["MIND_WAKE_DATA_DIR"], self.ref, {
+            from:self.ref,to,from_self:true,message_id:result["message_id"],thread_id:result["thread_id"],
+            text:request.text,provenance:{kind:"agent",received_at:new Date().toISOString()},
+          });
+      } catch { process.stderr.write("MIND: envoi stocké ; journal local des messages sortants indisponible.\n"); }
+    }
     return {
       content: [
         {
@@ -27,7 +46,7 @@ async function call(tool: string, request: HubCall) {
           text: JSON.stringify({
             schema: `mind.shared/${tool}`,
             schema_version: 1,
-            ...(await hub.call<Record<string, unknown>>(request)),
+            ...result,
           }),
         },
       ],

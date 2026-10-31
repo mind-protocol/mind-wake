@@ -752,3 +752,8 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
 .workspace-sync-toggle { display:flex; align-items:center; gap:10px; }
 .workspace-sync-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .workspace-sync-details dd { overflow-wrap:anywhere; white-space:pre-wrap; }
+
+/* Outgoing agent messages use the same inline presentation as public activity. */
+#chat li[data-from="sent"] { background:transparent; border:0; border-radius:0; box-shadow:none; padding:4px 2px; margin:4px 0 12px; max-width:100%; color:var(--muted); }
+#chat li[data-from="sent"] > small { margin-bottom:3px; font-size:10px; opacity:.8; color:var(--muted); }
+#chat li[data-from="sent"] .conversation-body > p { font-size:13px; line-height:1.55; }

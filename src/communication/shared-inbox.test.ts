@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SharedInboxSession, loadSharedInboxBinding, openSharedInboxSession, type SharedInboxTransport } from "./shared-inbox.js";
 import type { SharedInboxCall } from "./shared-inbox-https.js";
 import { CodexOwnerSteering } from "../adapters/codex/owner-steering.js";
+import { readSentMessages } from "./sent-messages.js";
 import { ownerMessagePending, readOwnerInboxHistory, readOwnerReceipts, enqueueOwnerMessage } from "./owner-inbox.js";
 
 let dir: string;
@@ -127,6 +128,16 @@ it("filters self and other-recipient entries and rejects a broken page before ad
   await expect(receiver(broken).sync()).rejects.toThrow("cursor");
   expect(readOwnerInboxHistory(dir)).toHaveLength(1);
   await receiver(remote.wire).sync();expect(remote.calls.at(-1)).toMatchObject({after:3});
+});
+
+it("projects authenticated outgoing history once without delivering it as incoming instructions",async()=>{
+  const remote=transport([entry(1,agent,"thr_Marco123",marco,true),entry(2,marco)]);
+  const session=receiver(remote.wire);
+  await session.sync();
+  await session.sync();
+  expect(readSentMessages(dir)).toMatchObject([{text:"Point SciSense",sender:{ref:agent},recipient:{ref:marco},state:"hub_stored",at:"2026-10-31T00:07:41Z"}]);
+  expect(readOwnerInboxHistory(dir)).toHaveLength(1);
+  expect(readOwnerInboxHistory(dir)[0]?.origin?.senderRef).toBe(marco);
 });
 
 it("separates global cursors by endpoint and identity, never adopting tool thread cursors",async()=>{

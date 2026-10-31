@@ -18,6 +18,7 @@ const messageIdSchema = z.string().regex(/^msg_[A-Za-z0-9_-]{8,64}$/);
 const threadIdSchema = z.string().regex(/^thr_[A-Za-z0-9_-]{8,64}$/);
 const LIMITS = { maxInboxBatch: 50, maxMessageChars: 4000 } as const;
 import { enqueueOwnerMessage } from "./owner-inbox.js";
+import { recordHubSent } from "./sent-messages.js";
 
 const bindingSchema = z.strictObject({
   enabled: z.boolean(),
@@ -151,6 +152,10 @@ export class SharedInboxSession {
       if (result.next !== previous) throw Error("Invalid shared inbox cursor");
       for (const message of result.messages) {
         if (!this.#active()) return;
+        if (message.from_self && message.from === this.binding.agentRef) {
+          if (!isHookAck(message.text)) recordHubSent(this.dataDir, this.binding.agentRef, message);
+          continue;
+        }
         if (
           message.from_self ||
           message.to !== this.binding.agentRef ||

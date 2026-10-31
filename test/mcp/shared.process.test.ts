@@ -11,6 +11,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { digest } from "../../services/advice/conversation/capability.js";
 import { RemoteHubLink } from "../../services/mcp/shared-https.js";
 import { HubStore } from "../../services/mcp/store.js";
+import { readSentMessages } from "../../src/communication/sent-messages.js";
 import { MCP_DIR, NODE_ARGS, minimalEnv } from "./harness.js";
 
 it("two real MCP stdio clients share HTTPS/SQLite messages, reject unsafe calls and survive restart/revocation", async () => {
@@ -124,6 +125,8 @@ it("two real MCP stdio clients share HTTPS/SQLite messages, reject unsafe calls 
     );
   }
   async function connect(key: string) {
+    const localData = join(dir, key === aKey ? "local-a" : "local-b");
+    mkdirSync(localData, {recursive:true});
     const client = new Client({ name: "real-shared-test", version: "1" });
     await client.connect(
       new StdioClientTransport({
@@ -134,6 +137,7 @@ it("two real MCP stdio clients share HTTPS/SQLite messages, reject unsafe calls 
           NODE_EXTRA_CA_CERTS: cert,
           MIND_SHARED_HUB_URL: `https://127.0.0.1:${String(port)}/v1/messages`,
           MIND_SHARED_LINK_KEY: key,
+          MIND_WAKE_DATA_DIR: localData,
         },
         stderr: "pipe",
       }),
@@ -210,6 +214,8 @@ it("two real MCP stdio clients share HTTPS/SQLite messages, reject unsafe calls 
       idempotency_key: "shared-answer-0001",
     });
     expect(answer["thread_id"]).toBe(sent["thread_id"]);
+    expect(readSentMessages(join(dir,"local-a"))).toMatchObject([{text:args.text,recipient:{ref:bRef},messageId:sent["message_id"]}]);
+    expect(readSentMessages(join(dir,"local-b"))).toMatchObject([{text:"Synthetic answer",recipient:{ref:aRef},messageId:answer["message_id"]}]);
     expect(
       (await call(a, "read_inbox", { thread_id: sent["thread_id"] }))["messages"],
     ).toHaveLength(2);

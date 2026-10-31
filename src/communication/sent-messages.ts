@@ -78,6 +78,29 @@ export function recordSharedSent(dataDir: string, input: SharedSentInput): SentM
   fs.appendFileSync(file(dataDir), JSON.stringify(entry) + "\n", "utf8");
   return entry;
 }
+/** Authenticated hub history, scoped to the verified local agent by the inbox reader. */
+export function recordHubSent(dataDir: string, self: string, message: {
+  from: string; to: string; from_self: boolean; message_id: string; thread_id: string;
+  text: string; provenance: { received_at: string; kind: string };
+}): void {
+  if (!message.from_self || message.from !== self || !self.startsWith("agent-") ||
+    message.to === self || message.provenance.kind !== "agent" || !party.test(self) || !party.test(message.to) ||
+    !/^msg_[A-Za-z0-9_-]{8,64}$/.test(message.message_id) || !/^thr_[A-Za-z0-9_-]{8,64}$/.test(message.thread_id) ||
+    !Number.isFinite(Date.parse(message.provenance.received_at)) || !message.text.trim()) return;
+  const entry: SentMessage = {
+    id: `shared-sent:${self}:${message.message_id}`, at: message.provenance.received_at,
+    text: message.text, channel: "mind-shared-hub", sender: {ref:self,name:self},
+    recipient: {ref:message.to,name:message.to}, threadId:message.thread_id,
+    messageId:message.message_id, state:"hub_stored",
+  };
+  const existing = journal(dataDir).find(m => m.id === entry.id);
+  if (existing) {
+    if (existing.text !== entry.text || existing.recipient.ref !== message.to || existing.threadId !== entry.threadId)
+      throw Error("Conflicting shared history identity");
+    return;
+  }
+  fs.appendFileSync(file(dataDir), JSON.stringify(entry) + "\n", "utf8");
+}
 export function readSentMessages(dataDir: string): SentMessage[] {
   const messages = journal(dataDir);
   // Only explicit repo records. Exclude the legacy synthetic join of owner text containing a thread ID.

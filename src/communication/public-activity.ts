@@ -1,4 +1,4 @@
-/** Read only public commentary and tool names from the Wake-owned Codex thread. */
+/** Read public assistant messages and tool names from the Wake-owned Codex thread. */
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -10,7 +10,7 @@ export function parsePublicActivity(raw:string, threadId:string):PublicActivity[
     const row=JSON.parse(line),p=row.payload;
     if(row.type!=='response_item' || !p || typeof row.timestamp!=='string' || !Number.isFinite(Date.parse(row.timestamp)))continue;
     let text:string|null=null;
-    if(p.type==='message' && p.role==='assistant' && (p.channel==='commentary' || (p.phase==='commentary' && p.channel==null))) {
+    if(p.type==='message' && p.role==='assistant' && (['commentary','final'].includes(p.channel) || (['commentary','final','final_answer'].includes(p.phase) && p.channel==null))) {
       text=Array.isArray(p.content)?p.content.filter((b:Record<string,unknown>)=>b?.['type']==='output_text' && typeof b['text']==='string').map((b:Record<string,string>)=>b['text']).join('\n'):null;
     } else if(p.type==='function_call' && typeof p.name==='string' && /^[A-Za-z0-9_.:-]{1,180}$/.test(p.name))text=`Utilise l’outil ${p.name}.`;
     if(!text?.trim())continue;
