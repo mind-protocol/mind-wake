@@ -126,6 +126,10 @@ Le résultat et les logs du propriétaire portent cette distinction : `immediate
 
 Sources : [propriétaire](../src/conversation/owner.ts), [essais Windows et contrôles](../src/conversation/owner.test.ts). L’effet de la garde agrégée et son coût d’observation restent à mesurer sur une coopération réelle.
 
+Le contrôle de livraison suivant a révélé une régression : la synchronisation Git à la minute appartenait à l’ancien daemon, désormais arrêté. Elle est raccordée au worker conversationnel supervisé, avec un seul propriétaire par profil, les mêmes échéances et les mêmes réglages d’activation. Cette maintenance ne lance aucun modèle ; Pause, Force-off et l’arrêt ferment ses services. Les essais de cycle de vie utilisent des fixtures et les backends désactivés, sans réseau ni modification du profil installé.
+
+La relecture du guide a aussi précisé la portée de la réutilisation de Work : elle est déterministe pour une même révision et des dépendances identiques. Un arrêt suivi d’une reprise crée une nouvelle révision ; les résultats précédents sont transmis, mais le code ne garantit pas encore la déduplication des effets techniques entre révisions. Le guide expose cette limite pour éviter de confondre conservation des résultats et exécution exactement une fois.
+
 ## Points encore ouverts à vérifier
 
 - Tester le trajet réel avec le runtime autorisé, puis l’usage de la version réécrite au message suivant, sans continuation native.

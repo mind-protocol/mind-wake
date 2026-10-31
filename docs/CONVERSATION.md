@@ -14,7 +14,7 @@ Les messages humains et la réponse Lead sont modifiables pendant le travail. En
 
 La seconde passe produit une version améliorée des conversations. Les appels suivants sont reconstruits depuis cette version. Les éditions humaines restent protégées et les anciennes versions restent disponibles.
 
-**Reprendre** reprend une conversation interrompue sans répéter un Work réussi. Un cycle achevé dont les données et instructions n’ont pas changé n’effectue pas de nouveaux appels modèle. **Arrêter** coupe le cycle ; Pause et Force-off restent les contrôles globaux du profil.
+**Reprendre** réutilise les appels réussis lorsque la révision et leurs dépendances correspondent. Un cycle achevé dont les données et instructions n’ont pas changé n’effectue pas de nouveaux appels modèle. **Arrêter** coupe le cycle ; sa reprise crée une nouvelle révision et transmet les résultats Work précédents, sans garantie de déduplication des effets techniques entre révisions. Pause et Force-off restent les contrôles globaux du profil.
 
 ## Expertise et instructions réutilisables
 
@@ -36,7 +36,7 @@ Le même helper sait contrôler un chemin `.md` ou `.txt`, insensible à la cass
 
 ## Runtime et limites actuelles
 
-Codex et Claude utilisent leurs clients officiels et leurs capacités natives configurées. Le raccord actuel prend les profils hôte déjà consentis ; un profil qui exige une sandbox est refusé explicitement. Aucun repli vers une autre identité, un autre fournisseur ou une API payante n’est effectué.
+Codex et Claude utilisent leurs clients officiels et leurs capacités natives configurées. Le raccord actuel prend les profils hôte déjà consentis ; un profil qui exige une sandbox est refusé explicitement. Aucun repli vers une autre identité, un autre fournisseur ou une API payante n’est effectué. Le worker conserve également la synchronisation Git à la minute déjà activée dans le profil, avec ses réglages et contrôles existants ; cette maintenance ne produit aucun réveil de modèle et s’arrête avec les contrôles du profil.
 
 Les processus d’une coopération appartiennent à un propriétaire et à un Job Object global ; chaque rôle garde son contrôle d’arrêt. Les essais Windows montrent que les jobs imbriqués peuvent dépasser transitoirement le plafond agrégé. La garde observe ce compte et arrête le groupe si le plafond est dépassé ou illisible ; les métadonnées `owner-control` exposent cette limite. Le plafond agrégé n’est donc pas présenté comme une borne noyau stricte sans dépassement.
 

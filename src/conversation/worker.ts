@@ -10,6 +10,7 @@ import { ConversationStore } from "./store.js";
 import { ConversationCoordinator } from "./coordinator.js";
 import { createRoleRuntime, inspectConversationRuntime, type RoleRuntime } from "./role-runtime.js";
 import { collectConsolidation } from "./messages.js";
+import { startConversationMaintenance, type ConversationMaintenance } from "./maintenance.js";
 
 export function workerFile(dataDir: string, id: string): string {
   return path.join(
@@ -109,6 +110,7 @@ export async function serveConversation(
       controller.abort(options.signal?.reason);
     };
   let ownedStore: ConversationStore | undefined;
+  let maintenance: ConversationMaintenance | undefined;
   const temporary = `${file}.${token}.tmp`;
   options.signal?.addEventListener("abort", abort, { once: true });
   if (options.signal?.aborted) abort();
@@ -130,6 +132,27 @@ export async function serveConversation(
       runtime = options.runtime ?? createRoleRuntime({ dataDir });
     ownedStore = store;
     store.recoverInterruptedCalls(id);
+    maintenance = startConversationMaintenance(dataDir, {
+      signal: controller.signal,
+      allowed: () => {
+        const state = store.current(id);
+        return (
+          state !== null &&
+          state.status !== "stopped" &&
+          inspectConversationRuntime(dataDir).allowed
+        );
+      },
+      onError: (service) => {
+        const state = store.current(id);
+        if (state)
+          store.appendEvent({
+            conversationId: id,
+            revision: state.revision,
+            kind: "maintenance_error",
+            text: `${service} Git maintenance unavailable; inspect synchronization state.`,
+          });
+      },
+    });
     while (!controller.signal.aborted) {
       const state = store.current(id);
       if (!state || state.status === "stopped") break;
@@ -175,6 +198,7 @@ export async function serveConversation(
     }
   } finally {
     controller.abort();
+    await maintenance?.stop();
     options.signal?.removeEventListener("abort", abort);
     ownedStore?.close();
     if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
