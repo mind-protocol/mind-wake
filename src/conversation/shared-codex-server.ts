@@ -80,6 +80,10 @@ export class SharedCodexServerPool implements CodexLauncher {
   private seenThreads = new Set<string>();
   private turns = new Map<string, string>();
   private completedTurns = new Set<string>();
+  private unsubscribing = new Map<
+    number,
+    { thread: string; timer: ReturnType<typeof setTimeout> }
+  >();
   private cancellations = new Map<Client, () => void>();
   private early = new Map<string, Row[]>();
   private serverRequests = new Map<string, { client: Client; id: unknown }>();
@@ -203,6 +207,25 @@ export class SharedCodexServerPool implements CodexLauncher {
         this.write({ id: request.id, error: { code: -32601, message: "Role closed" } });
         this.serverRequests.delete(token);
       }
+    this.unloadClosedThreads(client);
+  }
+  private unloadClosedThreads(client: Client): void {
+    if (!client.hasExited || this.disposed) return;
+    for (const [thread, owner] of this.threads) {
+      if (
+        owner !== client ||
+        this.turns.has(thread) ||
+        [...this.pending.values()].some((p) => p.method === "turn/start" && p.thread === thread) ||
+        [...this.unsubscribing.values()].some((p) => p.thread === thread)
+      )
+        continue;
+      const id = this.nextId++;
+      const timer = setTimeout(() => {
+        void this.dispose().catch(() => undefined);
+      }, 30_000);
+      this.unsubscribing.set(id, { thread, timer });
+      this.write({ id, method: "thread/unsubscribe", params: { threadId: thread } });
+    }
   }
   terminate(client: Client, timeoutMs: number): Promise<{ confirmed: boolean; elapsedMs: number }> {
     const began = performance.now();
@@ -244,6 +267,8 @@ export class SharedCodexServerPool implements CodexLauncher {
   }
   private closeClients(): void {
     this.disposed = true;
+    for (const request of this.unsubscribing.values()) clearTimeout(request.timer);
+    this.unsubscribing.clear();
     for (const client of [...this.clients]) this.release(client);
     this.pending.clear();
     this.early.clear();
@@ -268,6 +293,20 @@ export class SharedCodexServerPool implements CodexLauncher {
         method = m["method"];
       if (typeof method !== "string") {
         if (typeof id !== "number") continue;
+        const unload = this.unsubscribing.get(id);
+        if (unload) {
+          clearTimeout(unload.timer);
+          this.unsubscribing.delete(id);
+          const status = row(m["result"])?.["status"];
+          if (
+            m["error"] ||
+            !["unsubscribed", "notLoaded", "notSubscribed"].includes(String(status))
+          )
+            throw Error("Codex thread resource release was not confirmed");
+          this.threads.delete(unload.thread);
+          this.turns.delete(unload.thread);
+          continue;
+        }
         if (id === this.initializationId) {
           this.initialization = m;
           for (const w of this.initializationWaiters.splice(0)) w.client.push({ ...m, id: w.id });
@@ -290,6 +329,7 @@ export class SharedCodexServerPool implements CodexLauncher {
             for (const early of this.early.get(thread) ?? [])
               this.dispatchNotification(p.client, early);
             this.early.delete(thread);
+            this.unloadClosedThreads(p.client);
             continue;
           }
         }
@@ -303,6 +343,7 @@ export class SharedCodexServerPool implements CodexLauncher {
         }
         p.client.push({ ...m, id: p.localId });
         this.cancellations.get(p.client)?.();
+        this.unloadClosedThreads(p.client);
         continue;
       }
       const thread = threadId(m),
@@ -344,6 +385,7 @@ export class SharedCodexServerPool implements CodexLauncher {
     }
     client.push(message);
     this.cancellations.get(client)?.();
+    this.unloadClosedThreads(client);
   }
   private interrupt(threadId: string, turnId: string): void {
     this.write({ id: this.nextId++, method: "turn/interrupt", params: { threadId, turnId } });

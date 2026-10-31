@@ -229,3 +229,42 @@ it("interrupts a late turn-start reply without killing another active role", asy
     await f.pool.dispose();
   }
 });
+
+it("unsubscribes a finished role thread exactly once and keeps other roles available", async () => {
+  const f = fixture();
+  try {
+    await threads(f);
+    await f.a.terminateTree();
+    await f.a.terminateTree();
+    const requests = f.server.sent.filter((m) => m["method"] === "thread/unsubscribe");
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.["params"]).toEqual({ threadId: "thread-0" });
+    f.server.emit({ id: requests[0]?.["id"], result: { status: "unsubscribed" } });
+    f.server.emit({ method: "account/rateLimits/updated", params: { quota: 2 } });
+    await read(f.b);
+    expect(f.pool.closed).toBe(false);
+    expect(f.b.hasExited).toBe(false);
+    expect(f.server.terminateTree).not.toHaveBeenCalled();
+  } finally {
+    await f.pool.dispose();
+  }
+});
+it("waits for a late cancelled turn to finish before releasing its thread resources", async () => {
+  const f = fixture();
+  try {
+    await threads(f);
+    f.a.send(JSON.stringify({ id: 2, method: "turn/start", params: { threadId: "thread-0" } }));
+    const id = f.server.sent.at(-1)?.["id"];
+    const stopped = f.a.terminateTree(1000);
+    expect(f.server.sent.filter((m) => m["method"] === "thread/unsubscribe")).toHaveLength(0);
+    f.server.emit({ id, result: { turn: { id: "late" } } });
+    f.server.emit({
+      method: "turn/completed",
+      params: { threadId: "thread-0", turn: { id: "late" } },
+    });
+    await stopped;
+    expect(f.server.sent.filter((m) => m["method"] === "thread/unsubscribe")).toHaveLength(1);
+  } finally {
+    await f.pool.dispose();
+  }
+});
