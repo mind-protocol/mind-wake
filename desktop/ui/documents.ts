@@ -1,5 +1,6 @@
 import { collectionKey, documentLabel, libraryLabel, modificationAge, visibleDocuments, type LibraryEntry } from './document-library.js';
 import { loadDocumentImages, sanitizeDocument } from './document-images.js';
+import { DocumentScopeState, documentScopeLabel, localDocumentScope } from './document-scope.js';
 type Invoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
 export function initialDocument(entries: readonly LibraryEntry[], saved?: string): string | undefined {
   if (saved) return saved;
@@ -72,6 +73,9 @@ export function initDocuments(invoke: Invoke): void {
   const byId=<T extends HTMLElement>(id:string):T=>document.getElementById(id) as T;
   const host=byId<HTMLElement>('view-documents'),frame=byId<HTMLIFrameElement>('document-frame');
   const scope=byId<HTMLSelectElement>('document-scope'),collection=byId<HTMLSelectElement>('document-collection');
+  let savedScope:unknown=scope.value;
+  try{savedScope=localStorage.getItem('mind-wake.reader-scope')??scope.value;}catch{/* Optional storage. */}
+  const scopeState=new DocumentScopeState(savedScope);scope.value=scopeState.current;
   const search=byId<HTMLInputElement>('document-search'),format=byId<HTMLSelectElement>('document-format');
   const files=byId<HTMLElement>('document-files'),status=byId<HTMLElement>('document-status');
   const location=byId<HTMLElement>('document-location'),title=byId<HTMLElement>('document-title');
@@ -89,7 +93,8 @@ export function initDocuments(invoke: Invoke): void {
   queueList.style.cssText='max-height:130px;overflow:auto;margin:7px 0;padding-left:20px;';queueDetails.append(queueSummary,queueList);recent.type='button';recent.textContent='Revenir aux récents';recent.style.cssText='font:inherit;padding:5px 8px;margin-left:auto;';queueHost.append(queueDetails,recent);host.insertBefore(queueHost,host.querySelector('.document-workspace'));
   const requestFile=(file:ContextFile):void=>{window.dispatchEvent(new CustomEvent('wake-open-document',{detail:{scope:file.scope,relative:file.relative}}));};
   function renderQueue():void{
-    queueHost.hidden=!contextQueue.length;queueHost.style.display=contextQueue.length?'flex':'none';queueSummary.textContent='Fichiers évoqués · '+contextQueue.length;recent.hidden=!contextMode;queueList.replaceChildren();
+    const visible=scopeState.local!==null&&contextQueue.length>0;
+    queueHost.hidden=!visible;queueHost.style.display=visible?'flex':'none';queueSummary.textContent='Fichiers évoqués · '+contextQueue.length;recent.hidden=!contextMode;queueList.replaceChildren();
     for(const file of contextQueue){const item=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent=(file.scope==='agent'?'Atelier':'Projet Wake')+' / '+file.relative;button.style.cssText='font:inherit;text-align:left;padding:4px;';button.addEventListener('click',()=>{contextMode=true;renderQueue();requestFile(file);});item.append(button);queueList.append(item);}
   }
   recent.addEventListener('click',()=>{contextMode=false;renderQueue();pagination();});
@@ -102,14 +107,14 @@ export function initDocuments(invoke: Invoke): void {
   const feedback=(error:unknown):void=>{status.textContent='Lecture indisponible : '+String(error);};
   const shown=():LibraryEntry[]=>visibleDocuments(entries,collection.value,search.value,format.value);
   const remember=():void=>{
-    if(renderedRelative&&frame.contentWindow)positions[renderedScope+':'+renderedRelative]=frame.contentWindow.scrollY;
+    if(localDocumentScope(renderedScope)&&renderedRelative&&frame.contentWindow)positions[renderedScope+':'+renderedRelative]=frame.contentWindow.scrollY;
     try{localStorage.setItem('mind-wake.reader-positions',JSON.stringify(positions));if(current)localStorage.setItem('mind-wake.reader-current.'+documentScope,current);}catch{/* Keep working without storage. */}
   };
   function setLibrary(open:boolean):void{
     library.hidden=!open;host.dataset['library']=open?'open':'closed';explore.setAttribute('aria-expanded',String(open));
   }
   function pagination():void{
-    const list=contextMode?contextQueue:shown().map(entry=>({...entry,scope:scope.value}));
+    const list=scopeState.local===null?[]:contextMode?contextQueue:shown().map(entry=>({...entry,scope:scope.value}));
     const index=list.findIndex(e=>e.relative===current&&e.scope===scope.value);
     const before=index>0?list[index-1]:undefined,after=index<0?list[0]:list[index+1];
     previous.dataset['scope']=before?.scope??scope.value;next.dataset['scope']=after?.scope??scope.value;
@@ -132,8 +137,8 @@ export function initDocuments(invoke: Invoke): void {
   setInterval(refreshFileAges,60_000);
   function renderFiles():void{
     const list=shown();files.replaceChildren();
-    byId('document-count').textContent=list.length+' document'+(list.length===1?'':'s')+' · plus récents en premier'+(truncated?' · catalogue partiel':'');
-    if(!list.length){const empty=document.createElement('p');empty.className='reader-empty';empty.textContent='Aucun document ne correspond. Essayez un autre projet ou une autre recherche.';files.append(empty);}
+    byId('document-count').textContent=scopeState.local===null?'En attente du dépôt':list.length+' document'+(list.length===1?'':'s')+' · plus récents en premier'+(truncated?' · catalogue partiel':'');
+    if(!list.length){const empty=document.createElement('p');empty.className='reader-empty';empty.textContent=scopeState.local===null?'Son dépôt n’est pas encore connecté.':'Aucun document ne correspond. Essayez un autre projet ou une autre recherche.';files.append(empty);}
     for(const entry of list){
       const button=document.createElement('button');button.type='button';button.className='reader-file';button.title=entry.relative;
       button.setAttribute('aria-current',String(entry.relative===current));
@@ -148,7 +153,7 @@ export function initDocuments(invoke: Invoke): void {
   }
   function breadcrumbs():void{
     location.replaceChildren();
-    const home=document.createElement('button');home.type='button';home.textContent=scope.value==='agent'?'Mon atelier':'Projet Wake';
+    const home=document.createElement('button');home.type='button';home.textContent=documentScopeLabel(scopeState.current);
     home.addEventListener('click',()=>{collection.value='';search.value='';renderFiles();setLibrary(true);});location.append(home);
     if(!current)return;
     const key=collectionKey(current),part=document.createElement('button');part.type='button';part.textContent=libraryLabel(key);
@@ -158,10 +163,12 @@ export function initDocuments(invoke: Invoke): void {
     const separator2=document.createElement('span');separator2.textContent='›';location.append(separator2,leaf);
   }
   async function loadCatalog(restore=false):Promise<void>{
-    const ticket=++catalogGeneration,targetScope=scope.value;status.textContent='Ouverture de la bibliothèque…';
+    const ticket=++catalogGeneration,scopeTicket=scopeState.capture(),targetScope=scopeState.local;
+    if(targetScope===null){showPendingScope();return;}
+    status.textContent='Ouverture de la bibliothèque…';
     try{
       const data=await invoke('document_browse',{scope:targetScope,relative:'',read:false,recursive:true}) as {entries:LibraryEntry[];truncated?:boolean};
-      if(ticket!==catalogGeneration||targetScope!==scope.value)return;
+      if(ticket!==catalogGeneration||!scopeState.accepts(scopeTicket))return;
       entries=data.entries;truncated=Boolean(data.truncated);
       window.dispatchEvent(new CustomEvent('wake-document-catalog',{detail:{scope:targetScope,entries,truncated}}));
       const selected=collection.value;collection.replaceChildren(new Option('Tous les projets',''));
@@ -173,13 +180,14 @@ export function initDocuments(invoke: Invoke): void {
         const initial=entries.find(e=>e.relative===saved)??entries.find(e=>e.relative==='artifacts/projets.html')??shown()[0];
         if(initial)await open(initial.relative);else setLibrary(true);
       }
-    }catch(error){if(ticket===catalogGeneration)feedback(error);}
+    }catch(error){if(ticket===catalogGeneration&&scopeState.accepts(scopeTicket))feedback(error);}
   }
   async function open(relative:string,record=true,anchor='',historyIndex?:number):Promise<void>{
-    remember();const ticket=++generation,targetScope=scope.value;pendingOpen=true;status.textContent='Ouverture du document…';
+    const targetScope=scopeState.local;if(targetScope===null){showPendingScope();return;}
+    remember();const ticket=++generation,scopeTicket=scopeState.capture();pendingOpen=true;status.textContent='Ouverture du document…';
     try{
       const data=await invoke('document_browse',{scope:targetScope,relative,read:true}) as {text:string;format:string};
-      if(ticket!==generation||targetScope!==scope.value)return;
+      if(ticket!==generation||!scopeState.accepts(scopeTicket))return;
       current=relative;documentScope=targetScope;
       if(record){history=history.slice(0,position+1);if(history.at(-1)!==relative)history.push(relative);position=history.length-1;}
       else if(historyIndex!==undefined)position=historyIndex;
@@ -190,7 +198,7 @@ export function initDocuments(invoke: Invoke): void {
       const style=document.createElement('style');style.textContent='html{color-scheme:light;scroll-padding-top:20px}body{font:15px/1.75 system-ui;margin:28px;color:#203f34;overflow-wrap:anywhere}pre{overflow:auto;padding:16px;background:#8882}table{border-collapse:collapse}td,th{border:1px solid #8886;padding:8px}a{color:#238967}img{max-width:100%}';parsed.head.prepend(style);
       title.textContent=parsed.querySelector('h1')?.textContent??documentLabel(entries.find(e=>e.relative===relative)??{name:relative.split('/').at(-1)??relative,relative});
       frame.onload=()=>{
-        if(ticket!==generation)return;
+        if(ticket!==generation||!scopeState.accepts(scopeTicket))return;
         const doc=frame.contentDocument;if(!doc)return;
         void loadDocumentImages(images,doc,targetScope,invoke,()=>ticket===generation&&targetScope===scope.value&&frame.contentDocument===doc);
         renderedRelative=relative;renderedScope=targetScope;
@@ -204,8 +212,9 @@ export function initDocuments(invoke: Invoke): void {
         outline.disabled=outline.options.length<=1;
         const stored=positions[targetScope+':'+relative];
         if(anchor)doc.getElementById(anchor)?.scrollIntoView();else if(typeof stored==='number'&&Number.isFinite(stored))frame.contentWindow?.scrollTo(0,stored);
-        doc.addEventListener('scroll',()=>{positions[targetScope+':'+relative]=doc.defaultView?.scrollY??0;},{passive:true});
+        doc.addEventListener('scroll',()=>{if(ticket===generation&&scopeState.accepts(scopeTicket)&&frame.contentDocument===doc)positions[targetScope+':'+relative]=doc.defaultView?.scrollY??0;},{passive:true});
         doc.addEventListener('click',event=>{
+          if(ticket!==generation||!scopeState.accepts(scopeTicket)||frame.contentDocument!==doc)return;
           const link=(event.target as Element|null)?.closest('a');if(!link)return;event.preventDefault();const href=link.getAttribute('href')??'';
           try{
             if(href.startsWith('#')){doc.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();return;}
@@ -219,7 +228,7 @@ export function initDocuments(invoke: Invoke): void {
       frame.srcdoc='<!doctype html>'+parsed.documentElement.outerHTML;
       breadcrumbs();renderFiles();try{localStorage.setItem(stateKey(),current);}catch{/* Storage is optional. */}
       status.textContent=data.format==='html'?'Page HTML · lecture seule':'';
-    }catch(error){if(ticket===generation)feedback(error);}
+    }catch(error){if(ticket===generation&&scopeState.accepts(scopeTicket))feedback(error);}
     finally{if(ticket===generation)pendingOpen=false;}
   }
   explore.addEventListener('click',()=>setLibrary(Boolean(library.hidden)));
@@ -232,15 +241,31 @@ export function initDocuments(invoke: Invoke): void {
   previous.addEventListener('click',()=>pageClick(previous));
   next.addEventListener('click',()=>pageClick(next));
   byId('document-latest').addEventListener('click',()=>{contextMode=false;renderQueue();const first=shown()[0];if(first)void open(first.relative);});
-  scope.addEventListener('change',()=>{remember();generation++;catalogGeneration++;pendingOpen=false;current='';renderedRelative='';entries=[];history=[];position=-1;collection.value='';search.value='';frame.srcdoc='';outline.replaceChildren(new Option('Sommaire indisponible',''));outline.disabled=true;void loadCatalog(true);});
-  byId('document-refresh').addEventListener('click',()=>{void (async()=>{await loadCatalog();if(current)await open(current,false);})().catch(feedback);});
+  function showPendingScope():void{
+    title.textContent='Atelier d’Aurore';status.textContent='Pas encore connecté à son dépôt.';
+    breadcrumbs();renderFiles();renderQueue();setLibrary(true);
+  }
+  function changeScope(value:unknown,restore:boolean,keepContext=false):void{
+    remember();scopeState.select(value);scope.value=scopeState.current;
+    generation++;catalogGeneration++;pendingOpen=false;current='';documentScope=scopeState.current;renderedRelative='';
+    entries=[];history=[];position=-1;truncated=false;contextMode=keepContext;collection.replaceChildren(new Option('Tous les projets',''));search.value='';
+    frame.onload=null;frame.srcdoc='';outline.replaceChildren(new Option('Sommaire indisponible',''));outline.disabled=true;
+    const pending=scopeState.local===null;
+    collection.disabled=pending;search.disabled=pending;format.disabled=pending;
+    byId<HTMLButtonElement>('document-latest').disabled=pending;byId<HTMLButtonElement>('document-refresh').disabled=pending;
+    title.textContent=documentScopeLabel(scopeState.current);renderFiles();breadcrumbs();renderQueue();
+    try{localStorage.setItem('mind-wake.reader-scope',scopeState.current);}catch{/* Optional storage. */}
+    void loadCatalog(restore);
+  }
+  scope.addEventListener('change',()=>changeScope(scope.value,true));
+  byId('document-refresh').addEventListener('click',()=>{const scopeTicket=scopeState.capture();void (async()=>{await loadCatalog();if(scopeState.accepts(scopeTicket)&&current)await open(current,false);})().catch(error=>{if(scopeState.accepts(scopeTicket))feedback(error);});});
   byId('tab-documents').addEventListener('click',()=>{if(!entries.length)void loadCatalog(true);else setLibrary(Boolean(library.hidden));});
   window.addEventListener('beforeunload',remember);
   window.addEventListener('wake-open-document',event=>{
     const data=(event as CustomEvent<{scope?:string;relative?:string}>).detail;
     if(!data||!['agent','project'].includes(data.scope??'')||typeof data.relative!=='string')return;
     setLibrary(false);
-    if(scope.value!==data.scope){remember();scope.value=data.scope!;current='';renderedRelative='';history=[];position=-1;void loadCatalog();}
+    if(scope.value!==data.scope)changeScope(data.scope,false,contextMode);
     void open(data.relative);
   });
   window.addEventListener('wake-document-queue',event=>{
@@ -248,5 +273,5 @@ export function initDocuments(invoke: Invoke): void {
     const seen=new Set<string>();contextQueue=data.entries.filter(file=>{if(!file||!['agent','project'].includes(file.scope)||typeof file.relative!=='string'||typeof file.name!=='string')return false;const key=file.scope+':'+file.relative.toLowerCase();if(seen.has(key))return false;seen.add(key);return true;});
     contextMode=Boolean(contextQueue.length);renderQueue();pagination();
   });
-  setLibrary(false);void loadCatalog(true);
+  setLibrary(false);changeScope(scopeState.current,true);
 }
