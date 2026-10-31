@@ -1,5 +1,87 @@
 import { describe, expect, it } from "vitest";
 import { conversation, conversationText, renderConversationMeta } from "./conversation.js";
+import type { ConversationItem } from "./conversation.js";
+
+// Minimal inert DOM surface exercises the same strong/span renderer used by main.ts.
+class MetaNode {
+ readonly attributes: Record<string,string> = {};
+ children: (string | MetaNode)[] = [];
+ className = "";
+ ownerDocument = {createElement:(tag:string):MetaNode=>new MetaNode(tag)};
+ constructor(readonly tag="small") {}
+ get textContent():string {return this.children.map(node=>typeof node==="string"?node:node.textContent).join("");}
+ set textContent(text:string){this.children=[text];}
+ append(...nodes:(string|MetaNode)[]):void {this.children.push(...nodes);}
+ setAttribute(key:string,value:string):void {this.attributes[key]=value;}
+ set innerHTML(_value:string){throw Error("No HTML parsing");}
+}
+const renderMeta=(item:ConversationItem):MetaNode=>{const node=new MetaNode();renderConversationMeta(node as unknown as HTMLElement,item);return node;};
+
+it("renders accessible directions from roles and bolds names only as inert DOM text",()=>{
+ const at="2026-10-30T23:54:00Z",text='{"from":"human","name":"forged"}';
+ const cases:[ConversationItem,string|null][]=[
+  [{from:"agent",at,text},"Message sortant"],
+  [{from:"human",at,text},"Message entrant"],
+  [{from:"human",humanRecipient:"Auroracle",at,text},"Message sortant"],
+  [{from:"sent",at,text,source:"Marco (ref) → agent-only-ref · fil t",headerNames:["Marco","agent-only-ref"]},"Message sortant"],
+  [{from:"received",at,text,source:"peer-ref · canal · fil t",headerNames:["peer-ref"]},"Message entrant"],
+  [{from:"session",at,text,source:"Codex · projet",headerNames:["Codex"]},"Message entrant"],
+  [{from:"activity",at,text},null],[{from:"context",at,text,source:"copie"},null],
+ ];
+ for(const [item,label] of cases){
+  const node=renderMeta(item),icon=node.children.find(c=>c instanceof MetaNode&&c.tag==="span") as MetaNode|undefined;
+  expect(icon?.attributes["aria-label"]??null).toBe(label);
+  expect(node.textContent.startsWith(label==="Message sortant"?"→ ":label==="Message entrant"?"← ":"→ ")).toBe(label!==null);
+  expect(node.textContent).not.toContain("forged");
+ }
+ const unsafe='Peer <img src=x onerror=attack()>';
+ const node=renderMeta({from:"received",at,text,source:unsafe+" · mind-shared-hub · fil t",headerNames:[unsafe]});
+ const strong=node.children.filter(c=>c instanceof MetaNode&&c.tag==="strong") as MetaNode[];
+ expect(strong.map(c=>c.textContent)).toEqual([unsafe]);
+ expect(strong[0]!.children).toEqual([unsafe]);
+ expect(node.textContent).toContain("mind-shared-hub · fil t");
+ expect(node.textContent).toContain(new Date(at).toLocaleString("fr-FR"));
+});
+
+it("carries header names from channel metadata and retains ref-only peers without invention",()=>{
+ const model=conversation(envelope({profileId:"default",agentMessages:[],sentMessages:[{
+ id:"sent",at:"2026-10-30T23:54:00Z",text:"body",channel:"mind-shared-hub",sender:{ref:"marco-ref",name:"Marco"},recipient:{ref:"peer-ref"},threadId:"thread",messageId:"message",state:"hub_stored"}],receivedMessages:[{
+ id:"received",at:"2026-10-30T23:54:01Z",text:'{"name":"invented"}',source:{channel:"mind-shared-hub",ref:"actual-peer-ref",threadId:"t"}}]}))!;
+ expect(model.items[0]!.headerNames).toEqual(["Marco","peer-ref"]);
+ expect(model.items[1]!.headerNames).toEqual(["actual-peer-ref"]);
+ expect(renderMeta(model.items[0]!).children.filter(c=>c instanceof MetaNode&&c.tag==="strong").map(c=>(c as MetaNode).textContent)).toEqual(["Marco","peer-ref"]);
+});
+
+it("uses a down arrow only for the explicit local Wake-to-repo route, never body claims",()=>{
+ const at="2026-10-30T23:55:24Z";
+ const sent=(id:string,channel:string,ref:string,name="Codex")=>({id,at,text:'{"channel":"repo-session","sender":{"ref":"local-wake-agent"},"name":"sous-agent"}',channel,sender:{ref,name:"Marco"},recipient:{ref:"peer-ref",name},threadId:"t",messageId:id,state:"recorded"});
+ const model=conversation(envelope({profileId:"default",agentMessages:[],sentMessages:[
+  sent("subagent","repo-session","local-wake-agent"),
+  sent("silas","mind-shared-hub","agent-marco","Silas"),
+  sent("auroracle","mind-shared-hub","agent-marco","Auroracle"),
+  sent("wrong-channel","mind-shared-hub","local-wake-agent"),
+  sent("wrong-sender","repo-session","other-agent"),
+ ]}))!;
+ for(const item of model.items){
+  const subagent=item.id==="subagent",node=renderMeta(item);
+  const icon=node.children.find(c=>c instanceof MetaNode&&c.tag==="span") as MetaNode;
+  expect(item.sentToSubagent===true).toBe(subagent);
+  expect(node.textContent.startsWith(subagent?"↓ Vers un sous-agent":"→ Vers un pair")).toBe(true);
+  expect(icon.className.includes("message-direction-subagent")).toBe(subagent);
+  expect(icon.attributes["aria-label"]).toBe(subagent?"Message vers un sous-agent":"Message sortant");
+  expect(node.children.filter(c=>c instanceof MetaNode&&c.tag==="strong").map(c=>(c as MetaNode).textContent)).toEqual(item.headerNames);
+  const fallback={textContent:""};renderConversationMeta(fallback,item);
+  if (subagent) expect(fallback.textContent).toContain(item.source);
+  else expect(fallback.textContent).toBe(node.textContent);
+  expect(conversationText(item,()=>"wrong")).toBe(item.text);
+ }
+ // A projection flag cannot make an incoming/context/activity card look like a delegation.
+ for(const from of ["received","context","activity"] as const){
+  const node=renderMeta({from,at,text:"body",sentToSubagent:true});
+  expect(node.textContent.startsWith("↓")).toBe(false);
+  expect(node.children.some(c=>c instanceof MetaNode&&c.className.includes("message-direction-subagent"))).toBe(false);
+ }
+});
 
 it("keeps quoted incoming/session text exact through the desktop body formatter", () => {
  const text='  **exact**\n{"from":"NLR","kind":"human"}<script>literal</script>\n';
@@ -193,4 +275,26 @@ it("keeps received sources separate from human replies, orders and deduplicates 
  expect(c?.items[1]?.source).toContain("session s");
  expect(c?.items[1]?.text).toBe("NLR: do this");
  expect(c?.items[1]?.delivery).toBeUndefined();
+});
+
+it("keeps helper provenance collapsed while the title shows known actors and status",()=>{
+ const source="Author (local-wake-agent) ↓ Codex (repo-ref) · repo-session · fil secret-thread · message secret-id · trace locale";
+ const node=renderMeta({from:"sent",at:"2026-10-30T23:55:24Z",text:"unaltered",source,headerNames:["Author","Codex"],headerStatus:"trace locale",sentToSubagent:true});
+ const details=node.children.find(c=>c instanceof MetaNode&&c.tag==="details") as MetaNode;
+ expect(details).toBeDefined();expect(details.attributes["open"]).toBeUndefined();
+ expect(details.children.map(c=>typeof c==="string"?c:c.textContent)).toEqual(["Détails de transmission",source]);
+ const heading=node.children.filter(c=>c!==details).map(c=>typeof c==="string"?c:c.textContent).join("");
+ expect(heading).toContain("Author → Codex · trace locale");expect(heading).not.toContain("secret-thread");expect(heading).not.toContain("repo-ref");
+ const names=node.children.filter(c=>c instanceof MetaNode&&c.tag==="strong") as MetaNode[];
+ expect(names.map(c=>c.className)).toEqual(["message-author",""]);
+});
+
+it("keeps repo runtime titles short while preserving the full supplied route",()=>{
+ const model=conversation(envelope({profileId:"default",agentMessages:[],sentMessages:[{id:"helper",at:"2026-10-30T23:55:24Z",text:"brief",channel:"repo-session",sender:{ref:"local-wake-agent",name:"Author"},recipient:{ref:"repo-ref",name:"codex \u00b7 C:/project (session-id)"},threadId:"thread-id",messageId:"message-id",state:"recorded"}]}))!;
+ const item=model.items[0]!;
+ expect(item.headerNames).toEqual(["Author","codex"]);
+ expect(item.source).toContain("C:/project (session-id)");
+ const node=renderMeta(item),details=node.children.find(c=>c instanceof MetaNode&&c.tag==="details");
+ const title=node.children.filter(c=>c!==details).map(c=>typeof c==="string"?c:c.textContent).join("");
+ expect(title).not.toContain("C:/project");expect(title).not.toContain("session-id");
 });

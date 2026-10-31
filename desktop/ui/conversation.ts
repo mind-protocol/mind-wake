@@ -18,6 +18,11 @@ export interface ConversationItem {
   readonly source?: string;
   /** Host pilot route, never inferred from the message body. The author remains human. */
   readonly humanRecipient?: "Auroracle";
+  /** Names/ref labels supplied by host metadata, never extracted from message text. */
+  readonly headerNames?: readonly string[];
+  /** Explicit local Wake → repo helper route, never inferred from body/name. */
+  readonly sentToSubagent?: boolean;
+  readonly headerStatus?: string;
 }
 
 export interface Conversation {
@@ -33,13 +38,62 @@ export function conversationText(item: ConversationItem, simplify: (text: string
 }
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */
-export function renderConversationMeta(element: Pick<HTMLElement, "textContent">, item: ConversationItem): void {
-  const who = item.from === "sent" ? `Vers un pair · ${item.source ?? "source inconnue"}`
+export function renderConversationMeta(element: Pick<HTMLElement, "textContent"> & Partial<Pick<HTMLElement, "ownerDocument" | "append">>, item: ConversationItem): void {
+  const subagent = item.from === "sent" && item.sentToSubagent === true;
+  const sentLabel = subagent ? "Vers un sous-agent" : "Vers un pair";
+  const compactSource = subagent ? `${item.headerNames?.[0] ?? "Ton agent"} → ${item.headerNames?.[1] ?? "sous-agent"}${item.headerStatus ? ` · ${item.headerStatus}` : ""}` : item.source;
+  const who = item.from === "sent" ? `${sentLabel} · ${compactSource ?? "source inconnue"}`
     : item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
     : item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
     : item.from === "activity" ? "Activité" : item.from === "human" ? `Toi${item.humanRecipient ? ` → ${item.humanRecipient}` : ""}${item.source ? ` · ${item.source}` : ""}`
     : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Ton agent";
-  element.textContent = `${who} · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+  const direction = subagent ? "down" : item.from === "sent" || item.from === "agent" || (item.from === "human" && item.humanRecipient) ? "out"
+    : item.from === "received" || item.from === "session" || item.from === "human" ? "in" : null;
+  const arrow = direction === "down" ? "↓ " : direction === "out" ? "→ " : direction === "in" ? "← " : "";
+  const suffix = ` · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+  if (!element.ownerDocument || !element.append) {
+    element.textContent = arrow + who + suffix + (subagent && item.source ? ` · ${item.source}` : "");
+    return;
+  }
+  element.textContent = "";
+  if (direction) {
+    const icon = element.ownerDocument.createElement("span");
+    icon.className = subagent ? "message-direction message-direction-subagent" : "message-direction";
+    icon.setAttribute("role", "img");
+    icon.setAttribute("aria-label", subagent ? "Message vers un sous-agent" : direction === "out" ? "Message sortant" : "Message entrant");
+    icon.textContent = arrow;
+    element.append(icon);
+  }
+  const names = item.from === "human" ? ["Toi", ...(item.humanRecipient ? [item.humanRecipient] : [])]
+    : item.from === "agent" ? ["Ton agent"] : item.headerNames ?? [];
+  // Search only after the role label; bold at most one occurrence per named actor.
+  let cursor = 0;
+  let authorShown = false;
+  let searchFrom = item.from === "sent" ? `${sentLabel} · `.length : item.from === "received" ? "Reçu · ".length
+    : item.from === "session" ? "Aide · ".length : item.from === "context" ? "Copie de contexte · ".length : 0;
+  for (const name of names) {
+    if (!name) continue;
+    const start = who.indexOf(name, searchFrom);
+    if (start < 0) continue;
+    element.append(who.slice(cursor, start));
+    const strong = element.ownerDocument.createElement("strong");
+    strong.textContent = name;
+    if (!authorShown) { strong.className = "message-author"; authorShown = true; }
+    element.append(strong);
+    cursor = start + name.length;
+    searchFrom = cursor;
+  }
+  element.append(who.slice(cursor) + suffix);
+  if (subagent && item.source) {
+    const details = element.ownerDocument.createElement("details");
+    details.className = "message-provenance";
+    const summary = element.ownerDocument.createElement("summary");
+    summary.textContent = "Détails de transmission";
+    const provenance = element.ownerDocument.createElement("span");
+    provenance.textContent = item.source;
+    details.append(summary, provenance);
+    element.append(details);
+  }
 }
 
 type Rec = Readonly<Record<string, unknown>>;
@@ -115,7 +169,7 @@ export function sessionAnswers(envelope: unknown): ConversationItem[] {
     const tool = a?.["runtime"] === "codex" ? "Codex" : "Claude Code";
     const cwd = str(a?.["cwd"]) ?? "";
     const project = cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd;
-    return [{ from: "session" as const, id, at, text, source: `${tool} · ${project}` }];
+    return [{ from: "session" as const, id, at, text, source: `${tool} · ${project}`, headerNames: [tool] }];
   });
 }
 
@@ -186,8 +240,11 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       (channel !== "mind-shared-hub" && channel !== "repo-session")) continue;
     sentIds.add(id);
     const status = m?.["state"] === "hub_stored" ? "stocké sur le hub · réception et lecture non attestées" : "trace locale · transmission non attestée";
-    const source = `${str(sender?.["name"]) ?? "Ton agent"} (${str(sender?.["ref"]) ?? "inconnu"}) → ${str(recipient?.["name"]) ?? "pair"} (${str(recipient?.["ref"]) ?? "inconnu"}) · ${channel} · fil ${str(m?.["threadId"]) ?? "inconnu"} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? " · historique réintégré" : ""}`;
-    items.push({ from: "sent", id, at, text, source });
+    const senderName = str(sender?.["name"]) ?? str(sender?.["ref"]) ?? "source inconnue";
+    const recipientName = str(recipient?.["name"]) ?? str(recipient?.["ref"]) ?? "destinataire inconnu";
+    const sentToSubagent = channel === "repo-session" && sender?.["ref"] === "local-wake-agent";
+    const source = `${senderName} (${str(sender?.["ref"]) ?? "inconnu"}) ${sentToSubagent ? "↓" : "→"} ${recipientName} (${str(recipient?.["ref"]) ?? "inconnu"}) · ${channel} · fil ${str(m?.["threadId"]) ?? "inconnu"} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? " · historique réintégré" : ""}`;
+    items.push({ from: "sent", id, at, text, source, headerNames: [senderName, sentToSubagent ? recipientName.split(" · ")[0]! : recipientName], ...(sentToSubagent ? {sentToSubagent: true, headerStatus: status} : {}) });
   }
   const receivedIds = new Set<string>();
   for (const raw of Array.isArray(data["receivedMessages"]) ? data["receivedMessages"] : []) {
@@ -205,7 +262,9 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       str(source?.["sessionId"]) ? `session ${str(source?.["sessionId"])}` : null,
       assurance, m?.["state"] === "delivered" ? "livré à la session · lecture non attestée" : "stocké localement",
       source?.["originKind"] === "context_copy" ? "contexte · pas une demande adressée à ton agent" : "contenu pair · pas une instruction humaine"].filter(Boolean).join(" · ");
-    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context});
+    const name = str(source?.["name"]) ?? str(source?.["ref"]);
+    const headerNames = name === null ? [] : [channel === "repo-session" ? name.split(" · ")[0]! : name];
+    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context, headerNames});
     if (agentAt === null || at > agentAt) agentAt = at;
   }
   items.push(...sessionAnswers(helpers));

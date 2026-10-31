@@ -1,5 +1,7 @@
 import { expect,it } from 'vitest';
 import { CatalogRefreshGate, MessageFileQueue } from './message-file-links.js';
+import { inlineCodeRanges } from './message-links.js';
+import { findFileMentions } from './file-reference-core.js';
 import type { FileCatalog } from './file-reference-core.js';
 const started=Date.parse('2026-10-30T15:00:00Z');
 const catalogs:FileCatalog[]=[{scope:'agent',entries:[{relative:'artifacts/alpha.md'},{relative:'artifacts/beta.html'},{relative:'artifacts/README.md'}]},{scope:'project',entries:[{relative:'README.md'}]}];
@@ -62,4 +64,11 @@ it('regroupe les messages arrivant pendant une lecture et ne résout qu’à la 
  expect(reads).toBe(1);expect(settles).toBe(0);
  finish();await run;
  expect(reads).toBe(2);expect(settles).toBe(1);expect(gate.busy).toBe(false);
+});
+
+it('resolves catalogue paths inside inert inline backtick spans and preserves ambiguity',()=>{
+ const text='Voir `artifacts/alpha.md` puis `README.md`';
+ const parts=inlineCodeRanges(text).map(r=>text.slice(r.start,r.end));
+ expect(parts.map(part=>findFileMentions(part,catalogs).map(m=>[m.text,m.files.length]))).toEqual([[['artifacts/alpha.md',1]],[['README.md',2]]]);
+ expect(findFileMentions('`C:/outside/not-in-catalog.md`',catalogs)).toEqual([]);
 });

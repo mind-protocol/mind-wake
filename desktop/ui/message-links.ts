@@ -53,12 +53,42 @@ export function messageLinks(text: string): MessageLink[] {
   return result.sort((a, b) => a.start - b.start);
 }
 
-/** Decorate only message text; file buttons, code, previews and editors stay untouched. */
-export function decorateMessageLinks(root: HTMLElement, invoke: Invoke): void {
+/** Inline backticks stay literal; fenced and multiline code are excluded. */
+export function inlineCodeRanges(text: string): {start:number;end:number}[] {
+  const fences = [...text.matchAll(/(?:^|\n)[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]*\1[^\n]*(?:\n|$)|$)/g)]
+    .map(match => ({start:match.index,end:match.index+match[0].length}));
+  return [...text.matchAll(/(?<!`)(`{1,2})(?!`)([^\n]*?)\1(?!`)/g)]
+    .filter(match => match[2] && !fences.some(fence => match.index < fence.end && match.index + match[0].length > fence.start))
+    .map(match => ({start:match.index,end:match.index+match[0].length}));
+}
+
+/** Inert spans retain every marker and allow catalogue file decoration inside. */
+export function decorateInlineCode(root: HTMLElement): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes: Text[] = [];
   let node: Node | null;
   while ((node = walker.nextNode())) {
-    if (node.parentElement && !node.parentElement.closest('a,button,code,pre,textarea,input,select,script,style,[contenteditable],[data-file-reference],.message-images')) nodes.push(node as Text);
+    if (node.parentElement && !node.parentElement.closest('a,button,code,pre,textarea,input,select,script,style,[contenteditable],[data-file-reference],.message-inline-code,.message-images')) nodes.push(node as Text);
+  }
+  for (const node of nodes) {
+    const text = node.textContent ?? '', ranges = inlineCodeRanges(text);
+    if (!ranges.length) continue;
+    const fragment = document.createDocumentFragment(); let end = 0;
+    for (const range of ranges) {
+      fragment.append(document.createTextNode(text.slice(end, range.start)));
+      const span = document.createElement('span'); span.className = 'message-inline-code';
+      span.textContent = text.slice(range.start, range.end); fragment.append(span); end = range.end;
+    }
+    fragment.append(document.createTextNode(text.slice(end))); node.replaceWith(fragment);
+  }
+}
+
+/** Decorate only message text; file buttons, code, previews and editors stay untouched. */
+export function decorateMessageLinks(root: HTMLElement, invoke: Invoke): void {
+  decorateInlineCode(root);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), nodes: Text[] = [];
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && !node.parentElement.closest('a,button,code,pre,textarea,input,select,script,style,[contenteditable],[data-file-reference],.message-inline-code,.message-images')) nodes.push(node as Text);
   }
   for (const textNode of nodes) {
     const text = textNode.textContent ?? '', links = messageLinks(text); if (!links.length) continue;

@@ -99,7 +99,7 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   function link(mention:{text:string;files:KnownFile[]}):HTMLElement{
     const wrapper=document.createElement('span');wrapper.dataset['fileReference']='true';
     const button=document.createElement('button');button.type='button';button.textContent=mention.text;
-    button.className='message-file-link';button.style.cssText='font:inherit;line-height:inherit;padding:0 3px;border:0;border-radius:3px;background:#eaf3e6;color:#23674f;text-decoration:underline;text-underline-offset:3px;cursor:pointer;';
+    button.className='message-file-link';button.style.cssText='font:inherit;line-height:inherit;padding:0 3px;border:0;border-radius:3px;background:#fff0df;color:#99500d;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;';
     button.title=mention.files.length===1?'Ouvrir dans le lecteur : '+mention.files[0]!.relative:'Plusieurs fichiers correspondent ; choisir le bon document';
     const label=document.createElement('span');
     if(mention.files.length>1){label.textContent=' ('+mention.files.length+' fichiers)';label.style.fontSize='.8em';}

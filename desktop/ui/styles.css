@@ -720,6 +720,11 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
   background: color-mix(in srgb, var(--human-peer-message) 12%, var(--surface, var(--bg)));
 }
 .messages li[data-from="human"][data-recipient="auroracle"] > small { color: var(--human-peer-message); }
+
+.messages li > small strong { font-weight: 700; color: inherit; }
+.message-direction { display: inline; font-weight: 600; margin-right: .2em; }
+/* Only the explicitly projected Wake → repo helper route gets the smaller body. */
+#chat li[data-from="sent"]:has(.message-direction-subagent) .conversation-body > p { font-size: 12px; }
 .message-images { display: grid; gap: 12px; margin-top: 10px; white-space: normal; }
 .message-images figure { margin: 0; width: min(100%, 22rem); min-width: 0; }
 .message-images button { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 5px; background: #f0f2ed; border: 1px solid #d7dfd5; border-radius: 8px; cursor: zoom-in; overflow: hidden; }
@@ -733,3 +738,9 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
 .message-image-dialog button { align-self: flex-end; flex: 0 0 auto; }
 .message-image-dialog img { min-height: 0; width: 100%; flex: 1 1 auto; object-fit: contain; }
 .message-image-dialog p, .message-image-dialog small { margin: 0; overflow-wrap: anywhere; flex: 0 0 auto; }
+
+.messages li > small .message-author { font-size: 13px; font-weight: 700; }
+.message-provenance { display: block; margin-top: 4px; font-size: 10px; font-weight: 400; overflow-wrap: anywhere; }
+.message-provenance summary { cursor: pointer; width: fit-content; }
+.message-inline-code { color: #7751a4; background: #f4eef9; border-radius: 3px; }
+@media (prefers-color-scheme: dark) { .message-inline-code { color: #d7b6fa; background: #30273b; } }
