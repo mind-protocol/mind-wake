@@ -1,7 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { grant, revoke, loadState, createWorkspaceServer, callWorkspace } from "./workspace.mjs";
+import { privateFile, privateTarget } from "../../scripts/setup-shared-workspace.mjs";
+import {
+  grant,
+  revoke,
+  loadState,
+  createWorkspaceServer,
+  callWorkspace,
+  localGrantScope,
+  localRestoreOperation,
+} from "./workspace.mjs";
 
 const {
   positionals: [command],
@@ -23,6 +32,10 @@ const {
     port: { type: "string" },
     request: { type: "string" },
     output: { type: "string" },
+    name: { type: "string" },
+    rights: { type: "string" },
+    operation: { type: "string" },
+    "expected-hash": { type: "string" },
   },
 });
 const requireArg = (name) => {
@@ -31,20 +44,35 @@ const requireArg = (name) => {
 };
 try {
   switch (command) {
+    case "scope-grant":
     case "grant": {
-      for (const name of ["state", "root", "participant", "credential", "endpoint", "ca"])
+      const scoped = command === "scope-grant";
+      for (const name of [
+        "state",
+        "root",
+        "participant",
+        "credential",
+        ...(scoped ? ["name", "rights"] : ["endpoint", "ca"]),
+      ])
         requireArg(name);
-      const endpoint = new URL(args.endpoint);
+      const endpoint = !scoped || args.endpoint ? new URL(requireArg("endpoint")) : null;
       if (
-        endpoint.protocol !== "https:" ||
-        endpoint.username ||
-        endpoint.password ||
-        endpoint.search ||
-        endpoint.hash ||
-        endpoint.pathname !== "/v1/workspace"
+        endpoint &&
+        (endpoint.protocol !== "https:" ||
+          endpoint.username ||
+          endpoint.password ||
+          endpoint.search ||
+          endpoint.hash ||
+          endpoint.pathname !== (scoped ? "/v1/scoped-workspace" : "/v1/workspace"))
       )
         throw new Error("invalid_endpoint");
-      fs.accessSync(args.ca, fs.constants.R_OK);
+      if (!scoped) fs.accessSync(args.ca, fs.constants.R_OK);
+      if (scoped) {
+        privateTarget(args.state);
+        privateTarget(args.credential);
+        if (endpoint) privateFile(requireArg("ca"));
+        else if (args.ca) throw new Error("missing_endpoint");
+      }
       const credentialPath = path.join(
         fs.realpathSync.native(path.dirname(path.resolve(args.credential))),
         path.basename(args.credential),
@@ -59,17 +87,28 @@ try {
       // Reserve credential output before creating any permission; never print its contents.
       const fd = fs.openSync(requireArg("credential"), "wx", 0o600);
       try {
-        const credential = grant(
-          requireArg("state"),
-          requireArg("root"),
-          requireArg("participant"),
-          args.propose,
-          { dataRoots: args["data-root"] ?? [] },
-        );
+        const credential = scoped
+          ? localGrantScope(args.state, {
+              name: args.name,
+              root: args.root,
+              participant: args.participant,
+              rights: args.rights.split(","),
+              dataRoots: args["data-root"] ?? [],
+            })
+          : grant(
+              requireArg("state"),
+              requireArg("root"),
+              requireArg("participant"),
+              args.propose,
+              { dataRoots: args["data-root"] ?? [] },
+            );
         fs.writeFileSync(
           fd,
           JSON.stringify(
-            { ...credential, endpoint: requireArg("endpoint"), caFile: requireArg("ca") },
+            {
+              ...credential,
+              ...(endpoint ? { endpoint: requireArg("endpoint"), caFile: requireArg("ca") } : {}),
+            },
             null,
             2,
           ),
@@ -77,12 +116,25 @@ try {
         console.log(
           JSON.stringify({
             capability: credential.capability,
-            rights: args.propose ? ["read", "propose"] : ["read"],
+            rights: scoped ? args.rights.split(",") : args.propose ? ["read", "propose"] : ["read"],
           }),
         );
       } finally {
         fs.closeSync(fd);
       }
+      break;
+    }
+    case "scope-restore": {
+      const expected = requireArg("expected-hash");
+      console.log(
+        JSON.stringify(
+          localRestoreOperation(
+            requireArg("state"),
+            requireArg("operation"),
+            expected === "absent" ? null : expected,
+          ),
+        ),
+      );
       break;
     }
     case "revoke":
@@ -124,7 +176,7 @@ try {
     }
     default:
       console.log(
-        "Commands: grant --state --root [--data-root LOCAL_INSTALLATION_DATA_DIR] --participant [--propose] --credential --endpoint --ca; revoke --state --capability; serve --state --key --cert --port; call --credential --request --output",
+        "Commands: scope-grant --state --root --name --participant --rights list,search,read,create,write,delete,propose --credential [--data-root]; scope-restore --state --operation --expected-hash SHA256_OR_absent; grant --state --root [--data-root LOCAL_INSTALLATION_DATA_DIR] --participant [--propose] --credential --endpoint --ca; revoke --state --capability; serve --state --key --cert --port; call --credential --request --output",
       );
   }
 } catch {

@@ -6,10 +6,18 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { loadState } from "../services/shared-workspace/workspace.mjs";
 
-function privateFile(value) {
+export function privateFile(value) {
   if (!value || !path.isAbsolute(value)) throw new Error("private_file_required");
   const target = fs.realpathSync.native(value);
   if (!fs.statSync(target).isFile()) throw new Error("private_file_required");
+  privateTarget(target);
+  return target;
+}
+export function privateTarget(value) {
+  const target = path.join(
+    fs.realpathSync.native(path.dirname(path.resolve(value))),
+    path.basename(value),
+  );
   for (let dir = path.dirname(target); ; dir = path.dirname(dir)) {
     if (fs.existsSync(path.join(dir, ".git"))) throw new Error("private_file_inside_git");
     if (dir === path.dirname(dir)) break;
@@ -20,11 +28,11 @@ export async function setupWorkspace({ role, state, credential, output }) {
   const [major, minor] = process.versions.node.split(".").map(Number);
   if (!((major === 24 && minor >= 17) || (major === 26 && minor >= 13)))
     throw new Error("node_version");
-  if (!["remote", "local"].includes(role)) throw new Error("invalid_role");
+  if (!["remote", "local", "scoped"].includes(role)) throw new Error("invalid_role");
   // Check installed dependencies before writing anything; no install or network action.
   await import("@modelcontextprotocol/server");
   await import("zod");
-  const file = privateFile(role === "remote" ? credential : state);
+  const file = privateFile(role === "local" ? state : credential);
   if (role === "local") loadState(file);
   else {
     const config = JSON.parse(fs.readFileSync(file, "utf8"));
@@ -33,7 +41,7 @@ export async function setupWorkspace({ role, state, credential, output }) {
     const endpoint = new URL(config.endpoint);
     if (
       endpoint.protocol !== "https:" ||
-      endpoint.pathname !== "/v1/workspace" ||
+      endpoint.pathname !== (role === "scoped" ? "/v1/scoped-workspace" : "/v1/workspace") ||
       endpoint.username ||
       endpoint.password ||
       endpoint.search ||

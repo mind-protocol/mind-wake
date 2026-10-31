@@ -17,6 +17,10 @@ export async function result(operation) {
       "backup_mismatch",
       "changed_during_read",
       "deadline",
+      "stopped",
+      "sensitive_content",
+      "unknown_operation",
+      "scope_conflict",
     ];
     const code =
       error.code === "EEXIST"

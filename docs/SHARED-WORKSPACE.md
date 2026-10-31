@@ -1,4 +1,208 @@
-# Shared workspace v0.2 — MCP distinct, propositions durables, application locale
+# Shared workspace — scopes directs MCP supervisés et transport legacy
+
+## Lot scoped MCP (31 octobre 2026) : développement synthétique, sans activation
+
+`workspace.mjs` conserve le moteur existant et ajoute `localGrantScope`,
+`createScopedWorkspaceSession` et `localRestoreOperation`. Le client stdio
+`mcp-scoped.mjs` utilise les sept outils de `scoped-mcp.mjs` et le même transport
+HTTPS, sur la route distincte `/v1/scoped-workspace`. `scoped-job.mjs` sert cette
+route dans un job supervisé Wake. Aucun dossier réel, credential utilisateur ou
+service utilisateur n'est activé. Le miroir Git reste un chantier distinct ; aucun moteur de synchronisation
+n'est ajouté ici. Le mode direct est accepté ; sa mise en service dépend des choix
+concrets ci-dessous, pas d'une nouvelle approbation abstraite du mode.
+
+### Autorité locale et droits
+
+Seul le propriétaire ou son agent dans sa délégation locale appelle `scope-grant`
+ou `revoke`. Ces commandes ne sont jamais des outils destinataire. Aucun message
+reçu, contenu de fichier ou paramètre MCP ne peut sélectionner une racine, changer
+de destinataire ou augmenter les droits. Les autorisations personnelles du dépôt
+ne sont pas copiées dans les autres installations.
+
+Chaque grant nomme un scope (`name`, ASCII lettres/chiffres/`_`/`-`, 1–80), une
+racine absolue existante canonicalisée et un participant. Deux scopes de noms
+différents ne peuvent ni se recouvrir ni partager une racine ; un même nom reste
+attaché à sa racine, même après révocation. Plusieurs destinataires peuvent avoir
+des capacités distinctes sur le même scope. Le porteur du token est lié au
+participant et à la capacité ; cela ne prouve pas une identité physique.
+
+| Droit explicite | Opération et conditions                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `list`          | Liste bornée de métadonnées, sans contenu                                                      |
+| `search`        | Recherche littérale de noms ou contenus, avec courts extraits                                  |
+| `read`          | Lecture UTF-8 avec SHA-256                                                                     |
+| `create`        | Création d'un fichier absent ; parent existant requis                                          |
+| `write`         | Remplacement d'un fichier existant, SHA-256 attendu requis                                     |
+| `delete`        | Suppression réversible, SHA-256 attendu requis                                                 |
+| `propose`       | Voie historique de proposition de remplacement ; requiert aussi `read` pour examen/application |
+
+`list/search/read/create/write/delete` sont indépendants : un droit de mutation
+n'accorde pas lecture ou recherche. `search` autorise explicitement ses extraits.
+Les anciens grants version 1 restent `read` ou `read,propose`, avec leur liste
+historique ; ils ne gagnent ni recherche ni CRUD direct. Les grants nommés sont
+refusés par l'ancienne façade HTTPS, afin d'éviter ses droits implicites. Les MCP
+local/distant historiques restent inchangés.
+
+Exemple de forme **à adapter localement**, sans lancement de service :
+
+```powershell
+node services/shared-workspace/cli.mjs scope-grant --state 'D:\Prive\scopes.json' --name projet --root 'D:\ProjetChoisi' --participant destinataire --rights list,search,read,create,write,delete --credential 'D:\Prive\destinataire.json'
+node services/shared-workspace/cli.mjs revoke --state 'D:\Prive\scopes.json' --capability 'ID'
+node services/shared-workspace/cli.mjs scope-restore --state 'D:\Prive\scopes.json' --operation 'ID-OPERATION' --expected-hash 'SHA256-APRES'
+# Après delete, --expected-hash absent exige que le fichier soit toujours absent.
+```
+
+État, verrou, snapshots et credentials restent hors de **tous** les scopes, hors Git
+et protégés par les ACL locales. La CLI refuse un credential sous une racine déjà
+déclarée. Ne pas sélectionner ensuite une racine contenant des credentials
+existants ; la sélection locale reste responsable d'un dossier sans secrets.
+La CLI de récupération est locale et utilisable même après révocation.
+
+### Recherche et mutations
+
+`workspace_search {path?, query, mode?}` parcourt seulement le scope, sans shell,
+regex exécutable ou index global. `mode` vaut `name` (défaut) ou `content` ; query
+contient 1–200 caractères. Maximum : 1 000 entrées inspectées, 100 résultats,
+profondeur 16, budget conservateur de lectures 2 Mio (128 Kio réservés par fichier),
+5 secondes vérifiées entre lectures. Un extrait contient au plus 160 caractères,
+avec numéro de ligne et `snippetTruncated`. `truncated`, `reasons`, `scanned` et
+`budgetedBytes` rendent les omissions/limites visibles. Un résultat vide tronqué
+ne prouve pas une absence. Les limites de fichiers et chemins historiques restent
+applicables : pas de binaire, symlink/junction, hardlink, absolu, traversal ou ADS.
+
+Chaque mutation exige une clé d'idempotence stable et conserve au plus 64 opérations
+dans l'état privé. Même clé et contenu différent : `idempotency_conflict` ; hash
+périmé ou create sur fichier présent : `hash_conflict`. Un replay terminal retourne
+l'opération historique sans réécrire le disque. Les snapshots avant/après disponibles
+sont durables avant l'intention `prepared` ; suppression = retrait du fichier choisi
+avec original conservé dans `<state>.private/<id>.before`. Write utilise un
+temporaire puis rename, create une ouverture exclusive. La restauration vérifie le
+hash réel attendu (ou l'absence), les snapshots et le résultat relu ; elle préserve
+les octets UTF-8, BOM et fins de ligne. Elle ne réactive aucune capacité.
+
+Les intentions `prepared/restoring` se réconcilient avec le disque au replay ou à
+la restauration : terminé, étape à reprendre ou conflit. Il n'y a pas de transaction
+OS multi-fichiers ni CAS atomique. Un crash pendant la création exclusive peut
+laisser un fichier partiel : conflit conservé, snapshots disponibles pour examen
+et récupération locale manuelle ; aucune réécriture automatique d'un conflit.
+Un verrou abandonné doit être examiné après arrêt des opérateurs. Un refus ACL,
+un fichier Windows verrouillé ou un snapshot endommagé reste un échec explicite.
+
+Les noms courants de credentials et dossiers de contrôle sont exclus ; les noms
+métier tels que `token-economy.md` restent accessibles. Le scoped adapter refuse
+les contenus présentant des signatures courantes de secrets (clé privée, token,
+affectation de mot de passe/API key), sans renvoyer leur corps ou une erreur brute.
+Cette défense ne peut classifier tout secret arbitraire : sélectionner des racines
+préparées sans secrets. Les données retournées sont non fiables ; elles ne sont
+jamais évaluées. Les réserves TOCTOU/reparse points/ACL ci-dessous restent valables.
+
+### Cycle de vie livré
+
+Le helper local `scripts/setup-scoped-workspace-job.mjs` crée un script neuf sous
+`workspace/jobs/`, qui importe le serveur depuis ce clone dans son propre processus.
+Il ne démarre rien et ne touche aucune configuration existante. L'entrypoint exige
+les marqueurs `MIND_WAKE_JOB_ID` et `MIND_WAKE_JOB_OUTPUT`. Ces marqueurs sont des
+guards d'usage, pas une preuve cryptographique de supervision : lancer réellement
+le script avec `start_background_job`, dans le mode hôte déjà autorisé.
+
+Le daemon possède alors worker et serveur via `BackgroundJobs` et le Job Object
+Windows existant, sans spawn détaché ni relance automatique. Pause retire l'accord
+du predicate existant ; annulation, Force-off (`terminateBackgroundJobs`), arrêt du
+daemon et fermeture du Job Object terminent l'arbre et donc les sockets OS.
+Les contrôles planifiés sont relus toutes les 500 ms ; ce délai n'est pas nul.
+Les jobs interrompus ne sont pas rejoués après reprise ; nouvelle soumission et
+clé d'idempotence nécessaires. Une session IA terminée laisse le job continuer,
+conformément au contrat Background Jobs ; la fin du **job** ferme son service.
+
+Pour l'arrêt coopératif, SIGINT/SIGTERM déclenchent abort, refus des nouveaux
+appels, fermeture du listener et destruction de toutes les connexions, y compris
+les handshakes incomplets. Sous Windows, la terminaison forcée ne délivre pas
+nécessairement les handlers JS : le Job Object reste l'autorité d'arrêt.
+L'authentification token/capacité/participant est vérifiée avant et après upload,
+puis par la session à chaque opération ; les grants legacy sont refusés sur cette
+route et les named grants restent refusés sur la route legacy.
+
+Un arrêt n'annule jamais rétroactivement une mutation synchrone achevée. L'event
+loop ne préempte pas une opération fichier synchrone ; une terminaison forcée peut
+interrompre sa persistance. Les snapshots/intents et les limites de récupération
+décrites plus haut restent applicables. Aucune transaction distribuée n'est ajoutée.
+
+### Recette unique d'activation à deux postes (à exécuter après choix opérateur)
+
+Paramètres manquants : racine/nom/droits choisis, participant convenu, adresse IP
+privée **déjà joignable** du poste propriétaire, port réservé et certificat serveur
+valide dont le SAN couvre exactement cette IP, clé privée correspondante et CA
+approuvée par le destinataire. Cette recette utilise directement cette liaison
+privée existante en HTTPS ; aucun tunnel, route ou firewall n'est créé par le helper.
+Sans cette adresse et ces fichiers TLS, la validation inter-postes reste ouverte.
+Les commandes ci-dessous sont une recette, pas une activation effectuée par ce lot.
+
+Sur le propriétaire, définir `$private` hors Git et hors toutes les racines
+partagées, `$workspace` vers son espace Wake, `$root` vers la racine choisie et
+`$dataDir` vers les données de son installation. Placer `server-key.pem`,
+`server-cert.pem` et `ca.pem` dans `$private`, sous ACL du compte propriétaire.
+Fixer `$ownerIp` à l'IP convenue, `$port` au port réservé et `$participant` à
+l'identifiant convenu. Depuis le clone :
+
+```powershell
+$state = Join-Path $private 'scopes.json'
+$credential = Join-Path $private 'recipient.json'
+$endpoint = "https://${ownerIp}:$port/v1/scoped-workspace"
+node services/shared-workspace/cli.mjs scope-grant --state $state --root $root --name projet --participant $participant --rights list,search,read,create,write,delete,propose --data-root $dataDir --credential $credential --endpoint $endpoint --ca (Join-Path $private 'ca.pem')
+$config = Join-Path $private 'scoped-server.json'
+$json = @{stateFile=$state; keyFile=(Join-Path $private 'server-key.pem'); certFile=(Join-Path $private 'server-cert.pem'); host=$ownerIp; port=[int]$port} | ConvertTo-Json
+[IO.File]::WriteAllText($config, $json, [Text.UTF8Encoding]::new($false))
+node scripts/setup-scoped-workspace-job.mjs --workspace $workspace --config $config
+```
+
+Soumettre ensuite via le MCP Wake local :
+`start_background_job {title:"Scoped workspace",script:"jobs/serve-scoped-workspace.mjs",args:[],idempotency_key:"scoped-projet-activation-1"}`.
+Lire `list_background_jobs` et `jobs/runs/<id>/scoped-ready.json` ; un job en file
+n'est pas une écoute. Le helper refuse d'écraser un script existant et le serveur
+refuse config/état/clé/certificat sous une racine retenue, même révoquée, ou dans Git.
+La CLI scope-grant refuse état et credential dans Git ; une définition locale sans
+endpoint reste possible, mais le credential doit avoir endpoint et caFile pour le client.
+
+Transmettre **seulement** `recipient.json` et `ca.pem` via le canal déjà autorisé.
+Sur le destinataire, les conserver hors Git dans son dossier privé ; adapter
+uniquement `caFile` dans sa copie du credential au chemin absolu local de `ca.pem`.
+Ne jamais transmettre état, snapshots, config serveur ou clé privée. Depuis son clone :
+
+```powershell
+node scripts/setup-shared-workspace.mjs --role scoped --credential $credential --output (Join-Path $private 'workspace-scoped.toml')
+```
+
+Ajouter ce fragment au runtime MCP autorisé en préservant ses autres serveurs.
+Le helper n'édite pas sa configuration : il prépare un TOML avec chemin du client
+et du credential, sans token en clair. Ne pas ajouter le rôle local au destinataire.
+Vérifier découverte des sept outils, lecture/recherche, mutation autorisée puis
+révocation locale et arrêt du job ; vérifier le refus côté autre poste. Aucun
+reconnecteur automatique n'est installé ; un client encore ouvert après arrêt du
+serveur échoue et ne redémarre pas le serveur. Ne pas activer l'ancien `serve`
+manuel pour ce mode. Les interfaces desktop ne sont pas modifiées par ce lot.
+
+### Vérification réseau synthétique du lot
+
+```powershell
+node --experimental-transform-types --disable-warning=ExperimentalWarning --import ./test/fixtures/store-ledger/ts-hooks.ts --test services/shared-workspace/transport.test.mjs services/shared-workspace/mcp.test.mjs services/shared-workspace/scoped.test.mjs services/shared-workspace/scoped-transport.test.mjs
+```
+
+16 scénarios passent sous Windows/Node 24.17, sans garde réseau artificielle,
+avec certificats éphémères locaux et listeners loopback. La nouvelle suite importe
+les sources TypeScript du superviseur avec les hooks de test existants, sans build
+Cargo ni daemon réel redémarré. Elle lance deux vrais processus MCP stdio, un vrai
+serveur TLS dans `BackgroundJobs`/Job Object, puis vérifie CRUD/hash périmé,
+proposition, identité liée au token, refus legacy/named croisés, CA non approuvée,
+révocation pendant upload et récupération après révocation. Elle vérifie les PID
+serveur absents et ports fermés après predicate Pause, emergency Force-off,
+annulation, fin normale et fermeture du manager, puis absence de replay avec un
+nouveau manager. Un autre essai vérifie abort et socket de handshake inachevé, puis
+SIGTERM d'un processus serveur. Les boutons desktop et le trajet entre deux postes
+réels ne sont pas exercés ; ce sont des processus et installations synthétiques
+sur le même poste. La garde historique sans réseau reste disponible pour les seuls
+tests mémoire, mais ne doit pas être appliquée à ces suites TLS.
+
+## Transport historique v0.2 (inchangé, activation manuelle distincte)
 
 Ce composant Node 24.17 expose `POST /v1/workspace` en HTTPS et deux rôles MCP stdio distincts. Il est séparé du hub de messagerie et de ses cinq outils ; aucun message reçu ne devient une opération fichier. Il ne dépend ni du daemon, ni de SQLite, ni du desktop. Aucun dossier ni capacité n'existe par défaut. Le service écoute **uniquement 127.0.0.1**. Il n'ouvre aucun accès depuis Internet et ne crée aucun tunnel.
 

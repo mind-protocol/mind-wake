@@ -26,7 +26,9 @@ const allowed = (name) =>
   !name.startsWith(".") &&
   !sensitiveComponent.test(name) &&
   !/^(?:node_modules|vendor|credentials|secrets|profiles|AppData)$/i.test(name) &&
-  !/(?:secret|credential|private.?key|password|token)/i.test(name) &&
+  !/^(?:secrets?|credentials?|private[-_]?key|passwords?|tokens?|id_rsa|id_ed25519)(?:\.[^.]+)?$/i.test(
+    name,
+  ) &&
   !/[<>:"\\|?*\x00-\x1f]/.test(name) &&
   !/[. ]$/.test(name) &&
   !/^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(name);
@@ -86,7 +88,7 @@ function readText(root, relative) {
       fail("changed_during_read");
     let text;
     try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
     } catch {
       fail("unsupported_file");
     }
@@ -161,6 +163,7 @@ export function grant(stateFile, root, participant, propose = false, selection =
   const components = root.split(path.sep);
   if (components.some((part) => sensitiveComponent.test(part))) fail("invalid_selection");
   noLinks(root);
+  root = fs.realpathSync.native(root);
   // Explicit local installation metadata, never supplied by the remote API.
   // Custom --data-dir installations must be declared via --data-root or the existing env.
   const dataRoots = [...(selection.dataRoots ?? [])];
@@ -201,12 +204,40 @@ export function grant(stateFile, root, participant, propose = false, selection =
   const token = randomBytes(32).toString("hex");
   const id = randomUUID();
   mutateState(stateFile, (state) => {
+    if (selection.scope !== undefined) {
+      if (
+        !/^[A-Za-z0-9_-]{1,80}$/.test(selection.scope) ||
+        !Array.isArray(selection.rights) ||
+        !selection.rights.length ||
+        selection.rights.some((r) => !SCOPE_RIGHTS.includes(r))
+      )
+        fail("invalid_selection");
+      for (const previous of state.grants.filter((g) => g.scope)) {
+        if (previous.scope === selection.scope && previous.root !== root) fail("scope_conflict");
+        if (
+          previous.scope !== selection.scope &&
+          (inside(previous.root, root) || inside(root, previous.root))
+        )
+          fail("scope_conflict");
+        if (
+          previous.active &&
+          previous.scope === selection.scope &&
+          previous.participant === participant
+        )
+          fail("scope_conflict");
+      }
+    }
     state.grants.push({
       id,
       root,
       participant,
       tokenHash: hash(token),
-      rights: propose ? ["read", "propose"] : ["read"],
+      rights: selection.scope
+        ? [...new Set(selection.rights)]
+        : propose
+          ? ["read", "propose"]
+          : ["read"],
+      ...(selection.scope ? { scope: selection.scope } : {}),
       active: true,
     });
   });
@@ -236,40 +267,46 @@ function authorize(stateFile, req) {
     fail("unauthorized");
   return cap;
 }
+function listWorkspace(root, body) {
+  const target = locate(root, body.path ?? "", true);
+  const dir = fs.opendirSync(target);
+  const entries = [];
+  let scanned = 0;
+  let truncated = false;
+  try {
+    let entry;
+    while ((entry = dir.readSync())) {
+      if (++scanned > LIMITS.entries) {
+        truncated = true;
+        break;
+      }
+      if (!allowed(entry.name)) continue;
+      const relative = [body.path, entry.name].filter(Boolean).join("/");
+      try {
+        if (entry.isDirectory()) {
+          locate(root, relative, true);
+          entries.push({ name: entry.name, kind: "directory" });
+        } else if (entry.isFile() && textExtension(entry.name)) {
+          const { text, ...metadata } = readText(root, relative);
+          entries.push({ name: entry.name, kind: "file", ...metadata });
+        }
+      } catch {
+        /* Unsafe, binary, changing or oversized entries are omitted. */
+      }
+    }
+  } finally {
+    dir.closeSync();
+  }
+  return { entries, truncated, scanned };
+}
 function operate(stateFile, cap, body) {
-  if (!body || typeof body !== "object" || !cap.rights.includes("read")) fail("forbidden");
+  // Named capabilities belong exclusively to the supervised scoped adapter.
+  // Never interpret independent rights through the legacy HTTPS contract.
+  if (cap.scope || !body || typeof body !== "object" || !cap.rights.includes("read"))
+    fail("forbidden");
   switch (body.op) {
     case "list": {
-      const target = locate(cap.root, body.path ?? "", true);
-      const dir = fs.opendirSync(target);
-      const entries = [];
-      let scanned = 0;
-      let truncated = false;
-      try {
-        let entry;
-        while ((entry = dir.readSync())) {
-          if (++scanned > LIMITS.entries) {
-            truncated = true;
-            break;
-          }
-          if (!allowed(entry.name)) continue;
-          const relative = [body.path, entry.name].filter(Boolean).join("/");
-          try {
-            if (entry.isDirectory()) {
-              locate(cap.root, relative, true);
-              entries.push({ name: entry.name, kind: "directory" });
-            } else if (entry.isFile() && textExtension(entry.name)) {
-              const { text, ...metadata } = readText(cap.root, relative);
-              entries.push({ name: entry.name, kind: "file", ...metadata });
-            }
-          } catch {
-            /* Unsafe, binary, changing or oversized entries are omitted. */
-          }
-        }
-      } finally {
-        dir.closeSync();
-      }
-      return { entries, truncated, scanned };
+      return listWorkspace(cap.root, body);
     }
     case "read":
       return readText(cap.root, body.path);
@@ -467,6 +504,23 @@ export function localApply(stateFile, id, restoreHash) {
 }
 
 export function createWorkspaceServer({ stateFile, key, cert }) {
+  return workspaceServer({ stateFile, key, cert });
+}
+
+// Separate route and explicit authority: legacy grants never enter this surface.
+export function createScopedWorkspaceServer({ stateFile, key, cert, signal }) {
+  if (!signal || signal.aborted) fail("supervision_required");
+  return workspaceServer({ stateFile, key, cert, signal, scoped: true });
+}
+
+function workspaceServer({ stateFile, key, cert, signal, scoped = false }) {
+  const lifetime = new AbortController();
+  const sockets = new Set();
+  const stop = () => {
+    lifetime.abort();
+    server.close();
+    for (const socket of sockets) socket.destroy();
+  };
   let active = 0,
     windowAt = Date.now(),
     admissions = 0;
@@ -488,11 +542,13 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
       try {
         if (
           req.method !== "POST" ||
-          req.url !== "/v1/workspace" ||
+          req.url !== (scoped ? "/v1/scoped-workspace" : "/v1/workspace") ||
           req.headers["content-type"] !== "application/json"
         )
           fail("bad_request");
-        authorize(stateFile, req);
+        if (lifetime.signal.aborted) fail("stopped");
+        const initial = authorize(stateFile, req);
+        if (scoped && !initial.scope) fail("forbidden");
         let length = 0;
         const chunks = [];
         for await (const chunk of req) {
@@ -506,7 +562,26 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
         }
         // Re-authorize AFTER receiving body: revocation during upload takes effect.
         const cap = authorize(stateFile, req);
-        const result = operate(stateFile, cap, JSON.parse(Buffer.concat(chunks).toString("utf8")));
+        if (lifetime.signal.aborted) fail("stopped");
+        const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        let result;
+        if (scoped) {
+          if (!cap.scope) fail("forbidden");
+          const session = createScopedWorkspaceSession({
+            stateFile,
+            credential: {
+              capability: cap.id,
+              participant: cap.participant,
+              token: req.headers.authorization.slice(7),
+            },
+            signal: lifetime.signal,
+          });
+          try {
+            result = session.call(body);
+          } finally {
+            session.stop();
+          }
+        } else result = operate(stateFile, cap, body);
         send(200, { result });
       } catch (error) {
         const known = [
@@ -521,6 +596,8 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
           "invalid_request",
           "idempotency_conflict",
           "queue_limit",
+          "stopped",
+          "sensitive_content",
         ];
         const code =
           error.code === "EEXIST"
@@ -548,11 +625,28 @@ export function createWorkspaceServer({ stateFile, key, cert }) {
   server.requestTimeout = LIMITS.deadline;
   server.keepAliveTimeout = 1000;
   server.maxConnections = 16;
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
+  signal?.addEventListener("abort", stop, { once: true });
+  server.once("close", () => {
+    lifetime.abort();
+    signal?.removeEventListener("abort", stop);
+  });
   // No request, path, body, token or credential logging.
   return server;
 }
 
 export async function callWorkspace({ endpoint, ca, capability, participant, token }, body) {
+  return workspaceRequest({ endpoint, ca, capability, participant, token }, body, "/v1/workspace");
+}
+
+export async function callScopedWorkspace(credential, body) {
+  return workspaceRequest(credential, body, "/v1/scoped-workspace");
+}
+
+async function workspaceRequest({ endpoint, ca, capability, participant, token }, body, route) {
   const url = new URL(endpoint);
   if (
     url.protocol !== "https:" ||
@@ -560,7 +654,7 @@ export async function callWorkspace({ endpoint, ca, capability, participant, tok
     url.password ||
     url.search ||
     url.hash ||
-    url.pathname !== "/v1/workspace"
+    url.pathname !== route
   )
     fail("invalid_endpoint");
   const data = JSON.stringify(body);
@@ -605,4 +699,393 @@ export async function callWorkspace({ endpoint, ca, capability, participant, tok
     req.on("error", reject);
     req.end(data);
   });
+}
+
+// Scoped engine. Deliberately NOT routed by the legacy createWorkspaceServer/operate.
+export const SCOPE_RIGHTS = Object.freeze([
+  "list",
+  "search",
+  "read",
+  "create",
+  "write",
+  "delete",
+  "propose",
+]);
+export const SEARCH_LIMITS = Object.freeze({
+  entries: 1000,
+  results: 100,
+  bytes: 2 * 1024 * 1024,
+  depth: 16,
+});
+// Local authority APIs only. The caller must already hold the owner's delegation.
+export function localGrantScope(stateFile, { name, root, participant, rights, dataRoots = [] }) {
+  if (typeof name !== "string" || typeof root !== "string" || !path.isAbsolute(root))
+    fail("invalid_selection");
+  return grant(stateFile, root, participant, false, { scope: name, rights, dataRoots });
+}
+
+function scopeCap(stateFile, credential) {
+  const cap = authorize(stateFile, {
+    headers: {
+      authorization: `Bearer ${credential.token}`,
+      "x-workspace-capability": credential.capability,
+      "x-workspace-participant": credential.participant,
+    },
+  });
+  // Legacy grants keep their historical list/read/propose behavior, never direct rights.
+  return cap;
+}
+function hasRight(cap, right) {
+  return cap.scope
+    ? cap.rights.includes(right)
+    : ["list", "read"].includes(right)
+      ? cap.rights.includes("read")
+      : right === "propose" && cap.rights.includes("propose");
+}
+// Defense in depth, not a universal secret classifier. Select curated roots without secrets.
+function publicText(text) {
+  if (
+    /-----BEGIN (?:[A-Z ]*PRIVATE KEY|OPENSSH PRIVATE KEY)-----|\b(?:gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{20,})|\bBearer\s+[A-Za-z0-9._~+/-]{12,}|\b(?:api[_-]?key|access[_-]?token|password|client[_-]?secret)\s*["']?\s*[:=]\s*["']?[^\s"',;]{8,}/i.test(
+      text,
+    )
+  )
+    fail("sensitive_content");
+  return text;
+}
+function scopeRead(root, relative) {
+  const file = readText(root, relative);
+  publicText(file.text);
+  return file;
+}
+function scopeSearch(cap, body, check) {
+  if (
+    typeof body.query !== "string" ||
+    !body.query.length ||
+    body.query.length > 200 ||
+    !["name", "content"].includes(body.mode ?? "name")
+  )
+    fail("invalid_request");
+  const mode = body.mode ?? "name";
+  const start = body.path ?? "";
+  locate(cap.root, start, true);
+  const results = [],
+    reasons = new Set();
+  let scanned = 0,
+    bytes = 0;
+  const begin = Date.now();
+  const query = body.query.toLowerCase();
+  function visit(relative, depth) {
+    check();
+    const directory = locate(cap.root, relative, true);
+    const dir = fs.opendirSync(directory);
+    try {
+      let entry;
+      while ((entry = dir.readSync())) {
+        check();
+        if (scanned >= SEARCH_LIMITS.entries) {
+          reasons.add("entries");
+          return;
+        }
+        if (Date.now() - begin >= LIMITS.deadline) {
+          reasons.add("deadline");
+          return;
+        }
+        if (results.length >= SEARCH_LIMITS.results) {
+          reasons.add("results");
+          return;
+        }
+        scanned++;
+        if (!allowed(entry.name)) continue;
+        const child = [relative, entry.name].filter(Boolean).join("/");
+        try {
+          if (entry.isDirectory()) {
+            locate(cap.root, child, true);
+            if (mode === "name" && entry.name.toLowerCase().includes(query))
+              results.push({ path: child, kind: "directory" });
+            if (depth < SEARCH_LIMITS.depth) visit(child, depth + 1);
+            else reasons.add("depth");
+          } else if (entry.isFile() && textExtension(entry.name)) {
+            // Bound actual bytes read as well as output; no global index or regex execution.
+            const target = locate(cap.root, child);
+            const size = fs.statSync(target).size;
+            if (size > LIMITS.file) {
+              reasons.add("file_size");
+              continue;
+            }
+            if (bytes + LIMITS.file > SEARCH_LIMITS.bytes) {
+              reasons.add("bytes");
+              return;
+            }
+            bytes += LIMITS.file; // conservative read budget including changing files
+            const file = scopeRead(cap.root, child);
+            if (mode === "name") {
+              if (entry.name.toLowerCase().includes(query))
+                results.push({ path: child, kind: "file" });
+            } else {
+              const offset = file.text.toLowerCase().indexOf(query);
+              if (offset >= 0)
+                results.push({
+                  path: child,
+                  kind: "file",
+                  hash: file.hash,
+                  line: file.text.slice(0, offset).split("\n").length,
+                  snippet: file.text.slice(Math.max(0, offset - 40), offset + 120),
+                  snippetTruncated: file.text.length > offset + 120 || offset > 40,
+                });
+            }
+          }
+        } catch (error) {
+          if (error.message === "stopped") throw error;
+          reasons.add("omitted"); // unsafe, sensitive, binary or changing, no path/error leak
+        }
+      }
+    } finally {
+      dir.closeSync();
+    }
+  }
+  visit(start, 0);
+  check();
+  return {
+    results,
+    scanned,
+    budgetedBytes: bytes,
+    truncated: reasons.size > 0,
+    reasons: [...reasons],
+    untrusted: true,
+  };
+}
+function directTarget(root, relative) {
+  if (
+    typeof relative !== "string" ||
+    relative.length > 1024 ||
+    relative.includes("\\") ||
+    relative.split("/").some((p) => p === "." || p === ".." || !allowed(p)) ||
+    !textExtension(relative)
+  )
+    fail("unsafe_path");
+  const target = path.resolve(root, relative);
+  if (!inside(root, target)) fail("unsafe_path");
+  const parent = path.posix.dirname(relative);
+  locate(root, parent === "." ? "" : parent, true);
+  try {
+    fs.lstatSync(target);
+    locate(root, relative);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return target;
+}
+function observe(root, relative) {
+  const target = directTarget(root, relative);
+  try {
+    fs.lstatSync(target);
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+  return scopeRead(root, relative).hash;
+}
+function snapshot(stateFile, id, side, bytes) {
+  const directory = privateDir(stateFile);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  noLinks(directory);
+  const file = path.join(directory, `${id}.${side}`);
+  durableFile(file, bytes);
+}
+function snapshotBytes(stateFile, record, side) {
+  const file = path.join(privateDir(stateFile), `${record.id}.${side}`);
+  noLinks(file);
+  const bytes = boundedBytes(file);
+  if (hash(bytes) !== record[side]) fail("backup_mismatch");
+  return bytes;
+}
+function operationView(record) {
+  const { id, op, path: relative, before, after, status, scope, participant } = record;
+  return { id, op, path: relative, before, after, status, scope, participant, historical: true };
+}
+function recordCap(state, record) {
+  const cap = state.grants.find((c) => c.id === record.capability);
+  if (!cap || cap.scope !== record.scope || cap.participant !== record.participant)
+    fail("invalid_state");
+  return cap;
+}
+function reconcileOperation(state, record) {
+  if (!["prepared", "restoring"].includes(record.status)) return;
+  const cap = recordCap(state, record);
+  const actual = observe(cap.root, record.path);
+  const restoring = record.status === "restoring";
+  if (actual === (restoring ? record.before : record.after))
+    record.status = restoring ? "restored" : "applied";
+  else if (actual === (restoring ? record.after : record.before))
+    record.status = restoring ? "applied" : "prepared";
+  else record.status = "conflict";
+}
+function replaceScoped(stateFile, cap, record, restoring, check) {
+  const expected = restoring ? record.after : record.before;
+  const wanted = restoring ? record.before : record.after;
+  const target = directTarget(cap.root, record.path);
+  if (observe(cap.root, record.path) !== expected) fail("hash_conflict");
+  const bytes =
+    wanted === null ? null : snapshotBytes(stateFile, record, restoring ? "before" : "after");
+  check();
+  if (expected === null) {
+    // Exclusive creation does not overwrite a racing creator.
+    durableFile(target, bytes);
+  } else if (wanted === null) {
+    locate(cap.root, record.path);
+    if (observe(cap.root, record.path) !== expected) fail("hash_conflict");
+    fs.unlinkSync(target); // private durable snapshot retained; local restore recreates exclusively
+  } else {
+    const temporary = path.join(path.dirname(target), `.mind-workspace-${randomUUID()}.tmp`);
+    try {
+      durableFile(temporary, bytes);
+      fs.chmodSync(temporary, fs.statSync(target).mode);
+      check();
+      locate(cap.root, record.path);
+      if (observe(cap.root, record.path) !== expected) fail("hash_conflict");
+      fs.renameSync(temporary, target);
+    } finally {
+      if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+    }
+  }
+  if (observe(cap.root, record.path) !== wanted) fail("hash_conflict");
+  record.status = restoring ? "restored" : "applied";
+}
+function directOperation(stateFile, authorized, body, check) {
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(body.idempotencyKey ?? "")) fail("invalid_request");
+  if (body.op !== "create" && !/^[a-f0-9]{64}$/.test(body.expectedHash ?? ""))
+    fail("invalid_request");
+  if (body.op === "create" && body.expectedHash !== undefined) fail("invalid_request");
+  if (body.op !== "delete") {
+    if (
+      typeof body.text !== "string" ||
+      Buffer.byteLength(body.text) > LIMITS.file ||
+      body.text.includes("\0")
+    )
+      fail("file_limit");
+    publicText(body.text);
+  }
+  return mutateState(stateFile, (state) => {
+    const cap = state.grants.find((c) => c.id === authorized.id);
+    if (!cap?.active || !hasRight(cap, body.op)) fail("forbidden");
+    const operations = (state.operations ??= []);
+    const fingerprint = hash(
+      JSON.stringify([body.op, body.path, body.expectedHash ?? null, body.text ?? null]),
+    );
+    let record = operations.find((r) => r.capability === cap.id && r.key === body.idempotencyKey);
+    if (record) {
+      if (record.fingerprint !== fingerprint) fail("idempotency_conflict");
+      reconcileOperation(state, record);
+      if (record.status !== "prepared") return operationView(record);
+    } else {
+      if (operations.length >= 64) fail("queue_limit");
+      const current = observe(cap.root, body.path);
+      if (current !== (body.op === "create" ? null : body.expectedHash)) fail("hash_conflict");
+      record = {
+        id: randomUUID(),
+        capability: cap.id,
+        scope: cap.scope,
+        participant: cap.participant,
+        op: body.op,
+        path: body.path,
+        key: body.idempotencyKey,
+        fingerprint,
+        before: current,
+        after: body.op === "delete" ? null : hash(body.text),
+        status: "prepared",
+      };
+      // Both sides durable before intent; no file bodies/absolute roots in remote result.
+      if (current !== null) {
+        const original = scopeRead(cap.root, body.path);
+        if (original.hash !== current) fail("hash_conflict");
+        snapshot(stateFile, record.id, "before", Buffer.from(original.text));
+      }
+      if (record.after !== null) snapshot(stateFile, record.id, "after", Buffer.from(body.text));
+      operations.push(record);
+      saveState(stateFile, state);
+    }
+    check();
+    replaceScoped(stateFile, cap, record, false, check);
+    return operationView(record);
+  });
+}
+// Local recovery is possible after revocation. It never grants new remote authority.
+export function localRestoreOperation(stateFile, id, expectedHash) {
+  return mutateState(stateFile, (state) => {
+    const record = state.operations?.find((r) => r.id === id);
+    if (!record) fail("unknown_operation");
+    reconcileOperation(state, record);
+    if (expectedHash !== record.after) fail("hash_conflict");
+    if (record.status === "restored") return operationView(record);
+    if (record.status !== "applied") fail("hash_conflict");
+    const cap = recordCap(state, record);
+    if (observe(cap.root, record.path) !== expectedHash) fail("hash_conflict");
+    record.status = "restoring";
+    saveState(stateFile, state);
+    replaceScoped(stateFile, cap, record, true, () => {});
+    return operationView(record);
+  });
+}
+// Supervisor-owned lifetime. No listener, background process or credential creation.
+// Abort is permanent for this session: resuming needs a fresh supervised instance.
+export function createScopedWorkspaceSession({ stateFile, credential, signal }) {
+  if (!signal) fail("supervision_required");
+  const identity = Object.freeze({ ...credential });
+  let stopped = signal.aborted;
+  const stop = () => {
+    stopped = true;
+  };
+  signal.addEventListener("abort", stop, { once: true });
+  const check = () => {
+    if (stopped || signal.aborted) fail("stopped");
+  };
+  return {
+    stop() {
+      stop();
+      signal.removeEventListener("abort", stop);
+    },
+    call(body) {
+      check();
+      if (!body || typeof body !== "object" || Array.isArray(body)) fail("invalid_request");
+      if (Buffer.byteLength(JSON.stringify(body)) > LIMITS.body) fail("file_limit");
+      const cap = scopeCap(stateFile, identity); // reload revocation and rights every call
+      if (!hasRight(cap, body.op)) fail("forbidden");
+      if (body.scope !== undefined && body.scope !== cap.scope) fail("forbidden");
+      if (
+        ["root", "rights", "participant", "capability", "token"].some((k) => Object.hasOwn(body, k))
+      )
+        fail("invalid_request");
+      switch (body.op) {
+        case "search":
+          return scopeSearch(cap, body, check);
+        case "read":
+          return { ...scopeRead(cap.root, body.path), untrusted: true };
+        case "list": {
+          // Reuse bounded traversal/metadata and do not expose content.
+          const output = listWorkspace(cap.root, body);
+          output.entries = output.entries.filter((entry) => {
+            if (entry.kind !== "file") return true;
+            try {
+              scopeRead(cap.root, entry.path);
+              return true;
+            } catch {
+              return false;
+            }
+          });
+          return { ...output, untrusted: true };
+        }
+        case "propose":
+          // No new direct authority; legacy review remains in the existing local MCP.
+          publicText(body.text ?? "");
+          scopeRead(cap.root, body.path);
+          return submitProposal(stateFile, cap, body);
+        case "create":
+        case "write":
+        case "delete":
+          return directOperation(stateFile, cap, body, check);
+        default:
+          fail("forbidden");
+      }
+    },
+  };
 }
