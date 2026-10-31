@@ -10,6 +10,7 @@ import {
   rememberUserInstructions,
 } from "./messages.js";
 import { parseRewrite } from "./rewrite.js";
+import { ParagraphEditLimitError } from "./edit-constraints.js";
 
 interface WorkItem {
   id: string;
@@ -382,18 +383,55 @@ export class ConversationCoordinator {
           .filter((m) => m.revision === revision && m.role !== "human")
           .map((m) => m.role as ConversationRole),
       );
-      // Each role rewrites once from an explicit snapshot; a rewrite never schedules another rewrite.
-      await Promise.allSettled(
-        [...roles].map((role) =>
+      // One rewrite and at most one bounded correction for a paragraph-limit refusal.
+      const rewriteRoles = [...roles];
+      const rewriteOutcomes = await Promise.allSettled(
+        rewriteRoles.map((role) =>
           observe(
             (async () => {
               const before = this.store.snapshot(conversationId),
                 original = roleConversation(before, role);
-              const answer = await roleCall(role, 2, {
+              const rewriteInput = {
                 humanEditedMessages: before.messages
                   .filter((m) => m.edited)
                   .map((m) => ({ id: m.id, text: m.text })),
-              });
+              };
+              let answer: CallResult;
+              try {
+                answer = await roleCall(role, 2, rewriteInput);
+              } catch (error) {
+                if (!(error instanceof ParagraphEditLimitError)) throw error;
+                assertCurrent();
+                const refused = this.store
+                  .calls(conversationId)
+                  .filter(
+                    (c) =>
+                      c.revision === revision &&
+                      c.role === role &&
+                      c.pass === 2 &&
+                      c.status === "failed",
+                  )
+                  .at(-1);
+                if (!refused) throw error;
+                this.store.appendEvent({
+                  conversationId,
+                  revision,
+                  role,
+                  callId: refused.id,
+                  kind: "rewrite_correction_requested",
+                  text: error.message,
+                });
+                answer = await roleCall(role, 2, {
+                  ...rewriteInput,
+                  rewriteCorrection: {
+                    rejectedCallId: refused.id,
+                    rejectedOutput: refused.rawOutput ?? refused.text,
+                    error: error.message,
+                    instruction:
+                      "Return the complete valid rewrite JSON. Change or insert at most ONE paragraph in total across all assistant messages. Preserve every other paragraph and every human message exactly. Pure deletions are exempt. Do not split this edit into multiple changes.",
+                  },
+                });
+              }
               assertCurrent();
               try {
                 const rewrite = parseRewrite(answer.raw, original);
@@ -440,12 +478,26 @@ export class ConversationCoordinator {
                   kind: "rewrite_rejected",
                   text: error instanceof Error ? error.message : String(error),
                 });
+                throw error;
               }
             })(),
           ),
         ),
       );
       assertCurrent();
+      const incomplete = rewriteOutcomes.flatMap((outcome, index) => {
+        if (outcome.status !== "rejected") return [];
+        const role = rewriteRoles[index];
+        this.store.appendEvent({
+          conversationId,
+          revision,
+          ...(role ? { role } : {}),
+          kind: "rewrite_incomplete",
+          text: outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason),
+        });
+        return [role ?? "unknown"];
+      });
+      if (incomplete.length) throw Error(`Réécriture incomplète : ${incomplete.join(", ")}`);
       this.store.completeConversation(conversationId, revision);
     } catch (error) {
       control.abort(error);

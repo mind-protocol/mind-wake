@@ -403,3 +403,57 @@ it.each(["finish", "submit"])(
     expect(fake.calls.every((c) => c.revision === next.revision)).toBe(true);
   },
 );
+
+it.each([false, true])(
+  "corrects one paragraph-limit refusal once, with unresolved status if it fails again (%s)",
+  async (alwaysRefuse) => {
+    const state = store.submit("main", "Construis et réponds", "rewrite-correction");
+    const fake = fakeRuntime(true);
+    let attempts = 0;
+    const seen: RoleCall[] = [];
+    const runtime: RoleRuntime = {
+      run: async (call, hooks) => {
+        seen.push(call);
+        if (call.role === "lead" && call.pass === 2 && (++attempts === 1 || alwaysRefuse)) {
+          const input = JSON.parse(call.messages.at(-1)?.content ?? "{}") as {
+            conversationToRewrite: { role: string; content: string }[];
+          };
+          return {
+            text: JSON.stringify({
+              messages: input.conversationToRewrite.map((m) =>
+                m.role === "assistant"
+                  ? { ...m, content: "Changed first paragraph.\n\nChanged second paragraph." }
+                  : m,
+              ),
+              improvements: ["Fixture refusal"],
+              repository: [],
+            }),
+            usage: 0,
+            simulated: true,
+          };
+        }
+        return fake.runtime.run(call, hooks);
+      },
+    };
+    const running = new ConversationCoordinator(store, runtime).run("main", state.revision);
+    if (alwaysRefuse) await expect(running).rejects.toThrow("Réécriture incomplète");
+    else await running;
+    expect(attempts).toBe(2);
+    expect(seen.filter((c) => c.role === "work" && c.pass === 1)).toHaveLength(1);
+    const leadCalls = store.calls("main").filter((c) => c.role === "lead" && c.pass === 2);
+    expect(leadCalls.map((c) => c.status)).toEqual(
+      alwaysRefuse ? ["failed", "failed"] : ["failed", "succeeded"],
+    );
+    expect(leadCalls[0]?.rawOutput).toContain("Changed second paragraph");
+    const correction = JSON.parse(leadCalls[1]?.messages.at(-1)?.content ?? "{}") as {
+      rewriteCorrection: { rejectedOutput: string; error: string };
+    };
+    expect(correction.rewriteCorrection.rejectedOutput).toBe(leadCalls[0]?.rawOutput);
+    expect(correction.rewriteCorrection.error).toContain("one paragraph");
+    expect(
+      store.events("main").filter((e) => e.kind === "rewrite_correction_requested"),
+    ).toHaveLength(1);
+    expect(store.current("main")?.status).toBe(alwaysRefuse ? "active" : "completed");
+    expect(store.events("main").some((e) => e.kind === "rewrite_incomplete")).toBe(alwaysRefuse);
+  },
+);
