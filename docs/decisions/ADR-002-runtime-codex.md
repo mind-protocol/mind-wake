@@ -6,6 +6,8 @@
 - Base : [docs/feasibility/codex.md](../feasibility/codex.md) ; versions `@openai/codex` et `@openai/codex-sdk` 0.165.0
 - Structure : AGENTS.md §11 (problème, choix, conséquences, critères de révision). Le modèle d'ADR de S0 n'était pas encore fusionné.
 
+Mise à jour du 31 octobre 2026, décision NLR ui-4bc4609c : le verrou d’égalité de version de C6 est remplacé par la vérification du protocole réellement exposé. Une version testée reste une référence, sans devenir une exigence. `probe`, les lectures de quota et les sessions emploient les mêmes contrôles de compatibilité des schémas ; chaque connexion vérifie le handshake. Une rupture est signalée précisément, avec conseil de mise à jour, sans mise à jour forcée. `turn/steer` est facultatif et dégrade vers le prochain réveil avec avertissement. Les exigences de provenance, permissions, isolation, consentement et mesure restent distinctes. Le texte historique ci-dessous décrit la proposition initiale ; les décisions ultérieures et AGENTS.md prévalent.
+
 ## Problème
 
 AGENTS.md fait de Codex le premier runtime d'exploration, sous quatre conditions vérifiées dans les sources officielles (§8 « Compatibilité réelle ») :

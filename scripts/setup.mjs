@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Local checkout setup; no downloads, model calls, policy changes or payment. */
+/** Local checkout setup; Codex download only on apply; no model call or activation. */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,11 +11,15 @@ import { prepareInstallation, desktopExecutable } from "./installation.mjs";
 import { ensureHub } from "./start-local.mjs";
 import { windowsIntegration } from "./windows-integration.mjs";
 import { startSupervised } from "./desktop-supervisor.mjs";
+import { prepareCodex, codexEnvironment, runProcess } from "./codex-setup.mjs";
 class SetupError extends Error {}
 const repoDir = fileURLToPath(new URL("../", import.meta.url));
 const { values } = parseArgs({
   options: {
     apply: { type: "boolean" },
+    login: { type: "boolean" },
+    noninteractive: { type: "boolean" },
+    "codex-home": { type: "string" },
     "data-dir": { type: "string" },
     "no-open": { type: "boolean" },
     "engine-only": { type: "boolean" },
@@ -27,6 +31,31 @@ const dataDir = path.resolve(
     path.join(process.env.LOCALAPPDATA || "", "mind-wake"),
 );
 const desktopExe = desktopExecutable(repoDir);
+const quotePowerShell = (value) => "'" + value.replaceAll("'", "''") + "'";
+const codexEnv = codexEnvironment(process.env, values["codex-home"]);
+const cancellation = new AbortController();
+const cancel = () => cancellation.abort();
+process.once("SIGINT", cancel);
+process.once("SIGTERM", cancel);
+async function codexCommand(executable, args) {
+  const result = await runProcess(executable, args, { env: codexEnv, signal: cancellation.signal });
+  if (result.status !== 0)
+    throw new SetupError(
+      "Commande Codex échouée : " +
+        args.slice(0, 2).join(" ") +
+        ". Vérifier la connexion et la configuration MCP puis reprendre setup.",
+    );
+  return result.stdout;
+}
+function parseCodexJson(output) {
+  try {
+    return JSON.parse(output);
+  } catch {
+    throw new SetupError(
+      "Réponse MCP Codex illisible ; configuration conservée, vérifier le client officiel.",
+    );
+  }
+}
 function command(exe, args, env = process.env) {
   const r = spawnSync(exe, args, {
     cwd: repoDir,
@@ -53,42 +82,36 @@ try {
     );
   if (!fs.existsSync(path.join(repoDir, "dist/cli/main.js")))
     throw new SetupError("Moteur absent : npm run build.");
-  const codex = command("where.exe", ["codex.exe"]).trim().split(/\r?\n/)[0];
   const expectedLauncher = path.join(dataDir, "installation/mcp.mjs");
-  const existing = spawnSync(codex, ["mcp", "get", "mind-wake", "--json"], {
-    encoding: "utf8",
-    windowsHide: true,
-    timeout: 10000,
-  });
-  if (existing.status === 0) {
-    const entry = JSON.parse(existing.stdout);
-    if (
-      entry.transport?.type !== "stdio" ||
-      entry.transport?.command !== process.execPath ||
-      JSON.stringify(entry.transport?.args) !== JSON.stringify([expectedLauncher])
-    )
-      throw new SetupError(
-        "Le MCP mind-wake existe avec une autre configuration. Rien remplacé : choisir le même dossier de données ou résoudre le conflit.",
-      );
-  }
   if (!values.apply) {
     console.log(
       JSON.stringify(
         {
           mode: "plan",
           dataDir,
+          codex: await prepareCodex({ env: codexEnv }),
           steps: [
             "vérifier le lancement et l’arrêt du Job Object sur ce poste, sans appel modèle",
             "préparer le profil sans changer son activation",
             "créer ou réutiliser les deux identités locales",
             "démarrer le hub et vérifier le MCP",
             "enregistrer mind-wake dans Codex sans écraser un autre serveur",
-            ...(values["engine-only"] ? ["engine-only: no desktop, shortcut or Windows autostart"] : [
-            "créer le raccourci bureau et activer le démarrage Windows sauf choix antérieur contraire",
-            "ouvrir le desktop sur ce même profil",
-            ]),
+            ...(values["engine-only"]
+              ? ["engine-only: no desktop, shortcut or Windows autostart"]
+              : [
+                  "créer le raccourci bureau et activer le démarrage Windows sauf choix antérieur contraire",
+                  "ouvrir le desktop sur ce même profil",
+                ]),
           ],
-          apply: "npm run setup -- --apply " + (values["engine-only"] ? "--engine-only " : "") + "--data-dir " + JSON.stringify(dataDir),
+          apply:
+            "npm run setup -- --apply " +
+            (values["engine-only"] ? "--engine-only " : "") +
+            "--data-dir " +
+            quotePowerShell(dataDir) +
+            (values["no-open"] ? " --no-open" : "") +
+            (values.noninteractive ? " --noninteractive" : "") +
+            " --codex-home " +
+            quotePowerShell(codexEnv.CODEX_HOME),
         },
         null,
         2,
@@ -100,13 +123,42 @@ try {
       "-p",
       path.join(repoDir, "tsconfig.build.json"),
     ]);
+    const preparedCodex = await prepareCodex({
+      apply: true,
+      login: values.login,
+      noOpen: values["no-open"],
+      noninteractive: values.noninteractive,
+      env: codexEnv,
+      signal: cancellation.signal,
+    });
+    const codex = preparedCodex.executable;
+    if (!preparedCodex.compatibility.steering)
+      process.stderr.write(
+        "Avertissement : turn/steer absent ; les messages seront reçus au prochain réveil.\n",
+      );
+    const entries = parseCodexJson(await codexCommand(codex, ["mcp", "list", "--json"]));
+    if (!Array.isArray(entries)) throw new SetupError("Réponse mcp list invalide ; rien remplacé.");
+    const existing = entries.find((entry) => entry.name === "mind-wake");
+    if (
+      existing &&
+      (existing.transport?.type !== "stdio" ||
+        existing.transport?.command !== process.execPath ||
+        JSON.stringify(existing.transport?.args) !== JSON.stringify([expectedLauncher]))
+    )
+      throw new SetupError(
+        "Le MCP mind-wake existe avec une autre configuration. Rien remplacé : choisir le même dossier de données ou résoudre le conflit.",
+      );
     // Check the executable on this PC before claiming the runtime can launch or preparing a hub.
-    const launcherCheck = spawnSync(process.execPath, [
-      path.join(repoDir, "scripts/check-job-launcher.mjs"), "--data-dir", dataDir,
-    ], { cwd: repoDir, encoding: "utf8", windowsHide: true, timeout: 30000 });
+    const launcherCheck = spawnSync(
+      process.execPath,
+      [path.join(repoDir, "scripts/check-job-launcher.mjs"), "--data-dir", dataDir],
+      { cwd: repoDir, encoding: "utf8", windowsHide: true, timeout: 30000 },
+    );
     if (launcherCheck.error || launcherCheck.status !== 0) {
       process.stderr.write(launcherCheck.stdout || "");
-      throw new SetupError("Le test local du Job Object a échoué. Voir docs/WINDOWS-APPLICATION-CONTROL.md ; aucun réveil lancé.");
+      throw new SetupError(
+        "Le test local du Job Object a échoué. Voir docs/WINDOWS-APPLICATION-CONTROL.md ; aucun réveil lancé.",
+      );
     }
     const launcherPreflight = JSON.parse(launcherCheck.stdout);
     const init = JSON.parse(
@@ -119,7 +171,10 @@ try {
       ]),
     );
     if (!init.ok) throw new SetupError("Préparation du profil refusée.");
-    const m = prepareInstallation(repoDir, dataDir);
+    const m = prepareInstallation(repoDir, dataDir, {
+      executable: codex,
+      codexHome: codexEnv.CODEX_HOME,
+    });
     await ensureHub(m);
     const client = new Client({ name: "mind-wake-setup", version: "0.1.0" });
     try {
@@ -131,15 +186,20 @@ try {
       const state = await client.callTool({ name: "wake_status", arguments: {} });
       if (identity.isError || state.isError)
         throw new SetupError("Connexion MCP ou lecture Wake refusée.");
-      if (existing.status !== 0)
-        command(codex, ["mcp", "add", "mind-wake", "--", process.execPath, m.launcher]);
-      const confirmed = JSON.parse(command(codex, ["mcp", "get", "mind-wake", "--json"]));
+      if (!existing)
+        await codexCommand(codex, ["mcp", "add", "mind-wake", "--", process.execPath, m.launcher]);
+      const confirmed = JSON.parse(
+        await codexCommand(codex, ["mcp", "get", "mind-wake", "--json"]),
+      );
       if (JSON.stringify(confirmed.transport?.args) !== JSON.stringify([m.launcher]))
         throw new SetupError("Enregistrement MCP non confirmé.");
-      const windows = values["engine-only"] ? { installed: false, reason: "engine-only" } : windowsIntegration(m.manifestFile, "install");
+      const windows = values["engine-only"]
+        ? { installed: false, reason: "engine-only" }
+        : windowsIntegration(m.manifestFile, "install");
       if (!values["engine-only"] && !values["no-open"]) await startSupervised(m.manifestFile);
       const result = {
         mode: "installed-local",
+        codex: preparedCodex,
         dataDir,
         engine: { prepared: true, profileState: init.data.profile.state, activationChanged: false },
         launcherPreflight,
@@ -150,11 +210,15 @@ try {
           tools: tools.tools.length,
           newSessionRequired: true,
         },
-        desktop: { required: !values["engine-only"], present: fs.existsSync(desktopExe), launched: !values["engine-only"] && !values["no-open"] },
+        desktop: {
+          required: !values["engine-only"],
+          present: fs.existsSync(desktopExe),
+          launched: !values["engine-only"] && !values["no-open"],
+        },
         runtimeMcpConfig: m.mcpFile,
         manifest: m.manifestFile,
         limits: [
-          "version de test non signée, prérequis Node et Codex externes",
+          "version de test non signée, prérequis Node externe ; Codex officiel réutilisé ou installé",
           "clés locales sur disque, coffre Windows non livré",
           "aucun réveil ni consentement de policy déclenché par setup",
         ],
@@ -169,9 +233,12 @@ try {
     }
   }
 } catch (error) {
-  if (error instanceof SetupError) process.stderr.write(error.message + "\n");
+  if (error instanceof Error) process.stderr.write(error.message + "\n");
   process.stderr.write(
     "Installation incomplète. Vérifier les prérequis, un éventuel conflit du MCP mind-wake et les journaux du hub. Aucune policy activée.\n",
   );
   process.exitCode = 1;
 }
+
+process.removeListener("SIGINT", cancel);
+process.removeListener("SIGTERM", cancel);

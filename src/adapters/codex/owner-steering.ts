@@ -19,6 +19,7 @@ export class CodexOwnerSteering {
     private readonly turnId: string,
     private readonly rpc: Pick<RpcClient, "request">,
     private readonly isActive: () => boolean,
+    private readonly onDeferred: () => void = () => undefined,
   ) {
     this.#timer = setInterval(() => {
       void this.flush();
@@ -38,18 +39,24 @@ export class CodexOwnerSteering {
         clientUserMessageId: claim,
         input: ownerContent(messages, "codex"),
       });
-      if (!this.#stopped && accepted["turnId"] === this.turnId) {
+      if (this.#canConfirm() && accepted["turnId"] === this.turnId) {
         confirmOwnerClaim(this.inbox, this.sessionId, claim);
       } else {
+        this.onDeferred();
         this.stop();
       }
     } catch {
+      this.onDeferred();
       // Unsupported method, turn race, transport failure or ambiguous acknowledgement:
       // retain the message for the next wake; do not retry blindly within this turn.
       this.stop();
     } finally {
       this.#busy = false;
     }
+  }
+
+  #canConfirm(): boolean {
+    return !this.#stopped && this.isActive();
   }
 
   stop(): void {

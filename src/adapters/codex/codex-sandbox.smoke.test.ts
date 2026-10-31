@@ -31,7 +31,6 @@ import { sandboxSourceDigest } from "../../sandbox/build.js";
 import { runIsolationSelfTest } from "../../sandbox/self-test.js";
 import {
   appContainerLauncher,
-  CODEX_SUPPORTED_VERSION,
   CodexAdapter,
   MemoryThreadStore,
   parseCodexVersion,
@@ -99,10 +98,8 @@ describe.skipIf(!ENABLED)(
           executable: { path: binary },
           codexHome: dirs.codexHome,
           workspaceDir: dirs.workspace,
-          // Version installée non validée : admise en mode manuel seulement. Le confinement
-          // vérifié donne quand même le mode sans approbation (danger-full-access).
+          // Le mode manuel conserve le protocole vérifié et les contrôles de confinement.
           mode: "manual",
-          acceptedVersions: [CODEX_SUPPORTED_VERSION, version],
           launcher,
           // Transport fermé : aucun broker, donc aucun réseau dans le conteneur.
           transport: {

@@ -33,17 +33,9 @@ import type {
   UtcTimestamp,
 } from "../../contracts/index.js";
 import { SpawnedCodexProcess, type TranscriptLine } from "../../../test/fixtures/codex/process.js";
-import {
-  CODEX_SUPPORTED_VERSION,
-  CodexAdapter,
-  MemoryThreadStore,
-  type CodexCommand,
-  type QuotaReading,
-} from "./index.js";
+import { CodexAdapter, MemoryThreadStore, type CodexCommand, type QuotaReading } from "./index.js";
 
 const ENABLED = process.env["MIND_WAKE_REAL_SMOKE"] === "1";
-/** Version installée sur le poste de développement au 29 octobre 2026 (non validée). */
-const SMOKE_VERSIONS = [CODEX_SUPPORTED_VERSION, "0.147.0"];
 
 /** Fonctions annexes de Codex désactivées pour ce test (`codex features list`). */
 const DISABLED_FEATURES = [
@@ -161,7 +153,6 @@ describe.skipIf(!ENABLED)("Codex réel (fumée, opt-in MIND_WAKE_REAL_SMOKE=1)",
       mode: "manual",
       hostSandbox: "read-only",
       ephemeralThreads: true,
-      acceptedVersions: SMOKE_VERSIONS,
       allowUserCodexHome: true,
       launcher: {
         isolation: () => ({ confined: false, selfTestPassed: false, detail: "hôte (fumée)" }),

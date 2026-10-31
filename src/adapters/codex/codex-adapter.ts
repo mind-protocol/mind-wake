@@ -1,4 +1,5 @@
 import path from "node:path";
+import { checkCodexCompatibility, type CodexCompatibility } from "./compatibility.js";
 import os from "node:os";
 import { codexWakeInput } from "../wake-image.js";
 import { readCurrentProject, projectChange } from "../../daemon/project-change.js";
@@ -18,11 +19,11 @@ import {
 import { CodexOwnerSteering } from "./owner-steering.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
- * `codex app-server` (JSON-RPC sur stdio, version figée), un fil Codex repris d'un réveil
+ * `codex app-server` (JSON-RPC sur stdio, protocole vérifié), un fil Codex repris d'un réveil
  * à l'autre et un tour. `app-server` est retenu plutôt que `codex exec --json` parce
  * qu'il est le seul à exposer la jauge officielle de quota (`account/rateLimits/*`),
  * l'interruption d'un tour (`turn/interrupt`) et l'usage par réponse ; OpenAI le déclare
- * expérimental, d'où la version figée et la sonde.
+ * expérimental, d'où la vérification du protocole et la sonde.
  *
  * Aucun credential ne passe par l'adapter : `CODEX_HOME` est dédié à Wake et le réseau,
  * sous AppContainer, n'existe que par le transport du relais fournisseur.
@@ -64,7 +65,6 @@ import type {
 import {
   asRecord,
   classifyCodexError,
-  CODEX_SUPPORTED_VERSION,
   parseCodexVersion,
   parseTokenBreakdown,
   parseTurnError,
@@ -132,11 +132,6 @@ export interface CodexAdapterOptions {
   readonly hostSandbox?: HostSandbox;
   /** Fils éphémères (`thread/start.ephemeral`) : rien d'écrit dans l'historique Codex. */
   readonly ephemeralThreads?: boolean;
-  /**
-   * Versions acceptées ; par défaut la seule version validée. Une autre version n'est
-   * admise qu'en mode manuel (test de fumée) et la sonde la signale comme non validée.
-   */
-  readonly acceptedVersions?: readonly string[];
   /** Connexion déjà configurée de l'utilisateur (`~/.codex`) : mode manuel seulement. */
   readonly allowUserCodexHome?: boolean;
   readonly nativeCodexHome?: string;
@@ -152,7 +147,11 @@ export interface CodexAdapterOptions {
 }
 
 export type CodexAdapterErrorCode =
-  "version_unsupported" | "isolation_required" | "transport_required" | "launch_failed";
+  | "protocol_incompatible"
+  | "version_unsupported"
+  | "isolation_required"
+  | "transport_required"
+  | "launch_failed";
 
 export class CodexAdapterError extends Error {
   readonly code: CodexAdapterErrorCode;
@@ -282,6 +281,7 @@ export class CodexAdapter implements RuntimeAdapter {
   readonly #sessions = new Map<SessionId, CodexSession>();
   readonly #versionCheck: () => Promise<string>;
   readonly #clock: () => Date;
+  #compatibility: Promise<CodexCompatibility> | null = null;
   #version: Promise<{ version: string | null; reason?: string }> | null = null;
 
   constructor(options: CodexAdapterOptions) {
@@ -316,38 +316,39 @@ export class CodexAdapter implements RuntimeAdapter {
     const base = {
       adapterId: CODEX_ADAPTER_ID,
       version: detected.version ?? "inconnue",
-      executionMechanism: `codex app-server ${CODEX_SUPPORTED_VERSION} (JSON-RPC stdio, déclaré expérimental par OpenAI)`,
+      executionMechanism:
+        "codex app-server (JSON-RPC stdio, schémas vérifiés ; handshake à chaque connexion)",
       simulated: false,
     };
     if (detected.version === null) {
       return { ...base, available: false, unavailableReason: detected.reason ?? "inconnue" };
     }
-    if (!this.#acceptedVersions().includes(detected.version)) {
-      return {
-        ...base,
-        available: false,
-        unavailableReason: `version ${detected.version} non validée (attendue ${CODEX_SUPPORTED_VERSION})`,
-      };
-    }
-    if (detected.version !== CODEX_SUPPORTED_VERSION) {
+    try {
+      const compatible = await this.#checkCompatibility();
       return {
         ...base,
         available: true,
-        unavailableReason: `version ${detected.version} admise en mode manuel seulement, non validée`,
+        ...(!compatible.steering
+          ? { unavailableReason: "turn/steer absent : messages au prochain réveil" }
+          : {}),
       };
+    } catch (error) {
+      return { ...base, available: false, unavailableReason: errorMessage(error) };
     }
-    return { ...base, available: true };
   }
 
-  /** Une version non validée ou le `CODEX_HOME` de l'utilisateur n'existent qu'en manuel. */
   #manualOnly(): boolean {
     return (this.#options.mode ?? "autonomous") === "manual";
   }
 
-  #acceptedVersions(): readonly string[] {
-    return this.#manualOnly()
-      ? (this.#options.acceptedVersions ?? [CODEX_SUPPORTED_VERSION])
-      : [CODEX_SUPPORTED_VERSION];
+  #checkCompatibility(): Promise<CodexCompatibility> {
+    this.#compatibility ??= checkCodexCompatibility(this.#options.executable).catch(
+      (error: unknown) => {
+        this.#compatibility = null;
+        throw new CodexAdapterError("protocol_incompatible", errorMessage(error));
+      },
+    );
+    return this.#compatibility;
   }
 
   capabilities(): Promise<AdapterCapabilities> {
@@ -402,14 +403,10 @@ export class CodexAdapter implements RuntimeAdapter {
 
   async #assertVersion(): Promise<void> {
     const detected = await this.#detectVersion();
-    if (detected.version === null || !this.#acceptedVersions().includes(detected.version)) {
-      throw new CodexAdapterError(
-        "version_unsupported",
-        detected.version === null
-          ? (detected.reason ?? "version inconnue")
-          : `version ${detected.version} non validée (attendue ${CODEX_SUPPORTED_VERSION})`,
-      );
+    if (detected.version === null) {
+      throw new CodexAdapterError("version_unsupported", detected.reason ?? "version inconnue");
     }
+    await this.#checkCompatibility();
   }
 
   /** `policy` nulle : lecture de jauge, sans fil ni tour, par `quotaLauncher`. */
@@ -433,7 +430,7 @@ export class CodexAdapter implements RuntimeAdapter {
     try {
       const nativeCapabilities =
         !attestation.confined &&
-        ((policy?.groups?.runtime?.nativeCapabilities === true && bypass) ||
+        ((policy?.groups.runtime.nativeCapabilities === true && bypass) ||
           (policy === null && this.#options.nativeCapabilities === true));
       const command = buildAppServerCommand({
         executable: this.#options.executable,
@@ -598,11 +595,13 @@ export class CodexAdapter implements RuntimeAdapter {
     let reason = "completed";
     let steering: CodexOwnerSteering | null = null;
     const inbox =
-      request.policy.groups?.runtime?.nativeCapabilities === true
+      request.policy.groups.runtime.nativeCapabilities === true
         ? this.#options.ownerInboxDir
         : undefined;
     try {
-      await rpc.request("initialize", { clientInfo: CLIENT_INFO });
+      const initialized = await rpc.request("initialize", { clientInfo: CLIENT_INFO });
+      if (typeof initialized["userAgent"] !== "string" || !initialized["userAgent"])
+        throw new Error("initialize : userAgent absent, protocole Codex incompatible");
       rpc.notify("initialized", {});
       const account = await rpc.request("account/read", { refreshToken: false });
       if (account["account"] === null && account["requiresOpenaiAuth"] === true) {
@@ -644,7 +643,12 @@ export class CodexAdapter implements RuntimeAdapter {
       if (typeof turnId === "string") session.turnId ??= turnId;
       if (session.turn === "pending") session.turn = "inProgress";
       this.#emitStarted(session);
-      if (inbox && session.threadId && session.turnId) {
+      if (
+        inbox &&
+        session.threadId &&
+        session.turnId &&
+        (await this.#checkCompatibility()).steering
+      ) {
         steering = new CodexOwnerSteering(
           inbox,
           request.sessionId,
@@ -652,8 +656,23 @@ export class CodexAdapter implements RuntimeAdapter {
           session.turnId,
           rpc,
           () => !session.ended && !session.cancelling && session.turn === "inProgress",
+          () => {
+            session.queue.push({
+              type: "activity",
+              sessionId: session.sessionId,
+              at: this.#now(),
+              summary: "Injection Codex indisponible : messages conservés pour le prochain réveil",
+            });
+          },
         );
       }
+      if (inbox && !(await this.#checkCompatibility()).steering)
+        session.queue.push({
+          type: "activity",
+          sessionId: session.sessionId,
+          at: this.#now(),
+          summary: "turn/steer absent : messages conservés pour le prochain réveil",
+        });
       await session.turnDone;
       const change = projectChange(
         session.projectStart,
@@ -1216,7 +1235,9 @@ export class CodexAdapter implements RuntimeAdapter {
       onClose: () => undefined,
     });
     try {
-      await rpc.request("initialize", { clientInfo: CLIENT_INFO });
+      const initialized = await rpc.request("initialize", { clientInfo: CLIENT_INFO });
+      if (typeof initialized["userAgent"] !== "string" || !initialized["userAgent"])
+        throw new Error("initialize : userAgent absent, protocole Codex incompatible");
       rpc.notify("initialized", {});
       const result = await rpc.request("account/rateLimits/read", {});
       const reading = quotaFromRateLimitsResponse(result, this.#now());

@@ -24,6 +24,8 @@ Propose le mode Codex natif : outils, skills et MCP du compte local restent disp
 
 Le script `npm run setup` sert à connecter des fichiers déjà installés ; il ne télécharge pas Wake. Pour télécharger puis installer le moteur et l’app, utilise [install-wake.ps1](./install-wake.ps1) :
 
+La modification du setup Codex doit être incluse dans une nouvelle archive avant sa distribution. Le script refuse une ancienne archive sans `scripts/codex-setup.mjs`, en conservant les fichiers extraits. Le lien de test du 29 octobre ci-dessous n’a pas été republié par cette modification des sources.
+
 ```powershell
 $wakeInstaller = Join-Path $env:TEMP ('install-wake-' + [guid]::NewGuid() + '.ps1')
 Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/install-wake.ps1' -OutFile $wakeInstaller -UseBasicParsing -ErrorAction Stop
@@ -31,11 +33,11 @@ Get-Content -LiteralPath $wakeInstaller
 powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File $wakeInstaller -Destination (Join-Path $env:USERPROFILE 'mind-wake')
 ```
 
-L’agent lit le script avant de le lancer. Le script affiche les octets téléchargés et le dossier final, vérifie SHA-256, extrait l’archive, installe les dépendances, construit le moteur, branche le MCP et ouvre le panneau. Il n’active aucun réveil. Node et Codex doivent être disponibles pour les étapes après extraction. Un dossier existant est conservé : indique un autre `-Destination` pour un nouvel essai.
+L’agent lit le script avant de le lancer. Le script affiche les octets téléchargés et le dossier final, vérifie SHA-256, extrait l’archive, installe les dépendances et construit le moteur. Le setup réutilise Codex s’il est présent ; sinon, en mode apply, il l’installe avec la commande officielle `npm install --global @openai/codex@latest`, puis vérifie le binaire et son protocole. Node/npm doivent déjà être disponibles. Aucune mise à jour d’un Codex existant n’est imposée. Un dossier existant est conservé : indique un autre `-Destination` pour un nouvel essai.
 
-Ajoute `-DownloadOnly` pour seulement télécharger et extraire les fichiers, ou `-NoOpen` pour installer sans ouvrir le panneau. En cas d’échec, le script affiche l’erreur et renvoie un code non nul ; le dossier téléchargé reste disponible. Après installation, passe à la section 4 pour préparer l’autonomie. Les sections 1 à 3 détaillent le parcours manuel.
+Ajoute `-DownloadOnly` pour seulement télécharger et extraire les fichiers, ou `-NoOpen` pour installer sans ouvrir le panneau ni lancer de connexion. Si Codex n’est pas connecté, le setup s’arrête avant de préparer le profil ou le MCP et indique comment reprendre. Pour demander explicitement la connexion humaine, utilise `-Login` dans un terminal visible, sans `-NoOpen`. `codex login` ouvre le navigateur officiel ; le statut est revérifié avant de poursuivre. Le flux est limité à cinq minutes, annulable, et ne demande aucun secret dans le chat. `-CodexHome 'chemin'` conserve un dossier Codex choisi ; sinon `CODEX_HOME` est respecté, puis le dossier personnel habituel est utilisé. En cas d’échec, le dossier téléchargé reste disponible et le code de sortie est non nul. Depuis ce dossier, reprendre avec la commande de la section 3, sans retélécharger Wake. L’installation n’active aucun réveil.
 
-Il faut Windows x64, Node/npm, Codex CLI connecté au compte de cette personne et WebView2. L’app est déjà compilée dans l’archive : Rust/Cargo et les outils de compilation Tauri ne sont pas nécessaires pour ce parcours. Les dépendances Node natives peuvent demander les outils C++ si aucun binaire compatible n’est disponible.
+Il faut Windows x64, Node/npm et WebView2. Le setup aide à installer Codex et à le connecter au compte de cette personne. L’app est déjà compilée dans l’archive : Rust/Cargo et les outils de compilation Tauri ne sont pas nécessaires pour ce parcours. Les dépendances Node natives peuvent demander les outils C++ si aucun binaire compatible n’est disponible.
 
 Dans PowerShell :
 
@@ -46,7 +48,9 @@ codex --version
 where.exe codex.exe
 ```
 
-Vérifie package.json : il demande actuellement Node ^24.17.0 ou ^26.13.0. Ce build valide Codex CLI **0.165.0**, avec codex.exe disponible dans le PATH ; une autre version est refusée par l’adapter. L’humain se connecte au fournisseur dans le client officiel ; ses identifiants ne passent pas dans le chat.
+Vérifie package.json : il demande actuellement Node ^24.17.0 ou ^26.13.0. Codex CLI **0.165.0** est une version de référence testée, pas une version exigée. Le setup et l’adapter vérifient les méthodes et schémas exposés par le binaire installé ; chaque connexion runtime vérifie aussi le handshake. Un protocole insuffisant donne une erreur précise et un conseil de mise à jour, sans réinstallation automatique. Sans `turn/steer`, un avertissement indique que les nouveaux messages attendront le prochain réveil. Les chemins natifs, l’application sous LocalAppData et le lanceur npm `.cmd` sont détectés ; ce dernier est résolu en `node` et script officiel sans shell interpolé. Si nécessaire, `MIND_WAKE_CODEX_BIN` désigne explicitement le chemin choisi.
+
+Sources officielles : [installation npm](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex), [connexion et statut](https://learn.chatgpt.com/docs/cli/reference), [authentification](https://learn.chatgpt.com/docs/auth), [export des schémas et handshake](https://learn.chatgpt.com/docs/app-server), [chemin d’installation Windows](https://learn.chatgpt.com/docs/config-file/environment-variables). Les tests locaux de cette modification utilisent des processus fixtures : poste neuf et connexion humaine restent à vérifier sur une installation autorisée.
 
 Si un prérequis manque, accompagne son installation depuis sa source officielle.
 
@@ -96,7 +100,9 @@ Applique le plan autorisé :
 npm run setup -- --apply --data-dir "$wakeData"
 ```
 
-Le script prépare SQLite, crée les identités locales humain/agent, lance le hub local, vérifie l'authentification MCP et le statut Wake, enregistre mind-wake dans Codex et ouvre l'app sur ce profil. Une configuration MCP existante et différente est refusée : ne l'écrase pas pour faire passer l'installation.
+Le plan n’installe rien, ne lance aucune connexion et ne modifie ni profil, ni MCP, ni daemon. Avec `--apply`, le script vérifie d’abord Codex et `codex login status`, sans lire son cache d’authentification. Une connexion existante est conservée. Si elle manque, reprendre dans un terminal visible avec `--apply --login`, les mêmes `--data-dir` et `--codex-home` éventuels. `--no-open` et `--noninteractive` empêchent le login. Pour une préparation en arrière-plan, laisser le login à cette reprise humaine ; aucun navigateur ni terminal invisible n’attend indéfiniment. Le flux device-code reste un choix manuel explicite via le client officiel, sans changement automatique des réglages de sécurité.
+
+Une fois ces vérifications réussies, le script prépare SQLite, crée les identités locales humain/agent, lance le hub local, vérifie l'authentification MCP et le statut Wake, enregistre mind-wake dans Codex et ouvre l'app sur ce profil. Une configuration MCP existante et différente est refusée avant la préparation du profil : ne l'écrase pas pour faire passer l'installation. `--engine-only` conserve le parcours sans desktop ni intégration Windows. Le dossier Codex et le binaire choisis sont conservés dans le manifeste local pour les prochains lancements, sans copier de credentials.
 
 Vérifie le compte rendu et installation/last-setup.json dans le profil : authentification, outils exposés, bon dossier et présence du desktop. Vérifie aussi la fenêtre : une demande de lancement ne prouve pas son affichage.
 
@@ -115,17 +121,17 @@ node scripts/prepare-codex-policy.mjs --output "$wakePolicyFile" --model gpt-6.1
 
 Adapte le modèle disponible et le fuseau IANA. Le script refuse d’écraser un fichier existant. Examine le brouillon :
 
-| Groupe | Configuration pour cet essai |
-| --- | --- |
-| identity | Omettre : la CLI reprend l'identité du profil local. |
-| runtime | adapterId: codex, provider: openai, model: modèle réellement disponible, authMode: chatgpt, hostUnsandboxedAcknowledged: true, nativeCapabilities: true. |
-| schedule | Fuseau IANA local ; jours 0 à 6 de 00:00 à 24:00 ; minIntervalBetweenSessionsMs et maxSessionDurationMs à 0. |
-| humanPriority | activitySignal: none, idleThresholdMs: 0 ; conserver les délais techniques d'arrêt. |
-| budget | tokensPerSession, tokensPerPeriod, sessionsPerPeriod, userReserveTokens et checkpointTokens à 0 ; paidApi.authorized: false ; fuseau local dans period. |
-| budget.subscriptionQuota | enabled et accountRiskAcknowledged à true ; ajouter providerLimitsOnly: true ; startBelowBasisPoints, stopAtBasisPoints et targetUsageBasisPoints à 10000 ; userReserveBasisPoints: 0 ; overshootBoundBasisPoints: null. Conserver les paramètres techniques de lecture du quota. |
-| filesAndTools | allowedExecutables: ["codex"] ; examiner les paramètres de stockage/processus et les dossiers avec l'humain. |
-| network.providerTransportDestinations | chatgpt.com et api.openai.com, port 443, avec un purpose décrivant le transport Codex. |
-| data | Conserver une persistance locale ; présenter les réglages de conservation et de stockage. |
+| Groupe                                | Configuration pour cet essai                                                                                                                                                                                                                                                      |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| identity                              | Omettre : la CLI reprend l'identité du profil local.                                                                                                                                                                                                                              |
+| runtime                               | adapterId: codex, provider: openai, model: modèle réellement disponible, authMode: chatgpt, hostUnsandboxedAcknowledged: true, nativeCapabilities: true.                                                                                                                          |
+| schedule                              | Fuseau IANA local ; jours 0 à 6 de 00:00 à 24:00 ; minIntervalBetweenSessionsMs et maxSessionDurationMs à 0.                                                                                                                                                                      |
+| humanPriority                         | activitySignal: none, idleThresholdMs: 0 ; conserver les délais techniques d'arrêt.                                                                                                                                                                                               |
+| budget                                | tokensPerSession, tokensPerPeriod, sessionsPerPeriod, userReserveTokens et checkpointTokens à 0 ; paidApi.authorized: false ; fuseau local dans period.                                                                                                                           |
+| budget.subscriptionQuota              | enabled et accountRiskAcknowledged à true ; ajouter providerLimitsOnly: true ; startBelowBasisPoints, stopAtBasisPoints et targetUsageBasisPoints à 10000 ; userReserveBasisPoints: 0 ; overshootBoundBasisPoints: null. Conserver les paramètres techniques de lecture du quota. |
+| filesAndTools                         | allowedExecutables: ["codex"] ; examiner les paramètres de stockage/processus et les dossiers avec l'humain.                                                                                                                                                                      |
+| network.providerTransportDestinations | chatgpt.com et api.openai.com, port 443, avec un purpose décrivant le transport Codex.                                                                                                                                                                                            |
+| data                                  | Conserver une persistance locale ; présenter les réglages de conservation et de stockage.                                                                                                                                                                                         |
 
 Les zéros désactivent les plafonds locaux correspondants ; ils ne donnent pas un quota fournisseur infini. Le contrôle du quota réel reste actif. Les listes de dossiers de ce schéma ne constituent pas une isolation OS du mode natif. Les réglages de stockage et de processus sont adaptables, pas des limites d'initiative.
 

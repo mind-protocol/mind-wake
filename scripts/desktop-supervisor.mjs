@@ -5,6 +5,7 @@ import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 import { startLocal } from "./start-local.mjs";
+import { codexRuntimeEnv } from "./installation.mjs";
 
 export function restartDelay(code, signal, failures) {
   if (code === 75 && !signal) return 0; // Explicit app restart, not a crash.
@@ -45,7 +46,7 @@ export async function startSupervised(manifestFile) {
 }
 export function startScheduled(m) {
   const args = [path.join(m.repoDir, "dist/cli/main.js")];
-  const env = { ...process.env, MIND_WAKE_DATA_DIR: m.dataDir };
+  const env = { ...process.env, ...codexRuntimeEnv(m), MIND_WAKE_DATA_DIR: m.dataDir };
   const command = (verb) =>
     spawnSync(m.node, [...args, verb, "--json"], {
       env,

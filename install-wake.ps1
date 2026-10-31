@@ -4,7 +4,9 @@ param(
   [string]$Destination = (Join-Path $env:USERPROFILE 'mind-wake'),
   [string]$DataDir = (Join-Path $env:LOCALAPPDATA 'mind-wake'),
   [switch]$DownloadOnly,
-  [switch]$NoOpen
+  [switch]$NoOpen,
+  [switch]$Login,
+  [string]$CodexHome = $env:CODEX_HOME
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -45,7 +47,10 @@ try {
     Write-Host 'Download-only complete. No dependencies, MCP or profile changed.'
     return
   }
-  foreach ($required in @('node.exe','npm.cmd','codex.exe')) {
+  if (!(Test-Path -LiteralPath (Join-Path $Destination 'scripts\codex-setup.mjs'))) {
+    throw "Cette archive ne contient pas encore le setup Codex assisté. Fichiers conservés à $Destination. Utiliser une archive reconstruite avec les sources mises à jour, puis reprendre npm run setup -- --apply ; aucun profil ou MCP préparé."
+  }
+  foreach ($required in @('node.exe','npm.cmd')) {
     if (!(Get-Command $required -ErrorAction SilentlyContinue)) { throw "Downloaded successfully, but $required is missing from PATH. Files remain at $Destination. Follow install.md to continue." }
   }
   Push-Location -LiteralPath $Destination
@@ -59,6 +64,8 @@ try {
     Write-Host '[5/5] Connecting local MCP and desktop...'
     $setupArgs = @('scripts/setup.mjs','--apply','--data-dir',$DataDir)
     if ($NoOpen) { $setupArgs += '--no-open' }
+    if ($Login) { $setupArgs += '--login' }
+    if ($CodexHome) { $setupArgs += @('--codex-home', $CodexHome) }
     & node.exe @setupArgs
     if ($LASTEXITCODE -ne 0) { throw "Local setup failed ($LASTEXITCODE). Files remain at $Destination." }
     Write-Host "Installed at $Destination. Profile: $DataDir"

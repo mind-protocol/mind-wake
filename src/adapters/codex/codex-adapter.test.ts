@@ -453,7 +453,7 @@ describe("commande", () => {
 });
 
 describe("sonde et capacités", () => {
-  it("version figée disponible, capacités honnêtes", async () => {
+  it("version de référence disponible, capacités honnêtes", async () => {
     const a = adapter({ versionCheck: undefined });
     const probe = await a.probe();
     expect(probe).toMatchObject({
@@ -471,11 +471,55 @@ describe("sonde et capacités", () => {
     });
   });
 
-  it("une autre version est indisponible et refusée au lancement", async () => {
-    const a = adapter({ versionCheck: () => Promise.resolve("codex-cli 0.147.0") });
-    expect(await a.probe()).toMatchObject({ available: false, version: "0.147.0" });
+  it("une version plus récente compatible est disponible sans réinstallation", async () => {
+    const a = adapter({ versionCheck: () => Promise.resolve("codex-cli 0.200.1") });
+    expect(await a.probe()).toMatchObject({ available: true, version: "0.200.1" });
+    const events = await collect(a, request());
+    expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
+  });
+  it("refuse une rupture du protocole même pour une version de référence", async () => {
+    const a = adapter({
+      executable: { path: process.execPath, prefixArgs: [FAKE, "--fixture-no-interrupt"] },
+    });
+    const probe = await a.probe();
+    expect(probe.available).toBe(false);
+    expect(probe.unavailableReason).toContain("turn/interrupt");
+    await expect(a.start(request())).rejects.toMatchObject({ code: "protocol_incompatible" });
+    expect(h.launches).toHaveLength(0);
+  });
+  it("une sortie de version invalide ne lance aucun serveur", async () => {
+    const a = adapter({
+      versionCheck: () => Promise.resolve("unexpected codex-cli 0.165.0 trailing"),
+    });
+    expect(await a.probe()).toMatchObject({ available: false });
     await expect(a.start(request())).rejects.toMatchObject({ code: "version_unsupported" });
     expect(h.launches).toHaveLength(0);
+  });
+
+  it("sans turn/steer, avertit et conserve les nouveaux messages sans fausse injection", async () => {
+    const a = adapter({
+      ownerInboxDir: h.dir,
+      executable: { path: process.execPath, prefixArgs: [FAKE, "--fixture-no-steer"] },
+    });
+    expect(await a.probe()).toMatchObject({ available: true });
+    const req = request();
+    (req.policy.groups.runtime as { nativeCapabilities?: boolean }).nativeCapabilities = true;
+    const handle = await a.start(req);
+    const events: AdapterEvent[] = [];
+    for await (const event of a.events(handle)) {
+      events.push(event);
+      if (event.type === "started")
+        enqueueOwnerMessage(h.dir, {
+          id: "late-no-steer",
+          at: new Date().toISOString(),
+          text: "next wake",
+        });
+    }
+    expect(
+      events.some((e) => e.type === "activity" && e.summary.includes("turn/steer absent")),
+    ).toBe(true);
+    expect(h.requests("turn/steer")).toHaveLength(0);
+    expect(readOwnerReceipts(h.dir)["late-no-steer"]).toBeUndefined();
   });
 
   it("binaire absent : indisponible", async () => {
@@ -798,7 +842,6 @@ describe("flux réels enregistrés (codex-cli 0.147.0, expurgés)", () => {
       mode: "manual",
       hostSandbox: "read-only",
       transport: undefined,
-      acceptedVersions: ["0.147.0"],
       versionCheck: () => Promise.resolve("codex-cli 0.147.0"),
       onQuota: (r) => quota.push(r),
     });
@@ -846,13 +889,12 @@ describe("flux réels enregistrés (codex-cli 0.147.0, expurgés)", () => {
     expect(await a.reconcile(req.sessionId)).toMatchObject({ status: "uncertain" });
   });
 
-  it("une version non validée reste refusée en mode autonome", async () => {
+  it("la version historique compatible est aussi admise en mode autonome isolé", async () => {
     const a = adapter({
-      acceptedVersions: ["0.147.0"],
       versionCheck: () => Promise.resolve("codex-cli 0.147.0"),
     });
-    expect(await a.probe()).toMatchObject({ available: false });
-    await expect(a.start(request())).rejects.toMatchObject({ code: "version_unsupported" });
+    expect(await a.probe()).toMatchObject({ available: true });
+    expect((await collect(a, request())).at(-1)).toMatchObject({ exitReason: "completed" });
   });
 
   it("le CODEX_HOME de l'utilisateur n'est admis qu'en mode manuel", async () => {
@@ -909,7 +951,7 @@ describe("alignement ADR-006 et câblage", () => {
   });
 
   it("readQuota : lecture impossible = tableau vide (quota inconnu)", async () => {
-    const a = adapter({ versionCheck: () => Promise.resolve("codex-cli 0.1.0") });
+    const a = adapter({ versionCheck: () => Promise.resolve("invalid") });
     expect(await a.readQuota()).toEqual([]);
   });
 

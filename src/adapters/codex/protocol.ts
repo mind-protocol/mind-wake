@@ -1,6 +1,6 @@
 /**
  * Sous-ensemble du protocole `codex app-server` employé par l'adapter, vérifié sur les
- * schémas JSON officiels de la version figée (`codex-rs/app-server-protocol/schema/json`,
+ * schémas JSON officiels de la version de référence (`codex-rs/app-server-protocol/schema/json`,
  * tag `rust-v0.165.0`) et la page « App server » de la documentation Codex, le
  * 29 octobre 2026. Transport : JSON-RPC 2.0 sans champ `jsonrpc`, une ligne JSON par
  * message sur stdio.
@@ -11,7 +11,7 @@
 
 import type { ProviderQuotaSnapshot, TokenCategory, UtcTimestamp } from "../../contracts/index.js";
 
-/** Seule version validée ; toute autre version rend l'adapter indisponible (ADR-002 C6). */
+/** Version de référence des essais enregistrés ; aucune égalité de version exigée. */
 export const CODEX_SUPPORTED_VERSION = "0.165.0";
 
 export type JsonRecord = Readonly<Record<string, unknown>>;
@@ -36,7 +36,7 @@ function nonNegativeInt(value: unknown): number | null {
 
 /** Version annoncée par `codex --version` (`codex-cli 0.165.0`). */
 export function parseCodexVersion(output: string): string | null {
-  const match = /codex(?:-cli)?\s+v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/i.exec(output);
+  const match = /^codex(?:-cli)?\s+v?(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\s*$/i.exec(output);
   return match?.[1] ?? null;
 }
 

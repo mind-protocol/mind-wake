@@ -9,7 +9,16 @@ export function desktopExecutable(repoDir) {
     ? portable
     : path.join(repoDir, "desktop/src-tauri/target/debug/mind-wake-desktop.exe");
 }
-export function prepareInstallation(repoDir, dataDir) {
+export function codexRuntimeEnv(manifest) {
+  return manifest.codex
+    ? {
+        CODEX_HOME: manifest.codex.codexHome,
+        MIND_WAKE_CODEX_BIN:
+          manifest.codex.executable.prefixArgs?.[0] || manifest.codex.executable.path,
+      }
+    : {};
+}
+export function prepareInstallation(repoDir, dataDir, codex) {
   repoDir = path.resolve(repoDir);
   dataDir = path.resolve(dataDir);
   const dir = path.join(dataDir, "installation");
@@ -54,6 +63,7 @@ export function prepareInstallation(repoDir, dataDir) {
   } else fs.writeFileSync(configFile, JSON.stringify(config, null, 2), { flag: "wx", mode: 0o600 });
   const manifest = {
     version: 1,
+    ...(codex ? { codex } : {}),
     repoDir,
     dataDir,
     pipe,

@@ -3,6 +3,7 @@ import net from "node:net";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { codexRuntimeEnv } from "./installation.mjs";
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 function baseEnv() {
   return Object.fromEntries(
@@ -101,6 +102,7 @@ export async function startLocal(manifestFile, role, options = {}) {
   );
   const env = {
     ...baseEnv(),
+    ...codexRuntimeEnv(m),
     MIND_MCP_HUB_PIPE: m.pipe,
     MIND_MCP_LINK_KEY: role === "agent" ? keys.agent : keys.owner,
     MIND_WAKE_DATA_DIR: m.dataDir,

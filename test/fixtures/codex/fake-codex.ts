@@ -14,7 +14,14 @@
  *                                   | { "sleepMs": n } | { "exit": code } | { "hang": true } ] } } }
  */
 
-import { appendFileSync, readFileSync, writeFileSync, unlinkSync, readdirSync } from "node:fs";
+import {
+  appendFileSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  readdirSync,
+  mkdirSync,
+} from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 
@@ -58,6 +65,21 @@ interface Flow {
 }
 
 const args = process.argv.slice(2);
+if (args.includes("generate-json-schema")) {
+  const out = args[args.indexOf("--out") + 1];
+  if (!out) process.exit(1);
+  mkdirSync(out, { recursive: true });
+  const schema = readFileSync(new URL("./schema.json", import.meta.url), "utf8");
+  writeFileSync(
+    resolve(out, "schema.json"),
+    args.includes("--fixture-no-interrupt")
+      ? schema.replace('"turn/interrupt"', '"removed"')
+      : args.includes("--fixture-no-steer")
+        ? schema.replace('"turn/steer"', '"removed"')
+        : schema,
+  );
+  process.exit(0);
+}
 const logPath = process.env["FAKE_CODEX_LOG"];
 
 function log(entry: Record<string, unknown>): void {

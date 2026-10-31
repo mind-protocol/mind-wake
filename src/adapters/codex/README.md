@@ -2,7 +2,7 @@
 
 Adapter Codex conforme à `src/contracts/adapter.ts` (ADR-002, ADR-004, ADR-005). Les tests ordinaires utilisent un faux exécutable `codex` (`test/fixtures/codex/fake-codex.ts`) qui rejoue des flux enregistrés (`test/fixtures/codex/flows/*.json`). Des essais réels distincts sont décrits ci-dessous ; ils ne valident pas à eux seuls le parcours Wake complet.
 
-## Interface retenue : `codex app-server`, version figée 0.165.0
+## Interface retenue : `codex app-server`, compatibilité vérifiée
 
 Une session Wake = un processus `codex app-server --listen stdio://` (JSON-RPC 2.0 sans champ `jsonrpc`, une ligne JSON par message), un fil Codex et un tour.
 
@@ -15,7 +15,9 @@ Une session Wake = un processus `codex app-server --listen stdio://` (JSON-RPC 2
 
 Le flux de `codex exec --json` ne contient aucune information de limite.
 
-En contrepartie, OpenAI classe `codex app-server` comme « Experimental » dans la référence CLI. La version est donc figée : `probe` lit `codex --version` et toute autre version que `CODEX_SUPPORTED_VERSION` rend l'adapter indisponible. `start` refuse aussi de lancer une version non validée.
+OpenAI classe `codex app-server` comme expérimental. Depuis la décision NLR du 31 octobre 2026 (ui-4bc4609c), `CODEX_SUPPORTED_VERSION` désigne une référence d’essai, sans verrou d’égalité. `probe` et le lancement vérifient l’export local `app-server generate-json-schema` : méthodes requises, paramètres, valeurs de permissions, contrats d’usage et de fin de tour. Les nouveaux paramètres obligatoires non fournis sont refusés. Une sortie de version illisible reste une erreur. Chaque connexion vérifie `initialize.userAgent`, puis conserve les validations des réponses, de l’usage, du quota et les contrats de sécurité existants. Une version plus récente compatible est admise ; une rupture précise conseille une mise à jour. Les schémas sont exportés dans un dossier temporaire avec un `CODEX_HOME` temporaire, sans compte ni appel modèle.
+
+`turn/steer` est facultatif : son absence ou un accusé ambigu produit un avertissement et garde les messages pour le prochain réveil, sans reçu de livraison inventé. La compatibilité des schémas ne prouve pas à elle seule le parcours réel jusqu’à une réponse du fournisseur. Les essais ajoutés pour cette décision sont des processus fixtures ; ils ne valident ni un poste neuf ni une connexion humaine.
 
 ### Sources vérifiées le 29 octobre 2026
 
@@ -137,4 +139,4 @@ Durée totale ≈ 9 s, autotest compris. Ce test ne couvre pas un tour réel con
   - Sur l'hôte, le lanceur ajoute les variables du profil Windows (`PATH`, `USERPROFILE`, `APPDATA`, `LOCALAPPDATA`…) ; dans la sandbox, l'environnement reste minimal.
 - **Jauge :** le runner n'admet qu'un processus par session. Les lectures de jauge passent donc par un Job Object séparé (`supervisorLauncher`). Pendant une session, `readQuota()` réutilise la jauge reçue en fin de tour si elle date de moins de 60 s.
 - **Prompt :** le prompt de réveil composé par le daemon (`StartRequest.context`) est transmis tel quel. `systemPrompt` est facultatif.
-- **Effets visibles :** `doctor` et `status` déclarent désormais `runtime_adapter: experimental`. La sonde refuse tant que Codex installé n'est pas en 0.165.0, ou si le binaire est introuvable : le daemon répond alors `adapter_unavailable`, sans repli.
+- **Effets visibles :** `doctor` et `status` déclarent `runtime_adapter: experimental`. La sonde refuse un binaire introuvable, une version illisible ou un protocole insuffisant : le daemon répond alors `adapter_unavailable`, sans repli. Une différence de version seule ne bloque plus.

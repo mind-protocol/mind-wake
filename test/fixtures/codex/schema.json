@@ -1,0 +1,194 @@
+{
+  "description": "Synthetic subset of the documented app-server schema, for process tests only. Not a recorded official CLI export.",
+  "definitions": {
+    "ClientRequest": {
+      "oneOf": [
+        {
+          "properties": {
+            "method": {
+              "enum": ["initialize"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["account/read"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["account/rateLimits/read"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["thread/start"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["thread/resume"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["turn/start"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["turn/interrupt"]
+            }
+          }
+        },
+        {
+          "properties": {
+            "method": {
+              "enum": ["turn/steer"]
+            }
+          }
+        }
+      ]
+    },
+    "SandboxMode": {
+      "type": "string",
+      "enum": ["read-only", "workspace-write", "danger-full-access"]
+    },
+    "AskForApproval": {
+      "type": "string",
+      "enum": ["never", "on-request"]
+    },
+    "ThreadStartParams": {
+      "type": "object",
+      "properties": {
+        "cwd": {
+          "type": ["string", "null"]
+        },
+        "approvalPolicy": {
+          "$ref": "#/definitions/AskForApproval"
+        },
+        "sandbox": {
+          "$ref": "#/definitions/SandboxMode"
+        },
+        "modelProvider": {
+          "type": "string"
+        }
+      }
+    },
+    "ThreadResumeParams": {
+      "type": "object",
+      "required": ["threadId"],
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "approvalPolicy": {
+          "$ref": "#/definitions/AskForApproval"
+        },
+        "sandbox": {
+          "$ref": "#/definitions/SandboxMode"
+        }
+      }
+    },
+    "TurnStartParams": {
+      "type": "object",
+      "required": ["threadId", "input"],
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "input": {
+          "type": "array"
+        }
+      }
+    },
+    "TurnInterruptParams": {
+      "type": "object",
+      "required": ["threadId", "turnId"],
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "turnId": {
+          "type": "string"
+        }
+      }
+    },
+    "ThreadTokenUsageUpdatedNotification": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "tokenUsage": {
+          "type": "object"
+        }
+      }
+    },
+    "TokenUsageBreakdown": {
+      "type": "object",
+      "properties": {
+        "inputTokens": {
+          "type": "integer"
+        },
+        "cachedInputTokens": {
+          "type": "integer"
+        },
+        "outputTokens": {
+          "type": "integer"
+        },
+        "reasoningOutputTokens": {
+          "type": "integer"
+        }
+      }
+    },
+    "TurnCompletedNotification": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "turn": {
+          "type": "object"
+        }
+      }
+    },
+    "TurnSteerParams": {
+      "type": "object",
+      "required": ["threadId", "expectedTurnId", "input"],
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "expectedTurnId": {
+          "type": "string"
+        },
+        "input": {
+          "type": "array"
+        }
+      }
+    },
+    "TurnSteerResponse": {
+      "type": "object",
+      "properties": {
+        "turnId": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

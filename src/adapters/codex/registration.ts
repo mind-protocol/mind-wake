@@ -9,7 +9,7 @@
 
 import { withFilResume } from "../../communication/fil-continuity.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
-import { execFileSync } from "node:child_process";
+import { discoverCodex, executableFromPath } from "./executable.js";
 import path from "node:path";
 import { saveStepsResult } from "../../daemon/wake-steps.js";
 import type { ProfileId, StartRequest } from "../../contracts/index.js";
@@ -25,7 +25,7 @@ import { hostLauncher, supervisorLauncher } from "./launch.js";
 export const CODEX_DEFAULT_MODEL = "gpt-5.6-luna";
 
 export interface CodexRegistrationConfig {
-  /** Binaire Codex ; absent : résolu au premier besoin par `locateCodex()`. */
+  /** Binaire Codex ; absent : résolu au premier besoin par `discoverCodex()`. */
   readonly executable?: CodexExecutable;
   /** Modèle fixé par la configuration Wake, comparé à `policy.runtime.model`. */
   readonly model: string;
@@ -46,7 +46,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
   let located: CodexExecutable | null = null;
   // Résolution paresseuse : construire le registre ne lance aucun processus.
   const executable = (): CodexExecutable =>
-    config.executable ?? (located ??= { path: locateCodex() ?? "codex.exe" });
+    config.executable ?? (located ??= discoverCodex() ?? { path: "codex.exe" });
   return {
     id: CODEX_ADAPTER_ID,
     simulated: false,
@@ -57,7 +57,16 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
       authMode: "chatgpt",
     }),
     billing: () => ({ kind: "subscription_quota" }),
-    runtimeRoots: () => config.runtimeRoots ?? [path.dirname(executable().path)],
+    runtimeRoots: () => {
+      const resolved = executable();
+      const script = resolved.prefixArgs?.[0];
+      return (
+        config.runtimeRoots ?? [
+          path.dirname(resolved.path),
+          ...(script ? [path.resolve(path.dirname(script), "../..")] : []),
+        ]
+      );
+    },
     create: (context) =>
       new CodexAdapter({
         stepsStopHook: true,
@@ -74,6 +83,9 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         workspaceDir: context.workspaceDir,
         ownerInboxDir: context.dataDir,
         nativeCapabilities: context.nativeCapabilities === true,
+        ...(process.env["CODEX_HOME"]
+          ? { nativeCodexHome: path.resolve(process.env["CODEX_HOME"]) }
+          : {}),
         launcher: hostLauncher(context.host),
         quotaLauncher: supervisorLauncher(
           new ProcessTreeSupervisor(runtimeDirFor(context.dataDir)),
@@ -99,21 +111,11 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
   };
 }
 
-/** Binaire Codex : `MIND_WAKE_CODEX_BIN`, sinon `where codex` ; `null` si introuvable. */
+/** Chemin du processus Codex (Node pour npm) ; préférer discoverCodex pour ses arguments. */
 export function locateCodex(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): string | null {
-  const given = env["MIND_WAKE_CODEX_BIN"];
-  if (given !== undefined && given !== "") return given;
-  try {
-    const found = execFileSync("where", ["codex"], { encoding: "utf8", windowsHide: true })
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .find((l) => l.toLowerCase().endsWith(".exe"));
-    return found ?? null;
-  } catch {
-    return null;
-  }
+  return discoverCodex(env)?.path ?? null;
 }
 
 /**
@@ -127,7 +129,9 @@ export function codexRegistrationFromEnv(
   const effort = env["MIND_WAKE_CODEX_EFFORT"];
   const bin = env["MIND_WAKE_CODEX_BIN"];
   return codexRegistration({
-    ...(bin === undefined || bin === "" ? {} : { executable: { path: bin } }),
+    ...(bin === undefined || bin === ""
+      ? {}
+      : { executable: executableFromPath(path.resolve(bin)) ?? { path: bin } }),
     model: env["MIND_WAKE_CODEX_MODEL"] ?? CODEX_DEFAULT_MODEL,
     ...(effort === undefined || effort === "" ? {} : { effort }),
   });

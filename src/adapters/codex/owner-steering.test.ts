@@ -52,11 +52,21 @@ it.each(["unsupported", "wrong-turn", "missing-ack"])(
       if (mode === "unsupported") throw Error("unsupported");
       return mode === "wrong-turn" ? { turnId: "other" } : {};
     });
-    steering = new CodexOwnerSteering(dir, "session", "thread", "turn", { request }, () => true);
+    const deferred = vi.fn();
+    steering = new CodexOwnerSteering(
+      dir,
+      "session",
+      "thread",
+      "turn",
+      { request },
+      () => true,
+      deferred,
+    );
     await steering.flush();
     await steering.flush();
     expect(request).toHaveBeenCalledTimes(1);
     expect(readOwnerReceipts(dir)).toEqual({});
+    expect(deferred).toHaveBeenCalledTimes(1);
     expect(takeOwnerMessages(dir, "next").map((m) => m.id)).toEqual(["human-1"]);
   },
 );
@@ -93,14 +103,27 @@ it("never steers an inactive turn", async () => {
 });
 
 it("steers screenshot bytes as an image block, including after waiting in the queue", async () => {
-  enqueueOwnerMessage(dir, { id: "screen", at: "2026-01-01T00:00:00Z", text: "Regarde", image: {
-    mediaType: "image/jpeg", base64: "/9j/2Q==", capturedAt: "2026-01-01T00:00:00Z", width: 10, height: 10, surface: "primary",
-  } });
+  enqueueOwnerMessage(dir, {
+    id: "screen",
+    at: "2026-01-01T00:00:00Z",
+    text: "Regarde",
+    image: {
+      mediaType: "image/jpeg",
+      base64: "/9j/2Q==",
+      capturedAt: "2026-01-01T00:00:00Z",
+      width: 10,
+      height: 10,
+      surface: "primary",
+    },
+  });
   const request = vi.fn(async () => ({ turnId: "turn" }));
   steering = new CodexOwnerSteering(dir, "session", "thread", "turn", { request }, () => true);
   await steering.flush();
-  expect(request).toHaveBeenCalledWith("turn/steer", expect.objectContaining({ input: expect.arrayContaining([
-    { type: "image", url: "data:image/jpeg;base64,/9j/2Q==" },
-  ]) }));
+  expect(request).toHaveBeenCalledWith(
+    "turn/steer",
+    expect.objectContaining({
+      input: expect.arrayContaining([{ type: "image", url: "data:image/jpeg;base64,/9j/2Q==" }]),
+    }),
+  );
   expect(readOwnerReceipts(dir)["screen"]).toBeTruthy();
 });
