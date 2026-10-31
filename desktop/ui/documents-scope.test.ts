@@ -259,3 +259,43 @@ it('never treats clone pagination as a local message queue even when local conte
   expect(opens).toEqual([]);
   expect(f.requests.at(-1)?.args).toMatchObject({scope:'aurore',relative:'REMOTE.md',read:true});
 });
+
+
+for(const pending of [false,true])for(const fails of [false,true])
+it('rejects a late probe catalogue after navigation; pending='+pending+', failure='+fails,async()=>{
+ const f=fixture('aurore');
+ f.parse.mockReturnValue({querySelectorAll:()=>[],querySelector:()=>null,createElement:()=>new Element(),head:{prepend:()=>{}},documentElement:{outerHTML:'<html>fixture</html>'}});
+ const entries=[{name:'one.html',relative:'one.html'},{name:'two.html',relative:'two.html'}];
+ f.requests[0]!.resolve({state:'available',version:'old',entries});await tick();
+ f.requests.at(-1)!.resolve({state:'available',format:'html',text:'one'});await tick();
+ f.event('wake-interface-ready',undefined);
+ f.requests.at(-1)!.resolve({state:'version-changed',version:'new'});await tick();await tick();
+ const slowCatalog=f.requests.at(-1)!;expect(slowCatalog.args['read']).toBe(false);
+ f.node('document-next').dispatchEvent({type:'click'});
+ const userRead=f.requests.at(-1)!;expect(userRead.args['relative']).toBe('two.html');
+ if(!pending){userRead.resolve({state:'available',format:'html',text:'two'});await tick();}
+ const count=f.requests.length;
+ if(fails)slowCatalog.reject(Error('Synthetic delayed failure'));
+ else slowCatalog.resolve({state:'available',version:'new',entries});
+ await tick();await tick();await tick();
+ expect(f.requests.slice(count).filter(r=>r.args['read'])).toEqual([]);
+ if(pending){userRead.resolve({state:'available',format:'html',text:'two'});await tick();}
+ expect(f.storage.get('mind-wake.reader-current.aurore')).toBe('two.html');
+ expect(f.node('document-status').textContent).toContain('révision chargée old');
+ expect(f.node('document-files').children).toHaveLength(2);
+ // The following normal refresh must still load the new revision of the page the user chose.
+ vi.advanceTimersByTime(60000);
+ f.requests.at(-1)!.resolve({state:'available',version:'new',entries});await tick();await tick();await tick();
+ expect(f.requests.at(-1)!.args).toMatchObject({relative:'two.html',version:'new',read:true});
+});
+it('reloads the current page after a changed-version probe when navigation did not change',async()=>{
+ const f=fixture('aurore');
+ f.parse.mockReturnValue({querySelectorAll:()=>[],querySelector:()=>null,createElement:()=>new Element(),head:{prepend:()=>{}},documentElement:{outerHTML:'<html>fixture</html>'}});
+ const entries=[{name:'one.html',relative:'one.html'}];
+ f.requests[0]!.resolve({state:'available',version:'old',entries});await tick();
+ f.requests.at(-1)!.resolve({state:'available',format:'html',text:'one'});await tick();
+ f.event('wake-interface-ready',undefined);
+ f.requests.at(-1)!.resolve({state:'version-changed',version:'new'});await tick();await tick();
+ f.requests.at(-1)!.resolve({state:'available',version:'new',entries});await tick();await tick();await tick();
+ expect(f.requests.at(-1)!.args).toMatchObject({relative:'one.html',version:'new',read:true});
+});

@@ -162,8 +162,10 @@ export function initDocuments(invoke: Invoke): void {
         async data=>{
           if(data.state==='unchanged'){cloneSync=data.sync;status.textContent=auroreDocumentStatus(cloneVersion,cloneSync);return;}
           if(data.state==='version-changed'){
-            const relative=current;await loadCatalog();
-            if(scopeState.accepts(scopeTicket)&&relative&&entries.some(e=>e.relative===relative))await open(relative,false);
+            const relative=current,expectedGeneration=generation+1,expectedCatalog=catalogGeneration+1;
+            const acceptsReload=()=>scopeState.accepts(scopeTicket)&&generation===expectedGeneration&&catalogGeneration===expectedCatalog;
+            await loadCatalog(false,undefined,acceptsReload);
+            if(acceptsReload()&&relative&&entries.some(e=>e.relative===relative))await open(relative,false);
             return;
           }
           if(data.state!=='available'){showCloneState(data.state);return;}
@@ -212,13 +214,13 @@ export function initDocuments(invoke: Invoke): void {
     const leaf=document.createElement('span');leaf.textContent=current.split('/').at(-1)??current;leaf.setAttribute('aria-current','page');
     const separator2=document.createElement('span');separator2.textContent='›';location.append(separator2,leaf);
   }
-  async function loadCatalog(restore=false,loaded?:AuroreCatalog):Promise<void>{
+  async function loadCatalog(restore=false,loaded?:AuroreCatalog,accepts:()=>boolean=()=>true):Promise<void>{
     generation++;pendingOpen=false;
     const ticket=++catalogGeneration,scopeTicket=scopeState.capture(),targetScope=scopeState.current;
     status.textContent='Ouverture de la bibliothèque…';
     try{
       const data=loaded??await invoke('document_browse',{scope:targetScope,relative:'',read:false,recursive:true}) as AuroreCatalog;
-      if(ticket!==catalogGeneration||!scopeState.accepts(scopeTicket))return;
+      if(ticket!==catalogGeneration||!scopeState.accepts(scopeTicket)||!accepts())return;
       if(targetScope==='aurore'&&data.state!=='available'){
         showCloneState(data.state==='empty'&&data.truncated?'partial':data.state);return;
       }
@@ -236,7 +238,7 @@ export function initDocuments(invoke: Invoke): void {
         const initial=entries.find(e=>e.relative===saved)??entries.find(e=>e.relative==='artifacts/projets.html')??shown()[0];
         if(initial)await open(initial.relative);else setLibrary(true);
       }
-    }catch(error){if(ticket===catalogGeneration&&scopeState.accepts(scopeTicket)){if(targetScope==='aurore')showCloneState('unavailable');else feedback(error);}}
+    }catch(error){if(ticket===catalogGeneration&&scopeState.accepts(scopeTicket)&&accepts()){if(targetScope==='aurore')showCloneState('unavailable');else feedback(error);}}
   }
   async function open(relative:string,record=true,anchor='',historyIndex?:number):Promise<void>{
     const targetScope=scopeState.current;
