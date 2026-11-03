@@ -181,11 +181,7 @@ export class ContainedProcess implements SessionProcess {
       args.push("--env", `${key}=${value}`);
     }
     args.push("--", command.executable, ...command.args);
-    this.#child = spawn(launcherPath, args, {
-      stdio: ["pipe", "pipe", "pipe"],
-      windowsHide: true,
-      detached: true,
-    });
+    this.#child = spawn(launcherPath, args, { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     // Lanceur déjà terminé : une écriture tardive sur son entrée n'a plus d'objet.
     this.#child.stdin?.on("error", () => undefined);
 
@@ -348,9 +344,9 @@ export class ProcessTreeSupervisor {
   }
 
   /** Processus encore actifs dans le job d'une session, vus depuis n'importe quel processus. */
-  query(profileId: ProfileId, sessionId: SessionId, details = false): JobQuery {
+  query(profileId: ProfileId, sessionId: SessionId): JobQuery {
     if (!this.status.available) return { found: null, active: null };
-    return queryJob(this.status.launcherPath, jobNameFor(profileId, sessionId), details);
+    return queryJob(this.status.launcherPath, jobNameFor(profileId, sessionId));
   }
 
   /** Termine par son nom le job d'une session, même lancé par un autre processus. */
@@ -380,7 +376,6 @@ export class ProcessTreeSupervisor {
 export interface JobQuery {
   readonly found: boolean | null;
   readonly active: number | null;
-  readonly processes?: readonly { pid: number; name: string }[];
 }
 
 export interface NamedTermination {
@@ -391,33 +386,17 @@ export interface NamedTermination {
   readonly detail?: string;
 }
 
-function queryJob(launcherPath: string, jobName: string, details = false): JobQuery {
-  const result = spawnSync(
-    launcherPath,
-    ["query", "--job-name", jobName, ...(details ? ["--details"] : [])],
-    {
-      encoding: "utf8",
-      windowsHide: true,
-      timeout: 5_000,
-    },
-  );
+function queryJob(launcherPath: string, jobName: string): JobQuery {
+  const result = spawnSync(launcherPath, ["query", "--job-name", jobName], {
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 5_000,
+  });
   const json = parseJson(result.stdout.trim());
   if (json === null || typeof json["found"] !== "boolean" || typeof json["active"] !== "number") {
     return { found: null, active: null };
   }
-  const processes = Array.isArray(json["processes"])
-    ? json["processes"].flatMap((value: unknown) => {
-        if (!value || typeof value !== "object") return [];
-        const row = value as Record<string, unknown>;
-        return typeof row["pid"] === "number" &&
-          Number.isSafeInteger(row["pid"]) &&
-          row["pid"] > 0 &&
-          typeof row["name"] === "string"
-          ? [{ pid: row["pid"], name: row["name"] }]
-          : [];
-      })
-    : undefined;
-  return { found: json["found"], active: json["active"], ...(processes ? { processes } : {}) };
+  return { found: json["found"], active: json["active"] };
 }
 
 function terminateJobByName(

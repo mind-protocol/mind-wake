@@ -7,7 +7,7 @@ const { values } = parseArgs({
 if (
   !values.manifest ||
   !["daemon", "mcp"].includes(values.role) ||
-  !["observe", "restart", "stop"].includes(values.action)
+  !["observe", "restart"].includes(values.action)
 )
   throw Error("Explicit manifest, role and action required");
 const file = path.resolve(values.manifest);
@@ -17,8 +17,8 @@ try {
     console.log(JSON.stringify({ ok: false, owned: false, code: "no_owned_runtime" }));
   else {
     const result =
-      values.action !== "observe"
-        ? await ownedComponents(file, values.role, values.action, new AbortController().signal)
+      values.action === "restart"
+        ? await ownedComponents(file, values.role, "restart", new AbortController().signal)
         : before;
     console.log(JSON.stringify({ ok: true, owned: true, component: result.component }));
   }

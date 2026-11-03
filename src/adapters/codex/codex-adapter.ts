@@ -89,8 +89,6 @@ const SUMMARY_MAX = 200;
 export type CodexLaunchMode = "autonomous" | "manual";
 
 export interface CodexAdapterOptions {
-  /** Public text for conversation orchestration; private reasoning is never emitted. */
-  readonly publicMessages?: boolean;
   readonly stepsStopHook?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
@@ -138,8 +136,6 @@ export interface CodexAdapterOptions {
   readonly allowUserCodexHome?: boolean;
   readonly nativeCodexHome?: string;
   readonly nativeCapabilities?: boolean;
-  /** Text-only specialist calls retain remote tools but do not bootstrap local tool processes. */
-  readonly threadConfig?: (effective: Record<string, unknown>) => Record<string, unknown>;
   /** Surcharges `-c` supplémentaires ; les réglages de sûreté Wake priment. */
   readonly extraConfig?: Readonly<Record<string, string>>;
   readonly requestTimeoutMs?: number;
@@ -219,8 +215,6 @@ interface CodexSession {
   readonly queue: EventQueue;
   readonly permissions: ThreadPermissions;
   rpc: RpcClient | null;
-  readonly initialized: Promise<void>;
-  readonly markInitialized: () => void;
   threadId: string | null;
   turnId: string | null;
   turn: TurnState;
@@ -258,17 +252,12 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, ms)));
 }
 
-const pendingVersions = new Map<string, Promise<string>>();
-
 function defaultVersionCheck(
   executable: CodexExecutable,
   codexHome: string,
 ): () => Promise<string> {
-  return () => {
-    const key = JSON.stringify([executable.path, executable.prefixArgs ?? [], codexHome]);
-    const existing = pendingVersions.get(key);
-    if (existing) return existing;
-    const pending = new Promise<string>((resolve, reject) => {
+  return () =>
+    new Promise((resolve, reject) => {
       const env: Record<string, string> = { CODEX_HOME: codexHome };
       for (const key of ["SystemRoot", "SystemDrive", "windir", "PATH"]) {
         const value = process.env[key];
@@ -284,13 +273,6 @@ function defaultVersionCheck(
         },
       );
     });
-    pendingVersions.set(key, pending);
-    const clear = () => {
-      if (pendingVersions.get(key) === pending) pendingVersions.delete(key);
-    };
-    void pending.then(clear, clear);
-    return pending;
-  };
 }
 
 export class CodexAdapter implements RuntimeAdapter {
@@ -499,8 +481,6 @@ export class CodexAdapter implements RuntimeAdapter {
     } = await this.#launch(request.sessionId, request.policy);
     let resolveTurn: () => void = () => undefined;
     const turnDone = new Promise<void>((resolve) => (resolveTurn = resolve));
-    let markInitialized: () => void = () => undefined;
-    const initialized = new Promise<void>((resolve) => (markInitialized = resolve));
     const session: CodexSession = {
       projectStart: null,
       delegatedUsageUncertain: false,
@@ -515,8 +495,6 @@ export class CodexAdapter implements RuntimeAdapter {
       queue: new EventQueue(),
       permissions: threadPermissions(bypass, this.#options.hostSandbox),
       rpc: null,
-      initialized,
-      markInitialized,
       threadId: null,
       turnId: null,
       turn: "pending",
@@ -625,7 +603,6 @@ export class CodexAdapter implements RuntimeAdapter {
       if (typeof initialized["userAgent"] !== "string" || !initialized["userAgent"])
         throw new Error("initialize : userAgent absent, protocole Codex incompatible");
       rpc.notify("initialized", {});
-      session.markInitialized();
       const account = await rpc.request("account/read", { refreshToken: false });
       if (account["account"] === null && account["requiresOpenaiAuth"] === true) {
         this.#emitError(
@@ -862,21 +839,10 @@ export class CodexAdapter implements RuntimeAdapter {
     const prompt = combined === "" ? null : combined;
     const fingerprint = promptFingerprint(prompt ?? "");
     const instructions = prompt === null ? {} : { developerInstructions: prompt };
-    let threadConfig: Record<string, unknown> | undefined;
-    if (this.#options.threadConfig) {
-      const effective = await rpc.request("config/read", {
-        cwd: this.#options.workspaceDir,
-        includeLayers: false,
-      });
-      const config = asRecord(effective["config"]);
-      if (!config) throw Error("Effective native tool configuration unavailable");
-      threadConfig = this.#options.threadConfig(config);
-    }
     const common = {
       cwd: this.#options.workspaceDir,
       approvalPolicy: session.permissions.approvalPolicy,
       sandbox: session.permissions.sandbox,
-      ...(threadConfig ? { config: threadConfig } : {}),
       ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
     };
     const previous = this.#options.threads.load(key);
@@ -970,20 +936,6 @@ export class CodexAdapter implements RuntimeAdapter {
       case "item/completed":
         this.#onItemCompleted(session, asRecord(params["item"]), params["turnId"]);
         break;
-      case "item/agentMessage/delta":
-        if (
-          this.#options.publicMessages &&
-          !session.planning &&
-          typeof params["delta"] === "string"
-        )
-          this.#emit(session, {
-            type: "assistant_message_delta",
-            sessionId,
-            at,
-            messageId: typeof params["itemId"] === "string" ? params["itemId"] : "assistant",
-            delta: params["delta"],
-          });
-        break;
       case "thread/tokenUsage/updated":
         this.#onTokenUsage(session, params);
         break;
@@ -1053,25 +1005,7 @@ export class CodexAdapter implements RuntimeAdapter {
       case "agentMessage":
         if (typeof item["text"] === "string") {
           session.stepsResult = item["text"].slice(0, 65_537);
-          if (
-            session.planning ||
-            (this.#options.stepsStopHook === true && isStepsDecision(item["text"]))
-          )
-            break;
-          if (this.#options.publicMessages)
-            this.#emit(session, {
-              type: "assistant_message",
-              sessionId,
-              at,
-              messageId: typeof item["id"] === "string" ? item["id"] : "assistant",
-              text: item["text"],
-              phase:
-                item["phase"] === "commentary"
-                  ? "commentary"
-                  : item["phase"] === "final_answer" || item["phase"] === "final"
-                    ? "final"
-                    : "unknown",
-            });
+          if (session.planning || isStepsDecision(item["text"])) break;
           this.#emit(session, {
             type: "activity",
             sessionId,
@@ -1328,31 +1262,6 @@ export class CodexAdapter implements RuntimeAdapter {
         (s) => now - Date.parse(s.observedAt) <= reuseMs,
       );
       if (!session.ended && recent !== undefined && recent.length > 0) return recent;
-    }
-    // The active app-server already exposes this account method. A quota poll
-    // must not start another native process tree beside every running turn.
-    const active = [...this.#sessions.values()].find(
-      (session) => !session.ended && session.rpc !== null,
-    );
-    if (active?.rpc) {
-      try {
-        await Promise.race([
-          active.initialized,
-          active.finished.then(() => {
-            throw new Error("Session ended before quota read");
-          }),
-        ]);
-        if (active.ended) return [];
-        const result = await active.rpc.request("account/rateLimits/read", {});
-        const reading = quotaFromRateLimitsResponse(result, this.#now());
-        active.lastQuota = reading;
-        this.#options.onQuota?.(reading);
-        return reading.snapshots;
-      } catch {
-        // Keep the fail-closed contract; do not hide a broken live connection
-        // by spawning a replacement process during an active turn.
-        return [];
-      }
     }
     try {
       return (await this.readProviderQuota()).snapshots;

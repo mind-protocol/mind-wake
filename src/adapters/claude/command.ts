@@ -31,7 +31,6 @@ export type ClaudePermissionStance =
   | "allowlist_only";
 
 export interface ClaudeRunArgs {
-  readonly includePartialMessages?: boolean;
   readonly model: string;
   readonly systemPromptFile: string;
   /** `replace` : `--system-prompt-file` ; `append` : `--append-system-prompt-file`. */
@@ -122,7 +121,6 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
   if (options.mcpConfigFile !== undefined) args.push("--mcp-config", options.mcpConfigFile);
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
   if (options.ownerInboxHook !== undefined) args.push("--replay-user-messages");
-  if (options.includePartialMessages === true) args.push("--include-partial-messages");
   return args;
 }
 

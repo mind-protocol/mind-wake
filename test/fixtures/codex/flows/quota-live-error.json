@@ -1,8 +1,0 @@
-{
-  "extends": "quota-live.json",
-  "on": {
-    "account/rateLimits/read": {
-      "error": { "code": -32000, "message": "quota unavailable" }
-    }
-  }
-}

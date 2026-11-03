@@ -1,6 +1,5 @@
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
-import { inspectConversationMode } from "../conversation/mode.js";
 import { collectAgentScreenshot } from "./agent-screenshot-policy.js";
 import {
   captureWakeScreenshot,
@@ -135,7 +134,6 @@ export class DaemonError extends Error {
       | "no_profile"
       | "already_running"
       | "runtime_mismatch"
-      | "conversation_mode"
       | "termination_unavailable",
     message: string,
   ) {
@@ -371,8 +369,6 @@ export class WakeDaemon implements SessionLauncher {
    * indisponible ou si le lanceur confiné ne peut pas être construit.
    */
   static async open(options: DaemonOptions): Promise<WakeDaemon> {
-    if (inspectConversationMode(options.dataDir).enabled)
-      throw new DaemonError("conversation_mode", "conversation spécialisée active : les réveils autonomes sont désactivés");
     const dbPath = controlDbPath(options.dataDir);
     if (!fs.existsSync(dbPath)) {
       throw new DaemonError("no_profile", "aucune base de contrôle : lancer `mind-wake init`");
@@ -586,10 +582,6 @@ export class WakeDaemon implements SessionLauncher {
       environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
     const scheduler = new Scheduler({
       maintenance: () => {
-        if (inspectConversationMode(this.#o.dataDir).enabled) {
-          this.requestStop("conversation spécialisée active : arrêt du scheduler autonome");
-          return;
-        }
         void this.#auroreSync?.tick().catch(() => {
           this.#log("Aurore sync controls unavailable; inspect aurore-sync-state.json.");
         });
@@ -711,8 +703,6 @@ export class WakeDaemon implements SessionLauncher {
   }
 
   async launch(ticket: LaunchTicket): Promise<SessionReport> {
-    if (inspectConversationMode(this.#o.dataDir).enabled)
-      throw new DaemonError("conversation_mode", "conversation spécialisée active : aucun réveil autonome ne peut démarrer");
     const { uow } = this.#store;
     const record = uow.sessions.get(ticket.sessionId);
     const experimentId = record?.experimentId ?? null;

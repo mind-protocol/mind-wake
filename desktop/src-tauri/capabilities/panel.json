@@ -30,7 +30,6 @@
     "allow-wake-open-location",
     "allow-open-external-url",
     "allow-wake-reply",
-    "allow-conversation-command",
     "allow-helpers-answers",
     "allow-owner-threads",
     "allow-owner-thread",

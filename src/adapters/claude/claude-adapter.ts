@@ -92,8 +92,6 @@ export type ClaudeAutonomy =
   | "supervised";
 
 export interface ClaudeAdapterOptions {
-  /** Full public assistant text, separate from activity summaries and private thinking. */
-  readonly publicMessages?: boolean;
   readonly stepsStopHook?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly launcher: ClaudeLauncher;
@@ -198,66 +196,6 @@ export class ClaudeAdapterError extends Error {
     super(message);
     this.name = "ClaudeAdapterError";
   }
-}
-
-/** Public text only: thinking blocks, tool arguments and tool results stay private. */
-export function publicClaudeMessage(value: unknown):
-  | {
-      type: "assistant_message";
-      messageId: string;
-      text: string;
-      phase: "commentary" | "final" | "unknown";
-    }
-  | { type: "assistant_message_delta"; messageId: string; delta: string }
-  | null {
-  const frame = asObject(value);
-  if (frame === null) return null;
-  const message = asObject(frame["message"]);
-  const id =
-    typeof message?.["id"] === "string"
-      ? message["id"]
-      : typeof frame["uuid"] === "string"
-        ? frame["uuid"]
-        : "assistant";
-  if (frame["type"] === "assistant" && Array.isArray(message?.["content"])) {
-    const text = message["content"]
-      .flatMap((part: unknown) => {
-        const block = asObject(part);
-        return block?.["type"] === "text" && typeof block["text"] === "string"
-          ? [block["text"]]
-          : [];
-      })
-      .join("");
-    return text ? { type: "assistant_message", messageId: id, text, phase: "unknown" } : null;
-  }
-  if (
-    frame["type"] === "result" &&
-    frame["is_error"] !== true &&
-    typeof frame["result"] === "string" &&
-    frame["result"]
-  )
-    return {
-      type: "assistant_message",
-      messageId: "result",
-      text: frame["result"],
-      phase: "final",
-    };
-  const event = asObject(frame["event"]);
-  const delta = asObject(event?.["delta"]);
-  if (
-    frame["type"] === "stream_event" &&
-    event?.["type"] === "content_block_delta" &&
-    delta?.["type"] === "text_delta" &&
-    typeof delta["text"] === "string"
-  )
-    return { type: "assistant_message_delta", messageId: id, delta: delta["text"] };
-  return null;
-}
-
-function asObject(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
 }
 
 import { ForegroundYield } from "./foreground-yield.js";
@@ -543,7 +481,6 @@ export class ClaudeAdapter implements RuntimeAdapter {
       model: o.model ?? DEFAULT_CLAUDE_MODEL,
       systemPromptFile: promptFile,
       systemPromptMode: o.systemPromptMode ?? "replace",
-      includePartialMessages: o.publicMessages === true,
       tools: o.tools ?? DEFAULT_CLAUDE_TOOLS,
       nativeCapabilities,
       ...(o.ownerInboxDir !== undefined && permission === "skip_permissions_unsandboxed"
@@ -797,7 +734,6 @@ export class ClaudeAdapter implements RuntimeAdapter {
         };
         if (
           frame.type === "assistant" &&
-          this.#options.stepsStopHook === true &&
           isStepsDecision(
             frame.message?.content
               ?.filter((b) => b.type === "text")
@@ -806,10 +742,6 @@ export class ClaudeAdapter implements RuntimeAdapter {
           )
         )
           continue;
-        if (this.#options.publicMessages) {
-          const publicText = publicClaudeMessage(JSON.parse(line));
-          if (publicText !== null) yield { ...publicText, sessionId, at };
-        }
       } catch {
         /* ordinary parser handles malformed frames */
       }

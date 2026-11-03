@@ -5,7 +5,6 @@
  */
 
 import fs from "node:fs";
-import { roleThreadConfig } from "../../conversation/role-thread-config.js";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -187,65 +186,7 @@ async function collect(a: CodexAdapter, req: StartRequest): Promise<AdapterEvent
   return events;
 }
 
-it("limits only local process tools in a specialist thread without changing the personal configuration", async () => {
-  h.flow = "process-free.json";
-  const a = adapter({ threadConfig: (effective) => roleThreadConfig(effective, "lead", 1) });
-  const events = await collect(a, request());
-  expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
-  const params = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
-  const config = params["config"] as Record<string, unknown>;
-  expect(config["mcp_servers"]).toEqual({ local_tool: { enabled: false } });
-  expect(config["features"]).toMatchObject({ shell_tool: false });
-  expect(config["plugins"]).toEqual({ "unified-computer-use@openai-bundled": { enabled: false } });
-  expect(JSON.stringify(config)).not.toContain("private-command.exe");
-  expect(h.requests("config/write")).toHaveLength(0);
-});
-
 describe("protocole app-server", () => {
-  it("returns complete public messages and text deltas on fresh calls without exposing reasoning", async () => {
-    const text = "Public response ".repeat(40);
-    const flow = JSON.parse(fs.readFileSync(path.join(FLOWS, "success.json"), "utf8")) as {
-      extends: string;
-      on: Record<string, { then: { notify: string; params: Record<string, unknown> }[] }>;
-    };
-    flow.extends = path.join(FLOWS, "common.json");
-    const turn = flow.on["turn/start"];
-    if (!turn) throw Error("Missing turn fixture");
-    const items = turn.then;
-    const publicItem = items.find(
-      (item) => (item.params["item"] as { type?: string } | undefined)?.type === "agentMessage",
-    );
-    if (!publicItem) throw Error("Missing public message fixture");
-    Object.assign(publicItem.params["item"] as object, { text, phase: "final_answer" });
-    items.splice(items.indexOf(publicItem), 0, {
-      notify: "item/agentMessage/delta",
-      params: { threadId: "thr_1", turnId: "turn_1", itemId: "m1", delta: "Public response " },
-    });
-    const file = path.join(h.dir, "public.json");
-    fs.writeFileSync(file, JSON.stringify(flow));
-    h.flow = path.relative(FLOWS, file);
-    const first = await collect(
-      adapter({ publicMessages: true, ephemeralThreads: true }),
-      request(),
-    );
-    const second = await collect(
-      adapter({ publicMessages: true, ephemeralThreads: true }),
-      request(),
-    );
-    for (const events of [first, second]) {
-      expect(events).toContainEqual(
-        expect.objectContaining({ type: "assistant_message", text, phase: "final" }),
-      );
-      expect(events).toContainEqual(
-        expect.objectContaining({ type: "assistant_message_delta", delta: "Public response " }),
-      );
-      expect(
-        JSON.stringify(events.filter((event) => event.type.startsWith("assistant_message"))),
-      ).not.toContain("pensée privée");
-    }
-    expect(h.requests("thread/start")).toHaveLength(2);
-    expect(h.requests("thread/resume")).toHaveLength(0);
-  });
   it("accounts for planning usage arriving before the turn/start response", async () => {
     h.flow = "steps-stop-early-usage.json";
     let captured = "none";
@@ -441,7 +382,7 @@ describe("commande", () => {
   it("the active policy model is retained when starting with the default registry", () => {
     expect(
       defaultRegistry({ adapterId: "codex", model: "gpt-6.1-sol" })
-        .get("codex")
+        .get("codex" as never)
         ?.runtime().model,
     ).toBe("gpt-6.1-sol");
   });
@@ -790,8 +731,9 @@ describe("continuité", () => {
       context: "Where was I?\nTime: provider limits only.",
     };
     await collect(adapter({ threads }), req);
-    const initialParams = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
-    expect(initialParams["developerInstructions"]).toContain("Durable runtime environment");
+    expect(h.requests("thread/start")[0]?.["params"]).toMatchObject({
+      developerInstructions: expect.stringContaining("Durable runtime environment"),
+    });
     expect(JSON.stringify(h.requests("turn/start")[0]?.["params"])).not.toContain(
       "Durable runtime environment",
     );
@@ -1120,25 +1062,6 @@ describe("alignement ADR-006 et câblage", () => {
     expect(spawned[1]?.env).toEqual({ CODEX_HOME: h.dir });
   });
 
-  it.each(["quota-live.json", "quota-live-error.json"])(
-    "reads quota on the starting server without extra processes (%s)",
-    async (flow) => {
-      h.flow = flow;
-      const a = adapter({ quotaReuseMs: 0 });
-      const handle = await a.start(request());
-      try {
-        const before = h.launches.length;
-        const snapshots = await a.readQuota();
-        if (flow === "quota-live-error.json") expect(snapshots).toEqual([]);
-        else expect(snapshots.map((s) => s.windowKey)).toContain("codex:primary");
-        expect(h.requests("account/rateLimits/read")).toHaveLength(1);
-        expect(h.launches.length).toBe(before);
-      } finally {
-        await a.cancel(handle, 500);
-      }
-    },
-  );
-
   it("pendant une session, readQuota réutilise la jauge reçue en fin de tour", async () => {
     const a = adapter();
     const handle = await a.start(request());
@@ -1279,10 +1202,7 @@ it("registration loads owner reply rules and current personal instructions into 
   });
   takeOwnerMessages(h.dir, "old-thread");
   fs.writeFileSync(path.join(h.dir, "workspace", "artifacts", "REPRISE.md"), "Existing checkpoint");
-  fs.writeFileSync(
-    path.join(h.dir, "workspace", "artifacts", "PERSONALITY.md"),
-    "Fixture personal voice, not exported human memory.",
-  );
+  fs.writeFileSync(path.join(h.dir, "workspace", "artifacts", "PERSONALITY.md"), "Fixture personal voice, not exported human memory.");
   const created = codexRegistration({
     executable: { path: process.execPath, prefixArgs: [FAKE] },
     codexHome: path.join(h.dir, "codex-home"),
@@ -1330,10 +1250,6 @@ it("registration loads owner reply rules and current personal instructions into 
   expect(params["developerInstructions"]).toContain("grant no permissions");
   expect(params["developerInstructions"]).toContain("When you receive an actual new human message");
   expect(params["developerInstructions"]).toContain("before starting long execution or delegation");
-  expect(params["developerInstructions"]).toContain(
-    "terminal output is not publication in the Wake conversation",
-  );
-  expect(params["developerInstructions"]).toContain(
-    "Fixture personal voice, not exported human memory.",
-  );
+  expect(params["developerInstructions"]).toContain("terminal output is not publication in the Wake conversation");
+  expect(params["developerInstructions"]).toContain("Fixture personal voice, not exported human memory.");
 }, 15000);

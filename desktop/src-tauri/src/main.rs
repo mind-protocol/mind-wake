@@ -55,7 +55,7 @@ async fn wake_status() -> Result<CliRun, String> {
 
 #[tauri::command]
 async fn wake_restart() -> Result<CliRun, String> {
-    blocking(|| cli::conversation("resume".into(), serde_json::json!({"conversationId":"main"}))).await
+    blocking(cli::restart_daemon).await
 }
 
 #[tauri::command]
@@ -65,28 +65,28 @@ async fn wake_journal() -> Result<CliRun, String> {
 
 #[tauri::command]
 async fn wake_pause() -> Result<CliRun, String> {
-    blocking(|| { let result=cli::wake(Verb::Pause)?; let _=cli::conversation("stop".into(),serde_json::json!({"conversationId":"main"})); Ok(result) }).await
+    blocking(|| cli::wake(Verb::Pause)).await
 }
 
 #[tauri::command]
 async fn wake_resume() -> Result<CliRun, String> {
-    blocking(|| cli::conversation("resume".into(), serde_json::json!({"conversationId":"main"}))).await
+    blocking(|| cli::wake(Verb::Resume)).await
 }
 
 #[tauri::command]
 async fn wake_stop() -> Result<CliRun, String> {
-    blocking(|| { let result=cli::wake(Verb::Stop)?; let _=cli::conversation("stop".into(),serde_json::json!({"conversationId":"main"})); Ok(result) }).await
+    blocking(|| cli::wake(Verb::Stop)).await
 }
 
 #[tauri::command]
-async fn wake_on() -> Result<CliRun, String> { blocking(|| cli::conversation("activate".into(),serde_json::json!({"conversationId":"main"}))).await }
+async fn wake_on() -> Result<CliRun, String> { blocking(|| cli::wake(Verb::On)).await }
 
 #[tauri::command]
-async fn wake_always_on() -> Result<CliRun, String> { Err("Les réveils autonomes sont désactivés ; écrire dans la conversation.".into()) }
+async fn wake_always_on() -> Result<CliRun, String> { blocking(cli::always_on).await }
 
 #[tauri::command]
 async fn wake_now() -> Result<CliRun, String> {
-    blocking(|| cli::conversation("resume".into(),serde_json::json!({"conversationId":"main"}))).await
+    blocking(cli::wake_now).await
 }
 
 #[tauri::command]
@@ -132,11 +132,6 @@ async fn wake_reply(idempotency_key: String, text: String) -> Result<CliRun, Str
 }
 
 #[tauri::command]
-async fn conversation_command(action: String, input: serde_json::Value) -> Result<CliRun, String> {
-    blocking(move || cli::conversation(action, input)).await
-}
-
-#[tauri::command]
 async fn recipient_status() -> Result<CliRun, String> { blocking(|| cli::recipient("status",None,None)).await }
 #[tauri::command]
 async fn recipient_poll() -> Result<CliRun, String> { blocking(|| cli::recipient("poll",None,None)).await }
@@ -175,6 +170,7 @@ async fn quick_input_send(window: tauri::WebviewWindow, idempotency_key: String,
         if targeted_bump { quick_input::finish_point(click_id,false); }
         let _ = window.hide();
         // Bumpe follows Bump's queue semantics. Preserve ordinary quick-message wake.
+        if !targeted_bump { tauri::async_runtime::spawn_blocking(cli::wake_after_quick_reply); }
         Ok(())
     });
     if result.is_err() && !quick_input::DISMISSED.load(Ordering::SeqCst) { quick_input::show_without_focus(&window); }
@@ -273,10 +269,11 @@ impl Switch {
         let _ = self.on.set_checked(light == Light::On && !always_on);
         let _ = self.wake.set_checked(light == Light::Awake && !always_on);
         let _ = self.off.set_checked(light == Light::ForcedOff);
-        let _ = self.always.set_checked(false);
-        let _ = self.always.set_enabled(false);
-        // Activation is an explicit human action handled by the conversation CLI.
-        let _ = self.on.set_enabled(true);
+        let _ = self.always.set_checked(always_on);
+        // Selecting Always-on explicitly reactivates through the validated CLI path.
+        let _ = self.always.set_enabled(true);
+        // Après un arrêt d'urgence, seule une commande explicite hors menu peut relancer.
+        let _ = self.on.set_enabled(light != Light::ForcedOff);
         let _ = self.wake.set_enabled(light != Light::ForcedOff);
     }
 }
@@ -304,13 +301,7 @@ fn show_panel(app: &AppHandle) {
 fn menu_action(app: &AppHandle, verb: Verb) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let _ = match verb {
-            Verb::On => cli::conversation("activate".into(),serde_json::json!({"conversationId":"main"})),
-            Verb::Wake | Verb::Resume => cli::conversation("resume".into(),serde_json::json!({"conversationId":"main"})),
-            Verb::AlwaysOn => Err("Réveils autonomes désactivés".into()),
-            Verb::Stop | Verb::Pause => { let result=cli::wake(verb); let _=cli::conversation("stop".into(),serde_json::json!({"conversationId":"main"})); result },
-            _ => cli::wake(verb),
-        };
+        let _ = if matches!(verb, Verb::Wake) { cli::wake_now() } else if matches!(verb, Verb::AlwaysOn) { cli::always_on() } else { cli::wake(verb) };
         if let (Some(tray), Some(switch)) = (app.tray_by_id("wake"), app.try_state::<Switch>()) {
             refresh_light(&tray, &switch);
         }
@@ -346,7 +337,6 @@ fn main() {
             wake_open_location,
             open_external_url,
             wake_reply,
-            conversation_command,
             quick_input_close,
             quick_input_send,
             helpers_answers,
@@ -369,9 +359,9 @@ fn main() {
             }
             let open = MenuItem::with_id(app, "open", "Ouvrir le panneau", true, None::<&str>)?;
             let startup = CheckMenuItem::with_id(app, "windows_startup", "Démarrer avec Windows", false, false, None::<&str>)?;
-            let on = CheckMenuItem::with_id(app, "mode_on", "Activer les conversations", true, false, None::<&str>)?;
-            let wake = CheckMenuItem::with_id(app, "mode_wake", "Reprendre la conversation", true, false, None::<&str>)?;
-            let always = CheckMenuItem::with_id(app, "mode_always", "Réveils autonomes désactivés", false, false, None::<&str>)?;
+            let on = CheckMenuItem::with_id(app, "mode_on", "On — réveils autorisés", true, false, None::<&str>)?;
+            let wake = CheckMenuItem::with_id(app, "mode_wake", "Réveil — maintenant", true, false, None::<&str>)?;
+            let always = CheckMenuItem::with_id(app, "mode_always", "Always-on — enchaîner les réponses", true, false, None::<&str>)?;
             let off = CheckMenuItem::with_id(app, "mode_off", "Force-off — arrêt d'urgence", true, false, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Pause", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quitter le panneau (Wake continue)", true, None::<&str>)?;

@@ -99,11 +99,10 @@ export class OwnedRuntime {
               const r = JSON.parse(input.trim());
               if (
                 !same(r.key, ownerKey(this.manifestFile)) ||
-                !["observe", "restart", "stop"].includes(r.op)
+                !["observe", "restart"].includes(r.op)
               )
                 throw Error("Denied");
               if (r.op === "restart") await this.restart(abort.signal);
-              if (r.op === "stop") await this.stop();
               socket.end(JSON.stringify({ ok: true, component: await this.observe() }) + "\n");
             } catch {
               socket.end(JSON.stringify({ ok: false, code: "owner_operation_refused" }) + "\n");
@@ -220,16 +219,6 @@ export class OwnedRuntime {
       this.replacing = false;
     }
   }
-  /** A stop is allowed while paused/Force-off; it never launches a replacement. */
-  async stop() {
-    if (this.busy) throw Error("Owned operation in progress");
-    this.busy = true;
-    try {
-      await this.stopChild();
-      this.closed = true;
-      this.finish();
-    } finally { this.busy = false; }
-  }
   async close() {
     if (this.closePromise) return this.closePromise;
     this.closePromise = this.closeOwned();
@@ -297,7 +286,7 @@ export async function ownedComponents(manifestFile, role, op = "observe", signal
     )
       continue;
     try {
-      if (op !== "observe") {
+      if (op === "restart") {
         try {
           await callOwner(record, key, "observe", signal);
         } catch (e) {
@@ -308,13 +297,11 @@ export async function ownedComponents(manifestFile, role, op = "observe", signal
       members.push({ owner: record.ownerId, component: await callOwner(record, key, op, signal) });
     } catch (e) {
       if (signal?.aborted) throw e;
-      if (op !== "observe") throw Error("Owned runtime operation failed", { cause: e });
+      if (op === "restart") throw Error("Owned runtime could not restart", { cause: e });
     }
   }
   if (!members.length) return { component: unknown(), members };
   const values = members.map((m) => m.component);
-  if (op === "stop" && values.every((c) => c.state === "stopped"))
-    return { component: { ...unknown(), state: "stopped" }, members };
   if (values.some((c) => c.state !== "running")) return { component: unknown(), members };
   if (members.length === 1) return { component: values[0], members };
   const fingerprint = createHash("sha256")
