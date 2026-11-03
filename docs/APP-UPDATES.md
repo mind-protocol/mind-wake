@@ -1,5 +1,11 @@
 # Mises à jour de l’application
 
+Le parcours courant est exclusivement fondé sur Git : première installation par `git clone`, puis `git pull --ff-only` dans le clone installé et compilation locale. Les prérequis et les commandes sont dans [install.md](../install.md#6-mettre-à-jour-depuis-git). Aucun package ni archive Wake n’est requis. Les profils préparés depuis un clone sans ancien binaire portable conservent `development: true`, ce qui désactive l’updater automatique.
+
+## Ancien updater pour les profils déjà installés
+
+Le mécanisme ci-dessous reste dans le code pour les profils qui l’utilisent déjà. Il ne constitue pas le parcours d’installation courant.
+
 Le panneau de production vérifie au démarrage puis cinq minutes après chaque vérification terminée. Dans « Réglages » du menu de gauche, le bouton de mise à jour lance le même parcours immédiatement. Fermer la fenêtre conserve le panneau dans la zone de notification et donc la vérification périodique ; quitter le panneau l’arrête.
 
 `scripts/app-update.mjs` récupère `main` de `https://github.com/mind-protocol/mind-wake.git` dans un cache Git propre à l’installation. `updateSource` et `updateBranch` dans le manifeste permettent de choisir explicitement un autre canal. Le dépôt de travail n’est ni modifié, ni nettoyé, ni réinitialisé.

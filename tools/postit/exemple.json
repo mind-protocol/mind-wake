@@ -1,0 +1,11 @@
+{
+  "ttl_seconds": 45,
+  "marks": [
+    { "kind": "sticky", "x": 40, "y": 40, "color": "jaune", "shape": "note", "w": 280,
+      "text": "# Coucou 👋\nJ'ai fini le rapport.\n**Il est dans artifacts/findings/**" },
+    { "kind": "sticky", "x": 360, "y": 40, "at": 3, "color": "vert", "shape": "bulle",
+      "text": "Regarde ce cadre 👇" },
+    { "kind": "box", "x": 360, "y": 160, "w": 300, "h": 120, "at": 3, "note": "ici" },
+    { "kind": "text", "find": "Fichier", "note": "menu Fichier", "max": 1, "at": 6, "for": 10 }
+  ]
+}

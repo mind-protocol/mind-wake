@@ -1,8 +1,9 @@
+import { tr } from "./i18n.js";
 type Invoke=(command:string,args:Record<string,unknown>)=>Promise<unknown>;
 export function initProjects(invoke:Invoke):void{
  const frame=document.getElementById('projects-frame') as HTMLIFrameElement,status=document.getElementById('projects-status')!;
  async function load():Promise<void>{
-  status.textContent='Chargement des projets…';
+  status.textContent=tr("Chargement des projets…");
   try{
    const data=await invoke('document_browse',{scope:'agent',relative:'artifacts/projets.html',read:true}) as {text:string};
    const doc=new DOMParser().parseFromString(data.text,'text/html');
@@ -17,8 +18,8 @@ export function initProjects(invoke:Invoke):void{
      document.getElementById('tab-documents')?.click();window.dispatchEvent(new CustomEvent('wake-open-document',{detail:{scope:'agent',relative}}));
     }catch{/* Invalid links remain inert. */}
    });};
-   frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;status.textContent='État éditorial local · Actualiser après une mise à jour des tâches.';
-  }catch(error){status.textContent='Projets indisponibles : '+String(error);}
+   frame.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;status.textContent=tr("État éditorial local · Actualiser après une mise à jour des tâches.");
+  }catch(error){status.textContent=tr("Projets indisponibles : ")+String(error);}
  }
  document.getElementById('tab-projects')?.addEventListener('click',()=>{void load()});
  document.getElementById('projects-refresh')?.addEventListener('click',()=>{void load()});

@@ -48,13 +48,11 @@ passé dans le chat ni commité. Puis :
 
 ```powershell
 node scripts/native-launcher-release.mjs --seal C:\releases\wake-native-NEW
-node scripts/package-windows.mjs --stage C:\releases\wake-stage-NEW --archive C:\releases\wake-NEW.zip --native-launcher C:\releases\wake-native-NEW
+# Copier le lanceur scellé et job-launcher.json dans bin/native/ du clone installé.
 ```
 
 Le scellement exige une signature Authenticode `Valid` sur le poste de build et
-enregistre le hash du fichier **après** signature. Le packaging existant exige aussi
-le build desktop release et revérifie la signature du lanceur. Le champ global `signed:false` reste présent : signer le
-lanceur ne signe pas l’app desktop ni tous les autres composants.
+enregistre le hash du fichier **après** signature. L’installation Wake utilise Git et une compilation locale, sans archive produit. Le lanceur signé reste un composant optionnel installé dans bin/native/ ; signer ce lanceur ne signe pas l’app desktop ni tous les autres composants.
 
 Le runtime choisit `bin/native/` avant toute compilation locale, valide le manifeste,
 le hash du binaire et la version de la source. Un bundle présent mais incorrect est

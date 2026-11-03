@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 import { BUMP_PROMPT_PATH, resolveBumpText } from "./chat-presence.js";
 import { PointSendIntent, pointBumpText, type PointIntent } from "./point-bump.js";
 const api = (
@@ -10,7 +11,7 @@ const api = (
 ).__TAURI__;
 function element(selector: string): HTMLElement {
   const found = document.querySelector<HTMLElement>(selector);
-  if (found === null) throw new Error(`Élément absent : ${selector}`);
+  if (found === null) throw new Error(tr("Élément absent : {0}", [selector]));
   return found;
 }
 const form = element("#quick-form") as HTMLFormElement;
@@ -25,8 +26,8 @@ let clickId: number | null = null;
 let busy = false;
 async function submit(kind: PointIntent["kind"]): Promise<void> {
   if (busy || (kind === "message" && !input.value.trim())) return;
-  if (kind === "message" && intent.isUnconfirmed()) { status.textContent = "Bumpe précédent non confirmé. Cliquer Bumpe pour vérifier cet envoi avant un nouveau message."; return; }
-  if (clickId === null) { status.textContent = "Point du clic absent ; refaire un clic droit. Aucun message envoyé."; return; }
+  if (kind === "message" && intent.isUnconfirmed()) { status.textContent = tr("Bumpe précédent non confirmé. Cliquer Bumpe pour vérifier cet envoi avant un nouveau message."); return; }
+  if (clickId === null) { status.textContent = tr("Point du clic absent ; refaire un clic droit. Aucun message envoyé."); return; }
   const selectedClickId = clickId;
   busy = true;
   send.disabled = true;
@@ -34,7 +35,7 @@ async function submit(kind: PointIntent["kind"]): Promise<void> {
   bumpe.disabled = true;
   talk.disabled = true;
   input.readOnly = true;
-  status.textContent = "Capture de l’écran et envoi…";
+  status.textContent = tr("Capture de l’écran et envoi…");
   try {
       // Resolve only once: a failed capture must retry the same human invitation.
       const text = kind === "bumpe"
@@ -44,7 +45,7 @@ async function submit(kind: PointIntent["kind"]): Promise<void> {
       await api.core.invoke("quick_input_send", {idempotencyKey:pending.key,text:pending.text,clickId:pending.clickId});
       if (kind === "message") input.value = "";
       intent.complete();
-      status.textContent = "Message et capture enregistrés.";
+      status.textContent = tr("Message et capture enregistrés.");
   } catch (error: unknown) {
       const detail = String(error);
       if (kind === "bumpe" && detail.includes("POINT_REFRESH_REQUIRED:")) {
@@ -76,5 +77,5 @@ void api.event.listen("quick-opened", ({payload}) => {
   const target = payload as {id?: unknown; x?: unknown; y?: unknown} | null;
   clickId = typeof target?.id === "number" && Number.isSafeInteger(target.id) && target.id > 0 ? target.id : null;
   bumpe.disabled = busy || clickId === null;
-  status.textContent = clickId === null ? "Point du clic absent ; refaire un clic droit." : `Point (${String(target?.x)}, ${String(target?.y)}) · Bumpe ou Parler · Échap : fermer`;
+  status.textContent = clickId === null ? tr("Point du clic absent ; refaire un clic droit.") : tr("Point ({0}, {1}) · Bumpe ou Parler · Échap : fermer", [String(target?.x), String(target?.y)]);
 });

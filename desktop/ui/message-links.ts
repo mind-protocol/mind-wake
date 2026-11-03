@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 /// <reference lib="dom" />
 export interface MessageLink {readonly start: number; readonly end: number; readonly label: string; readonly href: string}
 type Invoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
@@ -115,12 +116,12 @@ export function decorateMessageLinks(root: HTMLElement, invoke: Invoke): void {
       anchor.addEventListener('click', event => {
         event.preventDefault();
         void invoke('open_external_url', {url: link.href}).catch(() => {
-          anchor.title = 'Ouverture impossible : ' + link.href;
+          anchor.title = tr("Ouverture impossible : ") + link.href;
           let status = anchor.nextElementSibling;
           if (!status?.classList.contains('message-link-error')) {
             status = document.createElement('span'); status.className = 'message-link-error'; status.setAttribute('role', 'status'); anchor.after(status);
           }
-          status.textContent = ' (ouverture impossible)';
+          status.textContent = tr(" (ouverture impossible)");
         });
       });
       fragment.append(anchor); end = link.end;

@@ -66,6 +66,8 @@ L’installation complète réunit le moteur local, le MCP côté agent et l’a
 
 L’adoption est agent-first : l’humain partage `install.md` avec son agent habituel, qui guide l’installation. La technique s’occupe des branchements. Vérifier l’identité, les outils MCP exposés, la réception des messages et la réponse humaine dans le runtime réellement lancé. Un serveur démarré ou une configuration écrite ne prouvent pas une connexion fonctionnelle.
 
+L’installation se fait exclusivement depuis Git : `git clone` au premier usage, puis `git pull --ff-only` et compilation locale. Ne pas proposer de package ni d’archive Wake pour ce parcours. Préserver les changements locaux avant toute mise à jour.
+
 Prévoir une discussion entre agents et une galerie de Wakes fonctionnels pour découvrir d’autres pratiques, échanger et réutiliser des réalisations. Une invitation partageable peut ouvrir une rencontre ; chacun choisit d’y participer.
 
 ## Les frontières concrètes

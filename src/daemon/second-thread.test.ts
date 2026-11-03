@@ -107,7 +107,7 @@ it("keeps its own saved thread, resumes the Claude session and delivers human me
   expect(calls[0]?.message).toContain("Regarde le projet C");
   expect(calls[1]?.message).not.toContain("Regarde le projet C");
   expect(calls[0]?.message).toContain("Projet C (c)");
-  expect(fs.readFileSync(calls[0]?.promptFile ?? "", "utf8")).toContain("Second fil Claude Code");
+  expect(fs.readFileSync(calls[0]?.promptFile ?? "", "utf8")).toContain("Second Claude Code chat");
   const view = readSecondThread(dataDir);
   expect(view.entries.map((e) => [e.role, e.text])).toEqual([
     ["human", "Regarde le projet C"],
@@ -184,8 +184,8 @@ it("states the main project and the free-exploration fallback in the turn messag
     human: [],
     now: new Date("2026-11-03T12:00:00Z"),
   });
-  expect(text).toContain("exploration libre");
-  expect(text).toContain("Fil principal : Projet A (a)");
+  expect(text).toContain("free exploration");
+  expect(text).toContain("Main chat: Projet A (a)");
 });
 
 describe("runClaudeTurn with a fake Claude Code executable", () => {

@@ -3,21 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Parler à Wake</title>
+    <title data-i18n="Parler à Wake">Parler à Wake</title>
     <link rel="stylesheet" href="quick-input.css" />
     <script defer src="quick-input-close.js"></script>
   </head>
   <body>
     <form id="quick-form">
-      <header data-tauri-drag-region title="Glisser pour déplacer le menu">
+      <header data-tauri-drag-region title="Glisser pour déplacer le menu" data-i18n-title="Glisser pour déplacer le menu">
         <strong data-tauri-drag-region>MIND <span aria-hidden="true" data-tauri-drag-region>⠿</span></strong>
-        <nav aria-label="Actions au point du clic">
-          <button id="talk" type="button">Parler à mon agent</button>
-          <button id="bumpe" type="button" disabled title="Inviter ton agent à une relance à partir du point cerclé">Bumpe</button>
+        <nav aria-label="Actions au point du clic" data-i18n-aria-label="Actions au point du clic">
+          <button id="talk" type="button" data-i18n="Parler à mon agent">Parler à mon agent</button>
+          <button id="bumpe" type="button" disabled title="Inviter ton agent à une relance à partir du point cerclé" data-i18n-title="Inviter ton agent à une relance à partir du point cerclé">Bumpe</button>
         </nav>
-        <button id="cancel" type="button" data-tauri-drag-region="false" aria-label="Fermer" title="Fermer (Échap)">×</button>
+        <button id="cancel" type="button" aria-label="Fermer" title="Fermer (Échap)" data-i18n-aria-label="Fermer" data-i18n-title="Fermer (Échap)">×</button>
       </header>
-      <label for="message">Votre message</label>
+      <label for="message" data-i18n="Votre message">Votre message</label>
       <textarea
         id="message"
         maxlength="4000"
@@ -25,13 +25,14 @@
         required
       ></textarea>
       <footer>
-        <small>Écran principal joint, point du clic cerclé.</small
-        ><button id="send" type="submit">Envoyer</button>
+        <small data-i18n="Écran principal joint, point du clic cerclé.">Écran principal joint, point du clic cerclé.</small
+        ><button id="send" type="submit" data-i18n="Envoyer">Envoyer</button>
       </footer>
-      <p id="status" role="status" aria-live="polite">
+      <p id="status" role="status" aria-live="polite" data-i18n="Entrée : envoyer · Maj+Entrée : nouvelle ligne · Échap : fermer">
         Entrée : envoyer · Maj+Entrée : nouvelle ligne · Échap : fermer
       </p>
     </form>
+    <script type="module" src="build/i18n-dom.js"></script>
     <script type="module" src="build/quick-input.js"></script>
   </body>
 </html>

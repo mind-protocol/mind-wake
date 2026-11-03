@@ -6,7 +6,7 @@ const row = (value: unknown): Row | undefined =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Row) : undefined;
 
 export const DELEGATION_REMINDER =
-  "RAPPEL DE FIN DE RÉPONSE — Aucun lancement ni reprise de sous-session n’a été attesté pendant ce tour. Confie aux sous-sessions le développement et les travaux précis d’exécution. Garde ici la conversation avec NLR, la vision, les choix et la planification. Si un travail concret doit avancer, lance ou reprends une sous-session adaptée avec un mandat précis. Une simple conversation n’exige pas d’inventer une tâche à déléguer. Ce rappel ne déclenche pas un nouveau rappel ; les messages humains, Pause et Force-off restent prioritaires.";
+  "END-OF-RESPONSE REMINDER — No subsession launch or resumption was verified during this turn. Delegate development and specific execution work to subsessions. Keep the conversation with NLR, vision, choices and planning here. If concrete work needs to advance, launch or resume a suitable subsession with a precise assignment. A simple conversation does not require inventing a task to delegate. This reminder does not trigger another reminder; human messages, Pause and Force-off retain priority.";
 
 /** Installation-local opt-in. Missing or malformed data never enables an extra turn. */
 export function delegationReminderEnabled(workspace: string): boolean {

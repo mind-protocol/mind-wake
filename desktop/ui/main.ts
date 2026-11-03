@@ -1,3 +1,5 @@
+import { tr, formatLocale } from "./i18n.js";
+import { mountOnboarding } from "./onboarding.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { initProjects } from "./projects.js";
 import { mountWakePreview } from "./wake-preview.js";
@@ -6,6 +8,7 @@ import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
 import { mountSecondThread } from "./second-thread.js";
 import { mountForks } from "./forks.js";
+import { mountCoach } from "./coach.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
  * par une commande Rust qui exécute la CLI correspondante (`mind-wake … --json`,
@@ -61,7 +64,7 @@ interface Message {
 const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
 const messageFileLinks = tauri ? initMessageFileLinks((command,args)=>tauri.core.invoke(command,args)) : null;
 const authorizations = mountAuthorizations(async (command, args) => {
-  if (!tauri) throw new Error("Les autorisations sont disponibles dans l’application MIND Wake.");
+  if (!tauri) throw new Error(tr("Les autorisations sont disponibles dans l’application MIND Wake."));
   return tauri.core.invoke(command, args);
 });
 const POLL_MS = 2000;
@@ -78,7 +81,7 @@ async function setFullscreen(enabled: boolean): Promise<void> {
   try {
     await tauri.core.invoke("app_fullscreen", {enabled});
     fullscreen = enabled;
-    byId("app-fullscreen").textContent = enabled ? "Quitter le plein écran" : "Plein écran";
+    byId("app-fullscreen").textContent = enabled ? tr("Quitter le plein écran") : tr("Plein écran");
     byId("app-control-status").textContent = "";
   } catch (error) { byId("app-control-status").textContent = String(error); }
   finally { fullscreenBusy = false; }
@@ -95,7 +98,7 @@ byId("app-restart").addEventListener("click", async () => {
   if (!tauri) return;
   const button = byId<HTMLButtonElement>("app-restart");
   button.disabled = true;
-  byId("app-control-status").textContent = "Redémarrage…";
+  byId("app-control-status").textContent = tr("Redémarrage…");
   try { await tauri.core.invoke("app_restart"); }
   catch (error) {
     byId("app-control-status").textContent = String(error);
@@ -110,12 +113,12 @@ byId("engine-restart").addEventListener("click", async () => {
   button.disabled = true;
   const status = byId("engine-restart-status");
   status.hidden = false;
-  status.textContent = "Redémarrage du moteur… La session en cours sera interrompue.";
+  status.textContent = tr("Redémarrage du moteur… La session en cours sera interrompue.");
   try {
     const result = await tauri.core.invoke("wake_restart") as CliRun;
     const envelope = JSON.parse(result.stdout) as Envelope;
-    if (result.exitCode !== 0 || envelope.ok !== true) throw new Error(String(envelope.error?.message ?? "Redémarrage non confirmé"));
-    status.textContent = "Moteur redémarré. Réglages conservés.";
+    if (result.exitCode !== 0 || envelope.ok !== true) throw new Error(String(envelope.error?.message ?? tr("Redémarrage non confirmé")));
+    status.textContent = tr("Moteur redémarré. Réglages conservés.");
     await refresh();
   } catch (error) { status.textContent = String(error); }
   finally { button.disabled = false; }
@@ -123,10 +126,10 @@ byId("engine-restart").addEventListener("click", async () => {
 
 let lastRead: StatusRead | null = null;
 const renderWakePreview = mountWakePreview(byId("wake-plan"), async (projectIds, revision) => {
-  if (!tauri) throw Error("Réorganisation disponible dans l’application MIND Wake.");
+  if (!tauri) throw Error(tr("Réorganisation disponible dans l’application MIND Wake."));
   const result = await tauri.core.invoke("wake_order", {projectIds, revision}) as CliRun;
   const envelope = JSON.parse(result.stdout) as Envelope;
-  if (result.exitCode !== 0 || envelope.ok !== true) throw Error(String(envelope.error?.message ?? "Ordre non enregistré."));
+  if (result.exitCode !== 0 || envelope.ok !== true) throw Error(String(envelope.error?.message ?? tr("Ordre non enregistré.")));
   // The regular status poll reads the persisted order after this callback returns.
 });
 let stopArmedUntil = 0;
@@ -138,7 +141,7 @@ const outgoingChat = new Map<string, HTMLLIElement>();
 
 function messageLinks(body: HTMLElement): void {
   decorateMessageLinks(body, (command, args) => {
-    if (!tauri) return Promise.reject(Error("Ouverture disponible dans l’application MIND Wake"));
+    if (!tauri) return Promise.reject(Error(tr("Ouverture disponible dans l’application MIND Wake")));
     return tauri.core.invoke(command, args);
   });
 }
@@ -150,7 +153,7 @@ function conversationBody(text: string, kind: BumpKind | null, imageText = text)
     paragraph.textContent = text;
     messageLinks(paragraph);
     appendMessageImages(body, imageText, (command, args) => {
-      if (!tauri) return Promise.reject(Error("Images locales disponibles dans l’app"));
+      if (!tauri) return Promise.reject(Error(tr("Images locales disponibles dans l’app")));
       return tauri.core.invoke(command, args);
     });
     return body;
@@ -159,9 +162,9 @@ function conversationBody(text: string, kind: BumpKind | null, imageText = text)
   icon.className = "bump-invitation-icon";
   icon.textContent = "↗";
   icon.setAttribute("role", "img");
-  icon.setAttribute("aria-label", kind === "bumpe" ? "Bumpe, relance au point cliqué" : "Bump");
+  icon.setAttribute("aria-label", kind === "bumpe" ? tr("Bumpe, relance au point cliqué") : "Bump");
   const point = kind === "bumpe" ? /Point choisi par ton humain : \((-?\d+), (-?\d+)\)/.exec(text) : null;
-  icon.title = kind === "bumpe" ? `Bumpe · relance ciblée${point ? ` au point (${point[1]}, ${point[2]})` : " au point cliqué"}` : "Bump · invitation à relancer la conversation";
+  icon.title = kind === "bumpe" ? tr("Bumpe · relance ciblée{0}", [point ? ` au point (${point[1]}, ${point[2]})` : tr(" au point cliqué")]) : tr("Bump · invitation à relancer la conversation");
   paragraph.append(icon);
   return body;
 }
@@ -172,7 +175,7 @@ function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement
   li.dataset["messageId"] = key;
   li.className = "message-outgoing";
   const meta = document.createElement("small");
-  meta.textContent = "Toi · Envoi en cours…";
+  meta.textContent = tr("Toi · Envoi en cours…");
   meta.setAttribute("role", "status");
   const kind = automaticBumpKind({from:"human",id:key,text});
   if (kind !== null) li.dataset["invitation"] = kind;
@@ -190,12 +193,12 @@ let chatOpen = false;
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- type d'élément choisi par l'appelant
 function byId<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
-  if (el === null) throw new Error(`élément #${id} absent`);
+  if (el === null) throw new Error(tr("élément #{0} absent", [id]));
   return el as T;
 }
 
 async function invoke(cmd: string, args?: Record<string, unknown>): Promise<Envelope> {
-  if (tauri === undefined) throw new Error("hors de l'application desktop");
+  if (tauri === undefined) throw new Error(tr("hors de l'application desktop"));
   const run = (await tauri.core.invoke(cmd, args)) as CliRun;
   return JSON.parse(run.stdout) as Envelope;
 }
@@ -206,7 +209,7 @@ function message(error: unknown): string {
 
 function errorText(envelope: Envelope): string {
   const m = envelope.error?.message;
-  return typeof m === "string" ? m : "refusé";
+  return typeof m === "string" ? m : tr("refusé");
 }
 
 // --- Agent : statut, voyant, sélecteur ---------------------------------------------------
@@ -223,12 +226,12 @@ async function refresh(): Promise<void> {
       indicator.hidden = !input || input.state === "off";
       indicator.textContent =
         input?.state === "active"
-          ? "Partage du texte ACTIF — icône T pour pause ou arrêt"
+          ? tr("Partage du texte ACTIF — icône T pour pause ou arrêt")
           : input?.state === "paused"
-            ? "Partage du texte en pause"
+            ? tr("Partage du texte en pause")
             : input?.state === "starting"
-              ? "Démarrage du partage du texte…"
-              : "État du partage du texte indisponible";
+              ? tr("Démarrage du partage du texte…")
+              : tr("État du partage du texte indisponible");
     }
   } catch (error) {
     lastRead = { ok: false, fetchedAt: Date.now(), error: message(error) };
@@ -262,16 +265,16 @@ function render(view: PanelView): void {
   byId("state").dataset["tone"] = view.tone;
   const light = byId("light");
   light.dataset["light"] = view.light;
-  light.setAttribute("aria-label", `Voyant : ${LIGHT_LABELS[view.light]}`);
+  light.setAttribute("aria-label", tr("Voyant : {0}", [LIGHT_LABELS[view.light]]));
   light.title = LIGHT_LABELS[view.light];
   byId("headline").textContent = view.headline;
-  byId("agent-active-project").textContent = view.activeProject ? `Projet : ${view.activeProject}` : "";
+  byId("agent-active-project").textContent = view.activeProject ? tr("Projet : {0}", [view.activeProject]) : "";
   byId("agent-active-project").hidden = view.activeProject === null;
   byId("app-status").textContent = view.headline;
   byId("app-status").dataset["tone"] = view.tone;
   byId("reason").textContent = view.reason;
   byId("simulated").hidden = !view.simulated;
-  byId("last-contact").textContent = `Dernier contact avec Wake : ${view.lastContact}`;
+  byId("last-contact").textContent = tr("Dernier contact avec Wake : {0}", [view.lastContact]);
   fillLines("activity", view.activity);
   fillLines("consumption", view.consumption);
   fillLines("protection", view.protection);
@@ -282,7 +285,7 @@ function render(view: PanelView): void {
   const always = byId<HTMLButtonElement>("mode-always");
   always.setAttribute("aria-pressed", String(view.alwaysOn));
   always.disabled = !view.canAlwaysOn;
-  always.title = view.light === "forced_off" ? "Réactiver Wake et enchaîner les réveils" : "Enchaîner les réveils après chaque réponse";
+  always.title = view.light === "forced_off" ? tr("Réactiver Wake et enchaîner les réveils") : tr("Enchaîner les réveils après chaque réponse");
   on.setAttribute("aria-pressed", String(view.light === "on" && !view.alwaysOn));
   wake.setAttribute("aria-pressed", String(view.light === "awake" && !view.alwaysOn));
   off.setAttribute("aria-pressed", String(view.light === "forced_off"));
@@ -291,7 +294,7 @@ function render(view: PanelView): void {
   off.disabled = !view.canStop;
   byId<HTMLButtonElement>("pause").disabled = !view.canPause;
   const armed = Date.now() < stopArmedUntil;
-  off.textContent = armed ? "Confirmer l'arrêt" : "Force-off";
+  off.textContent = armed ? tr("Confirmer l'arrêt") : "Force-off";
   off.dataset["armed"] = String(armed);
 }
 
@@ -300,14 +303,14 @@ function feedback(text: string): void {
 }
 
 async function control(cmd: string, done: string): Promise<void> {
-  feedback("Commande envoyée…");
+  feedback(tr("Commande envoyée…"));
   try {
     const envelope = await invoke(cmd);
     const detail =
       typeof envelope.data?.["detail"] === "string" ? ` ${envelope.data["detail"]}` : "";
-    feedback(envelope.ok === true ? `${done}${detail}` : `Refusé.${detail}`);
+    feedback(envelope.ok === true ? `${done}${detail}` : tr("Refusé.{0}", [detail]));
   } catch (error) {
-    feedback(`Échec : ${message(error)}`);
+    feedback(tr("Échec : {0}", [message(error)]));
   }
   tick = 0;
   await refresh();
@@ -338,7 +341,7 @@ function drawChart(model: ActivityModel | null): void {
   const summary = byId("chart-summary");
   if (model === null) {
     box.replaceChildren();
-    summary.textContent = "Journal indisponible : aucun graphe affiché.";
+    summary.textContent = tr("Journal indisponible : aucun graphe affiché.");
     return;
   }
   const W = 400;
@@ -347,7 +350,7 @@ function drawChart(model: ActivityModel | null): void {
   const chart = svg("svg", { viewBox: `0 0 ${String(W)} ${String(H)}`, role: "img" });
   chart.setAttribute(
     "aria-label",
-    `${String(model.sessions.length)} réveils sur 24 h, ${model.totalKnownTokens.toLocaleString("fr-FR")} tokens mesurés`,
+    tr("{0} réveils sur 24 h, {1} tokens mesurés", [String(model.sessions.length), model.totalKnownTokens.toLocaleString(formatLocale())]),
   );
   const x = (t: number): number =>
     PAD + ((t - model.from) / (model.to - model.from)) * (W - 2 * PAD);
@@ -359,7 +362,7 @@ function drawChart(model: ActivityModel | null): void {
     const label = svg("text", { x: x(t), y: H - 2, class: "tick" });
     // Dernière graduation alignée à droite : « maintenant » ne déborde pas du cadre.
     if (h === 24) label.style.textAnchor = "end";
-    label.textContent = h === 24 ? "maintenant" : `-${String(24 - h)} h`;
+    label.textContent = h === 24 ? tr("maintenant") : `-${String(24 - h)} h`;
     chart.append(label);
   }
   for (const s of model.sessions) {
@@ -385,21 +388,21 @@ function drawChart(model: ActivityModel | null): void {
     }
     const dot = svg("circle", { cx, cy: base, r: 3.5, class: "wake" });
     const title = svg("title", {});
-    title.textContent = `${new Date(start).toLocaleString("fr-FR")} — ${
-      s.tokens === null ? "tokens inconnus" : `${s.tokens.toLocaleString("fr-FR")} tokens`
-    }${s.outcome === null ? " (en cours)" : ` · ${s.outcome}`}${s.simulated ? " · SIMULÉ" : ""}`;
+    title.textContent = `${new Date(start).toLocaleString(formatLocale())} — ${
+      s.tokens === null ? tr("tokens inconnus") : `${s.tokens.toLocaleString(formatLocale())} tokens`
+    }${s.outcome === null ? tr(" (en cours)") : ` · ${s.outcome}`}${s.simulated ? tr(" · SIMULÉ") : ""}`;
     dot.append(title);
     chart.append(dot);
   }
   box.replaceChildren(chart);
   summary.textContent =
     model.sessions.length === 0
-      ? "Aucun réveil sur les dernières 24 h."
-      : `${String(model.sessions.length)} réveil(s) · ${model.totalKnownTokens.toLocaleString("fr-FR")} tokens mesurés` +
+      ? tr("Aucun réveil sur les dernières 24 h.")
+      : tr("{0} réveil(s) · {1} tokens mesurés", [String(model.sessions.length), model.totalKnownTokens.toLocaleString(formatLocale())]) +
         (model.unknownCount > 0
-          ? ` · ${String(model.unknownCount)} session(s) à consommation inconnue (barres grisées)`
+          ? tr(" · {0} session(s) à consommation inconnue (barres grisées)", [String(model.unknownCount)])
           : "") +
-        (model.simulated ? " · contient des sessions SIMULÉES" : "");
+        (model.simulated ? tr(" · contient des sessions SIMULÉES") : "");
 }
 
 // --- Fils privés -------------------------------------------------------------------------
@@ -433,21 +436,21 @@ async function refreshThreads(): Promise<void> {
       return;
     }
     if (envelope.ok !== true) {
-      status.textContent = `Fils indisponibles : ${errorText(envelope)}`;
+      status.textContent = tr("Fils indisponibles : {0}", [errorText(envelope)]);
       byId("threads").replaceChildren();
       byId("unread").hidden = true;
       return;
     }
     threads = (envelope.data?.["threads"] ?? []) as ThreadSummary[];
   } catch (error) {
-    status.textContent = `Fils indisponibles : ${message(error)}`;
+    status.textContent = tr("Fils indisponibles : {0}", [message(error)]);
     return;
   }
   const seen = seenSequence();
   const unread = threads.filter((t) => t.last_sequence > seen).length;
   byId("unread").textContent = String(unread);
   byId("unread").hidden = unread === 0;
-  status.textContent = threads.length === 0 ? "Aucun message de ton agent pour l'instant." : "";
+  status.textContent = threads.length === 0 ? tr("Aucun message de ton agent pour l'instant.") : "";
   byId("threads").replaceChildren(
     ...threads.map((t) => {
       const li = document.createElement("li");
@@ -455,12 +458,12 @@ async function refreshThreads(): Promise<void> {
       button.type = "button";
       button.dataset["unread"] = String(t.last_sequence > seen);
       const subject = document.createElement("strong");
-      subject.textContent = t.subject ?? "(sans sujet)";
+      subject.textContent = t.subject ?? tr("(sans sujet)");
       const preview = document.createElement("span");
       preview.className = "thread-preview";
       preview.textContent = plainText(t.preview);
       const when = document.createElement("small");
-      when.textContent = new Date(t.last_at).toLocaleString("fr-FR");
+      when.textContent = new Date(t.last_at).toLocaleString(formatLocale());
       button.append(subject, preview, when);
       button.addEventListener(
         "click",
@@ -481,11 +484,11 @@ async function showThread(
   openThread = threadId;
   byId("threads").hidden = true;
   byId("thread").hidden = false;
-  byId("thread-subject").textContent = subject ?? "(sans sujet)";
+  byId("thread-subject").textContent = subject ?? tr("(sans sujet)");
   try {
     const envelope = await invoke("owner_thread", { threadId });
     if (envelope.ok !== true) {
-      byId("reply-status").textContent = `Fil indisponible : ${errorText(envelope)}`;
+      byId("reply-status").textContent = tr("Fil indisponible : {0}", [errorText(envelope)]);
       return;
     }
     const messages = (envelope.data?.["messages"] ?? []) as Message[];
@@ -495,7 +498,7 @@ async function showThread(
         const li = document.createElement("li");
         li.dataset["self"] = String(m.from_self);
         const meta = document.createElement("small");
-        meta.textContent = `${m.from_self ? "Toi" : m.provenance.kind === "agent" ? "Ton agent" : m.provenance.kind} · ${new Date(m.provenance.received_at).toLocaleString("fr-FR")}`;
+        meta.textContent = `${m.from_self ? tr("Toi") : m.provenance.kind === "agent" ? tr("Ton agent") : m.provenance.kind} · ${new Date(m.provenance.received_at).toLocaleString(formatLocale())}`;
         const body = document.createElement("p");
         body.textContent = m.text;
         messageLinks(body);
@@ -507,7 +510,7 @@ async function showThread(
     markSeen(lastSequence);
     await refreshThreads();
   } catch (error) {
-    byId("reply-status").textContent = `Fil indisponible : ${message(error)}`;
+    byId("reply-status").textContent = tr("Fil indisponible : {0}", [message(error)]);
   }
 }
 
@@ -517,7 +520,7 @@ async function sendReply(): Promise<void> {
   // Une clé par brouillon : un renvoi après échec réseau ne crée pas de doublon.
   draftKey ??= `ui-${crypto.randomUUID()}`;
   const status = byId("reply-status");
-  status.textContent = "Envoi…";
+  status.textContent = tr("Envoi…");
   try {
     const envelope = await invoke("owner_reply", {
       threadId: openThread,
@@ -526,16 +529,16 @@ async function sendReply(): Promise<void> {
       text,
     });
     if (envelope.ok !== true) {
-      status.textContent = `Non envoyé : ${errorText(envelope)}`;
+      status.textContent = tr("Non envoyé : {0}", [errorText(envelope)]);
       return;
     }
-    status.textContent = "Envoyé dans le fil. Ton agent le lira à sa prochaine session autorisée.";
+    status.textContent = tr("Envoyé dans le fil. Ton agent le lira à sa prochaine session autorisée.");
     byId<HTMLTextAreaElement>("reply-text").value = "";
     draftKey = null;
     const subject = byId("thread-subject").textContent;
     await showThread(openThread, subject, 0);
   } catch (error) {
-    status.textContent = `Non envoyé : ${message(error)}`;
+    status.textContent = tr("Non envoyé : {0}", [message(error)]);
   }
 }
 
@@ -575,11 +578,11 @@ async function refreshChat(): Promise<void> {
     ]);
     model = conversation(messages, helpers);
   } catch (error) {
-    byId("chat-note").textContent = `Messages indisponibles : ${message(error)}`;
+    byId("chat-note").textContent = tr("Messages indisponibles : {0}", [message(error)]);
     return;
   }
   if (model === null) {
-    byId("chat-note").textContent = "Messages indisponibles : format inattendu.";
+    byId("chat-note").textContent = tr("Messages indisponibles : format inattendu.");
     return;
   }
   const fresh = model.agentUpdatedAt !== null && model.agentUpdatedAt > chatSeenAt();
@@ -636,7 +639,7 @@ async function refreshChat(): Promise<void> {
       if (item.projectRows) {
         body.replaceChildren();
         const details=document.createElement("details"),summary=document.createElement("summary");
-        summary.textContent="Les 10 prochains wakes";details.append(summary);body.append(details);
+        summary.textContent=tr("Les 10 prochains wakes");details.append(summary);body.append(details);
         for (const row of item.projectRows) {
           const line = document.createElement("p");
           line.className = "project-plan-row";
@@ -645,7 +648,7 @@ async function refreshChat(): Promise<void> {
           details.append(line);
         }
         const note = document.createElement("small");
-        note.textContent = "Prévision révisable · mise à jour automatique · wake en cours exclu.";
+        note.textContent = tr("Prévision révisable · mise à jour automatique · wake en cours exclu.");
         details.append(note);
       }
       li.append(meta, body);
@@ -674,9 +677,9 @@ function renderChatPresence(): void {
   const reminder = byId("chat-progress-reminder");
   reminder.hidden = label === null;
   if (reminder.textContent !== (label ?? "")) reminder.textContent = label ?? "";
-  reminder.title = label === "Rappel transmis"
-    ? "Le rappel de nouvelles a été transmis à l’agent. En attente d’un message."
-    : "60 secondes sans nouvelles : un rappel attend d’être transmis à l’agent.";
+  reminder.title = label === tr("Rappel transmis")
+    ? tr("Le rappel de nouvelles a été transmis à l’agent. En attente d’un message.")
+    : tr("60 secondes sans nouvelles : un rappel attend d’être transmis à l’agent.");
 }
 // Expire the indication even if a status request is stuck.
 setInterval(renderChatPresence, 1000);
@@ -691,7 +694,7 @@ byId("chat-bump").addEventListener("click", async () => {
   button.disabled = true;
   if (pendingBump === null) {
     const text = await resolveBumpText(() => {
-      if (!tauri) throw new Error("Application indisponible");
+      if (!tauri) throw new Error(tr("Application indisponible"));
       return tauri.core.invoke("document_browse", {scope:"agent",relative:BUMP_PROMPT_PATH,read:true});
     });
     const key = `ui-bump-${crypto.randomUUID()}`;
@@ -717,24 +720,24 @@ async function refreshRecipient():Promise<void> {
     recipientConfigured=status.ok===true && status.data?.["configured"]===true;
     const option=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="auroracle"]');
     const ownerOption=byId<HTMLSelectElement>("chat-recipient").querySelector('option[value="owner"]');
-    if(ownerOption)ownerOption.textContent=status.data?.["localOwnerName"]==="Marco" ? "Marco · mon agent" : "Mon agent";
+    if(ownerOption)ownerOption.textContent=status.data?.["localOwnerName"]==="Marco" ? tr("Marco · mon agent") : tr("Mon agent");
     if(option instanceof HTMLOptionElement) {
       // Never change a chosen recipient after route removal: that could send a
       // retained peer draft to the local owner on the next click.
       option.hidden=status.data?.["pilot"]!==true && byId<HTMLSelectElement>("chat-recipient").value!=="auroracle";
       option.disabled=option.hidden;
-      option.textContent=recipientConfigured ? "Auroracle" : "Auroracle · non raccordé";
+      option.textContent=recipientConfigured ? "Auroracle" : tr("Auroracle · non raccordé");
     }
-    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=String(status.data?.["detail"] ?? "Route indisponible.");
+    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=String(status.data?.["detail"] ?? tr("Route indisponible."));
     else byId("chat-recipient-status").textContent="";
     if(recipientConfigured && Date.now()-recipientPolledAt>10_000) {
       recipientPolledAt=Date.now();
       const result=await invoke("recipient_poll");
-      if(result.ok!==true && byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent="Réception distante indisponible ; messages locaux conservés.";
+      if(result.ok!==true && byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=tr("Réception distante indisponible ; messages locaux conservés.");
     }
   } catch {
     recipientConfigured=false;
-    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent="Route indisponible. Brouillon conservé.";
+    if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=tr("Route indisponible. Brouillon conservé.");
   }
   finally {recipientChecking=false;}
 }
@@ -764,23 +767,23 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
   const meta = bubble.querySelector("small")!;
   bubble.querySelector("button")?.remove();
   bubble.dataset["sending"] = "true";
-  meta.textContent = "Toi · Envoi en cours…";
+  meta.textContent = tr("Toi · Envoi en cours…");
   try {
     const envelope = await invoke("wake_reply", { idempotencyKey: key, text });
     const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
     if (envelope.ok !== true) throw new Error(detail || errorText(envelope));
   } catch (error) {
     bubble.dataset["sending"] = "false";
-    meta.textContent = `Toi · Envoi non confirmé : ${message(error)}`;
+    meta.textContent = tr("Toi · Envoi non confirmé : {0}", [message(error)]);
     const retry = document.createElement("button");
     retry.type = "button";
-    retry.textContent = "Réessayer";
+    retry.textContent = tr("Réessayer");
     retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake); });
     bubble.append(retry);
     return;
   }
   bubble.dataset["sending"] = "false";
-  meta.textContent = "Toi · Envoyé · en attente de réception";
+  meta.textContent = tr("Toi · Envoyé · en attente de réception");
   if (pendingBump?.key === key) pendingBump = null;
   // Refresh independently: waking the agent must never delay the sent receipt.
   void refreshChat();
@@ -789,10 +792,10 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
     const wake = await invoke("wake_now");
     if (wake.ok !== true) {
       const detail = typeof wake.data?.["detail"] === "string" ? wake.data["detail"] : errorText(wake);
-      byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${detail}.`;
+      byId("chat-status").textContent = tr("Message envoyé. Pas de réveil : {0}.", [detail]);
     }
   } catch (error) {
-    byId("chat-status").textContent = `Message envoyé. Pas de réveil : ${message(error)}.`;
+    byId("chat-status").textContent = tr("Message envoyé. Pas de réveil : {0}.", [message(error)]);
   }
   tick = 0;
 }
@@ -806,12 +809,14 @@ byId("chat-form").addEventListener("submit", (event) => {
 
 type Tab = "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
 
-let conversationTab: "general" | "second" | "forks" = "general";
-function selectConversation(tab: "general" | "second" | "forks"): void {
+let conversationTab: "general" | "second" | "forks" | "coach" = "general";
+function selectConversation(tab: "general" | "second" | "forks" | "coach"): void {
   conversationTab = tab;
   byId("general-conversation").hidden = conversationTab !== "general";
   byId("view-second").hidden = conversationTab !== "second";
   byId("view-forks").hidden = conversationTab !== "forks";
+  byId("view-coach").hidden = conversationTab !== "coach";
+  byId("tab-coach").setAttribute("aria-selected",String(conversationTab === "coach"));
   if (tab !== "forks") document.querySelectorAll("[data-fork-tab]").forEach((button) => button.setAttribute("aria-selected", "false"));
   byId("conversation-general").setAttribute("aria-selected", String(conversationTab === "general"));
   byId("tab-second").setAttribute("aria-selected", String(conversationTab === "second"));
@@ -866,20 +871,20 @@ byId("reply-form").addEventListener("submit", (event) => {
 
 byId("mode-on").addEventListener(
   "click",
-  () => void control("wake_on", "Allumé : réveils autorisés."),
+  () => void control("wake_on", tr("Allumé : réveils autorisés.")),
 );
 byId("mode-always").addEventListener(
   "click",
-  () => void control("wake_always_on", "Always-on activé."),
+  () => void control("wake_always_on", tr("Always-on activé.")),
 );
-byId("mode-wake").addEventListener("click", () => void control("wake_now", "Réveil demandé."));
-byId("pause").addEventListener("click", () => void control("wake_pause", "Pause appliquée."));
+byId("mode-wake").addEventListener("click", () => void control("wake_now", tr("Réveil demandé.")));
+byId("pause").addEventListener("click", () => void control("wake_pause", tr("Pause appliquée.")));
 byId("mode-off").addEventListener("click", () => {
   // Deux clics rapprochés : l'arrêt d'urgence ne se lève que par une action explicite
   // ultérieure de l'humain, une confirmation évite qu'un clic égaré l'impose.
   if (Date.now() < stopArmedUntil) {
     stopArmedUntil = 0;
-    void control("wake_stop", "Arrêt d'urgence appliqué.");
+    void control("wake_stop", tr("Arrêt d'urgence appliqué."));
   } else {
     stopArmedUntil = Date.now() + 5000;
     render(panelView(lastRead, Date.now()));
@@ -889,6 +894,11 @@ byId("mode-off").addEventListener("click", () => {
 void refresh();
 setInterval(() => void refresh(), POLL_MS);
 
+if (tauri !== undefined) mountCoach({
+  invoke: async (cmd,args) => invoke(cmd,args),
+  selectTab: () => selectConversation("coach"),
+  decorate: (body,text) => {messageLinks(body);appendMessageImages(body,text,(cmd,args)=>tauri.core.invoke(cmd,args));},
+});
 if (tauri !== undefined) mountForks({
   invoke: async (cmd, args) => invoke(cmd, args),
   selectTab: () => selectTab("forks"),
@@ -913,7 +923,7 @@ let selectedAgentThread: string | null = null;
 function renderAgentThreads(): void {
   byId("agents-count").textContent = String(agentThreads.length);
   byId("agents-count").hidden = agentThreads.length === 0;
-  byId("agents-status").textContent = agentThreads.length ? "" : "Aucune conversation entre agents enregistrée.";
+  byId("agents-status").textContent = agentThreads.length ? "" : tr("Aucune conversation entre agents enregistrée.");
   const selected = agentThreads.find(t => t.id === selectedAgentThread);
   byId("agents-list").hidden = selected !== undefined;
   byId("agent-thread").hidden = selected === undefined;
@@ -922,7 +932,7 @@ function renderAgentThreads(): void {
     button.type = "button";
     const title = document.createElement("strong"), detail = document.createElement("small"), preview = document.createElement("span");
     title.textContent = `Wake ↔ ${t.project}`;
-    detail.textContent = `${t.runtime} · ${t.messages.length} messages · ${new Date(t.messages.at(-1)?.at ?? "").toLocaleString("fr-FR")}`;
+    detail.textContent = `${t.runtime} · ${t.messages.length} messages · ${new Date(t.messages.at(-1)?.at ?? "").toLocaleString(formatLocale())}`;
     preview.className = "thread-preview"; preview.textContent = t.messages.at(-1)?.text.slice(0, 180) ?? "";
     button.append(title, detail, preview);
     button.addEventListener("click", () => { selectedAgentThread = t.id; renderAgentThreads(); });
@@ -930,18 +940,18 @@ function renderAgentThreads(): void {
   }));
   if (!selected) return;
   byId("agent-thread-title").textContent = `Wake ↔ ${selected.project}`;
-  byId("agent-thread-pointers").textContent = `Repo : ${selected.repo}\nSession ${selected.runtime} : ${selected.sessionId}\nHistorique : ${selected.transcript}\nFil : ${selected.id}`;
+  byId("agent-thread-pointers").textContent = tr("Repo : {0}\nSession {1} : {2}\nHistorique : {3}\nFil : {4}", [selected.repo, selected.runtime, selected.sessionId, selected.transcript, selected.id]);
   byId("agent-thread-messages").replaceChildren(...selected.messages.map(m => {
     const li = document.createElement("li"), meta = document.createElement("small"), body = renderMarkdown(m.text);
     li.dataset["self"] = String(m.from === "wake");
     li.dataset["from"] = m.from === "repo" ? "session" : "agent"; li.dataset["messageId"] = m.id;
-    meta.textContent = `${m.from === "system" ? "État de la consultation" : m.from === "wake" ? "Agent Wake" : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    meta.textContent = `${m.from === "system" ? tr("État de la consultation") : m.from === "wake" ? tr("Agent Wake") : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString(formatLocale())}`;
     messageLinks(body);
     appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
     li.append(meta, body);
     if (m.from === "repo" && m.text.length === 4000 && Date.parse(m.at) < Date.parse("2026-10-30T16:00:00Z")) {
       const notice = document.createElement("p"); notice.className = "hint";
-      notice.textContent = "Cette réponse historique atteint l’ancienne limite de 4 000 caractères : elle peut être incomplète.";
+      notice.textContent = tr("Cette réponse historique atteint l’ancienne limite de 4 000 caractères : elle peut être incomplète.");
       li.append(notice);
     }
     return li;
@@ -952,7 +962,7 @@ async function refreshAgentThreads(): Promise<void> {
     const env = await invoke("wake_messages");
     if (env.ok !== true) throw new Error(errorText(env));
     agentThreads = repoThreads(env); renderAgentThreads();
-  } catch (error) { byId("agents-status").textContent = `Conversations indisponibles : ${message(error)}`; }
+  } catch (error) { byId("agents-status").textContent = tr("Conversations indisponibles : {0}", [message(error)]); }
 }
 byId("tab-agents").addEventListener("click", () => selectTab("agents"));
 byId("agent-thread-back").addEventListener("click", () => { selectedAgentThread = null; renderAgentThreads(); });
@@ -976,11 +986,11 @@ function renderWakeHistory(): void {
   const signature=JSON.stringify({turns:wakeTurns,note:wakeHistoryNote});
   if(signature===wakeHistorySignature)return;
   wakeHistorySignature=signature;
-  byId("wake-history-status").textContent = wakeHistoryNote || (!wakeTurns.length ? "Aucun échange disponible." : "");
+  byId("wake-history-status").textContent = wakeHistoryNote || (!wakeTurns.length ? tr("Aucun échange disponible.") : "");
   const items=wakeTurns.flatMap(turn=>[
     {id:turn.id,at:turn.at,text:turn.prompt,prompt:true,missing:turn.promptMissing===true},
     ...turn.responses.map(r=>({...r,prompt:false,missing:false})),
-    ...(turn.responses.length ? [] : [{id:`pending:${turn.id}`,at:turn.at,text:"Aucune réponse visible enregistrée pour ce réveil pour le moment.",prompt:false,missing:false}]),
+    ...(turn.responses.length ? [] : [{id:`pending:${turn.id}`,at:turn.at,text:tr("Aucune réponse visible enregistrée pour ce réveil pour le moment."),prompt:false,missing:false}]),
   ]);
   byId("wake-history-messages").replaceChildren(...items.map(m=>{
     const li=document.createElement("li"),meta=document.createElement("strong"),body=document.createElement("p");
@@ -988,11 +998,11 @@ function renderWakeHistory(): void {
     li.dataset["messageId"]=m.id;
     const pending=m.id.startsWith("pending:");
     if(pending)li.className="wake-placeholder";
-    meta.textContent=`${pending?"État du réveil":m.prompt?m.missing?"Échange partiel":"Réveil":"Réponse de l’agent"} · ${new Date(m.at).toLocaleString("fr-FR")}`;
+    meta.textContent=`${pending?tr("État du réveil"):m.prompt?m.missing?tr("Échange partiel"):tr("Réveil"):tr("Réponse de l’agent")} · ${new Date(m.at).toLocaleString(formatLocale())}`;
     if(m.prompt) {
       const cue=document.createElement("p"),details=document.createElement("details"),summary=document.createElement("summary"),pre=document.createElement("pre");
-      cue.className="wake-cue";cue.textContent=m.missing?"Début de ce réveil non chargé":m.text.split("\n")[0]??m.text;
-      summary.textContent="Voir le prompt complet et son contexte";
+      cue.className="wake-cue";cue.textContent=m.missing?tr("Début de ce réveil non chargé"):m.text.split("\n")[0]??m.text;
+      summary.textContent=tr("Voir le prompt complet et son contexte");
       pre.textContent=m.text;details.dataset["turnId"]=m.id;details.open=expanded.has(m.id);details.append(summary,pre);li.append(meta,cue);if(!m.missing)li.append(details);
     } else { body.textContent=m.text;messageLinks(body);appendMessageImages(body,m.text,(command,args)=>tauri!.core.invoke(command,args));li.append(meta,body); }
     return li;
@@ -1004,29 +1014,32 @@ async function refreshWakeHistory(): Promise<void> {
     const env=await invoke("wake_history");
     if(env.ok!==true)throw new Error(errorText(env));
     const data=env.data;
-    if(!data || !Array.isArray(data["turns"]))throw new Error("Format inattendu");
+    if(!data || !Array.isArray(data["turns"]))throw new Error(tr("Format inattendu"));
     const locations=data["locations"] as {workspace?:string;systemPrompt?:string|null} | undefined;
     byId<HTMLButtonElement>("open-system-prompt").disabled=!locations?.systemPrompt;
-    byId("open-system-prompt").title=locations?.systemPrompt ?? "Aucun prompt MIND chargé disponible.";
-    byId("open-agent-folder").title=locations?.workspace ?? "Dossier de travail de l’agent";
+    byId("open-system-prompt").title=locations?.systemPrompt ?? tr("Aucun prompt MIND chargé disponible.");
+    byId("open-agent-folder").title=locations?.workspace ?? tr("Dossier de travail de l’agent");
     wakeTurns=data["turns"] as WakeTurnView[];
     wakeHistoryNote=typeof data["note"]==="string"?data["note"]:"";
     renderWakeHistory();
-  } catch(error) {byId("wake-history-status").textContent=`Historique indisponible : ${message(error)}`;}
+  } catch(error) {byId("wake-history-status").textContent=tr("Historique indisponible : {0}", [message(error)]);}
 }
 byId("tab-history").addEventListener("click",()=>selectTab("history"));
 async function openWakeLocation(kind: "workspace" | "systemPrompt"): Promise<void> {
   const status=byId("runtime-link-status");
   try {
-    if(!tauri)throw new Error("Ouvrir depuis l’app desktop.");
+    if(!tauri)throw new Error(tr("Ouvrir depuis l’app desktop."));
     await tauri.core.invoke("wake_open_location",{kind});
-    status.textContent=kind==="workspace"?"Dossier ouvert dans l’Explorateur.":"Prompt système MIND ouvert dans le Bloc-notes.";
+    status.textContent=kind==="workspace"?tr("Dossier ouvert dans l’Explorateur."):tr("Prompt système MIND ouvert dans le Bloc-notes.");
   } catch(error){status.textContent=message(error);}
 }
 byId("open-system-prompt").addEventListener("click",()=>void openWakeLocation("systemPrompt"));
 byId("open-agent-folder").addEventListener("click",()=>void openWakeLocation("workspace"));
 setInterval(()=>{if(!byId("view-history").hidden)void refreshWakeHistory();},5000);
 selectTab("documents");
+const onboarding = tauri ? mountOnboarding((command, args) => tauri.core.invoke(command, args), () => selectTab("chat")) : null;
+void onboarding?.refresh();
+setInterval(() => void onboarding?.refresh(), 5000);
 
 // Updates have their own status: no interference with agent activity or drafts.
 let updateBusy = false;
@@ -1034,17 +1047,17 @@ async function refreshAppUpdate(check = false): Promise<void> {
   if (!tauri || updateBusy) return;
   const button = byId<HTMLButtonElement>("app-update-check");
   const label = byId("app-update-status");
-  if (check) { updateBusy = true; button.disabled = true; label.textContent = "Vérification et installation en cours…"; }
+  if (check) { updateBusy = true; button.disabled = true; label.textContent = tr("Vérification et installation en cours…"); }
   try {
     const result = await tauri.core.invoke("app_update", {check}) as {state: string; development?: boolean; message?: string; revision?: string};
     const labels: Record<string, string> = {
-      disabled: "Désactivé en mode développement.", idle: "Vérification automatique au démarrage et toutes les 6 heures.",
-      checking: "Recherche d’une mise à jour…", building: "Installation en arrière-plan…",
-      busy: "Une mise à jour est déjà en cours.", current: "Application à jour.",
-      installed: "Mise à jour installée. Quittez puis rouvrez le panneau pour l’utiliser. Les sessions déjà actives continuent avec leur version actuelle.",
-      error: "Échec de la mise à jour. La version précédente est conservée.",
+      disabled: tr("Désactivé en mode développement."), idle: tr("Vérification automatique au démarrage et toutes les 6 heures."),
+      checking: tr("Recherche d’une mise à jour…"), building: tr("Installation en arrière-plan…"),
+      busy: tr("Une mise à jour est déjà en cours."), current: tr("Application à jour."),
+      installed: tr("Mise à jour installée. Quittez puis rouvrez le panneau pour l’utiliser. Les sessions déjà actives continuent avec leur version actuelle."),
+      error: tr("Échec de la mise à jour. La version précédente est conservée."),
     };
-    label.textContent = result.development ? "Désactivé en mode développement." : (labels[result.state] || result.state);
+    label.textContent = result.development ? tr("Désactivé en mode développement.") : (labels[result.state] || result.state);
     if (result.message && !result.development) label.textContent += ` ${result.message}`;
     button.disabled = !!result.development || ["building", "checking", "busy"].includes(result.state);
   } catch (error) { label.textContent = String(error); button.disabled = false; }
@@ -1061,20 +1074,20 @@ async function showAppVersion(): Promise<void> {
   const buildDate = byId("app-build-date");
   const formatDate = (value: string): string => {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "Indisponible" : date.toLocaleString("fr-FR", {dateStyle: "long", timeStyle: "short"});
+    return Number.isNaN(date.getTime()) ? tr("Indisponible") : date.toLocaleString(formatLocale(), {dateStyle: "long", timeStyle: "short"});
   };
   try {
-    if (!tauri) throw new Error("hors de l’application");
+    if (!tauri) throw new Error(tr("hors de l’application"));
     const info = await tauri.core.invoke("app_version") as {
       version: string; revision: string; revisionDate: string; builtAt: string; dirty: string; debug: boolean;
     };
-    version.textContent = `v${info.version} · ${info.revision ? info.revision.slice(0, 12) : "révision inconnue"}${info.debug ? " · dev" : ""}${info.dirty === "true" ? " · modifications locales" : ""}`;
-    sourceDate.textContent = formatDate(info.revisionDate) + (info.dirty === "true" ? " (dernier commit ; modifications locales incluses dans ce build)" : "");
+    version.textContent = `v${info.version} · ${info.revision ? info.revision.slice(0, 12) : tr("révision inconnue")}${info.debug ? " · dev" : ""}${info.dirty === "true" ? tr(" · modifications locales") : ""}`;
+    sourceDate.textContent = formatDate(info.revisionDate) + (info.dirty === "true" ? tr(" (dernier commit ; modifications locales incluses dans ce build)") : "");
     buildDate.textContent = formatDate(new Date(Number(info.builtAt) * 1000).toISOString());
   } catch {
-    version.textContent = "Version indisponible";
-    sourceDate.textContent = "Indisponible";
-    buildDate.textContent = "Indisponible";
+    version.textContent = tr("Version indisponible");
+    sourceDate.textContent = tr("Indisponible");
+    buildDate.textContent = tr("Indisponible");
   }
 }
 void showAppVersion();

@@ -6,7 +6,7 @@ it("keeps the shared invitation, final relaunch and scope on the real circled po
   const text = pointBumpText(await resolveBumpText(() => Promise.resolve(null)));
   expect(text.startsWith("BUMP:")).toBe(true);
   expect(text).toContain(BUMP_TEXT);
-  for (const clause of ["point précis de son clic droit", "cerclé en rouge", "contexte et sa valeur", "brouillon séparé"]) expect(text).toContain(clause);
+  for (const clause of ["exact point of their right click", "circled in red", "context and value", "separate draft"]) expect(text).toContain(clause);
 });
 
 it("retries the same failed Bumpe despite a newly edited prompt and changes key for a new click", () => {
@@ -45,6 +45,6 @@ it("retains an unconfirmed send across a new click until acknowledgement is reco
 it("reserves the entire point protocol and falls back to complete current instructions for a long file", () => {
   const text = pointBumpText(`BUMP: ${"x".repeat(3994)}`);
   expect(text).toContain(BUMP_TEXT);
-  expect(text).toContain("N’inclus pas le préfixe BUMP:");
+  expect(text).toContain("Do not include the BUMP: prefix");
   expect(text.length + BUMPE_CONTEXT_RESERVE).toBeLessThanOrEqual(4000);
 });

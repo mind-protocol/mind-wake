@@ -106,7 +106,7 @@ it("runs seven distinct agents concurrently, resumes threads and delivers inboxe
     maxTurns: 2,
     turn: async (input) => {
       expect(forksRunning(dir)).toBe(true);
-      const project = /Projet : ([a-z])/.exec(input.message)?.[1];
+      const project = /Project: ([a-z])/.exec(input.message)?.[1];
       if (project === undefined) throw Error("Projet absent");
       if (!first.has(input.id)) {
         expect(input.threadId).toBe(null);
@@ -144,7 +144,7 @@ it("marks unfinished turns interrupted after a worker restart", async () => {
   expect(readForks(dir, workspace).forks[0]?.lastTurn).toMatchObject({ outcome: "completed" });
 });
 
-function fakeProcess(hang = false, status = "completed", errorInfo?: string) {
+function fakeProcess(hang = false, status = "completed", errorInfo?: string, turns?: unknown[]) {
   const requests: { method: string; params: Record<string, unknown> }[] = [];
   let closed = false,
     waiter: ((line: string | null) => void) | null = null;
@@ -185,7 +185,7 @@ function fakeProcess(hang = false, status = "completed", errorInfo?: string) {
       if (request.id === undefined) return;
       push({
         id: request.id,
-        result: request.method.startsWith("thread/") ? { thread: { id: "own-thread" } } : {},
+        result: request.method === "thread/read" ? { thread: { id: "principal", turns } } : request.method.startsWith("thread/") ? { thread: { id: "own-thread" } } : {},
       });
       if (request.method === "turn/start" && !hang) {
         push({
@@ -219,6 +219,27 @@ function fakeProcess(hang = false, status = "completed", errorInfo?: string) {
   };
   return { child, requests, kills: () => kills };
 }
+it("coaching reads the last completed turn's public messages and starts separately", async () => {
+  const fake = fakeProcess(false, "completed", undefined, [
+    { id: "finished", status: "completed", items: [{ type: "agentMessage", text: "Une idée à ouvrir" }, { type: "reasoning", text: "private reasoning" }] },
+    { id: "current", status: "inProgress", items: [{ type: "agentMessage", text: "work in progress" }] },
+  ]);
+  const result = await runForkTurn({ dataDir: dir, workspace, id: 0, threadId: null, inheritPrincipal: false,
+    sourceThreadId: "principal", onSourceTurn: id => { expect(id).toBe("finished"); return true; },
+    control: () => "run", onThread: () => {}, instructions: "Coach", message: "Reprenons" }, () => fake.child);
+  expect(result.outcome).toBe("completed");
+  expect(fake.requests.some(r => r.method === "thread/start")).toBe(true);
+  const request = JSON.stringify(fake.requests.find(r => r.method === "turn/start"));
+  expect(request).toContain("Une idée à ouvrir"); expect(request).not.toContain("private reasoning"); expect(request).not.toContain("work in progress");
+  expect(fake.kills()).toBeGreaterThan(0);
+});
+it("releases the runtime without a model turn when coaching has no new completed source", async () => {
+  const fake = fakeProcess(false, "completed", undefined, []);
+  const result = await runForkTurn({ dataDir: dir, workspace, id: 0, threadId: null, sourceThreadId: "principal",
+    control: () => "run", onThread: () => {}, instructions: "Coach", message: "Reprenons" }, () => fake.child);
+  expect(result.accepted).toBe(false); expect(fake.requests.some(r => r.method === "turn/start")).toBe(false);
+  expect(fake.kills()).toBeGreaterThan(0);
+});
 it("forks from the principal once, then resumes its own Codex thread", async () => {
   new FileThreadStore(path.join(dir, "codex-threads")).save("default", {
     threadId: "principal",

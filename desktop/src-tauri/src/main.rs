@@ -14,6 +14,7 @@ mod documents;
 mod conversation_images;
 mod external_urls;
 mod authorizations;
+mod i18n;
 
 use cli::{CliRun, OwnerRequest, Verb};
 use std::time::Duration;
@@ -21,7 +22,7 @@ use std::sync::atomic::Ordering;
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Wry, WindowEvent};
+use tauri::{AppHandle, Manager, Wry, WindowEvent, Listener};
 
 /// Intervalle du voyant de l'icône, indépendant du panneau (qui relit toutes les 2 s).
 const LIGHT_POLL: Duration = Duration::from_secs(3);
@@ -51,6 +52,16 @@ where
 #[tauri::command]
 async fn wake_status() -> Result<CliRun, String> {
     blocking(|| cli::wake(Verb::Status)).await
+}
+
+#[tauri::command]
+async fn onboarding_status() -> Result<CliRun, String> {
+    blocking(|| cli::onboarding(false, false)).await
+}
+
+#[tauri::command]
+async fn onboarding_start(accept_native: bool) -> Result<CliRun, String> {
+    blocking(move || cli::onboarding(true, accept_native)).await
 }
 
 #[tauri::command]
@@ -107,6 +118,10 @@ async fn wake_order(revision: u64, project_ids: Vec<String>) -> Result<CliRun, S
 #[tauri::command]
 async fn second_thread(action: String, text: Option<String>) -> Result<CliRun, String> {
     blocking(move || cli::second_thread(&action, text)).await
+}
+#[tauri::command]
+async fn wake_coach(action: String, text: Option<String>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_coach(&action, text)).await
 }
 
 #[tauri::command]
@@ -261,11 +276,11 @@ impl Light {
 
     fn tooltip(self) -> &'static str {
         match self {
-            Light::Awake => "MIND Wake — éveillé : une session tourne",
-            Light::On => "MIND Wake — allumé : réveils autorisés dans les fenêtres",
-            Light::Off => "MIND Wake — éteint (pause, blocage ou désactivé)",
-            Light::ForcedOff => "MIND Wake — arrêt forcé (arrêt d'urgence)",
-            Light::Unknown => "MIND Wake — état indisponible",
+            Light::Awake => i18n::text("MIND Wake — éveillé : une session tourne", "MIND Wake — awake: a session is running"),
+            Light::On => i18n::text("MIND Wake — allumé : réveils autorisés dans les fenêtres", "MIND Wake — on: wakes allowed in scheduled windows"),
+            Light::Off => i18n::text("MIND Wake — éteint (pause, blocage ou désactivé)", "MIND Wake — off (paused, blocked or disabled)"),
+            Light::ForcedOff => i18n::text("MIND Wake — arrêt forcé (arrêt d'urgence)", "MIND Wake — forced off (emergency stop)"),
+            Light::Unknown => i18n::text("MIND Wake — état indisponible", "MIND Wake — status unavailable"),
         }
     }
 }
@@ -338,6 +353,8 @@ fn main() {
             updates::app_update,
             updates::app_version,
             wake_status,
+            onboarding_status,
+            onboarding_start,
             wake_journal,
             wake_pause,
             wake_resume,
@@ -348,6 +365,7 @@ fn main() {
             wake_messages,            wake_history,
             wake_order,
             second_thread,
+            wake_coach,
             wake_forks,
             workspace_sync_status,
             workspace_sync_configure,
@@ -367,22 +385,22 @@ fn main() {
         ])
         .setup(|app| {
             tauri::WebviewWindowBuilder::new(app, "quick-input", tauri::WebviewUrl::App("quick-input.html".into()))
-                .title("Parler à Wake").inner_size(460.0, 240.0).resizable(false)
+                .title(i18n::text("Parler à Wake", "Talk to Wake")).inner_size(460.0, 240.0).resizable(false)
                 .decorations(false).always_on_top(true).skip_taskbar(true).visible(false).build()?;
-            let quick = CheckMenuItem::with_id(app, "quick_input", "Clic droit — saisie rapide", true, true, None::<&str>)?;
+            let quick = CheckMenuItem::with_id(app, "quick_input", i18n::text("Clic droit — saisie rapide", "Right click — quick input"), true, true, None::<&str>)?;
             if quick_input::start(app.handle().clone()).is_err() {
                 quick.set_checked(false)?;
                 quick.set_enabled(false)?;
-                quick.set_text("Clic droit — indisponible")?;
+                quick.set_text(i18n::text("Clic droit — indisponible", "Right click — unavailable"))?;
             }
-            let open = MenuItem::with_id(app, "open", "Ouvrir le panneau", true, None::<&str>)?;
-            let startup = CheckMenuItem::with_id(app, "windows_startup", "Démarrer avec Windows", false, false, None::<&str>)?;
-            let on = CheckMenuItem::with_id(app, "mode_on", "On — réveils autorisés", true, false, None::<&str>)?;
-            let wake = CheckMenuItem::with_id(app, "mode_wake", "Réveil — maintenant", true, false, None::<&str>)?;
-            let always = CheckMenuItem::with_id(app, "mode_always", "Always-on — enchaîner les réponses", true, false, None::<&str>)?;
-            let off = CheckMenuItem::with_id(app, "mode_off", "Force-off — arrêt d'urgence", true, false, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", i18n::text("Ouvrir le panneau", "Open panel"), true, None::<&str>)?;
+            let startup = CheckMenuItem::with_id(app, "windows_startup", i18n::text("Démarrer avec Windows", "Start with Windows"), false, false, None::<&str>)?;
+            let on = CheckMenuItem::with_id(app, "mode_on", i18n::text("On — réveils autorisés", "On — wakes allowed"), true, false, None::<&str>)?;
+            let wake = CheckMenuItem::with_id(app, "mode_wake", i18n::text("Réveil — maintenant", "Wake — now"), true, false, None::<&str>)?;
+            let always = CheckMenuItem::with_id(app, "mode_always", i18n::text("Always-on — enchaîner les réponses", "Always-on — continue after each response"), true, false, None::<&str>)?;
+            let off = CheckMenuItem::with_id(app, "mode_off", i18n::text("Force-off — arrêt d'urgence", "Force-off — emergency stop"), true, false, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Pause", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quitter le panneau (Wake continue)", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", i18n::text("Quitter le panneau (Wake continue)", "Quit panel (Wake continues)"), true, None::<&str>)?;
             let menu = Menu::with_items(
                 app,
                 &[
@@ -437,6 +455,27 @@ fn main() {
                     }
                 })
                 .build(app)?;
+            let language_app = app.handle().clone();
+            let language_on = on.clone();
+            let language_wake = wake.clone();
+            let language_always = always.clone();
+            let language_off = off.clone();
+            let language_startup = startup.clone();
+            app.listen("mind-wake-language", move |event| {
+                let Ok(language) = serde_json::from_str::<String>(event.payload()) else { return };
+                if language != "en" && language != "fr" { return; }
+                i18n::set_language(&language);
+                let _ = open.set_text(i18n::text("Ouvrir le panneau", "Open panel"));
+                let _ = quit.set_text(i18n::text("Quitter le panneau (Wake continue)", "Quit panel (Wake continues)"));
+                let available = quick.is_enabled().unwrap_or(false);
+                let _ = quick.set_text(if available { i18n::text("Clic droit — saisie rapide", "Right click — quick input") } else { i18n::text("Clic droit — indisponible", "Right click — unavailable") });
+                let _ = language_startup.set_text(i18n::text("Démarrer avec Windows", "Start with Windows"));
+                let _ = language_on.set_text(i18n::text("On — réveils autorisés", "On — wakes allowed"));
+                let _ = language_wake.set_text(i18n::text("Réveil — maintenant", "Wake — now"));
+                let _ = language_always.set_text(i18n::text("Always-on — enchaîner les réponses", "Always-on — continue after each response"));
+                let _ = language_off.set_text(i18n::text("Force-off — arrêt d'urgence", "Force-off — emergency stop"));
+                if let Some(window) = language_app.get_webview_window("quick-input") { let _ = window.set_title(i18n::text("Parler à Wake", "Talk to Wake")); }
+            });
             app.manage(Switch { on, wake, always, off });
             app.manage(windows_startup::StartupMenu(startup));
             windows_startup::refresh(app.handle(), false);
@@ -453,6 +492,9 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "quick-input" && matches!(event, WindowEvent::Focused(false)) {
+                if let Some(input) = window.get_webview_window("quick-input") { let _ = quick_input::dismiss(&input); }
+            }
             // Fermer la fenêtre masque le panneau ; l'icône reste et Wake n'est pas affecté.
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();

@@ -4,7 +4,7 @@ Application Tauri 2 pour Windows (`SPEC.md` §21, décision `docs/decisions/ADR-
 
 L’application est un composant requis de l’installation Wake agent-first (`SPEC.md` §3.1, révision d’ADR-007). Le parcours unique prépare le moteur local, la connexion MCP côté agent et le desktop côté humain :
 
-- L'agent installe et configure par `install.md` et la CLI.
+- L’agent installe depuis Git, compile localement et configure par `install.md` et la CLI. Les mises à jour passent par `git pull --ff-only` puis recompilation.
 - Toute action proposée ici a un équivalent CLI `--json`, et l'application appelle cet équivalent.
 - Aucune configuration n'existe uniquement dans les menus.
 - Le desktop reçoit les messages de l’agent, permet à l’humain de répondre et donne accès aux contrôles. La CLI reste disponible pour l’administration, les diagnostics et les tests ; elle ne remplace pas le desktop dans l’installation produit. Fermer la fenêtre n’arrête pas le daemon.
@@ -28,6 +28,12 @@ Cette commande construit la CLI (`dist/`), compile l'UI (`desktop/ui/build/`), p
 | `MIND_WAKE_DATA_DIR` | Dossier de données, transmis à la CLI comme pour l'humain  |
 | `MIND_WAKE_CLI`      | Chemin de `main.js` (défaut : `dist/cli/main.js` du dépôt) |
 | `MIND_WAKE_NODE`     | Chemin absolu de `node.exe` (défaut : `node` du PATH)      |
+
+## Premier accueil
+
+Le setup depuis Git ouvre le premier accueil dans la conversation pour un profil neuf. L’humain relit le mode natif, le modèle et les sources proposées, coche son accord, puis choisit **Démarrer mon agent**. La configuration et les autorisations sont préparées sans import JSON. L’agent installateur peut aussi utiliser `npm run setup -- --apply --start --accept-native` après un accord déjà donné.
+
+Le suivi distingue le premier réveil réel, un message de l’agent, une réponse humaine enregistrée, sa transmission à la session et un message ultérieur de l’agent. La présence d’un daemon ou d’un message local ne vaut pas validation de la conversation. Pause, Force-off, configurations existantes et autorisations personnelles restent conservés. Les commandes natives `onboarding_status` et `onboarding_start` sont réservées à la fenêtre principale ; elles exécutent `scripts/onboarding.mjs` sur le profil installé, sans chemin ni shell libre depuis le webview.
 
 ## Messages avec ton agent
 
@@ -122,7 +128,7 @@ La fin effective de la session précédente déclenche la réévaluation immédi
 
 ## Mises à jour
 
-Le panneau de production vérifie Git au démarrage et toutes les six heures. Les réglages détaillés proposent aussi une installation sur demande. Les builds sont préparés séparément et chargés à la prochaine ouverture ; les modes debug/dev bloquent les mises à jour. Voir [le protocole et ses limites](../docs/APP-UPDATES.md).
+Le parcours courant utilise `git pull --ff-only` dans le clone installé, puis recompile le moteur, l’UI et le desktop. Les installations depuis un clone restent en mode de mise à jour manuelle ; l’ancien updater automatique est désactivé pour ces profils. Voir [le protocole et ses limites](../docs/APP-UPDATES.md).
 
 ## Documents HTML et Markdown
 

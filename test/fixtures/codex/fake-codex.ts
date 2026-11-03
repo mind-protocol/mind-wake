@@ -298,7 +298,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   if (
     method === "turn/start" &&
     flowPath?.includes("steps-stop") &&
-    !JSON.stringify(message["params"]).includes("ÉTAPES — coordination")
+    !JSON.stringify(message["params"]).includes("STEPS — coordination")
   ) {
     const f = resolve(process.cwd(), "artifacts/projets-compteur.json");
     const c = JSON.parse(readFileSync(f, "utf8")) as { current: string };
@@ -314,8 +314,8 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   }
   const handler =
     method === "turn/start" &&
-    (JSON.stringify(message["params"]).includes("ÉTAPES — coordination") ||
-      JSON.stringify(message["params"]).includes("RAPPEL DE FIN DE RÉPONSE"))
+    (JSON.stringify(message["params"]).includes("STEPS — coordination") ||
+      JSON.stringify(message["params"]).includes("END-OF-RESPONSE REMINDER"))
       ? (flow.on["turn/steps"] ?? flow.on[method])
       : flow.on[method];
   chain = chain.then(async () => {

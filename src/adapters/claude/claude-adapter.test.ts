@@ -250,10 +250,10 @@ it("runs one transition coordination turn and leaves an unaccepted plan unpublis
       .map((e) => (e.quantity.unit === "tokens" ? e.quantity.amount : 0)),
   ).toEqual([150, 150]);
   expect(fs.readFileSync(path.join(h.workspace, "steps-input.json"), "utf8")).toContain(
-    "coordination après changement",
+    "coordination after a declared project change",
   );
   expect(readWakeSteps(h.workspace)).toBeNull();
-  expect(nextWakeStep(h.workspace)).toContain("orientations à reprendre");
+  expect(nextWakeStep(h.workspace)).toContain("directions to resume or decide");
   expect(readOwnerMessages(h.dir)).toBeNull();
 });
 
@@ -1017,7 +1017,7 @@ it("records transition even when human guard defers coordination", async () => {
   expect(fs.existsSync(path.join(h.workspace, "steps-input.json"))).toBe(false);
   const folder = path.join(h.workspace, "artifacts/steps-requests");
   expect(fs.readdirSync(folder)).toHaveLength(1);
-  expect(nextWakeStep(h.workspace)).toContain("orientations à reprendre");
+  expect(nextWakeStep(h.workspace)).toContain("directions to resume or decide");
   expect(readOwnerMessages(h.dir)).toBeNull();
 });
 
@@ -1090,7 +1090,7 @@ it("sends a single delegation reminder on a stable project without publishing a 
     "reminder-session",
   );
   expect(fs.readFileSync(path.join(h.workspace, "steps-input.json"), "utf8")).toContain(
-    "RAPPEL DE FIN DE RÉPONSE",
+    "END-OF-RESPONSE REMINDER",
   );
   expect(
     events.filter((e) => e.type === "activity" && e.summary.includes("aucun lancement")),

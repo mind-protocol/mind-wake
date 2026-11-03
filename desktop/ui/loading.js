@@ -7,8 +7,11 @@
   app.inert = true;
   let finished = false;
   const slow = setTimeout(() => {
+    let language;
+    try { language = localStorage.getItem('mind-wake.language'); } catch { /* Storage unavailable. */ }
+    const french = language === 'fr' || (language !== 'en' && document.documentElement.lang === 'fr');
     document.getElementById('wake-loading-status').textContent =
-      'La connexion prend un peu de temps. Tu peux déjà ouvrir l’interface.';
+      french ? 'La connexion prend un peu de temps. Tu peux déjà ouvrir l’interface.' : 'Connecting is taking a little longer. You can already open the interface.';
   }, 8000);
   function dismiss() {
     if (finished) return;

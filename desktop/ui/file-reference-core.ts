@@ -6,6 +6,7 @@ export interface KnownFile { scope:FileScope; relative:string; name:string }
 export interface FileCatalog { scope:FileScope; entries:readonly {relative:string;name?:string}[]; root?:string|undefined }
 /** `label` is set for a Markdown link: `text` keeps the whole `[label](destination)` source. */
 export interface FileMention { start:number; end:number; text:string; files:KnownFile[]; label?:string }
+export interface UnavailableFileLink { start:number; end:number; text:string; label:string; destination:string }
 
 interface Span { start:number; end:number }
 interface Index { aliases:Map<string,KnownFile[]>; matcher:RegExp|null }
@@ -80,6 +81,20 @@ function linkedFiles(destination:string,catalogs:readonly FileCatalog[],index:In
     if(root&&key(path).startsWith(root+'/')){const files=known(catalog.scope,path.slice(root.length+1));if(files.length)return files;}
   }
   return [];
+}
+
+/** Keep explicit local document links visible even when the reader cannot resolve them.
+ * This never maps an outside path to a same-named file in a catalogue. */
+export function findUnavailableFileLinks(text:string,catalogs:readonly FileCatalog[]):UnavailableFileLink[]{
+  const index=indexFor(catalogs),fences=fencedSpans(text);
+  return markdownLinks(text).filter(link=>{
+    if(link.image||overlaps(link.start,link.end,fences)||linkedFiles(link.destination,catalogs,index).length)return false;
+    let path=link.destination.trim();
+    try{path=decodeURI(path);}catch{/* keep literal paths */}
+    path=path.replace(/^file:\/\/\/?/i,'').replaceAll('\\','/').replace(/[?#].*$/,'');
+    if(/[\u0000-\u001f<>]/.test(path)||!/\.(?:md|markdown|html?|htm|txt)$/i.test(path))return false;
+    return Boolean(normalizeReference(path)||/^(?:\/?[a-z]:\/|\/)/i.test(path));
+  }).map(link=>({start:link.start,end:link.end,text:text.slice(link.start,link.end),label:link.label,destination:link.destination}));
 }
 
 /** Offsets are JavaScript UTF-16 offsets, suitable for splitting a DOM text node. */

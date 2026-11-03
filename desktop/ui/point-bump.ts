@@ -1,7 +1,7 @@
 import { BUMP_TEXT } from "./chat-presence.js";
 // Protocol reserve covers worst-case physical coordinates and timestamp; tested against CLI.
 export const BUMPE_CONTEXT_RESERVE = 768;
-const POINT_INVITATION = "\n\nBumpe — relance ciblée : ton humain t’invite à contribuer à partir du point précis de son clic droit, cerclé en rouge dans la capture jointe. Relie ta proposition ou ta question à ce point et explique son contexte et sa valeur pour la conversation. Le texte éventuellement en cours de saisie dans le menu reste un brouillon séparé.";
+const POINT_INVITATION = "\n\nBumpe — targeted invitation: your human invites you to contribute based on the exact point of their right click, circled in red in the attached screenshot. Connect your suggestion or question to that point and explain its context and value to the conversation. Any text being typed in the menu remains a separate draft.";
 /** Fall back to the complete invitation; never cut off final instructions from the file. */
 export function pointBumpText(invitation: string): string {
   const chosen = invitation.length + POINT_INVITATION.length + BUMPE_CONTEXT_RESERVE <= 4000 ? invitation : BUMP_TEXT;

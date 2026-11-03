@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 /** Image references remain untrusted text. Only raster URLs/paths become previews. */
 export interface MessageImage { readonly reference: string; readonly label: string; readonly remote: boolean }
 const raster = /\.(?:png|jpe?g|gif|webp)$/i;
@@ -100,7 +101,7 @@ function loadLocal(reference: string, invoke: Invoke): Promise<string> {
   if (!pending) {
     pending = invoke('conversation_image', {reference}).then(raw => {
       const value = raw as {dataUrl?: unknown};
-      if (typeof value.dataUrl !== 'string' || !/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(value.dataUrl)) throw Error('Image indisponible');
+      if (typeof value.dataUrl !== 'string' || !/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(value.dataUrl)) throw Error(tr("Image indisponible"));
       return value.dataUrl;
     });
     localImages.set(reference, pending);
@@ -132,14 +133,14 @@ export function openMessageImage(source: string, label: string, provenance: stri
   const containerId = message?.parentElement?.getAttribute('id'), reference = trigger.getAttribute('data-message-image');
   const dialog = document.createElement('dialog');
   dialog.className = 'message-image-dialog';
-  dialog.setAttribute('aria-label', 'Image agrandie');
+  dialog.setAttribute('aria-label', tr("Image agrandie"));
   const panel = document.createElement('div'), close = document.createElement('button'), image = document.createElement('img');
   const caption = document.createElement('p'), origin = document.createElement('small');
-  close.type = 'button'; close.textContent = 'Fermer'; close.autofocus = true;
+  close.type = 'button'; close.textContent = tr("Fermer"); close.autofocus = true;
   image.alt = label; image.referrerPolicy = 'no-referrer';
   image.src = source; caption.textContent = label; origin.textContent = provenance;
   close.addEventListener('click', () => dialog.close());
-  image.addEventListener('error', () => {image.hidden = true; caption.textContent = 'Image indisponible · ' + label;}, {once: true});
+  image.addEventListener('error', () => {image.hidden = true; caption.textContent = tr("Image indisponible · ") + label;}, {once: true});
   dialog.addEventListener('click', event => {if (event.target === dialog) dialog.close();});
   dialog.addEventListener('close', () => {
     dialog.remove();
@@ -163,15 +164,15 @@ export function appendMessageImages(body: HTMLElement, text: string, invoke: Inv
   for (const entry of references) {
     const figure = document.createElement('figure'), button = document.createElement('button'), image = document.createElement('img');
     const caption = document.createElement('figcaption'), status = document.createElement('span');
-    button.type = 'button'; button.disabled = true; button.setAttribute('aria-label', 'Agrandir : ' + entry.label);
+    button.type = 'button'; button.disabled = true; button.setAttribute('aria-label', tr("Agrandir : ") + entry.label);
     button.setAttribute('data-message-image', entry.reference);
     image.alt = entry.label; image.loading = 'lazy'; image.decoding = 'async'; image.referrerPolicy = 'no-referrer';
-    caption.textContent = entry.label; status.className = 'message-image-status'; status.textContent = 'Chargement de l’image…';
-    const unavailable = (): void => {image.removeAttribute('src'); image.hidden = true; button.disabled = true; status.textContent = 'Image indisponible';};
+    caption.textContent = entry.label; status.className = 'message-image-status'; status.textContent = tr("Chargement de l’image…");
+    const unavailable = (): void => {image.removeAttribute('src'); image.hidden = true; button.disabled = true; status.textContent = tr("Image indisponible");};
     image.addEventListener('error', unavailable, {once: true});
     image.addEventListener('load', () => {
       if (image.naturalWidth > 16384 || image.naturalHeight > 16384 || image.naturalWidth * image.naturalHeight > 32_000_000) {unavailable(); return;}
-      button.disabled = false; status.textContent = 'Cliquer pour agrandir';
+      button.disabled = false; status.textContent = tr("Cliquer pour agrandir");
     }, {once: true});
     button.addEventListener('click', () => {
       if (button.disabled) return;

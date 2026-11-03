@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "id": "example-free-trial-001",
+  "type": "free_trial",
+  "agent": "example-agent",
+  "purpose": "Exemple public : relire un paragraphe fourni séparément.",
+  "created_at": "2026-11-03T19:00:00.000Z"
+}

@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 type Invoke = (command: string, args: Record<string, unknown>) => Promise<unknown>;
 export interface DocumentImage { readonly reference: string | null; readonly label: string }
 
@@ -41,7 +42,7 @@ export async function loadDocumentImages(images: readonly DocumentImage[], doc: 
     if (!image || !active(image)) continue;
     const unavailable = (): void => {
       if (!active(image)) return;
-      image.removeAttribute('src'); image.alt = 'Image indisponible · ' + entry.label;
+      image.removeAttribute('src'); image.alt = tr("Image indisponible · ") + entry.label;
       image.title = image.alt;
       const text = doc.createElement('span'); text.textContent = image.alt;
       image.replaceWith(text);
@@ -51,7 +52,7 @@ export async function loadDocumentImages(images: readonly DocumentImage[], doc: 
       const raw = await invoke('conversation_image', {reference: entry.reference, scope}) as {dataUrl?: unknown};
       if (!active(image)) continue;
       if (typeof raw?.dataUrl !== 'string' || raw.dataUrl.length > 10_666_720
-        || !/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(raw.dataUrl)) throw Error('Image indisponible');
+        || !/^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(raw.dataUrl)) throw Error(tr("Image indisponible"));
       image.addEventListener('error', unavailable, {once: true});
       image.addEventListener('load', () => {
         if (image.naturalWidth > 16384 || image.naturalHeight > 16384 || image.naturalWidth * image.naturalHeight > 32_000_000) unavailable();

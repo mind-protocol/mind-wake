@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { findFileMentions, type FileCatalog } from './file-reference-core.js';
+import { findFileMentions, findUnavailableFileLinks, type FileCatalog } from './file-reference-core.js';
 
 const catalogs:readonly FileCatalog[]=[
  {scope:'agent',entries:[
@@ -99,4 +99,21 @@ it('detects txt paths and unique or ambiguous basenames with punctuation and bac
  for(const ref of refs)expect(text.slice(ref.start,ref.end)).toBe(ref.text);
  expect(findFileMentions('unknown/shared.txt ../shared.txt /shared.txt https://host/shared.txt tool.txt.exe outside.txt',textFiles)).toEqual([]);
  expect(findFileMentions('```\nshared.txt\n```\n`cat shared.txt`',textFiles)).toEqual([]);
+});
+
+it('recognizes an explicit unavailable skill link without substituting a known SKILL basename',()=>{
+ const inside='output/skills/commencer-relation-agent/SKILL.md';
+ const rooted:FileCatalog[]=[{scope:'agent',root:'C:/Users/reyno/workspace',entries:[{relative:inside}]}];
+ const source='[Comment commencer une relation avec un agent — SKILL.md](C:/Users/reyno/.codex/skills/commencer-relation-agent/SKILL.md)';
+ expect(findFileMentions(source,rooted)).toEqual([]);
+ expect(findUnavailableFileLinks(source,rooted)).toEqual([{start:0,end:source.length,text:source,
+   label:'Comment commencer une relation avec un agent — SKILL.md',destination:'C:/Users/reyno/.codex/skills/commencer-relation-agent/SKILL.md'}]);
+ expect(findFileMentions('[Skill](C:/Users/reyno/workspace/'+inside+')',rooted)[0]?.files[0]?.relative).toBe(inside);
+ expect(findUnavailableFileLinks('[Skill](C:/Users/reyno/workspace/'+inside+')',rooted)).toEqual([]);
+});
+
+it('only reports explicit local documents, retaining spaces and excluding code, images and unsafe schemes',()=>{
+ const source='[Mon étude](<C:/outside/Mon étude.md>)';
+ expect(findUnavailableFileLinks(source,[])[0]?.destination).toBe('C:/outside/Mon étude.md');
+ expect(findUnavailableFileLinks('[x](missing.md) [y](https://example.org/missing.md) [z](javascript:missing.md) ![image](missing.md) `[code](missing.md)`\n```\n[fence](missing.md)\n```',[]).map(r=>r.label)).toEqual(['x']);
 });

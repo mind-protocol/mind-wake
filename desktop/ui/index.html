@@ -3,36 +3,37 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Que fait mon agent ? — MIND Wake</title>
+    <title data-i18n="Que fait mon agent ? — MIND Wake">Que fait mon agent ? — MIND Wake</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="loading.css" />
     <script defer src="loading.js"></script>
+    <script type="module" src="build/i18n-dom.js"></script>
     <script type="module" src="build/main.js"></script>
   </head>
   <body>
-    <section id="wake-loading" class="wake-loading" aria-label="Chargement de MIND Wake">
+    <section id="wake-loading" class="wake-loading" aria-label="Chargement de MIND Wake" data-i18n-aria-label="Chargement de MIND Wake">
       <div class="wake-loading-grain" aria-hidden="true"></div>
-      <div class="wake-loading-top"><span class="wake-loading-wordmark">MIND <span>Wake</span></span><span class="wake-loading-caption">UN ESPACE POUR L’INITIATIVE</span></div>
+      <div class="wake-loading-top"><span class="wake-loading-wordmark">MIND <span>Wake</span></span><span class="wake-loading-caption" data-i18n="UN ESPACE POUR L’INITIATIVE">UN ESPACE POUR L’INITIATIVE</span></div>
       <div class="wake-loading-center">
         <div class="wake-loading-orbits" aria-hidden="true"><i></i><i></i><i></i><span class="wake-loading-symbol">m</span></div>
-        <p class="wake-loading-eyebrow">LA SUITE COMMENCE ICI</p>
-        <h1>Les idées prennent vie.</h1>
-        <p class="wake-loading-subtitle">Un peu de curiosité. De nouvelles possibilités.</p>
+        <p class="wake-loading-eyebrow" data-i18n="LA SUITE COMMENCE ICI">LA SUITE COMMENCE ICI</p>
+        <h1 data-i18n="Les idées prennent vie.">Les idées prennent vie.</h1>
+        <p class="wake-loading-subtitle" data-i18n="Un peu de curiosité. De nouvelles possibilités.">Un peu de curiosité. De nouvelles possibilités.</p>
         <div class="wake-loading-progress" aria-hidden="true"><span></span></div>
-        <p id="wake-loading-status" class="wake-loading-status" role="status">Ouverture de ton espace…</p>
-        <button id="wake-loading-skip" type="button">Accéder à l’interface <span aria-hidden="true">↗</span></button>
+        <p id="wake-loading-status" class="wake-loading-status" role="status" data-i18n="Ouverture de ton espace…">Ouverture de ton espace…</p>
+        <button id="wake-loading-skip" type="button" data-i18n="Accéder à l’interface">Accéder à l’interface <span aria-hidden="true">↗</span></button>
       </div>
-      <footer class="wake-loading-footer"><span><b aria-hidden="true"></b> La curiosité continue.</span><span>EXPLORER · CRÉER · REPRENDRE</span></footer>
+      <footer class="wake-loading-footer"><span data-i18n="La curiosité continue."><b aria-hidden="true"></b> La curiosité continue.</span><span data-i18n="EXPLORER · CRÉER · REPRENDRE">EXPLORER · CRÉER · REPRENDRE</span></footer>
     </section>
     <main>
-      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status">Connexion…</span>
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span>
       <div class="app-controls" role="group" aria-label="Application">
-        <button id="app-restart" type="button">Redémarrer l’app</button>
-        <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter">Plein écran</button>
+        <button id="app-restart" type="button" data-i18n="Redémarrer l’app">Redémarrer l’app</button>
+        <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter" data-i18n-title="F11 pour basculer, Échap pour quitter" data-i18n="Plein écran">Plein écran</button>
         <span id="app-control-status" role="status"></span>
       </div>
       </div>
-      <nav class="tabs" aria-label="Navigation et état de Wake">
+      <nav class="tabs" aria-label="Navigation et état de Wake" data-i18n-aria-label="Navigation et état de Wake">
         <header id="state" data-tone="unknown" aria-live="polite">
           <h1>
             <span
@@ -41,17 +42,17 @@
               data-light="unknown"
               role="img"
               aria-label="Voyant : inconnu"
-            ></span>
-            <span id="headline">État indisponible</span>
+             data-i18n-aria-label="Voyant : inconnu"></span>
+            <span id="headline" data-i18n="État indisponible">État indisponible</span>
           </h1>
           <p id="agent-active-project" role="status" hidden></p>
           <p id="input-sharing" class="badge" role="status" hidden></p>
-          <p id="reason">Première lecture en cours.</p>
-          <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
+          <p id="reason" data-i18n="Première lecture en cours.">Première lecture en cours.</p>
+          <p id="simulated" class="badge" hidden data-i18n="SIMULÉ — aucune donnée réelle de fournisseur">SIMULÉ — aucune donnée réelle de fournisseur</p>
         </header>
-        <section id="sidebar-project-menu" aria-label="Projet courant">
-          <label for="document-collection">Projet courant</label>
-          <select id="document-collection" aria-label="Projet courant"><option value="">Tous les projets</option></select>
+        <section id="sidebar-project-menu" aria-label="Projet courant" data-i18n-aria-label="Projet courant">
+          <label for="document-collection" data-i18n="Projet courant">Projet courant</label>
+          <select id="document-collection" aria-label="Projet courant" data-i18n-aria-label="Projet courant"><option value="" data-i18n="Tous les projets">Tous les projets</option></select>
         </section>
         <div class="tab-links" role="tablist" aria-label="Vues">
         <button
@@ -60,7 +61,7 @@
           type="button"
           aria-selected="true"
           aria-controls="view-panel"
-        >
+         data-i18n="Vue d’ensemble">
           Vue d’ensemble
         </button>
         <button
@@ -69,8 +70,8 @@
           type="button"
           aria-selected="false"
           aria-controls="view-chat"
-        >
-          Conversation <span id="chat-new" class="dot" hidden aria-label="nouveau"></span>
+         data-i18n="Conversation">
+          Conversation <span id="chat-new" class="dot" hidden aria-label="nouveau" data-i18n-aria-label="nouveau"></span>
         </button>
         <button
           id="tab-threads"
@@ -79,132 +80,138 @@
           aria-selected="false"
           aria-controls="view-threads"
           hidden
-        >
+         data-i18n="Rencontres">
           Rencontres <span id="unread" class="count" hidden></span>
         </button>
-        <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history">Réveils</button>
-        <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents">Conseils <span id="agents-count" class="count" hidden></span></button>
-        <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects">Projets et tâches</button>
-        <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents">Documents</button>
-        <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations">Autorisations</button>
-        <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings">Réglages</button>
+        <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history" data-i18n="Réveils">Réveils</button>
+        <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents" data-i18n="Conseils">Conseils <span id="agents-count" class="count" hidden></span></button>
+        <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects" data-i18n="Projets et tâches">Projets et tâches</button>
+        <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents" data-i18n="Documents">Documents</button>
+        <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations" data-i18n="Autorisations">Autorisations</button>
+        <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings" data-i18n="Réglages">Réglages</button>
         </div>
       </nav>
 
       <div id="view-projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
-        <div class="projects-toolbar"><h1>Projets et tâches</h1><button id="projects-refresh" type="button">Actualiser</button></div>
+        <div class="projects-toolbar"><h1 data-i18n="Projets et tâches">Projets et tâches</h1><button id="projects-refresh" type="button" data-i18n="Actualiser">Actualiser</button></div>
         <p id="projects-status" role="status" class="hint"></p>
-        <iframe id="projects-frame" title="Cartes des projets et tâches" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe>
+        <iframe id="projects-frame" title="Cartes des projets et tâches" sandbox="allow-same-origin" referrerpolicy="no-referrer" data-i18n-title="Cartes des projets et tâches"></iframe>
       </div>
 
       <div id="view-authorizations" role="tabpanel" aria-labelledby="tab-authorizations" hidden>
-        <h1>Autorisations de mon agent</h1>
-        <p>Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
+        <h1 data-i18n="Autorisations de mon agent">Autorisations de mon agent</h1>
+        <p data-i18n="Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.">Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
         <div class="authorization-toolbar">
-          <button id="authorization-reload" type="button">Recharger les choix</button>
-          <label class="button">Importer un JSON <input id="authorization-import" type="file" accept=".json,application/json"></label>
-          <button id="authorization-save" type="button" disabled>Enregistrer</button>
-          <input id="authorization-search" type="search" placeholder="Rechercher une action" aria-label="Rechercher une autorisation">
+          <button id="authorization-reload" type="button" data-i18n="Recharger les choix">Recharger les choix</button>
+          <label class="button" data-i18n="Importer un JSON">Importer un JSON <input id="authorization-import" type="file" accept=".json,application/json"></label>
+          <button id="authorization-save" type="button" disabled data-i18n="Enregistrer">Enregistrer</button>
+          <input id="authorization-search" type="search" placeholder="Rechercher une action" aria-label="Rechercher une autorisation" data-i18n-placeholder="Rechercher une action" data-i18n-aria-label="Rechercher une autorisation">
         </div>
         <p id="authorization-file" class="hint"></p>
         <p id="authorization-status" role="status" aria-live="polite"></p>
         <p id="authorization-summary"></p>
         <div id="authorization-entries"></div>
-        <details><summary>Exemple et portée</summary><pre id="authorization-context"></pre></details>
+        <details><summary data-i18n="Exemple et portée">Exemple et portée</summary><pre id="authorization-context"></pre></details>
       </div>
       <aside id="view-documents" aria-label="Navigateur de documents">
         <header class="reader-header">
-          <div><span class="reader-eyebrow">MIND / L’ATELIER</span><h2 id="document-title">Vos documents, au même endroit.</h2></div>
+          <div><span class="reader-eyebrow" data-i18n="MIND / L’ATELIER">MIND / L’ATELIER</span><h2 id="document-title" data-i18n="Vos documents, au même endroit.">Vos documents, au même endroit.</h2></div>
           <div class="reader-actions">
-          <button id="document-refresh" class="reader-icon" type="button" aria-label="Actualiser le document et la bibliothèque" title="Actualiser">↻</button>
-        <button id="engine-restart" type="button" title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés.">Redémarrer le moteur</button>
+          <button id="document-refresh" class="reader-icon" type="button" aria-label="Actualiser le document et la bibliothèque" title="Actualiser" data-i18n-aria-label="Actualiser le document et la bibliothèque" data-i18n-title="Actualiser">↻</button>
+        <button id="engine-restart" type="button" title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés." data-i18n-title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés." data-i18n="Redémarrer le moteur">Redémarrer le moteur</button>
           </div>
         </header>
         <p id="engine-restart-status" role="status" hidden></p>
         <nav class="reader-controls" aria-label="Navigation du lecteur">
-          <button id="document-back" class="reader-icon" type="button" disabled aria-label="Retour dans l’historique" title="Retour dans l’historique">←</button>
+          <button id="document-back" class="reader-icon" type="button" disabled aria-label="Retour dans l’historique" title="Retour dans l’historique" data-i18n-aria-label="Retour dans l’historique" data-i18n-title="Retour dans l’historique">←</button>
           <button id="document-forward" class="reader-icon" type="button" disabled aria-label="Avancer dans l’historique" title="Avancer dans l’historique">→</button>
-          <button id="document-explore" type="button" aria-controls="document-library" aria-expanded="false">☰ Explorer</button>
-          <button id="document-latest" type="button">Dernière modification</button>
-          <label class="reader-scope"><span class="sr-only">Espace de documents</span><select id="document-scope" aria-label="Espace de documents"><option value="agent">Mon atelier</option><option value="project">Projet Wake</option><option value="aurore">Atelier d’Aurore</option></select></label>
+          <button id="document-explore" type="button" aria-controls="document-library" aria-expanded="false" data-i18n="☰ Explorer">☰ Explorer</button>
+          <button id="document-latest" type="button" data-i18n="Dernière modification">Dernière modification</button>
+          <label class="reader-scope"><span class="sr-only" data-i18n="Espace de documents">Espace de documents</span><select id="document-scope" aria-label="Espace de documents" data-i18n-aria-label="Espace de documents"><option value="agent" data-i18n="Mon atelier">Mon atelier</option><option value="project" data-i18n="Projet Wake">Projet Wake</option><option value="aurore" data-i18n="Atelier d’Aurore">Atelier d’Aurore</option></select></label>
         </nav>
         <nav id="document-location" class="reader-breadcrumb" aria-label="Chemin du document"></nav>
         <p id="document-status" role="status"></p>
         <div class="document-workspace">
-          <section id="document-library" hidden aria-label="Bibliothèque de documents">
+          <section id="document-library" hidden aria-label="Bibliothèque de documents" data-i18n-aria-label="Bibliothèque de documents">
 
-            <input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher un document…">
-            <label class="reader-format">Afficher<select id="document-format"><option value="">Tous les documents</option><option value="html">Pages HTML</option><option value="md">Textes Markdown</option><option value="txt">Textes bruts (.txt)</option></select></label>
-            <p id="document-count"></p><nav id="document-files" aria-label="Documents du projet"></nav>
+            <input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher un document…" data-i18n-aria-label="Rechercher un document">
+            <label class="reader-format" data-i18n="Afficher">Afficher<select id="document-format"><option value="" data-i18n="Tous les documents">Tous les documents</option><option value="html" data-i18n="Pages HTML">Pages HTML</option><option value="md" data-i18n="Textes Markdown">Textes Markdown</option><option value="txt" data-i18n="Textes bruts (.txt)">Textes bruts (.txt)</option></select></label>
+            <p id="document-count"></p><nav id="document-files" aria-label="Documents du projet" data-i18n-aria-label="Documents du projet"></nav>
           </section>
           <div class="reader-page">
-            <label class="reader-outline">Dans cette page<select id="document-sections" aria-label="Sections du document" disabled><option>Sommaire indisponible</option></select></label>
+            <label class="reader-outline" data-i18n="Dans cette page">Dans cette page<select id="document-sections" aria-label="Sections du document" disabled><option data-i18n="Sommaire indisponible">Sommaire indisponible</option></select></label>
             <iframe id="document-frame" title="Document HTML, Markdown ou texte brut" sandbox="allow-same-origin" referrerpolicy="no-referrer" srcdoc="&lt;p&gt;Ouvrez la bibliothèque pour choisir un document.&lt;/p&gt;"></iframe>
           </div>
         </div>
-        <nav class="reader-pagination" aria-label="Parcourir les documents récents">
-          <button id="document-previous" type="button" disabled><span aria-hidden="true">←</span><span><strong>Précédent</strong><small id="document-previous-title">Début de la liste</small></span></button>
-          <button id="document-next" type="button" disabled><span><strong>Suivant</strong><small id="document-next-title">Fin de la liste</small></span><span aria-hidden="true">→</span></button>
+        <nav class="reader-pagination" aria-label="Parcourir les documents récents" data-i18n-aria-label="Parcourir les documents récents">
+          <button id="document-previous" type="button" disabled><span aria-hidden="true">←</span><span><strong data-i18n="Précédent">Précédent</strong><small id="document-previous-title" data-i18n="Début de la liste">Début de la liste</small></span></button>
+          <button id="document-next" type="button" disabled><span><strong data-i18n="Suivant">Suivant</strong><small id="document-next-title" data-i18n="Fin de la liste">Fin de la liste</small></span><span aria-hidden="true">→</span></button>
         </nav>
       </aside>
 
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
-        <h1>Réglages</h1>
+        <h1 data-i18n="Réglages">Réglages</h1>
+        <section aria-labelledby="h-language">
+          <h2 id="h-language" data-i18n="Langue">Langue</h2>
+          <label for="app-language" data-i18n="Langue de l’application">Langue de l’application</label>
+          <select id="app-language"><option value="en">English</option><option value="fr">Français</option></select>
+          <p class="hint" data-i18n="Le changement de langue recharge l’interface.">Le changement de langue recharge l’interface.</p>
+        </section>
         <section aria-labelledby="h-workspace-sync">
-          <h2 id="h-workspace-sync">Dossier de Wake et dépôt GitHub</h2>
+          <h2 id="h-workspace-sync" data-i18n="Dossier de Wake et dépôt GitHub">Dossier de Wake et dépôt GitHub</h2>
           <form id="workspace-sync-form" class="workspace-sync-form">
-            <label for="workspace-sync-folder">Dossier de travail de l’agent</label>
+            <label for="workspace-sync-folder" data-i18n="Dossier de travail de l’agent">Dossier de travail de l’agent</label>
             <input id="workspace-sync-folder" type="text" required spellcheck="false" autocomplete="off" placeholder="C:\Users\…\workspace" />
-            <p class="hint">Choisir un dossier existant. Le changement prendra effet au prochain lancement du moteur ; ses fichiers ne sont pas déplacés.</p>
-            <label for="workspace-sync-url">URL du dépôt GitHub</label>
-            <input id="workspace-sync-url" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git" />
-            <label class="workspace-sync-toggle"><input id="workspace-sync-enabled" type="checkbox" /> Synchroniser automatiquement toutes les minutes</label>
-            <p class="hint">Pull, commit des modifications et push dans ce dépôt existant, selon son .gitignore. Le remote origin et la branche suivie doivent être configurés. Pause et Force-off arrêtent la synchronisation. Aucun dépôt GitHub n’est créé.</p>
-            <div class="workspace-sync-actions"><button id="workspace-sync-save" type="submit">Enregistrer</button><button id="workspace-sync-now" type="button" disabled>Synchroniser maintenant</button></div>
+            <p class="hint" data-i18n="Choisir un dossier existant. Le changement prendra effet au prochain lancement du moteur ; ses fichiers ne sont pas déplacés.">Choisir un dossier existant. Le changement prendra effet au prochain lancement du moteur ; ses fichiers ne sont pas déplacés.</p>
+            <label for="workspace-sync-url" data-i18n="URL du dépôt GitHub">URL du dépôt GitHub</label>
+            <input id="workspace-sync-url" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git"  data-i18n-placeholder="https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git"/>
+            <label class="workspace-sync-toggle" data-i18n="Synchroniser automatiquement toutes les minutes"><input id="workspace-sync-enabled" type="checkbox" /> Synchroniser automatiquement toutes les minutes</label>
+            <p class="hint" data-i18n="Pull, commit des modifications et push dans ce dépôt existant, selon son .gitignore. Le remote origin et la branche suivie doivent être configurés. Pause et Force-off arrêtent la synchronisation. Aucun dépôt GitHub n’est créé.">Pull, commit des modifications et push dans ce dépôt existant, selon son .gitignore. Le remote origin et la branche suivie doivent être configurés. Pause et Force-off arrêtent la synchronisation. Aucun dépôt GitHub n’est créé.</p>
+            <div class="workspace-sync-actions"><button id="workspace-sync-save" type="submit" data-i18n="Enregistrer">Enregistrer</button><button id="workspace-sync-now" type="button" disabled data-i18n="Synchroniser maintenant">Synchroniser maintenant</button></div>
           </form>
           <p id="workspace-sync-feedback" role="status"></p>
           <p id="workspace-sync-effect" class="hint"></p>
           <dl class="workspace-sync-details">
-            <dt>Dossier utilisé par le moteur</dt><dd id="workspace-sync-active">Chargement…</dd>
-            <dt>Synchronisation</dt><dd id="workspace-sync-state">Chargement…</dd>
-            <dt>Dernière tentative</dt><dd id="workspace-sync-last-attempt">—</dd>
-            <dt>Dernière réussite</dt><dd id="workspace-sync-last-success">—</dd>
-            <dt>Prochain passage</dt><dd id="workspace-sync-next">—</dd>
-            <dt>Erreur ou blocage</dt><dd id="workspace-sync-error">—</dd>
+            <dt data-i18n="Dossier utilisé par le moteur">Dossier utilisé par le moteur</dt><dd id="workspace-sync-active" data-i18n="Chargement…">Chargement…</dd>
+            <dt data-i18n="Synchronisation">Synchronisation</dt><dd id="workspace-sync-state" data-i18n="Chargement…">Chargement…</dd>
+            <dt data-i18n="Dernière tentative">Dernière tentative</dt><dd id="workspace-sync-last-attempt">—</dd>
+            <dt data-i18n="Dernière réussite">Dernière réussite</dt><dd id="workspace-sync-last-success">—</dd>
+            <dt data-i18n="Prochain passage">Prochain passage</dt><dd id="workspace-sync-next">—</dd>
+            <dt data-i18n="Erreur ou blocage">Erreur ou blocage</dt><dd id="workspace-sync-error">—</dd>
           </dl>
         </section>
         <section aria-labelledby="h-update">
-          <h2 id="h-update">Mises à jour de l’application</h2>
+          <h2 id="h-update" data-i18n="Mises à jour de l’application">Mises à jour de l’application</h2>
           <dl>
-            <dt>Version exécutée</dt><dd id="app-version">Chargement…</dd>
-            <dt>Fraîcheur des sources</dt><dd id="app-revision-date">Chargement…</dd>
-            <dt>Compilation</dt><dd id="app-build-date">Chargement…</dd>
+            <dt data-i18n="Version exécutée">Version exécutée</dt><dd id="app-version" data-i18n="Chargement…">Chargement…</dd>
+            <dt data-i18n="Fraîcheur des sources">Fraîcheur des sources</dt><dd id="app-revision-date" data-i18n="Chargement…">Chargement…</dd>
+            <dt data-i18n="Compilation">Compilation</dt><dd id="app-build-date" data-i18n="Chargement…">Chargement…</dd>
           </dl>
-          <p>Vérification au démarrage et toutes les 6 heures. Installation en arrière-plan, disponible au prochain lancement.</p>
-          <button id="app-update-check" type="button">Rechercher et installer une mise à jour</button>
+          <p data-i18n="Vérification au démarrage et toutes les 6 heures. Installation en arrière-plan, disponible au prochain lancement.">Vérification au démarrage et toutes les 6 heures. Installation en arrière-plan, disponible au prochain lancement.</p>
+          <button id="app-update-check" type="button" data-i18n="Rechercher et installer une mise à jour">Rechercher et installer une mise à jour</button>
           <p id="app-update-status" role="status"></p>
         </section>
       </div>
 
       <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
-        <h2>Réveils de l’agent</h2>
+        <h2 data-i18n="Réveils de l’agent">Réveils de l’agent</h2>
         <p class="runtime-links">
-          <button id="open-system-prompt" type="button" class="link" disabled>Prompt système MIND ↗</button>
+          <button id="open-system-prompt" type="button" class="link" disabled data-i18n="Prompt système MIND ↗">Prompt système MIND ↗</button>
           <span aria-hidden="true"> · </span>
-          <button id="open-agent-folder" type="button" class="link">Dossier de l’agent ↗</button>
+          <button id="open-agent-folder" type="button" class="link" data-i18n="Dossier de l’agent ↗">Dossier de l’agent ↗</button>
         </p>
         <p id="runtime-link-status" class="hint" role="status"></p>
-        <p class="hint">Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.</p>
+        <p class="hint" data-i18n="Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.">Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.</p>
         <p id="wake-history-status" class="hint" role="status"></p>
-        <ol id="wake-history-messages" class="messages" aria-label="Fil des réveils et réponses"></ol>
+        <ol id="wake-history-messages" class="messages" aria-label="Fil des réveils et réponses" data-i18n-aria-label="Fil des réveils et réponses"></ol>
       </div>
       <div id="view-agents" role="tabpanel" aria-labelledby="tab-agents" hidden>
-        <h2>Conseils et échanges</h2>
-        <p class="hint">Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.</p>
+        <h2 data-i18n="Conseils et échanges">Conseils et échanges</h2>
+        <p class="hint" data-i18n="Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.">Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.</p>
         <p id="agents-status" class="hint" role="status"></p>
         <ul id="agents-list" class="threads"></ul>
         <article id="agent-thread" hidden>
-          <button id="agent-thread-back" type="button" class="link">← Conversations des agents</button>
+          <button id="agent-thread-back" type="button" class="link" data-i18n="← Conversations des agents">← Conversations des agents</button>
           <h2 id="agent-thread-title"></h2>
           <p id="agent-thread-pointers" class="hint repo-pointers"></p>
           <ol id="agent-thread-messages" class="messages"></ol>
@@ -214,15 +221,15 @@
 
 
         <section class="switch-section" aria-label="Mode de l'agent">
-          <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé">
+          <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé" data-i18n-aria-label="On, réveil, always-on ou arrêt forcé">
             <button id="mode-on" type="button" aria-pressed="false">On</button>
-            <button id="mode-wake" type="button" aria-pressed="false">Réveil</button>
+            <button id="mode-wake" type="button" aria-pressed="false" data-i18n="Réveil">Réveil</button>
             <button
               id="mode-always"
               type="button"
               aria-pressed="false"
               title="Relance dès la fin de chaque réponse"
-            >
+             data-i18n-title="Relance dès la fin de chaque réponse">
               Always-on
             </button>
             <button id="mode-off" type="button" aria-pressed="false" class="danger">
@@ -236,40 +243,40 @@
         <section class="switch-section" aria-label="Second fil Claude Code">
           <div class="switch" role="group" aria-label="Second fil Claude Code">
             <button id="second-thread-off" type="button" aria-pressed="true">Off</button>
-            <button id="second-thread-on" type="button" aria-pressed="false" title="Fil Claude Code parallèle, sur d’autres projets">Second fil Claude</button>
+            <button id="second-thread-on" type="button" aria-pressed="false" title="Fil Claude Code parallèle, sur d’autres projets" data-i18n-title="Fil Claude Code parallèle, sur d’autres projets" data-i18n="Second fil Claude">Second fil Claude</button>
           </div>
         </section>
         <p id="second-thread-feedback" class="hint" role="status"></p>
         <section aria-labelledby="h-forks">
           <h2 id="h-forks">Forks Codex</h2>
-          <p class="hint">Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
+          <p class="hint" data-i18n="Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.">Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
           <div id="fork-controls"></div>
           <p id="fork-feedback" role="status"></p>
         </section>
 
         <section class="wake-plan-section" aria-labelledby="h-wake-plan">
-          <h2 id="h-wake-plan">Les prochains wakes</h2>
-          <div id="wake-plan"><p class="hint">Lecture du planning…</p></div>
+          <h2 id="h-wake-plan" data-i18n="Les prochains wakes">Les prochains wakes</h2>
+          <div id="wake-plan"><p class="hint" data-i18n="Lecture du planning…">Lecture du planning…</p></div>
         </section>
 
         <section aria-labelledby="h-chart">
-          <h2 id="h-chart">Réveils et consommation — 24 h</h2>
+          <h2 id="h-chart" data-i18n="Réveils et consommation — 24 h">Réveils et consommation — 24 h</h2>
           <div id="chart" class="chart"></div>
           <p id="chart-summary" class="hint"></p>
         </section>
 
         <section aria-labelledby="h-activity">
-          <h2 id="h-activity">Activité</h2>
+          <h2 id="h-activity" data-i18n="Activité">Activité</h2>
           <dl id="activity"></dl>
         </section>
-        <details class="technical-details"><summary>Consommation et réglages détaillés</summary>
+        <details class="technical-details"><summary data-i18n="Consommation et réglages détaillés">Consommation et réglages détaillés</summary>
 
         <section aria-labelledby="h-consumption">
-          <h2 id="h-consumption">Consommation</h2>
+          <h2 id="h-consumption" data-i18n="Consommation">Consommation</h2>
           <dl id="consumption"></dl>
         </section>
         <section aria-labelledby="h-protection">
-          <h2 id="h-protection">Protection de l'humain</h2>
+          <h2 id="h-protection" data-i18n="Protection de l&#x27;humain">Protection de l'humain</h2>
           <dl id="protection"></dl>
         </section>
 
@@ -282,23 +289,24 @@
 
       <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="view-heading">
-          <div class="conversation-tabs" role="tablist" aria-label="Conversation">
-            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation">Toi et ton agent</button>
-            <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden>Fil Claude<span id="second-thread-tab-presence" hidden> · Travaille</span></button>
+          <div class="conversation-tabs" role="tablist" aria-label="Conversation" data-i18n-aria-label="Conversation">
+            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation" data-i18n="Toi et ton agent">Toi et ton agent</button>
+            <button id="tab-coach" role="tab" type="button" aria-selected="false" aria-controls="view-coach">Coach</button>
+            <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden data-i18n="Fil Claude">Fil Claude<span id="second-thread-tab-presence" hidden data-i18n="· Travaille"> · Travaille</span></button>
           </div>
         </div>
         <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
-        <p class="hint conversation-description">Votre conversation, au fil des réveils.</p>
-        <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
+        <p class="hint conversation-description" data-i18n="Votre conversation, au fil des réveils.">Votre conversation, au fil des réveils.</p>
+        <button id="chat-older" class="link" type="button" hidden data-i18n="Afficher les messages précédents">Afficher les messages précédents</button>
         <ol id="chat" class="messages" aria-live="polite"></ol>
-        <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
+        <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden data-i18n-aria-label="Ton agent travaille"><span aria-hidden="true">•••</span><span class="sr-only" data-i18n="Ton agent travaille">Ton agent travaille</span></div>
         <div id="chat-progress-reminder" role="status" hidden></div>
         <p id="chat-note" class="hint"></p>
         <form id="chat-form">
-            <label for="chat-recipient">Destinataire</label>
+            <label for="chat-recipient" data-i18n="Destinataire">Destinataire</label>
             <select id="chat-recipient" aria-describedby="chat-recipient-status">
-              <option value="owner">Mon agent</option>
-              <option value="auroracle" hidden disabled>Correspondant non configuré</option>
+              <option value="owner" data-i18n="Mon agent">Mon agent</option>
+              <option value="auroracle" hidden disabled data-i18n="Correspondant non configuré">Correspondant non configuré</option>
             </select>
             <p id="chat-recipient-status" class="hint" role="status"></p>
           <textarea
@@ -308,20 +316,21 @@
             required
             aria-label="Message à ton agent"
             placeholder="Écris à ton agent…"
-          ></textarea>
-          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit">Envoyer</button></div>
+           data-i18n-aria-label="Message à ton agent" data-i18n-placeholder="Écris à ton agent…"></textarea>
+          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>
         </div>
         <div id="view-forks" role="tabpanel" hidden></div>
+        <div id="view-coach" role="tabpanel" aria-labelledby="tab-coach" hidden></div>
 <div id="view-second" role="tabpanel" aria-labelledby="tab-second" hidden>
 
         <p id="second-thread-status" class="hint" role="status"></p>
         <ol id="second-thread-messages" class="messages" aria-live="polite"></ol>
-        <div id="second-thread-presence" role="status" hidden><span aria-hidden="true">•••</span> Claude travaille</div>
+        <div id="second-thread-presence" role="status" hidden data-i18n="Claude travaille"><span aria-hidden="true">•••</span> Claude travaille</div>
         <form id="second-thread-form">
-          <textarea id="second-thread-text" rows="3" maxlength="4000" required aria-label="Message au second fil" placeholder="Écris au second fil…"></textarea>
-          <div class="chat-actions"><button type="submit">Envoyer</button></div>
+          <textarea id="second-thread-text" rows="3" maxlength="4000" required aria-label="Message au second fil" placeholder="Écris au second fil…" data-i18n-placeholder="Écris au second fil…"></textarea>
+          <div class="chat-actions"><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
           <p id="second-thread-send-status" class="hint" role="status"></p>
         </form>
       </div>
@@ -332,13 +341,13 @@
         <p id="threads-status" class="hint" role="status"></p>
         <ul id="threads" class="threads"></ul>
         <article id="thread" hidden>
-          <button id="thread-back" type="button" class="link">← Tous les fils</button>
+          <button id="thread-back" type="button" class="link" data-i18n="← Tous les fils">← Tous les fils</button>
           <h2 id="thread-subject"></h2>
           <ol id="messages" class="messages"></ol>
           <form id="reply-form">
-            <label for="reply-text">Répondre</label>
+            <label for="reply-text" data-i18n="Répondre">Répondre</label>
             <textarea id="reply-text" rows="3" maxlength="4000" required></textarea>
-            <button type="submit">Envoyer dans ce fil</button>
+            <button type="submit" data-i18n="Envoyer dans ce fil">Envoyer dans ce fil</button>
             <p id="reply-status" class="hint" role="status"></p>
           </form>
         </article>

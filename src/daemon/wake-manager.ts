@@ -530,6 +530,29 @@ export class WakeManager {
       })
       .immediate();
   }
+  /** Coach edits one intention in the canonical plan, including the running slot. */
+  reviseObjective(input: {number: number; projectId: string; expectedRevision: number; objective: string; expected: string; reason: string}) {
+    return this.db.transaction(() => {
+      const state = this.read();
+      if (!state || state.revision !== input.expectedRevision) throw Error("Stale planning revision");
+      this.sync(state);
+      const wake = this.next(500).wakes.find(w => w.number === input.number && w.projectId === input.projectId);
+      if (!wake || !wake.projectId) throw Error("Wake is no longer current or upcoming for this project");
+      const project = state.projects.find(p => p.id === wake.projectId);
+      if (!project || project.status !== "active") throw Error("Project is inactive");
+      for (const value of [input.objective, input.expected, input.reason])
+        if (typeof value !== "string" || !value.trim() || value.length > 8000) throw Error("Invalid objective, expected result or reason");
+      const passage = wake.passageId ? state.passages?.[wake.passageId] : undefined;
+      if (wake.passageId && !passage) throw Error("Unknown passage");
+      const steps = passage ? passage.steps ?? [] : project.plan;
+      const before = steps.find(s => s.wake === wake.inBlock) ?? null;
+      const step = {wake: wake.inBlock, objective: input.objective.trim(), expected: input.expected.trim()};
+      const updated = [...steps.filter(s => s.wake !== wake.inBlock), step].sort((a,b) => a.wake-b.wake);
+      if (passage) passage.steps = updated; else project.plan = updated;
+      this.write(state, "coach_objective_updated", {number: wake.number, projectId: project.id, passageId: wake.passageId ?? null, before, after: step, reason: input.reason});
+      return {revision: state.revision, number: wake.number, projectId: project.id, passageId: wake.passageId ?? null, before, step};
+    }).immediate();
+  }
   setStatus(id: string, status: "active" | "paused" | "blocked", reason: string) {
     const changed = withProjectLock(this.workspace, () => {
       const counter = readCounter(this.workspace),

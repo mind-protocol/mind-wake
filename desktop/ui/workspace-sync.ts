@@ -1,3 +1,4 @@
+import { tr, formatLocale } from "./i18n.js";
 /** Settings uses the profile CLI; this panel never runs Git or creates a wake. */
 export interface WorkspaceSyncStatus {
   config: { workspaceDir: string; githubUrl: string; enabled: boolean };
@@ -21,19 +22,19 @@ interface Envelope {
 
 export function syncStateLabel(status: string): string {
   const labels: Record<string, string> = {
-    idle: "En attente",
-    waiting: "En attente",
-    pending_restart: "Redémarrage du moteur nécessaire",
-    disabled: "Désactivée",
-    paused: "En pause",
-    stopped: "Arrêtée",
-    running: "Synchronisation en cours",
-    syncing: "Synchronisation en cours",
-    success: "Synchronisation réussie",
-    ok: "Synchronisation réussie",
-    blocked: "Bloquée — intervention nécessaire",
-    conflict: "Conflit — résoudre dans le dépôt",
-    error: "Échec de synchronisation",
+    idle: tr("En attente"),
+    waiting: tr("En attente"),
+    pending_restart: tr("Redémarrage du moteur nécessaire"),
+    disabled: tr("Désactivée"),
+    paused: tr("En pause"),
+    stopped: tr("Arrêtée"),
+    running: tr("Synchronisation en cours"),
+    syncing: tr("Synchronisation en cours"),
+    success: tr("Synchronisation réussie"),
+    ok: tr("Synchronisation réussie"),
+    blocked: tr("Bloquée — intervention nécessaire"),
+    conflict: tr("Conflit — résoudre dans le dépôt"),
+    error: tr("Échec de synchronisation"),
   };
   return labels[status] ?? status;
 }
@@ -41,18 +42,18 @@ export function syncStateLabel(status: string): string {
 export function syncDate(value: string | null): string {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Indisponible" : date.toLocaleString("fr-FR");
+  return Number.isNaN(date.getTime()) ? tr("Indisponible") : date.toLocaleString(formatLocale());
 }
 
 export function workspaceEffect(data: WorkspaceSyncStatus): string {
   return data.pendingRestart
-    ? "Le nouveau dossier sera utilisé au prochain lancement du moteur. Aucun fichier n’a été déplacé."
-    : "Le moteur utilise ce dossier de travail.";
+    ? tr("Le nouveau dossier sera utilisé au prochain lancement du moteur. Aucun fichier n’a été déplacé.")
+    : tr("Le moteur utilise ce dossier de travail.");
 }
 
 function element(id: string): HTMLElement {
   const found = document.getElementById(id);
-  if (!found) throw Error(`Élément #${id} absent`);
+  if (!found) throw Error(tr("Élément #{0} absent", [id]));
   return found;
 }
 
@@ -99,7 +100,7 @@ export function initWorkspaceSync(invoke: Invoke): void {
     element("workspace-sync-last-attempt").textContent = syncDate(data.state.lastAttemptAt);
     element("workspace-sync-last-success").textContent = syncDate(data.state.lastSuccessAt);
     element("workspace-sync-next").textContent = syncDate(data.state.nextRunAt);
-    element("workspace-sync-error").textContent = data.state.error ?? "Aucune";
+    element("workspace-sync-error").textContent = data.state.error ?? tr("Aucune");
     controls();
   }
 
@@ -110,7 +111,7 @@ export function initWorkspaceSync(invoke: Invoke): void {
     const run = (await invoke(command, args)) as { exitCode: number; stdout: string };
     const result = JSON.parse(run.stdout) as Envelope;
     if (run.exitCode !== 0 || !result.ok || !result.data)
-      throw Error(result.error?.message ?? "Opération non confirmée par le moteur");
+      throw Error(result.error?.message ?? tr("Opération non confirmée par le moteur"));
     return result.data;
   }
 
@@ -121,8 +122,8 @@ export function initWorkspaceSync(invoke: Invoke): void {
       const data = await call("workspace_sync_status");
       render(data, !hydrated);
     } catch (error) {
-      element("workspace-sync-state").textContent = "État indisponible";
-      element("workspace-sync-next").textContent = "Indisponible";
+      element("workspace-sync-state").textContent = tr("État indisponible");
+      element("workspace-sync-next").textContent = tr("Indisponible");
       feedback.textContent = error instanceof Error ? error.message : String(error);
       persisted = null;
       controls();
@@ -138,7 +139,7 @@ export function initWorkspaceSync(invoke: Invoke): void {
     if (busy) return;
     busy = true;
     controls();
-    feedback.textContent = "Enregistrement…";
+    feedback.textContent = tr("Enregistrement…");
     void call("workspace_sync_configure", {
       workspaceDir: workspace.value.trim(),
       githubUrl: github.value.trim(),
@@ -146,7 +147,7 @@ export function initWorkspaceSync(invoke: Invoke): void {
     })
       .then((data) => {
         render(data, true);
-        feedback.textContent = "Réglages enregistrés.";
+        feedback.textContent = tr("Réglages enregistrés.");
       })
       .catch((error: unknown) => {
         feedback.textContent = error instanceof Error ? error.message : String(error);
@@ -160,11 +161,11 @@ export function initWorkspaceSync(invoke: Invoke): void {
     if (now.disabled || busy) return;
     busy = true;
     controls();
-    feedback.textContent = "Demande de synchronisation…";
+    feedback.textContent = tr("Demande de synchronisation…");
     void call("workspace_sync_now")
       .then((data) => {
         render(data, false);
-        feedback.textContent = "Demande enregistrée. Le statut ci-dessous suit son exécution.";
+        feedback.textContent = tr("Demande enregistrée. Le statut ci-dessous suit son exécution.");
       })
       .catch((error: unknown) => {
         feedback.textContent = error instanceof Error ? error.message : String(error);

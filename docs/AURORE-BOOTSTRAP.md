@@ -24,8 +24,8 @@ de lecture vérifient Node, Git, les modules/policy et éventuellement Cargo.
    Si le manifeste manque, terminer d'abord l'installation locale officielle
    depuis la version approuvée avec `scripts/setup.mjs --apply --no-open` et les
    chemins locaux choisis ; ce parcours peut nécessiter la connexion du
-   propriétaire. `install-wake.ps1` pointant sur l'archive 20261029 et refusant une
-   destination existante n'est pas l'installateur de cette livraison.
+   propriétaire. Le helper `install-wake.ps1` suit désormais le parcours Git
+   décrit dans `install.md` ; il ne fait pas partie du bootstrap privé ci-dessous.
 2. Choisir la release Git complète et sa source approuvée. Le mécanisme existant
    `checkUpdate(expectedRevision,beforeStep)` récupère/build la release dans le
    répertoire de transaction ; une révision différente est refusée. Source HTTPS

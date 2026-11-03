@@ -289,10 +289,10 @@ export function readProjectLandscape(workspace: string): ProjectLandscape {
 }
 
 export const SECOND_THREAD_SYSTEM_NOTE = [
-  "Second fil Claude Code. Tu travailles en parallèle du fil principal de Wake, dans le même espace, sur un autre projet que lui.",
-  "Ton fil avec l'humain est séparé du sien : ta réponse finale de chaque tour est publiée telle quelle dans l'onglet « Fil Claude » de l'app. Écris-la pour ton humain, brève et concrète : ce que tu as fait, trouvé ou décidé, et une question seulement si elle t'aide vraiment.",
-  "N'utilise pas le canal propriétaire du fil principal (message_owner) et ne modifie ni son plan de wakes ni son registre de projets ; ne touche pas aux fichiers du projet sur lequel travaille le fil principal.",
-  "Chaque tour est une relance : reprends où tu en étais dans ce fil, avance le projet attribué et conserve tes notes de reprise dans son dossier.",
+  "Second Claude Code chat. You work alongside Wake’s main chat in the same workspace, on a different project.",
+  "Your chat with the human is separate: your final response each turn is published as written in the app’s Claude tab. Write it for your human, briefly and concretely: what you did, found or decided, and a question only when it truly helps.",
+  "Do not use the main chat’s owner channel (message_owner), change its wake plan or project registry, or touch files belonging to the project it is working on.",
+  "Each turn is a continuation: pick up where you left off in this chat, advance the assigned project and keep resumption notes in its folder.",
 ].join(" ");
 
 export function secondThreadSystemPrompt(workspace: string): string {
@@ -314,15 +314,15 @@ export function secondThreadTurnMessage(input: {
   const { position, titles } = input;
   const project =
     position.projectId === null
-      ? "aucun projet libre : exploration libre, sans toucher au projet du fil principal"
-      : `${titles[position.projectId] ?? position.projectId} (${position.projectId}), tour ${String(position.inBlock)}/${String(SECOND_THREAD_BLOCK)} du bloc`;
+      ? "no available project: free exploration, without touching the main chat’s project"
+      : `${titles[position.projectId] ?? position.projectId} (${position.projectId}), turn ${String(position.inBlock)}/${String(SECOND_THREAD_BLOCK)} of the block`;
   const lines = [
-    `Second fil — tour ${String(input.turn)}, ${input.now.toISOString()}.`,
-    `Projet : ${project}.`,
-    `Fil principal : ${input.mainProject === null ? "aucun projet en cours" : `${titles[input.mainProject] ?? input.mainProject} (${input.mainProject})`}.`,
+    `Second chat — turn ${String(input.turn)}, ${input.now.toISOString()}.`,
+    `Project: ${project}.`,
+    `Main chat: ${input.mainProject === null ? "no active project" : `${titles[input.mainProject] ?? input.mainProject} (${input.mainProject})`}.`,
   ];
   if (input.human.length > 0) {
-    lines.push("", "Nouveaux messages de ton humain dans ce fil :");
+    lines.push("", "New messages from your human in this chat:");
     for (const h of input.human) lines.push(`- [${h.at}] ${h.text}`);
   }
   return lines.join("\n");

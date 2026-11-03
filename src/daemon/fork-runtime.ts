@@ -23,18 +23,56 @@ export interface ForkTurnInput {
   control: () => SecondThreadControl;
   onThread: (threadId: string) => void;
   planningSession?: string;
+  /** Coaching reads public messages from the last completed principal turn. */
+  sourceThreadId?: string;
+  onSourceTurn?: (turnId: string) => boolean;
+  inheritPrincipal?: boolean;
+  coachSession?: string;
+  allowMissingSource?: boolean;
 }
 /** Add one session-bound planner without replacing the user's MCP configuration. */
-export function forkPlannerConfig(input: Pick<ForkTurnInput,"id"|"dataDir"|"planningSession">): Record<string,string> {
+export function forkPlannerConfig(
+  input: Pick<ForkTurnInput, "id" | "dataDir" | "planningSession">,
+): Record<string, string> {
   if (!input.planningSession) return {};
-  const env={MIND_WAKE_DATA_DIR:input.dataDir,MIND_WAKE_FORK_ID:String(input.id),MIND_WAKE_FORK_SESSION:input.planningSession};
+  const env = {
+    MIND_WAKE_DATA_DIR: input.dataDir,
+    MIND_WAKE_FORK_ID: String(input.id),
+    MIND_WAKE_FORK_SESSION: input.planningSession,
+  };
   return {
-    "mcp_servers.mind_fork_planner.command":JSON.stringify(process.execPath),
-    "mcp_servers.mind_fork_planner.args":JSON.stringify([fileURLToPath(new URL("./fork-planner-mcp.js",import.meta.url))]),
-    "mcp_servers.mind_fork_planner.env":"{ "+Object.entries(env).map(([key,value])=>`${key} = ${JSON.stringify(value)}`).join(", ")+" }",
+    "mcp_servers.mind_fork_planner.command": JSON.stringify(process.execPath),
+    "mcp_servers.mind_fork_planner.args": JSON.stringify([
+      fileURLToPath(new URL("./fork-planner-mcp.js", import.meta.url)),
+    ]),
+    "mcp_servers.mind_fork_planner.env":
+      "{ " +
+      Object.entries(env)
+        .map(([key, value]) => `${key} = ${JSON.stringify(value)}`)
+        .join(", ") +
+      " }",
   };
 }
 export class ForkTerminationError extends Error {}
+export function coachRuntimeConfig(
+  input: Pick<ForkTurnInput, "dataDir" | "coachSession">,
+): Record<string, string> {
+  if (!input.coachSession) return {};
+  const env = { MIND_WAKE_DATA_DIR: input.dataDir, MIND_WAKE_COACH_SESSION: input.coachSession };
+  return {
+    "mcp_servers.mind_wake_coach.command": JSON.stringify(process.execPath),
+    "mcp_servers.mind_wake_coach.args": JSON.stringify([
+      fileURLToPath(new URL("./coach-mcp.js", import.meta.url)),
+    ]),
+    "mcp_servers.mind_wake_coach.env":
+      "{ " +
+      Object.entries(env)
+        .map(([k, v]) => `${k} = ${JSON.stringify(v)}`)
+        .join(", ") +
+      " }",
+  };
+}
+class NoSourceTurn extends Error {}
 
 export interface ForkTurnResult {
   outcome: "completed" | "interrupted" | "rate_limited" | "error";
@@ -71,7 +109,7 @@ export async function runForkTurn(
         channel: null,
         nativeCapabilities: true,
         allowUserCodexHome: true,
-        extraConfig: forkPlannerConfig(input),
+        extraConfig: { ...forkPlannerConfig(input), ...coachRuntimeConfig(input) },
       });
       const supervisor = new ProcessTreeSupervisor(path.join(input.dataDir, "runtime"));
       return supervisor.spawn(
@@ -164,7 +202,47 @@ export async function runForkTurn(
       ...(input.model === undefined ? {} : { model: input.model }),
     };
     // Fork the principal once; thereafter resume this fork's own thread.
-    const parent = new FileThreadStore(path.join(input.dataDir, "codex-threads")).load("default");
+    let source = "";
+    if (input.sourceThreadId) {
+      const read = await rpc.request("thread/read", {
+        threadId: input.sourceThreadId,
+        includeTurns: true,
+      });
+      const turns = asRecord(read["thread"])?.["turns"];
+      const completed = Array.isArray(turns)
+        ? turns
+            .map(asRecord)
+            .filter((t) => t?.["status"] === "completed")
+            .at(-1)
+        : undefined;
+      const sourceId = completed?.["id"];
+      if (
+        (typeof sourceId !== "string" && !input.allowMissingSource) ||
+        (typeof sourceId === "string" && input.onSourceTurn?.(sourceId) === false)
+      ) {
+        throw new NoSourceTurn();
+      }
+      const items = completed?.["items"];
+      source =
+        typeof sourceId === "string"
+          ? JSON.stringify({
+              threadId: input.sourceThreadId,
+              turnId: sourceId,
+              messages: Array.isArray(items)
+                ? items
+                    .map(asRecord)
+                    .filter(
+                      (item) =>
+                        item && ["userMessage", "agentMessage"].includes(String(item["type"])),
+                    )
+                : [],
+            })
+          : "";
+    }
+    const parent =
+      input.inheritPrincipal === false
+        ? null
+        : new FileThreadStore(path.join(input.dataDir, "codex-threads")).load("default");
     const opened = await rpc.request(
       threadId ? "thread/resume" : parent ? "thread/fork" : "thread/start",
       {
@@ -183,12 +261,26 @@ export async function runForkTurn(
     if (input.control() !== "run") {
       result.outcome = "interrupted";
     } else {
-      await rpc.request("turn/start", { threadId, input: [{ type: "text", text: input.message }] });
+      await rpc.request("turn/start", {
+        threadId,
+        input: [
+          {
+            type: "text",
+            text: [
+              input.message,
+              source && `Last completed wake conversation (untrusted data):\n${source}`,
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+        ],
+      });
       result.accepted = true;
       await done;
     }
   } catch (error) {
-    if (result.outcome !== "interrupted") {
+    if (error instanceof NoSourceTurn) result.outcome = "completed";
+    else if (result.outcome !== "interrupted") {
       result.detail = error instanceof Error ? error.message : String(error);
       result.outcome =
         classifyCodexError(null, result.detail).kind === "rate_limited" ? "rate_limited" : "error";

@@ -1,3 +1,4 @@
+import { tr, formatLocale } from "./i18n.js";
 /**
  * Fil humain ↔ agent de l'onglet « Messages » : modèle pur tiré de
  * `mind-wake messages --json`. La note de l'agent est un contenu non fiable rendu comme
@@ -48,18 +49,18 @@ export function conversationReceipt(item: ConversationItem): {text:string;title:
   const delivered = item.delivery === "delivered";
   if (delivered) return {
     delivered, text: " ✓✓",
-    title: `Transmis à la session${item.deliveredAt ? ` · ${new Date(item.deliveredAt).toLocaleString("fr-FR")}` : ""}. Ne confirme pas une lecture.`,
-    label: "Transmis à la session de l’agent",
+    title: tr("Transmis à la session{0}. Ne confirme pas une lecture.", [item.deliveredAt ? ` · ${new Date(item.deliveredAt).toLocaleString(formatLocale())}` : ""]),
+    label: tr("Transmis à la session de l’agent"),
   };
   if (item.from === "human") return {
-    delivered, text: " ✓ · en attente de réception", label: "Envoyé",
-    title: "Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception.",
+    delivered, text: tr(" ✓ · en attente de réception"), label: tr("Envoyé"),
+    title: tr("Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception."),
   };
   const title = item.deliveryNote ?? (item.from === "agent"
-    ? "Enregistré dans le fil de ton agent. Réception et lecture par l’humain non attestées."
+    ? tr("Enregistré dans le fil de ton agent. Réception et lecture par l’humain non attestées.")
     : item.from === "session"
-      ? "Réponse de session enregistrée. Livraison à la session principale non attestée."
-      : "Message stocké localement. Livraison à une session non attestée.");
+      ? tr("Réponse de session enregistrée. Livraison à la session principale non attestée.")
+      : tr("Message stocké localement. Livraison à une session non attestée."));
   return {delivered, text: " ✓", title, label: title};
 }
 
@@ -87,19 +88,19 @@ export function plainText(markdown: string, preserveInline = false): string {
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */
 export function renderConversationMeta(element: Pick<HTMLElement, "textContent"> & Partial<Pick<HTMLElement, "ownerDocument" | "append">>, item: ConversationItem): void {
-  if (item.from === "plan") { element.textContent = "Les 10 prochains wakes"; return; }
+  if (item.from === "plan") { element.textContent = tr("Les 10 prochains wakes"); return; }
   const subagent = item.from === "sent" && item.sentToSubagent === true;
-  const sentLabel = subagent ? "Vers un sous-agent" : "Vers un pair";
-  const compactSource = subagent ? `${item.headerNames?.[0] ?? "Ton agent"} → ${item.headerNames?.[1] ?? "sous-agent"}${item.headerStatus ? ` · ${item.headerStatus}` : ""}` : item.source;
-  const who = item.from === "sent" ? `${sentLabel} · ${compactSource ?? "source inconnue"}`
-    : item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
-    : item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
-    : item.from === "objective" ? "Objectif en cours" : item.from === "activity" ? `Activité${item.source ? ` · Sous-session · ${item.source}` : ""}` : item.from === "human" ? `Toi${item.humanRecipient ? ` → ${item.humanRecipient}` : ""}${item.source ? ` · ${item.source}` : ""}`
-    : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Ton agent";
+  const sentLabel = subagent ? tr("Vers un sous-agent") : tr("Vers un pair");
+  const compactSource = subagent ? `${item.headerNames?.[0] ?? tr("Ton agent")} → ${item.headerNames?.[1] ?? "sous-agent"}${item.headerStatus ? ` · ${item.headerStatus}` : ""}` : item.source;
+  const who = item.from === "sent" ? `${sentLabel} · ${compactSource ?? tr("source inconnue")}`
+    : item.from === "context" ? tr("Copie de contexte · {0}", [item.source ?? tr("source inconnue")])
+    : item.from === "received" ? tr("Reçu · {0}", [item.source ?? tr("source inconnue")])
+    : item.from === "objective" ? tr("Objectif en cours") : item.from === "activity" ? tr("Activité{0}", [item.source ? tr(" · Sous-session · {0}", [item.source]) : ""]) : item.from === "human" ? tr("Toi{0}{1}", [item.humanRecipient ? ` → ${item.humanRecipient}` : "", item.source ? ` · ${item.source}` : ""])
+    : item.from === "session" ? tr("Aide · {0}", [item.source ?? "session"]) : tr("Ton agent");
   const direction = subagent ? "down" : item.from === "sent" || item.from === "agent" || (item.from === "human" && item.humanRecipient) ? "out"
     : item.from === "received" || item.from === "session" || item.from === "human" ? "in" : null;
   const arrow = direction === "down" ? "↓ " : direction === "out" ? "→ " : direction === "in" ? "← " : "";
-  const suffix = ` · ${new Date(item.at).toLocaleString("fr-FR")}${item.edited ? " · modifié" : ""}`;
+  const suffix = ` · ${new Date(item.at).toLocaleString(formatLocale())}${item.edited ? tr(" · modifié") : ""}`;
   if (!element.ownerDocument || !element.append) {
     element.textContent = arrow + who + suffix + (subagent && item.source ? ` · ${item.source}` : "");
     return;
@@ -109,17 +110,17 @@ export function renderConversationMeta(element: Pick<HTMLElement, "textContent">
     const icon = element.ownerDocument.createElement("span");
     icon.className = subagent ? "message-direction message-direction-subagent" : "message-direction";
     icon.setAttribute("role", "img");
-    icon.setAttribute("aria-label", subagent ? "Message vers un sous-agent" : direction === "out" ? "Message sortant" : "Message entrant");
+    icon.setAttribute("aria-label", subagent ? tr("Message vers un sous-agent") : direction === "out" ? tr("Message sortant") : tr("Message entrant"));
     icon.textContent = arrow;
     element.append(icon);
   }
-  const names = item.from === "human" ? ["Toi", ...(item.humanRecipient ? [item.humanRecipient] : [])]
-    : item.from === "agent" ? ["Ton agent"] : item.headerNames ?? [];
+  const names = item.from === "human" ? [tr("Toi"), ...(item.humanRecipient ? [item.humanRecipient] : [])]
+    : item.from === "agent" ? [tr("Ton agent")] : item.headerNames ?? [];
   // Search only after the role label; bold at most one occurrence per named actor.
   let cursor = 0;
   let authorShown = false;
-  let searchFrom = item.from === "sent" ? `${sentLabel} · `.length : item.from === "received" ? "Reçu · ".length
-    : item.from === "session" ? "Aide · ".length : item.from === "context" ? "Copie de contexte · ".length : 0;
+  let searchFrom = item.from === "sent" ? `${sentLabel} · `.length : item.from === "received" ? tr("Reçu · ").length
+    : item.from === "session" ? tr("Aide · ").length : item.from === "context" ? tr("Copie de contexte · ").length : 0;
   for (const name of names) {
     if (!name) continue;
     const start = who.indexOf(name, searchFrom);
@@ -137,7 +138,7 @@ export function renderConversationMeta(element: Pick<HTMLElement, "textContent">
     const details = element.ownerDocument.createElement("details");
     details.className = "message-provenance";
     const summary = element.ownerDocument.createElement("summary");
-    summary.textContent = "Détails de transmission";
+    summary.textContent = tr("Détails de transmission");
     const provenance = element.ownerDocument.createElement("span");
     provenance.textContent = item.source;
     details.append(summary, provenance);
@@ -161,42 +162,42 @@ function elapsed(at: string | null, now: number): string {
   const start=at===null ? NaN : Date.parse(at);
   if(!Number.isFinite(start) || start>now)return "";
   const minutes=Math.floor((now-start)/60_000);
-  return minutes<1 ? "depuis moins d’une minute" : minutes<60 ? `depuis ${minutes} min` : `depuis ${Math.floor(minutes/60)} h${minutes%60 ? ` ${minutes%60} min` : ""}`;
+  return minutes<1 ? tr("depuis moins d’une minute") : minutes<60 ? `depuis ${minutes} min` : `depuis ${Math.floor(minutes/60)} h${minutes%60 ? ` ${minutes%60} min` : ""}`;
 }
 
 function waiting(data: Rec, sentAt: string, now: number): string | null {
   const status=rec(data["agentStatus"]), state=str(status?.["state"]);
   const age=elapsed(sentAt,now);
-  const suffix=age ? ` Message en attente ${age}.` : "";
-  if(state==="paused")return `Wake est en pause ; le message sera transmis à la reprise.${suffix}`;
-  if(state==="stopped" || state==="disabled")return `Wake est arrêté ; le message reste enregistré.${suffix}`;
+  const suffix=age ? tr(" Message en attente {0}.", [age]) : "";
+  if(state==="paused")return tr("Wake est en pause ; le message sera transmis à la reprise.{0}", [suffix]);
+  if(state==="stopped" || state==="disabled")return tr("Wake est arrêté ; le message reste enregistré.{0}", [suffix]);
   const stateReason=str(status?.["reason"]) ?? "";
   if(state!=="running" && stateReason.includes("subscription") && stateReason.includes("budget_exhausted")) {
     const next=str(status?.["nextWakeAt"]),time=next===null?NaN:Date.parse(next);
     const nextCheck=Number.isFinite(time) && time>now
-      ? ` Prochaine vérification vers ${new Date(Math.ceil(time/60_000)*60_000).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}.` : "";
-    return `Le quota ${stateReason.includes("claude:")?"Claude":"du fournisseur"} est épuisé pour la fenêtre en cours.${nextCheck} Ton message reste enregistré et attend une nouvelle disponibilité.${suffix}`;
+      ? tr(" Prochaine vérification vers {0}.", [new Date(Math.ceil(time/60_000)*60_000).toLocaleTimeString(formatLocale(),{hour:"2-digit",minute:"2-digit"})]) : "";
+    return tr("Le quota {0} est épuisé pour la fenêtre en cours.{1} Ton message reste enregistré et attend une nouvelle disponibilité.{2}", [stateReason.includes("claude:")?"Claude":tr("du fournisseur"), nextCheck, suffix]);
   }
   if(state==="blocked") {
     const reason=str(status?.["reason"]) ?? "";
-    return `${reason.includes("subscription") || reason.includes("budget_unknown") ? "Wake attend une lecture valide du quota fournisseur." : "Wake est bloqué ; le message reste enregistré."}${suffix}`;
+    return `${reason.includes("subscription") || reason.includes("budget_unknown") ? tr("Wake attend une lecture valide du quota fournisseur.") : tr("Wake est bloqué ; le message reste enregistré.")}${suffix}`;
   }
   if(state==="hibernating") {
     const next=str(status?.["nextWakeAt"]), time=next===null ? NaN : Date.parse(next);
-    return `L’agent est entre deux réveils.${Number.isFinite(time) && time>now ? ` Prochain réveil prévu à ${new Date(time).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}.` : ""}${suffix}`;
+    return tr("L’agent est entre deux réveils.{0}{1}", [Number.isFinite(time) && time>now ? tr(" Prochain réveil prévu à {0}.", [new Date(time).toLocaleTimeString(formatLocale(),{hour:"2-digit",minute:"2-digit"})]) : "", suffix]);
   }
   const wait=rec(data["messageWait"]);
   const since=elapsed(str(wait?.["startedAt"]),now);
-  const count=typeof wait?.["activeCount"]==="number" && Number.isSafeInteger(wait["activeCount"]) && wait["activeCount"]>1 ? ` · ${wait["activeCount"]} appels en cours` : "";
+  const count=typeof wait?.["activeCount"]==="number" && Number.isSafeInteger(wait["activeCount"]) && wait["activeCount"]>1 ? tr(" · {0} appels en cours", [wait["activeCount"]]) : "";
   const duration=since ? ` · ${since}` : "";
-  if(wait?.["kind"]==="subagent")return `L’agent attend un sous-agent${duration}${count} ; ton message sera transmis à son retour.`;
+  if(wait?.["kind"]==="subagent")return tr("L’agent attend un sous-agent{0}{1} ; ton message sera transmis à son retour.", [duration, count]);
   if(wait?.["kind"]==="tool") {
     const tool=str(wait["tool"]);
-    return `L’agent exécute un outil${tool ? ` (${tool})` : ""}${duration}${count} ; ton message sera transmis à sa fin.`;
+    return tr("L’agent exécute un outil{0}{1}{2} ; ton message sera transmis à sa fin.", [tool ? ` (${tool})` : "", duration, count]);
   }
-  if(state==="running")return `L’agent est actif ; transmission au prochain point de réception.${suffix}`;
-  if(state==="checkpointing")return `L’agent sauvegarde son état avant de s’arrêter.${suffix}`;
-  if(state==="ready")return `Wake est prêt pour le prochain réveil.${suffix}`;
+  if(state==="running")return tr("L’agent est actif ; transmission au prochain point de réception.{0}", [suffix]);
+  if(state==="checkpointing")return tr("L’agent sauvegarde son état avant de s’arrêter.{0}", [suffix]);
+  if(state==="ready")return tr("Wake est prêt pour le prochain réveil.{0}", [suffix]);
   return null;
 }
 
@@ -229,7 +230,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
   const data = rec(env["data"]);
   if (data === null) return null;
   if (data["profileId"] === null) {
-    return { items: [], agentUpdatedAt: null, note: str(data["hint"]) ?? "Aucun profil Wake." };
+    return { items: [], agentUpdatedAt: null, note: str(data["hint"]) ?? tr("Aucun profil Wake.") };
   }
   const items: ConversationItem[] = [];
   const hasProjectPlan=projectWakesModel(data["projectWakes"])!==null;
@@ -244,7 +245,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     items.push({from: "objective", id: `wake-objective:${sessionId}`, at: objectiveAt,
       ...(typeof objective?.["objectiveDefined"] === "boolean" ? {objectiveDefined: objective["objectiveDefined"]} : {}),
       ...(typeof objective?.["projectId"] === "string" ? {project: {id: objective["projectId"], title}} : {}),
-      text: `Wake ${number} · ${title} · étape ${inBlock}/10\n${intention}${expected ? `\nRésultat attendu : ${expected}` : ""}`});
+      text: tr("Wake {0} · {1} · étape {2}/10\n{3}{4}", [number, title, inBlock, intention, expected ? tr("\nRésultat attendu : {0}", [expected]) : ""])});
   }
   const agent = rec(data["agentNote"]);
   const agentText = str(agent?.["text"]);
@@ -282,7 +283,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       const deliveredAt = id === null ? null : str(rec(data["deliveryReceipts"])?.[id]);
       const pendingReason = waiting(data,at,now);
       const screenshotAt = str(r?.["screenshotAt"]);
-      items.push({ from: "human", at, text: screenshotAt === null ? text : `${text}\n\n📷 Capture de l’écran principal jointe (${new Date(screenshotAt).toLocaleString("fr-FR")}).`,
+      items.push({ from: "human", at, text: screenshotAt === null ? text : tr("{0}\n\n📷 Capture de l’écran principal jointe ({1}).", [text, new Date(screenshotAt).toLocaleString(formatLocale())]),
         ...(id === null ? {} : { id, delivery: deliveredAt === null ? "sent" as const : "delivered" as const }),
         ...(deliveredAt === null ? {} : { deliveredAt }),
         ...(deliveredAt === null && pendingReason !== null ? { pendingReason } : {}),
@@ -294,7 +295,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     const m=rec(raw),id=str(m?.["id"]),at=str(m?.["at"]),text=str(m?.["text"]);
     if(!id || !at || text===null || !Number.isFinite(Date.parse(at)) || recipientIds.has(id))continue;
     recipientIds.add(id);
-    items.push({from:"human",humanRecipient:"Auroracle",id,at,text,source:`attribution locale · ${str(m?.["senderRef"]) ?? "référence humaine inconnue"} → ${str(m?.["recipientRef"]) ?? "référence destinataire inconnue"} · ${m?.["state"]==="remote_stored" ? "stocké sur le hub · réception et lecture non attestées" : "stocké localement · envoi non confirmé"}${str(m?.["threadId"]) ? ` · fil ${str(m?.["threadId"])}` : ""}${str(m?.["messageId"]) ? ` · message ${str(m?.["messageId"])}` : ""}`});
+    items.push({from:"human",humanRecipient:"Auroracle",id,at,text,source:`attribution locale · ${str(m?.["senderRef"]) ?? tr("référence humaine inconnue")} → ${str(m?.["recipientRef"]) ?? tr("référence destinataire inconnue")} · ${m?.["state"]==="remote_stored" ? tr("stocké sur le hub · réception et lecture non attestées") : tr("stocké localement · envoi non confirmé")}${str(m?.["threadId"]) ? ` · fil ${str(m?.["threadId"])}` : ""}${str(m?.["messageId"]) ? ` · message ${str(m?.["messageId"])}` : ""}`});
   }
   const sentIds = new Set<string>();
   for (const raw of Array.isArray(data["sentMessages"]) ? data["sentMessages"] : []) {
@@ -303,14 +304,14 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     if (!id || !at || text === null || !Number.isFinite(Date.parse(at)) || sentIds.has(id) ||
       (channel !== "mind-shared-hub" && channel !== "repo-session")) continue;
     sentIds.add(id);
-    const status = m?.["state"] === "hub_stored" ? "stocké sur le hub · réception et lecture non attestées" : "trace locale · transmission non attestée";
-    const senderName = str(sender?.["name"]) ?? str(sender?.["ref"]) ?? "source inconnue";
-    const recipientName = str(recipient?.["name"]) ?? str(recipient?.["ref"]) ?? "destinataire inconnu";
+    const status = m?.["state"] === "hub_stored" ? tr("stocké sur le hub · réception et lecture non attestées") : tr("trace locale · transmission non attestée");
+    const senderName = str(sender?.["name"]) ?? str(sender?.["ref"]) ?? tr("source inconnue");
+    const recipientName = str(recipient?.["name"]) ?? str(recipient?.["ref"]) ?? tr("destinataire inconnu");
     const sentToSubagent = channel === "repo-session" && sender?.["ref"] === "local-wake-agent";
-    const source = `${senderName} (${str(sender?.["ref"]) ?? "inconnu"}) ${sentToSubagent ? "↓" : "→"} ${recipientName} (${str(recipient?.["ref"]) ?? "inconnu"}) · ${channel} · fil ${str(m?.["threadId"]) ?? "inconnu"} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? " · historique réintégré" : ""}`;
+    const source = `${senderName} (${str(sender?.["ref"]) ?? tr("inconnu")}) ${sentToSubagent ? "↓" : "→"} ${recipientName} (${str(recipient?.["ref"]) ?? tr("inconnu")}) · ${channel} · fil ${str(m?.["threadId"]) ?? tr("inconnu")} · message ${str(m?.["messageId"]) ?? id} · ${status} · attribution locale${m?.["historical"] === true ? tr(" · historique réintégré") : ""}`;
     items.push({ from: "sent", id, at, text, source, headerNames: [senderName, sentToSubagent ? recipientName.split(" · ")[0]! : recipientName],
       ...(m?.["state"] === "hub_stored" || m?.["state"] === "recorded" ? {delivery: "sent" as const,
-        deliveryNote: m["state"] === "hub_stored" ? "Stocké sur le hub. Livraison à une session distante et lecture non attestées." : "Trace d’envoi locale enregistrée. Transmission à la session destinataire non attestée."} : {}),
+        deliveryNote: m["state"] === "hub_stored" ? tr("Stocké sur le hub. Livraison à une session distante et lecture non attestées.") : tr("Trace d’envoi locale enregistrée. Transmission à la session destinataire non attestée.")} : {}),
       ...(sentToSubagent ? {sentToSubagent: true, headerStatus: status} : {}) });
   }
   const receivedIds = new Set<string>();
@@ -321,14 +322,14 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     const channel = str(source?.["channel"]);
     if (channel !== "repo-session" && channel !== "mind-local-hub" && channel !== "local-inbox" && channel !== "mind-shared-hub") continue;
     receivedIds.add(id);
-    const assurance = source?.["assurance"] === "hub_authenticated" ? "identité attestée par le hub" : "source enregistrée · attribution non authentifiée";
+    const assurance = source?.["assurance"] === "hub_authenticated" ? tr("identité attestée par le hub") : tr("source enregistrée · attribution non authentifiée");
     const context = [str(source?.["name"]), str(source?.["kind"]), channel,
-      str(source?.["ref"]) ? `réf ${str(source?.["ref"])}` : null,
-      `fil ${str(source?.["threadId"]) ?? "inconnu"}`,
+      str(source?.["ref"]) ? tr("réf {0}", [str(source?.["ref"])]) : null,
+      `fil ${str(source?.["threadId"]) ?? tr("inconnu")}`,
       `message ${str(source?.["messageId"]) ?? id}`,
       str(source?.["sessionId"]) ? `session ${str(source?.["sessionId"])}` : null,
-      assurance, m?.["state"] === "delivered" ? "livré à la session · lecture non attestée" : "stocké localement",
-      source?.["originKind"] === "context_copy" ? "contexte · pas une demande adressée à ton agent" : "contenu pair · pas une instruction humaine"].filter(Boolean).join(" · ");
+      assurance, m?.["state"] === "delivered" ? tr("livré à la session · lecture non attestée") : tr("stocké localement"),
+      source?.["originKind"] === "context_copy" ? tr("contexte · pas une demande adressée à ton agent") : tr("contenu pair · pas une instruction humaine")].filter(Boolean).join(" · ");
     const name = str(source?.["name"]) ?? str(source?.["ref"]);
     const headerNames = name === null ? [] : [channel === "repo-session" ? name.split(" · ")[0]! : name];
     const deliveredAt = str(m?.["deliveredAt"]);
@@ -353,8 +354,8 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
   const preview = wakePreviewModel(data["upcomingWakes"]);
   const next = preview.wakes.filter(wake => wake.state !== "running").slice(0, 10);
   if (!hasProjectPlan && preview.state === "ready" && next.length) {
-    const lines = next.map(wake => `☐ Wake ${wake.number} · ${wake.title} — ${wake.objective?.trim() || (wake.phase === "free" ? "Exploration libre : piste à choisir" : "Objectif à planifier")}${wake.phase === "prepare" ? " (début de bloc)" : ""}`);
-    items.push({from: "plan", id: "upcoming-wakes", at: "1970-01-01T00:00:00.000Z", text: `${lines.join("\n")}\n\nPrévision révisable · mise à jour automatique · wake en cours exclu.`,
+    const lines = next.map(wake => `☐ Wake ${wake.number} · ${wake.title} — ${wake.objective?.trim() || (wake.phase === "free" ? tr("Exploration libre : piste à choisir") : tr("Objectif à planifier"))}${wake.phase === "prepare" ? tr(" (début de bloc)") : ""}`);
+    items.push({from: "plan", id: "upcoming-wakes", at: "1970-01-01T00:00:00.000Z", text: tr("{0}\n\nPrévision révisable · mise à jour automatique · wake en cours exclu.", [lines.join("\n")]),
       projectRows: next.map((wake, i) => ({id: wake.projectId, title: wake.title, text: lines[i]!, objectiveDefined: Boolean(wake.objective)}))});
   }
   return {
@@ -363,7 +364,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     agentUpdatedAt: agentAt,
     note:
       items.length === 0
-        ? "Ton agent n'a encore rien écrit. Tu peux lui laisser un premier message."
+        ? tr("Ton agent n'a encore rien écrit. Tu peux lui laisser un premier message.")
         : null,
   };
 }

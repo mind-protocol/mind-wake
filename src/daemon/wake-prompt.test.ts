@@ -131,7 +131,7 @@ describe("composition d'un réveil", () => {
         }),
       );
       const after = composeWake(options);
-      expect(after.text.startsWith(`${before.text}\n\nÉTAPES`)).toBe(true);
+      expect(after.text.startsWith(`${before.text}\n\nSTEPS`)).toBe(true);
       expect(after.text).toContain("Tester le prochain appel");
       expect(after.systemContext).toBe(before.systemContext);
       expect(after.nudge).toBe(before.nudge);

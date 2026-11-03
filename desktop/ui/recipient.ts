@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 interface Envelope {
   ok?: unknown;
   data?: Record<string, unknown>;
@@ -42,7 +43,7 @@ export function recipientSender(
         throw Error(
           typeof result.error?.message === "string"
             ? result.error.message
-            : "Envoi non confirmé. Brouillon conservé.",
+            : tr("Envoi non confirmé. Brouillon conservé."),
         );
       if (field.value.trim() === text) field.value = "";
       field.focus();
@@ -52,7 +53,7 @@ export function recipientSender(
       } catch {
         /* Send is already confirmed. */
       }
-      return "Stocké sur le hub pour Auroracle ; réception et lecture non attestées. Copie de contexte conservée pour Marco.";
+      return tr("Stocké sur le hub pour Auroracle ; réception et lecture non attestées. Copie de contexte conservée pour Marco.");
     } finally {
       busy = false;
     }

@@ -347,7 +347,7 @@ describe("protocole app-server", () => {
         .filter((e) => e.type === "usage")
         .reduce((n, e) => n + (e.quantity.unit === "tokens" ? e.quantity.amount : 0), 0),
     ).toBe(460);
-    expect(nextWakeStep(path.join(h.dir, "workspace"))).toContain("orientations à reprendre");
+    expect(nextWakeStep(path.join(h.dir, "workspace"))).toContain("directions to resume or decide");
     expect(readOwnerMessages(h.dir)).toBeNull();
   });
   it("lit la version de `codex --version`", () => {
@@ -1294,7 +1294,7 @@ it("sends one delegation reminder without a project change and never hooks its o
     request(),
   );
   expect(h.requests("turn/start")).toHaveLength(2);
-  expect(JSON.stringify(h.requests("turn/start")[1])).toContain("RAPPEL DE FIN DE RÉPONSE");
+  expect(JSON.stringify(h.requests("turn/start")[1])).toContain("END-OF-RESPONSE REMINDER");
   expect(
     events.filter((e) => e.type === "activity" && e.summary.includes("aucun lancement")),
   ).toHaveLength(1);

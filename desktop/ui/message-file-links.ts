@@ -1,5 +1,6 @@
+import { tr } from "./i18n.js";
 /// <reference lib="dom" />
-import { findFileMentions, type FileCatalog, type KnownFile } from './file-reference-core.js';
+import { findFileMentions, findUnavailableFileLinks, type FileCatalog, type KnownFile, type UnavailableFileLink } from './file-reference-core.js';
 
 export interface FileMessage { readonly id?:string|undefined; readonly at:string; readonly text:string }
 const fileKey=(file:KnownFile):string=>file.scope+':'+file.relative.toLowerCase();
@@ -76,7 +77,7 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   const notice=document.createElement('p');notice.id='document-autoopen-status';notice.setAttribute('role','status');notice.hidden=true;
   notice.style.cssText='flex:0 0 auto;margin:0;font-size:11px;color:#6b765b;';
   const noticeText=document.createElement('span'),resume=document.createElement('button');
-  resume.type='button';resume.textContent='Ouvrir maintenant';resume.style.cssText='margin-left:8px;padding:4px 8px;font:inherit;';notice.append(noticeText,resume);
+  resume.type='button';resume.textContent=tr("Ouvrir maintenant");resume.style.cssText='margin-left:8px;padding:4px 8px;font:inherit;';notice.append(noticeText,resume);
   document.getElementById('view-documents')?.insertBefore(notice,document.getElementById('document-status'));
   function flushDeferred(force=false):void{
     if(!deferred||(!force&&draftBusy()))return;
@@ -84,7 +85,7 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   }
   function autoOpen(file:KnownFile):void{
     if(draftBusy()){
-      deferred=file;noticeText.textContent='Fichier proposé : '+file.name+' · ouverture différée pendant la rédaction du fil.';notice.hidden=false;
+      deferred=file;noticeText.textContent=tr("Fichier proposé : ")+file.name+tr(" · ouverture différée pendant la rédaction du fil.");notice.hidden=false;
     }else{deferred=undefined;notice.hidden=true;open(file);}
   }
   resume.addEventListener('click',()=>flushDeferred(true));
@@ -95,29 +96,52 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
     const opens=state.resolve(catalogValues());
     if(opens.length){dispatchQueue();for(const file of opens)autoOpen(file);}
   }
-  function choose(file:KnownFile):void{state.append(file);dispatchQueue();deferred=undefined;notice.hidden=true;open(file);}
+  function choose(file:KnownFile):void{
+    state.append(file);dispatchQueue();deferred=undefined;notice.hidden=true;
+    // Only an explicit file choice changes the main view; autoOpen stays passive.
+    document.getElementById('tab-documents')?.click();
+    open(file);
+  }
   function link(mention:{text:string;files:KnownFile[];label?:string}):HTMLElement{
     const wrapper=document.createElement('span');wrapper.dataset['fileReference']='true';
     const button=document.createElement('button');button.type='button';button.textContent=mention.label??mention.text;
     button.className='message-file-link';button.style.cssText='font:inherit;line-height:inherit;padding:0 3px;border:0;border-radius:3px;background:#fff0df;color:#99500d;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;';
-    button.title=mention.files.length===1?'Ouvrir dans le lecteur : '+mention.files[0]!.relative:'Plusieurs fichiers correspondent ; choisir le bon document';
+    button.title=mention.files.length===1?tr("Ouvrir dans le lecteur : ")+mention.files[0]!.relative:tr("Plusieurs fichiers correspondent ; choisir le bon document");
     const label=document.createElement('span');
-    if(mention.files.length>1){label.textContent=' ('+mention.files.length+' fichiers)';label.style.fontSize='.8em';}
+    if(mention.files.length>1){label.textContent=' ('+mention.files.length+tr(" fichiers)");label.style.fontSize='.8em';}
     button.addEventListener('click',()=>{
       // Resolve again: a refreshed catalogue may reveal an ambiguity.
       const current=findFileMentions(mention.text,catalogValues()).find(m=>m.start===0&&m.end===mention.text.length);
       if(!current)return;
       if(current.files.length===1){choose(current.files[0]!);return;}
       let select=wrapper.querySelector('select');
-      if(!select){select=document.createElement('select');select.setAttribute('aria-label','Choisir le fichier '+mention.text);select.style.cssText='max-width:100%;font:inherit;margin:0 5px;';wrapper.append(select);}
-      select.replaceChildren(new Option('Choisir parmi '+current.files.length+' fichiers…',''));
-      current.files.forEach((file,index)=>select!.add(new Option((file.scope==='agent'?'Atelier':'Projet Wake')+' / '+file.relative,String(index))));
+      if(!select){select=document.createElement('select');select.setAttribute('aria-label',tr("Choisir le fichier ")+mention.text);select.style.cssText='max-width:100%;font:inherit;margin:0 5px;';wrapper.append(select);}
+      select.replaceChildren(new Option(tr("Choisir parmi ")+current.files.length+tr(" fichiers…"),''));
+      current.files.forEach((file,index)=>select!.add(new Option((file.scope==='agent'?tr("Atelier"):tr("Projet Wake"))+' / '+file.relative,String(index))));
       select.onchange=()=>{const file=current.files[Number(select!.value)];if(select!.value!==''&&file)choose(file);};
       select.hidden=false;
     });
     wrapper.append(button,label);return wrapper;
   }
+  function unavailableLink(mention:UnavailableFileLink):HTMLElement{
+    const wrapper=document.createElement('span');wrapper.dataset['fileReference']='true';
+    wrapper.dataset['unavailableFileSource']=mention.text;
+    const button=document.createElement('button');button.type='button';button.className='message-file-unavailable';
+    button.textContent=mention.label;button.title=tr("Fichier indisponible dans le lecteur : ")+mention.destination;
+    button.style.cssText='font:inherit;padding:0 3px;border:0;background:transparent;color:inherit;text-decoration:underline dotted;cursor:pointer;';
+    const status=document.createElement('span');status.setAttribute('role','status');status.hidden=true;
+    button.addEventListener('click',()=>{
+      status.hidden=false;
+      status.textContent=tr(" Ce fichier n’est pas accessible dans les dossiers du lecteur. Ouvre ce chemin dans ton éditeur : ")+mention.destination;
+    });
+    wrapper.append(button,status);return wrapper;
+  }
   function decorate(root:HTMLElement):void{
+    // A later catalogue refresh may make a previously unavailable document known.
+    for(const wrapper of root.querySelectorAll<HTMLElement>('[data-unavailable-file-source]')){
+      const source=wrapper.dataset['unavailableFileSource'];
+      if(source&&findFileMentions(source,catalogValues()).length)wrapper.replaceWith(document.createTextNode(source));
+    }
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes:Text[]=[];
     let item:Node|null;
     while((item=walker.nextNode())){
@@ -125,11 +149,14 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
       nodes.push(item as Text);
     }
     for(const node of nodes){
-      const text=node.textContent??'',mentions=findFileMentions(text,catalogValues());if(!mentions.length)continue;
+      const text=node.textContent??'',mentions=[...findFileMentions(text,catalogValues()),
+        ...(catalogsReady?findUnavailableFileLinks(text,catalogValues()):[])].sort((a,b)=>a.start-b.start);
+      if(!mentions.length)continue;
       const code=node.parentElement?.closest('code');
       if(code&&(mentions.length!==1||mentions[0]?.text.trim()!==text.trim()||code.textContent?.trim()!==text.trim()))continue;
       const fragment=document.createDocumentFragment();let offset=0;
-      for(const mention of mentions){fragment.append(document.createTextNode(text.slice(offset,mention.start)),link(mention));offset=mention.end;}
+      for(const mention of mentions){fragment.append(document.createTextNode(text.slice(offset,mention.start)),
+        'files' in mention?link(mention):unavailableLink(mention));offset=mention.end;}
       fragment.append(document.createTextNode(text.slice(offset)));node.replaceWith(fragment);
     }
   }

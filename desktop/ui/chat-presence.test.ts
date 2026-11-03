@@ -32,7 +32,7 @@ describe("conversation presence", () => {
 });
 
 it("Bump prioritizes an iterative agent pass while keeping the direct mode", () => {
-  for (const requirement of ["priorité au travail avec des agents", "trois propositions", "artifacts/participation-discussion.json", "hypothèses de réponses", "recherche si elle est utile", "utilité pour la relation et les activités", "hypothèse sourcée et révisable du point de vue de NLR", "questions liées", "c’est toi, l’agent principal, qui fais le choix final", "recommander la meilleure", "N’attribue jamais à NLR une réponse simulée", "2. Si tu as déjà une idée pertinente en tête"]) expect(BUMP_TEXT).toContain(requirement);
+  for (const requirement of ["prioritizing work with agents", "three proposals", "artifacts/participation-discussion.json", "possible responses", "research when useful", "value for the relationship and activities", "a sourced and revisable hypothesis of NLR’s perspective", "related questions", "you, the main agent, make the final choice", "recommend the best", "Never attribute a simulated response", "2. If you already have a relevant idea"]) expect(BUMP_TEXT).toContain(requirement);
 });
 it("hides presence on CLI-level errors even if an error includes stale profile data", () => {
   const observation = read("running") as Extract<StatusRead,{ok:true}>;

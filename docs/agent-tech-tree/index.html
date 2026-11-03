@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Atlas — Capacités des agents</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0c1015;
+        --panel: #131a23;
+        --line: #27313f;
+        --muted: #8c9aab;
+        --text: #e9edf2;
+        --accent: #b4c2ff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      button,
+      select {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
+      }
+      header {
+        padding: 30px 36px 20px;
+        border-bottom: 1px solid var(--line);
+        background: radial-gradient(ellipse at 80% 0, #29334655, transparent 60%);
+      }
+      .eyebrow {
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--accent);
+        text-transform: uppercase;
+      }
+      h1 {
+        font-size: clamp(27px, 3vw, 40px);
+        font-weight: 550;
+        letter-spacing: -0.045em;
+        margin: 8px 0;
+      }
+      header p {
+        color: var(--muted);
+        margin: 0;
+        max-width: 850px;
+      }
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+      }
+      .stamp {
+        font: 11px monospace;
+        color: var(--muted);
+        text-align: right;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 16px 36px;
+        border-bottom: 1px solid var(--line);
+      }
+      input,
+      select,
+      .tool {
+        background: #151d27;
+        border: 1px solid #344051;
+        color: var(--text);
+        border-radius: 7px;
+        padding: 9px 12px;
+      }
+      input {
+        width: 250px;
+      }
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-left: auto;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 6px;
+        background: var(--color);
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 325px;
+        height: calc(100dvh - 245px);
+        min-height: 490px;
+      }
+      .map-wrap {
+        position: relative;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .hint {
+        padding: 12px 24px;
+        font-size: 11px;
+        color: var(--muted);
+        border-bottom: 1px solid #202936;
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+      }
+      .viewport {
+        overflow: auto;
+        flex: 1;
+        background-image: radial-gradient(#35405075 0.7px, transparent 0.7px);
+        background-size: 20px 20px;
+      }
+      .canvas {
+        position: relative;
+        width: 1590px;
+        height: 1410px;
+        transform-origin: top left;
+      }
+      .world {
+        position: relative;
+      }
+      .era {
+        position: absolute;
+        top: 20px;
+        color: #8d9aad;
+        font: 11px monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .era span {
+        color: #536174;
+        margin-right: 8px;
+      }
+      .branch {
+        position: absolute;
+        left: 24px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+      .node {
+        position: absolute;
+        width: 246px;
+        height: 105px;
+        border: 1px solid #34404f;
+        border-left: 3px solid var(--branch);
+        border-radius: 9px;
+        padding: 12px 14px;
+        text-align: left;
+        color: var(--text);
+        background: linear-gradient(130deg, #1b2431, #131a23);
+        transition:
+          opacity 0.15s,
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .node:hover {
+        border-color: var(--branch);
+        box-shadow: 0 0 25px #0007;
+      }
+      .node strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 550;
+        margin: 6px 0 3px;
+      }
+      .node small {
+        display: block;
+        color: #a4afbd;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+      .node .meta {
+        font: 9px monospace;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--state);
+      }
+      .node.horizon {
+        background: linear-gradient(135deg, #1b1c2c, #121722);
+        border-style: dashed;
+      }
+      .node.selected {
+        outline: 2px solid var(--branch);
+        outline-offset: 4px;
+      }
+      .node.goal {
+        border: 2px solid #7cdeb0;
+        background: linear-gradient(130deg, #19382e, #16202d);
+      }
+      .node.related {
+        box-shadow: 0 0 24px #b4c2ff16;
+        border-color: var(--branch);
+      }
+      .node.dim {
+        opacity: 0.18;
+      }
+      .node.filtered {
+        display: none;
+      }
+      svg {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      path {
+        fill: none;
+        stroke: #3b475b;
+        stroke-width: 1.3;
+        opacity: 0.65;
+      }
+      path.active {
+        stroke: #b4c2ff;
+        opacity: 0.9;
+        stroke-width: 2;
+      }
+      path.dim {
+        opacity: 0.08;
+      }
+      path.hidden {
+        display: none;
+      }
+      aside {
+        background: #10161e;
+        border-left: 1px solid var(--line);
+        padding: 26px 24px;
+        overflow: auto;
+      }
+      aside h2 {
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        margin: 15px 0;
+      }
+      aside h3 {
+        font: 10px monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin-top: 25px;
+      }
+      aside p {
+        font-size: 13px;
+        line-height: 1.7;
+        color: #acb8c7;
+      }
+      .badge {
+        font: 10px monospace;
+        color: var(--color);
+      }
+      .dep {
+        display: block;
+        border: 1px solid #2e3b4d;
+        border-radius: 5px;
+        background: #18212e;
+        color: #d1dae9;
+        padding: 8px 10px;
+        margin: 7px 0;
+        text-align: left;
+        width: 100%;
+        font-size: 12px;
+      }
+      .dep:hover {
+        border-color: var(--accent);
+      }
+      a {
+        color: #b4c2ff;
+        overflow-wrap: anywhere;
+        font-size: 12px;
+      }
+      .sources {
+        display: grid;
+        gap: 8px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding: 10px 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .stat b {
+        font: 20px monospace;
+        color: var(--text);
+      }
+      .notice {
+        padding: 12px;
+        border-left: 2px solid #65759c;
+        background: #18202c;
+        font-size: 11px;
+        line-height: 1.65;
+        color: #a9b7c8;
+      }
+      .reset {
+        margin-top: 22px;
+        width: 100%;
+      }
+      .empty {
+        position: absolute;
+        top: 80px;
+        left: 30px;
+        color: var(--muted);
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 12px 36px;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .error {
+        padding: 40px;
+        color: #edbb6e;
+      }
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: minmax(0, 1fr) 275px;
+        }
+        .toolbar,
+        header {
+          padding-left: 20px;
+          padding-right: 20px;
+        }
+        .legend {
+          margin-left: 0;
+        }
+        .stamp {
+          display: none;
+        }
+      }
+      @media (max-width: 650px) {
+        main {
+          display: flex;
+          flex-direction: column;
+          height: auto;
+        }
+        .map-wrap {
+          height: 65dvh;
+          min-height: 420px;
+        }
+        aside {
+          border-left: 0;
+          border-top: 1px solid var(--line);
+          max-height: 60dvh;
+        }
+        input {
+          width: 100%;
+        }
+        h1 {
+          font-size: 30px;
+        }
+        footer {
+          padding: 12px 20px;
+        }
+        .legend {
+          gap: 10px;
+        }
+        .hint {
+          padding: 12px;
+          font-size: 10px;
+        }
+      }
+
+      body {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 22px 28px 18px;
+      }
+      h1 {
+        font-size: 32px;
+      }
+      .toolbar {
+        padding: 12px 28px;
+      }
+      .legend {
+        display: none;
+      }
+      main {
+        flex: 1;
+        height: auto;
+        min-height: 0;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        align-items: start;
+      }
+      .map-wrap {
+        height: 72dvh;
+        min-height: 500px;
+        min-width: 0;
+      }
+      .viewport {
+        min-height: 0;
+      }
+      .hint {
+        flex-wrap: wrap;
+        padding: 10px 16px;
+      }
+      .hint > span:last-child {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .hint input {
+        width: auto;
+      }
+      .node {
+        height: 115px;
+      }
+      .node strong {
+        font-size: 13px;
+        line-height: 1.25;
+      }
+      .node small {
+        font-size: 11px;
+      }
+      .node .meta {
+        font-size: 8px;
+      }
+      .node.horizon {
+        border-style: solid;
+      }
+      path {
+        opacity: 0.2;
+      }
+      .optional-edge {
+        stroke-dasharray: 5 5;
+      }
+      .node.direct {
+        border-color: #e9edf2;
+      }
+      .view-switch {
+        display: flex;
+        gap: 4px;
+      }
+      .view-switch button[aria-pressed="true"] {
+        background: #29394d;
+        border-color: #8da9d3;
+      }
+      .roadmap {
+        padding: 24px 28px;
+        min-width: 0;
+      }
+      .reading-path .map-wrap {
+        display: none;
+      }
+      main:not(.reading-path) .roadmap {
+        display: none;
+      }
+      .road-step {
+        margin: 0 0 26px;
+      }
+      .road-step h2 {
+        font-size: 19px;
+        letter-spacing: -0.02em;
+        font-weight: 550;
+        margin: 0;
+      }
+      .road-step > p {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 5px 0 12px;
+      }
+      .road-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 10px;
+      }
+      .road-card {
+        background: linear-gradient(135deg, #1b2532, #131b25);
+        color: var(--text);
+        border: 1px solid #34404f;
+        border-top: 2px solid var(--branch);
+        border-radius: 9px;
+        padding: 14px;
+        text-align: left;
+        min-height: 122px;
+      }
+      .road-card:hover,
+      .road-card.selected {
+        border-color: var(--branch);
+        background: #233043;
+      }
+      .road-card small {
+        font-size: 9px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--branch);
+      }
+      .road-card strong {
+        display: block;
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 7px 0;
+      }
+      .road-card span {
+        display: block;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #aab7c8;
+      }
+      .road-card.filtered {
+        display: none;
+      }
+      .road-step[hidden] {
+        display: none;
+      }
+      .road-empty {
+        color: var(--muted);
+      }
+      .intro-note {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 0 0 22px;
+      }
+      .route-count {
+        font: 11px monospace;
+        color: var(--accent);
+        margin: 0 0 16px;
+      }
+      aside {
+        position: sticky;
+        top: 0;
+        max-height: 100dvh;
+        min-width: 0;
+        padding: 24px;
+        overflow: auto;
+      }
+      aside .notice {
+        font-size: 13px;
+      }
+      .check {
+        border-top: 1px solid #293648;
+        padding: 12px 0;
+      }
+      .check strong {
+        font-size: 13px;
+        color: var(--text);
+      }
+      .check p {
+        margin: 6px 0;
+        font-size: 12px;
+      }
+      .dependency-note {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .optional-dep {
+        border-style: dashed;
+      }
+      .node:focus-visible {
+        z-index: 2;
+      }
+      .road-card:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      footer {
+        padding: 12px 28px;
+      }
+      .node.goal {
+        border-color: #7cdeb0;
+      }
+      .road-card.goal {
+        border-color: #7cdeb0;
+        background: #173027;
+      }
+      .road-card.goal strong {
+        color: #b6f6d3;
+      }
+      @media (max-width: 1050px) {
+        main {
+          display: block;
+        }
+        aside {
+          position: static;
+          max-height: none;
+          border-top: 1px solid var(--line);
+          border-left: 0;
+        }
+        .roadmap {
+          padding: 20px;
+        }
+        .map-wrap {
+          height: 65dvh;
+          min-height: 420px;
+        }
+        header {
+          padding: 20px;
+        }
+        .toolbar {
+          padding: 12px 20px;
+        }
+        .stamp {
+          display: none;
+        }
+        .road-cards {
+          grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        }
+      }
+      @media (max-width: 540px) {
+        .road-cards {
+          grid-template-columns: 1fr;
+        }
+        .view-switch {
+          width: 100%;
+        }
+        .toolbar input[type="search"] {
+          width: 100%;
+        }
+        .road-card {
+          min-height: 0;
+        }
+        h1 {
+          font-size: 28px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="topline">
+        <div>
+          <div class="eyebrow">Atlas / Capacités des agents</div>
+          <h1>Ce qu’un agent peut faire<span style="color: #7cdeb0">.</span></h1>
+          <p>
+            Des premières actions à une colonie autonome sur serveur. Chaque capacité a ses
+            prérequis, un exemple concret et une preuve de réussite.
+          </p>
+        </div>
+        <div class="stamp">
+          TECH TREE / v4<br />CARTE DE CONCEPTION · <span id="date">…</span><br />LOCAL · SANS
+          TÉLÉMÉTRIE
+        </div>
+      </div>
+    </header>
+    <nav class="toolbar" aria-label="Explorer l’arbre">
+      <input
+        id="search"
+        type="search"
+        placeholder="Rechercher une capacité…"
+        aria-label="Rechercher une capacité"
+      /><select id="branch" aria-label="Filtrer une branche">
+        <option value="">Toutes les branches</option></select
+      ><select id="status" aria-label="Filtrer un type de capacité">
+        <option value="">Tous les types</option>
+      </select>
+      <button class="tool" id="goal">Objectif : colonie ↗</button>
+      <div class="view-switch" aria-label="Mode de lecture">
+        <button class="tool" id="path-view" aria-pressed="true">Parcours essentiel</button
+        ><button class="tool" id="map-view" aria-pressed="false">Carte complète</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </nav>
+    <main class="reading-path" id="main">
+      <section
+        class="roadmap"
+        id="roadmap"
+        aria-label="Parcours essentiel vers la colonie"
+      ></section>
+      <section class="map-wrap" aria-label="Arbre des capacités">
+        <div class="hint">
+          <span id="count" role="status">Chargement…</span
+          ><span
+            ><label><input type="checkbox" id="essential" /> Essentiels seulement</label>
+            <button class="tool" id="fit" style="padding: 3px 8px; margin-left: 8px">
+              Vue entière
+            </button>
+            <button class="tool" id="zoom-out" aria-label="Réduire la carte">−</button>
+            <button class="tool" id="actual" style="padding: 3px 8px">100 %</button
+            ><button class="tool" id="zoom-in" aria-label="Agrandir la carte">+</button></span
+          >
+        </div>
+        <div class="viewport" id="viewport">
+          <div class="world" id="world">
+            <div class="canvas" id="canvas">
+              <svg id="edges" width="1590" height="1410" aria-hidden="true"></svg>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside id="detail" aria-label="Détails de la capacité" aria-live="polite"></aside>
+    </main>
+    <footer>
+      <span
+        >Une carte de possibilités, pas une échelle de valeur. Les liens représentent des
+        dépendances conceptuelles.</span
+      ><a href="tree.json" target="_blank" rel="noopener">Ouvrir les données JSON ↗</a>
+    </footer>
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
+      const el = (tag, cls, text) => {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text !== undefined) e.textContent = text;
+        return e;
+      };
+      try {
+        const response = await fetch("tree.json");
+        if (!response.ok) throw Error("JSON indisponible");
+        const data = await response.json();
+        const nodes = new Map(data.nodes.map((n) => [n.id, n])),
+          branches = new Map(data.branches.map((b) => [b.id, b]));
+        const canvasWidth = 160 + data.levels.length * 280 + 30;
+        const canvasHeight = 94 + data.branches.length * 280 + 128;
+        $("#canvas").style.width = canvasWidth + "px";
+        $("#canvas").style.height = canvasHeight + "px";
+        $("#edges").setAttribute("width", canvasWidth);
+        $("#edges").setAttribute("height", canvasHeight);
+        const essentials = new Set();
+        function markEssential(id) {
+          if (essentials.has(id)) return;
+          essentials.add(id);
+          nodes.get(id).requires.forEach(markEssential);
+        }
+        markEssential(data.goal);
+        const roadCards = new Map();
+        let pathMode = true;
+        $("#roadmap").append(
+          el(
+            "p",
+            "intro-note",
+            "Un parcours de construction, indépendant de tout produit. Les étapes regroupent les capacités à assembler ; la carte complète montre aussi les extensions possibles.",
+          ),
+        );
+        const routeCount = el("p", "route-count");
+        $("#roadmap").append(routeCount);
+        for (const step of data.path) {
+          const section = el("section", "road-step");
+          section.append(el("h2", "", step.title), el("p", "", step.description));
+          const cards = el("div", "road-cards");
+          for (const id of step.nodes) {
+            const n = nodes.get(id),
+              b = branches.get(n.branch);
+            const card = el("button", "road-card");
+            card.classList.toggle("goal", id === data.goal);
+            card.style.setProperty("--branch", b.color);
+            card.append(
+              el("small", "", b.label),
+              el("strong", "", n.title),
+              el("span", "", n.summary),
+            );
+            card.setAttribute("aria-pressed", "false");
+            card.addEventListener("click", () => {
+              select(id);
+              if (window.innerWidth <= 1050)
+                $("#detail").scrollIntoView({ block: "start", behavior: "smooth" });
+            });
+            roadCards.set(id, card);
+            cards.append(card);
+          }
+          section.append(cards);
+          $("#roadmap").append(section);
+        }
+        let selected = null,
+          visible = new Set(nodes.keys()),
+          scale = 1,
+          fitted = false;
+        $("#date").textContent = data.updated;
+        for (const b of data.branches) {
+          const o = el("option", "", b.symbol + " " + b.label);
+          o.value = b.id;
+          $("#branch").append(o);
+        }
+        for (const [key, s] of Object.entries(data.statuses)) {
+          const o = el("option", "", s.label);
+          o.value = key;
+          $("#status").append(o);
+          const l = el("span");
+          l.style.setProperty("--color", s.color);
+          l.append(el("i", "dot"), document.createTextNode(s.label));
+          $("#legend").append(l);
+        }
+        data.levels.forEach((name, i) => {
+          const e = el("div", "era");
+          e.style.left = 160 + i * 280 + "px";
+          e.append(el("span", "", String(i + 1).padStart(2, "0")), document.createTextNode(name));
+          $("#canvas").append(e);
+        });
+        data.branches.forEach((b, i) => {
+          const e = el("div", "branch", b.symbol + " " + b.label);
+          e.style.top = 66 + i * 280 + "px";
+          e.style.color = b.color;
+          $("#canvas").append(e);
+        });
+        for (const n of data.nodes) {
+          n.x = 160 + n.level * 280;
+          n.y = 94 + data.branches.findIndex((b) => b.id === n.branch) * 280 + (n.slot || 0) * 128;
+          const b = branches.get(n.branch),
+            s = data.statuses[n.status];
+          const e = el("button", "node " + n.status);
+          e.classList.toggle("goal", n.id === data.goal);
+          e.style.left = n.x + "px";
+          e.style.top = n.y + "px";
+          e.style.setProperty("--branch", b.color);
+          e.style.setProperty("--state", s.color);
+          e.append(
+            el(
+              "span",
+              "meta",
+              (n.status === "horizon" ? "◇ " : n.status === "combined" ? "◐ " : "● ") + s.label,
+            ),
+            el("strong", "", n.title),
+            el("small", "", n.summary),
+          );
+          e.setAttribute("aria-label", n.title + " — " + s.label);
+          e.setAttribute("aria-pressed", "false");
+          e.addEventListener("click", () => select(n.id));
+          n.element = e;
+          $("#canvas").append(e);
+        }
+        const paths = [];
+        for (const n of data.nodes)
+          for (const id of n.requires) {
+            const p = nodes.get(id);
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const x = p.x + 246,
+              y = p.y + 52,
+              x2 = n.x,
+              y2 = n.y + 52;
+            let curve;
+            if (x2 > x) {
+              const bend = Math.max(20, (x2 - x) * 0.5);
+              curve = `M ${x} ${y} C ${x + bend} ${y}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
+            } else {
+              curve = `M ${p.x + 123} ${p.y + 115} C ${p.x + 123} ${p.y + 145}, ${n.x + 123} ${n.y - 35}, ${n.x + 123} ${n.y}`;
+            }
+            path.setAttribute("d", curve);
+            $("#edges").append(path);
+            paths.push({ path, from: id, to: n.id });
+          }
+        function closure(id, direction, set = new Set()) {
+          if (set.has(id)) return set;
+          set.add(id);
+          const list =
+            direction === "up"
+              ? nodes.get(id).requires
+              : data.nodes.filter((n) => n.requires.includes(id)).map((n) => n.id);
+          list.forEach((i) => closure(i, direction, set));
+          return set;
+        }
+        function setView(usePath) {
+          pathMode = usePath;
+          $("#main").classList.toggle("reading-path", pathMode);
+          $("#path-view").setAttribute("aria-pressed", String(pathMode));
+          $("#map-view").setAttribute("aria-pressed", String(!pathMode));
+          filter();
+          if (!pathMode && selected) focusCard(selected);
+        }
+        $("#path-view").addEventListener("click", () => setView(true));
+        $("#map-view").addEventListener("click", () => setView(false));
+        function highlight() {
+          const connected = selected
+            ? new Set([...closure(selected, "up"), ...closure(selected, "down")])
+            : new Set();
+          for (const [id, card] of roadCards) {
+            card.classList.toggle("selected", selected === id);
+            card.setAttribute("aria-pressed", String(selected === id));
+            card.classList.toggle("filtered", !visible.has(id));
+          }
+          for (const n of data.nodes) {
+            n.element.classList.toggle("selected", n.id === selected);
+            n.element.setAttribute("aria-pressed", String(n.id === selected));
+            n.element.classList.toggle("related", connected.has(n.id) && n.id !== selected);
+            n.element.classList.toggle("dim", !!selected && !connected.has(n.id));
+            n.element.classList.toggle("filtered", !visible.has(n.id));
+          }
+          for (const e of paths) {
+            e.path.classList.toggle("hidden", !visible.has(e.from) || !visible.has(e.to));
+            e.path.classList.toggle(
+              "active",
+              !!selected && (e.from === selected || e.to === selected),
+            );
+            e.path.classList.toggle(
+              "dim",
+              !!selected && !(e.from === selected || e.to === selected),
+            );
+          }
+        }
+        function addDeps(parent, title, ids) {
+          if (!ids.length) return;
+          parent.append(el("h3", "", title));
+          for (const id of ids) {
+            const b = el("button", "dep", nodes.get(id).title + " ↗");
+            b.addEventListener("click", () => {
+              if (!visible.has(id)) {
+                $("#essential").checked = false;
+                $("#search").value = "";
+                $("#branch").value = "";
+                $("#status").value = "";
+                filter();
+              }
+              select(id);
+              if (pathMode && !roadCards.has(id)) setView(false);
+              if (!pathMode) focusCard(id);
+            });
+            parent.append(b);
+          }
+        }
+        function select(id) {
+          selected = id;
+          highlight();
+          const n = nodes.get(id),
+            b = branches.get(n.branch),
+            s = data.statuses[n.status],
+            d = $("#detail");
+          d.replaceChildren();
+          const badge = el("div", "badge", "● " + s.label);
+          badge.style.setProperty("--color", s.color);
+          d.append(
+            el("div", "eyebrow", b.symbol + " " + b.label),
+            el("h2", "", n.title),
+            badge,
+            el("p", "", n.description),
+          );
+          d.append(
+            el("h3", "", "Exemple concret"),
+            el("p", "notice", n.example),
+            el("h3", "", "Critère de réussite"),
+            el("p", "", n.proof),
+          );
+          if (n.checks) {
+            d.append(
+              el("h3", "", "Recette du jalon final"),
+              el("p", "dependency-note", "Scénario à exécuter, pas une validation déjà obtenue."),
+            );
+            for (const check of n.checks) {
+              const item = el("div", "check");
+              item.append(
+                el("strong", "", check.title),
+                el("p", "", "Essai : " + check.action),
+                el("p", "", "Attendu : " + check.expected),
+              );
+              d.append(item);
+            }
+          }
+          if (n.unlock) d.append(el("h3", "", "Ce que cela ouvre"), el("p", "", n.unlock));
+          addDeps(d, "Prérequis de cette architecture", n.requires);
+          addDeps(d, "Utile aussi · facultatif", n.helps || []);
+          addDeps(
+            d,
+            "Rend possible",
+            data.nodes.filter((v) => v.requires.includes(id)).map((v) => v.id),
+          );
+
+          const reset = el("button", "tool reset", "← Revenir à la vue d’ensemble");
+          reset.addEventListener("click", overview);
+          d.append(reset);
+          history.replaceState(null, "", "#" + id);
+        }
+        function overview() {
+          selected = null;
+          highlight();
+          history.replaceState(null, "", location.pathname);
+          const d = $("#detail");
+          d.replaceChildren(
+            el("div", "eyebrow", "Explorer les possibles"),
+            el("h2", "", "Construire une colonie, étape par étape"),
+            el(
+              "p",
+              "",
+              "Commence par une tâche vérifiée, puis ajoute la continuité, plusieurs agents et une organisation commune. Les extensions ne sont pas toutes nécessaires à une première colonie.",
+            ),
+          );
+          for (const [label, value] of [
+            ["Capacités dans la carte", nodes.size],
+            ["Socle du jalon final", essentials.size],
+            ["Extensions facultatives", nodes.size - essentials.size],
+          ]) {
+            const row = el("div", "stat");
+            row.append(el("span", "", label), el("b", "", String(value)));
+            d.append(row);
+          }
+          d.append(
+            el("h3", "", "Comment lire la carte"),
+            el(
+              "p",
+              "",
+              "Le parcours propose un ordre de construction. Dans la carte, les traits indiquent les prérequis de l’architecture proposée. Le panneau distingue les appuis facultatifs et donne un exemple avant les liens techniques.",
+            ),
+            el("p", "notice", data.note),
+          );
+        }
+        function filter() {
+          const q = $("#search").value.trim().toLocaleLowerCase("fr");
+          visible = new Set(
+            data.nodes
+              .filter(
+                (n) =>
+                  (!$("#essential").checked || essentials.has(n.id)) &&
+                  (!$("#branch").value || n.branch === $("#branch").value) &&
+                  (!$("#status").value || n.status === $("#status").value) &&
+                  (!q ||
+                    [n.title, n.summary, n.description, n.example, n.proof]
+                      .join(" ")
+                      .toLocaleLowerCase("fr")
+                      .includes(q)),
+              )
+              .map((n) => n.id),
+          );
+          if (selected && !visible.has(selected)) overview();
+          $("#count").textContent =
+            `${visible.size} / ${nodes.size} capacités · ${data.branches.length} branches`;
+          highlight();
+          let count = 0;
+          for (const section of $("#roadmap").querySelectorAll(".road-step")) {
+            const matches = [...section.querySelectorAll(".road-card")].filter(
+              (card) => !card.classList.contains("filtered"),
+            ).length;
+            section.hidden = !matches;
+            count += matches;
+          }
+          routeCount.textContent = count
+            ? count + " capacités repères · " + essentials.size + " prérequis dans le socle complet"
+            : "Aucun résultat dans le parcours. Essaie la carte complète ou efface les filtres.";
+          $("#no-results")?.remove();
+          if (!visible.size) {
+            const msg = el(
+              "p",
+              "empty",
+              "Aucune capacité ne correspond. Modifie les filtres pour continuer.",
+            );
+            msg.id = "no-results";
+            $("#canvas").append(msg);
+          }
+        }
+        function zoom(value) {
+          scale = value;
+          $("#actual").textContent = Math.round(scale * 100) + " %";
+          $("#canvas").style.transform = `scale(${scale})`;
+          $("#world").style.width = canvasWidth * scale + "px";
+          $("#world").style.height = canvasHeight * scale + "px";
+        }
+        function fit() {
+          fitted = true;
+          zoom(Math.min(1, ($("#viewport").clientWidth - 24) / canvasWidth));
+        }
+        function focusCard(id) {
+          const node = nodes.get(id),
+            viewport = $("#viewport");
+          viewport.scrollTo({
+            left: (node.x + 123) * scale - viewport.clientWidth / 2,
+            top: (node.y + 52) * scale - viewport.clientHeight / 2,
+          });
+          $("#detail").scrollTop = 0;
+        }
+        function showGoal() {
+          $("#essential").checked = false;
+          $("#search").value = "";
+          $("#branch").value = "";
+          $("#status").value = "";
+          filter();
+          fitted = false;
+          zoom(1);
+          select(data.goal);
+          if (pathMode) {
+            $("#detail").scrollIntoView({ block: "start" });
+          } else focusCard(data.goal);
+        }
+        $("#goal").addEventListener("click", showGoal);
+        $("#essential").addEventListener("change", filter);
+        $("#search").addEventListener("input", filter);
+        $("#branch").addEventListener("change", filter);
+        $("#status").addEventListener("change", filter);
+        $("#fit").addEventListener("click", fit);
+        $("#zoom-out").addEventListener("click", () => {
+          fitted = false;
+          zoom(Math.max(0.25, scale - 0.15));
+        });
+        $("#zoom-in").addEventListener("click", () => {
+          fitted = false;
+          zoom(Math.min(1.6, scale + 0.15));
+        });
+        $("#actual").addEventListener("click", () => {
+          fitted = false;
+          zoom(1);
+        });
+        window.addEventListener("resize", () => {
+          if (fitted) fit();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") overview();
+        });
+        const deep = location.hash.slice(1);
+        zoom(1);
+        overview();
+        filter();
+        if (deep === data.goal) showGoal();
+        else if (nodes.has(deep)) {
+          select(deep);
+          focusCard(deep);
+        }
+      } catch (error) {
+        $("#detail").replaceChildren(
+          el(
+            "p",
+            "error",
+            "Impossible de charger tree.json. Lance le serveur local indiqué dans README.md. " +
+              error.message,
+          ),
+        );
+        $("#count").textContent = "Chargement impossible";
+      }
+    </script>
+  </body>
+</html>

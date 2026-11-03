@@ -4,10 +4,7 @@ import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import * as z from "zod";
 import { enqueueOwnerMessage, readOwnerMessage } from "../../src/communication/owner-inbox.js";
-import { openStoreReadOnly } from "../../src/store/index.js";
-import { controlDbPath } from "../../src/daemon/paths.js";
-import { resolvePolicy } from "../../src/policy/index.js";
-import { DEFAULT_PROFILE_ID } from "../../src/cli/context.js";
+import { externalInboxSyncAllowed } from "../../src/communication/external-inbox-policy.js";
 import { RedditError } from "./client.js";
 
 type Item = Record<string, unknown>;
@@ -31,25 +28,7 @@ const pageSchema = z.object({
   posts: z.array(z.record(z.string(), z.unknown())).max(100),
 });
 
-export function redditSyncAllowed(dataDir: string): boolean {
-  if (fs.existsSync(path.join(dataDir, "emergency-stop.flag"))) return false;
-  try {
-    const store = openStoreReadOnly(controlDbPath(dataDir));
-    try {
-      const profile = store.uow.profiles.get(DEFAULT_PROFILE_ID);
-      return (
-        profile !== null &&
-        !profile.emergencyStopLocked &&
-        !["paused", "checkpointing", "stopped", "disabled"].includes(profile.state) &&
-        resolvePolicy(store.uow.policies, DEFAULT_PROFILE_ID).status === "active"
-      );
-    } finally {
-      store.close();
-    }
-  } catch {
-    return false;
-  }
-}
+export const redditSyncAllowed = externalInboxSyncAllowed;
 
 /** Metadata/cursors only. Text enters the existing attributed inbox, never the human log. */
 export class RedditInbox {

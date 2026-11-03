@@ -1,28 +1,28 @@
 ---
 name: planifier-wakes
-description: Préparer ou réviser les prochains réveils de MIND Wake, leur projet, leurs intentions et leur contexte de reprise. À utiliser en début de bloc, si un plan manque ou devient périmé, lors d’un changement de direction ou pour demander une reprise à une échéance particulière. Ne pas charger pour simplement exécuter une étape déjà définie.
+description: Prepare or revise upcoming MIND Wake sessions, their projects, intentions and resumption context. Use at the start of a block, when a plan is missing or outdated, when direction changes, or to request resumption at a particular time. Do not load just to execute an already defined step.
 ---
 
-# Planifier les wakes
+# Plan wakes
 
-Le daemon déclenche les réveils ; tu prépares leur contenu. En Always-on, il relance après la session principale ; en mode planifié, le scheduler choisit l’échéance. Le plan ne lance pas de modèle et ne change ni les contrôles humains ni les limites fournisseur.
+The daemon triggers wakes; you prepare their content. In Always-on, it resumes after the main session; in scheduled mode, the scheduler chooses the time. Planning launches no model and changes neither human controls nor provider limits.
 
-## Préparer ou revoir un bloc
+## Prepare or review a block
 
-1. Lire l’affectation fournie au réveil ; `get_next_wakes({"count":1})` permet de la retrouver et de vérifier si la rotation est active. Cette consultation ne réserve pas une série de sessions.
-2. Pour le projet affecté, appeler `get_wake_project({"project_id":"<id>"})`. Reprendre ses sources, résultats, questions et décisions humaines récentes. Une trace `handoff.needsReview` demande une lecture des sources, pas l’invention d’un résumé.
-3. Choisir le résultat recherché et l’incertitude qui mérite le prochain effort. Répartir recherches, expériences, choix et réalisations ; distinguer les missions déléguées du travail du principal. Prévoir une suite utile pendant les jobs, sans wakes d’attente obligatoires.
-4. Avec la rotation active, appeler `plan_wake_block` avec `project_id` et `steps` : exactement dix objets `{wake, objective, expected}`, numérotés de 1 à 10. Le moteur insère l’intention du créneau dans son message. Le premier wake a déjà commencé : préparer surtout les suivants. Réviser les intentions restantes si une tâche prend plus de temps ; le compteur avance par session, pas par tâche achevée.
-   Si l’affectation porte `passageId`, ajouter `passage_id` et `expected_revision` (révision obtenue par `get_next_wakes`). Reprendre la question, le résultat visé et les sources de ce passage dans le prompt ou `get_wake_project.passages`. Sans intentions propres, préparer explicitement le passage : ne jamais recycler le plan global du projet. En cas de conflit de révision, relire avant de réviser. Le contexte sauvegardé reste celui du projet, distinct du résultat visé du nouveau passage.
-5. Appeler `save_wake_context` avec `project_id`, `summary`, `next_actions`, `open_questions`, `sources`. Conserver le résultat constaté et la prochaine action avant un changement de projet ou la fin du bloc. Un plan et un résumé de reprise ont deux rôles distincts.
+1. Read the assignment supplied at wake; `get_next_wakes({"count":1})` retrieves it and checks whether rotation is active. This does not reserve a series of sessions.
+2. For the assigned project, call `get_wake_project({"project_id":"<id>"})`. Review its sources, results, questions and recent human decisions. A `handoff.needsReview` flag requires reading sources, not inventing a summary.
+3. Choose the intended result and the uncertainty deserving the next effort. Distribute research, experiments, choices and creations; distinguish delegated assignments from the main agent’s work. Plan useful work during jobs, without mandatory waiting wakes.
+4. With rotation active, call `plan_wake_block` with `project_id` and `steps`: exactly ten objects `{wake, objective, expected}`, numbered 1 to 10. The engine inserts the slot’s intention into its message. The first wake has already begun: focus on the following ones. Revise remaining intentions if a task takes longer; the counter advances per session, not per completed task.
+   If the assignment includes `passageId`, add `passage_id` and `expected_revision` (revision from `get_next_wakes`). Retrieve that passage’s question, intended result and sources from the prompt or `get_wake_project.passages`. If it has no specific intentions, explicitly prepare the passage: never recycle the global project plan. On a revision conflict, reread before revising. Saved context remains the project’s context, separate from the new passage’s intended result.
+5. Call `save_wake_context` with `project_id`, `summary`, `next_actions`, `open_questions`, `sources`. Save the observed result and next action before changing projects or ending the block. A plan and a resumption summary serve different purposes.
 
-Si la direction humaine change ou si le résultat attendu n’a plus de sens, revenir à la question décisive avant de détailler le plan. Un blocage réel se note avec `set_wake_project_status({"project_id":"<id>","status":"blocked","reason":"cause et condition de reprise"})` ; poursuivre un autre travail disponible. Ne pas réactiver un projet en pause pour remplir le planning.
+If human direction changes or the expected result no longer makes sense, return to the decisive question before detailing the plan. Record a real blocker with `set_wake_project_status({"project_id":"<id>","status":"blocked","reason":"cause and resumption condition"})`; continue other available work. Do not reactivate a paused project to fill the schedule.
 
-## Choisir le bon mécanisme
+## Choose the right mechanism
 
-- **Rotation active :** utiliser le plan et le contexte du gestionnaire. Ses blocs font dix wakes et ses journées logiques cinquante ; ce ne sont pas des quotas quotidiens. `configure_wake_rotation` modifie ce réglage, pas l’activation de Wake : ne pas l’appeler pour simplement préparer la suite.
-- **Nouveau projet :** travailler dans `artifacts/projets/<id>/`, relier les livrables au README et enregistrer le projet dans le registre existant. Vérifier le contrat de l’outil local avant écriture ; l’affectation du prochain créneau reste celle du gestionnaire.
-- **Ancien plan Étapes :** le champ `projects[id].etapes` du registre peut encore alimenter `nextWakeStep`. Vérifier ce qui est effectivement utilisé ; ne pas créer un second plan contradictoire ni inventer son schéma.
-- **Reprise à un événement ou une date :** lire `wakeups/schema/agent-wakeup.schema.json` dans le workspace, puis déposer un JSON valide dans `wakeups/`. `when` accepte une date `at`, un délai `afterHours`, un changement `fileChanged` ou `quotaResetWithinHours` ; `prompt` porte une courte note à soi-même. Le délai part de la première détection, ou du dernier service pour une répétition. Une demande ne met pas Always-on en attente et ne lève pas une pause. Les fins de jobs fournissent déjà leurs événements de reprise.
+- **Active rotation:** use the manager’s plan and context. Its blocks contain ten wakes and its logical days fifty; these are not daily quotas. `configure_wake_rotation` changes this setting, not Wake activation: do not call it just to prepare what comes next.
+- **New project:** work in `artifacts/projets/<id>/`, link deliverables from the README and register the project in the existing registry. Check the local tool contract before writing; assignment of the next slot remains with the manager.
+- **Legacy Steps plan:** the registry’s `projects[id].etapes` field may still feed `nextWakeStep`. Check what is actually used; do not create a conflicting second plan or invent its schema.
+- **Resume on an event or date:** read `wakeups/schema/agent-wakeup.schema.json` in the workspace, then place valid JSON in `wakeups/`. `when` accepts an `at` date, an `afterHours` delay, `fileChanged` or `quotaResetWithinHours`; `prompt` contains a short note to yourself. The delay starts at first detection, or last service for a repeat. A request does not make Always-on wait or lift a pause. Job completions already provide resumption events.
 
-Le registre, les contextes et les fichiers du projet portent l’état ; ce skill porte uniquement la procédure. Terminer la planification lorsque la prochaine étape, le résultat attendu et la reprise sont enregistrés. Retourner au travail au lieu de relire la méthode à chaque wake. Consulter le skill de révision du système prompt seulement si le problème porte sur l’organisation ou le chargement du dispositif lui-même.
+The registry, contexts and project files hold state; this skill holds only the procedure. Finish planning when the next step, expected result and resumption context are saved. Return to work instead of rereading the method at every wake. Consult the system-prompt revision skill only when the problem concerns organization or loading of the instruction system itself.

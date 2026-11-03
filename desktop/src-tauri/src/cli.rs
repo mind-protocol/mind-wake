@@ -114,6 +114,15 @@ pub fn wake(verb: Verb) -> Result<CliRun, String> {
     run(wake_args(verb.args())?, None)
 }
 
+/// Fixed profile-local first welcome. No shell, file name or extra argument from the webview.
+pub fn onboarding(start: bool, accept_native: bool) -> Result<CliRun, String> {
+    if start && !accept_native { return Err("L’accord pour le mode natif est requis.".into()); }
+    let mut args: Vec<OsString> = vec![repo().join("scripts/onboarding.mjs").into(),
+        if start { "start" } else { "status" }.into()];
+    if start { args.push("--accept-native".into()); }
+    run_with_timeout(args, None, Duration::from_secs(90))
+}
+
 pub fn wake_order(revision: u64, project_ids: Vec<String>) -> Result<CliRun, String> {
     if project_ids.is_empty() || project_ids.len() > 50 || project_ids.iter().any(|id| id.len() > 128) {
         return Err("Ordre de projets invalide".into());
@@ -310,6 +319,15 @@ pub fn restart_daemon() -> Result<CliRun, String> {
 
 /// Second fil Claude Code : actions fixes. « on » et « ensure » démarrent le worker détaché
 /// s'il est activé, arrêté et que le profil le permet ; le texte passe par l'entrée standard.
+pub fn wake_coach(action: &str, text: Option<String>) -> Result<CliRun, String> {
+    let verb = match action { "status" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action coach inconnue".into()) };
+    let body = if action == "send" {
+        let body = text.ok_or("Message manquant")?;
+        if body.trim().is_empty() || body.chars().count() > 4000 { return Err("Message vide ou trop long".into()); }
+        Some(body)
+    } else { None };
+    run(wake_args(&["coach", verb])?, body)
+}
 pub fn second_thread(action: &str, text: Option<String>) -> Result<CliRun, String> {
     if action == "send" {
         let body = text.ok_or("Message manquant")?;
@@ -472,7 +490,15 @@ fn run(args: Vec<OsString>, stdin: Option<String>) -> Result<CliRun, String> {
 }
 
 
-fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<crate::quick_input::ClickTarget>) -> Result<CliRun, String> {
+fn run_with_click(args: Vec<OsString>, stdin: Option<String>, point: Option<crate::quick_input::ClickTarget>) -> Result<CliRun, String> {
+    run_with_options(args, stdin, point, TIMEOUT)
+}
+
+fn run_with_timeout(args: Vec<OsString>, stdin: Option<String>, timeout: Duration) -> Result<CliRun, String> {
+    run_with_options(args, stdin, None, timeout)
+}
+
+fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Option<crate::quick_input::ClickTarget>, timeout: Duration) -> Result<CliRun, String> {
     args.push("--json".into());
     let mut command = Command::new(node());
     command.env_remove("MIND_WAKE_CAPTURE_CLICK_X").env_remove("MIND_WAKE_CAPTURE_CLICK_Y");
@@ -510,10 +536,10 @@ fn run_with_click(mut args: Vec<OsString>, stdin: Option<String>, point: Option<
     let status = loop {
         match child.try_wait().map_err(|e| e.to_string())? {
             Some(status) => break status,
-            None if started.elapsed() > TIMEOUT => {
+            None if started.elapsed() > timeout => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Err(format!("la CLI n'a pas répondu en {} s", TIMEOUT.as_secs()));
+                return Err(format!("la CLI n'a pas répondu en {} s", timeout.as_secs()));
             }
             None => std::thread::sleep(Duration::from_millis(20)),
         }

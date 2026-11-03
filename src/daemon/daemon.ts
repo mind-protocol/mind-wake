@@ -1,4 +1,5 @@
 import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
+import { WakeCoach } from "./coach.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { withWakeManager } from "./wake-manager.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
@@ -264,6 +265,7 @@ export class WakeDaemon implements SessionLauncher {
   #workspaceSync: WorkspaceGitSync | null = null;
   #auroreSync: AuroreGitSync | null = null;
   #ownerProgress: OwnerProgressReminder | null = null;
+  #coach: WakeCoach | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -661,6 +663,19 @@ export class WakeDaemon implements SessionLauncher {
         this.#ownerProgress = new OwnerProgressReminder(this.#o.dataDir,
           () => syncAllowed() && ownerIsWatching(this.#idleWatcher?.latest() ?? null));
         this.#ownerProgress.start();
+        const coachPolicy = resolvePolicy(uow.policies, profileId);
+        this.#coach = new WakeCoach({
+          dataDir: this.#o.dataDir, workspace: workspaceDirFor(this.#o.dataDir),
+          allowed: () => {
+            const policy = resolvePolicy(uow.policies, profileId);
+            return syncAllowed() && policy.status === "active" &&
+              policy.revision.groups.runtime.adapterId === "codex" &&
+              policy.revision.groups.runtime.nativeCapabilities === true;
+          },
+          ...(coachPolicy.status === "active" ? { model: coachPolicy.revision.groups.runtime.model } : {}),
+          log: message => this.#log(message),
+        });
+        this.#coach.start();
       }
       if (real !== null && real.sandbox === null) {
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
@@ -680,6 +695,7 @@ export class WakeDaemon implements SessionLauncher {
       }
       await scheduler.run(this.#abort.signal);
     } finally {
+      await this.#coach?.close();
       await this.#auroreSync?.close();
       await this.#workspaceSync?.close();
       await this.#backgroundJobs?.close();
@@ -878,6 +894,7 @@ export class WakeDaemon implements SessionLauncher {
           this.#log("shared inbox unavailable; Wake continues without importing remote messages");
         }
       }
+      this.#coach?.review(ticket.sessionId);
       const running = await this.#runner.launch({
         profileId: ticket.profileId,
         sessionId: ticket.sessionId,

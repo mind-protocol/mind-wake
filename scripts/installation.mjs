@@ -4,6 +4,9 @@ import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { managedMcpLauncher } from "./managed-mcp-launcher.mjs";
 export function desktopExecutable(repoDir) {
+  const release = path.join(repoDir, "desktop/src-tauri/target/release/mind-wake-desktop.exe");
+  if (fs.existsSync(release)) return release;
+  // Compatibility for an existing installation made from an older archive.
   const portable = path.join(repoDir, "bin/mind-wake-desktop.exe");
   return fs.existsSync(portable)
     ? portable

@@ -162,8 +162,13 @@ mod native {
             let event = &*(lparam as *const Mouse);
             let input = INPUT_HWND.load(Ordering::Relaxed);
             if wparam == 0x204 { DISMISS_RIGHT_UP.store(false, Ordering::Relaxed); }
+            // Compare physical coordinates: WebView2 child/popup HWNDs need not
+            // have the Tauri window as their GA_ROOT ancestor.
+            let mut bounds = Rect::default();
             if IsWindowVisible(input as Handle) != 0 &&
-                GetAncestor(WindowFromPoint(event.point), 2) as isize != input {
+                GetWindowRect(input as Handle, &mut bounds) != 0 &&
+                (event.point.x < bounds.left || event.point.x >= bounds.right ||
+                 event.point.y < bounds.top || event.point.y >= bounds.bottom) {
                 if wparam == 0x204 { DISMISS_RIGHT_UP.store(true, Ordering::Relaxed); }
                 if let Some(tx) = CLICKS.get() { let _ = tx.try_send(InputAction::Dismiss); }
             }

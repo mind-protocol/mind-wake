@@ -227,7 +227,7 @@ it("persists provenance, publishes once and rejects a changed replay", () => {
   expect(readWakeSteps(dir)?.updatedAt).toBe(before?.updatedAt);
   expect(save(plan({ travail: "changed replay" }))).toBe(false);
   expect(readWakeSteps(dir)?.travail).toBe("Contrôler la reprise");
-  expect(nextWakeStep(dir)).toContain("ancienne note");
+  expect(nextWakeStep(dir)).toContain("old note");
 });
 
 it.each(["pause", "arrete", "termine"])("keeps %s plans out of the next call", (statut) => {
@@ -261,8 +261,8 @@ it("handles missing, malformed and oversized files without changing the default"
     expect(nextWakeStep(dir)).toBeNull();
   }
   expect(saveStepsResult(dir, dir, "agent", "s1", "not json")).toBe(false);
-  expect(STEPS_STOP_PROMPT).toContain("Propose un budget de wakes");
-  expect(STEPS_STOP_PROMPT).toContain("Un seul tour supervisé");
+  expect(STEPS_STOP_PROMPT).toContain("Propose and justify a wake budget");
+  expect(STEPS_STOP_PROMPT).toContain("One supervised turn");
 });
 
 it("host compares only known endpoint IDs, documents and A-B-A do not trigger", () => {

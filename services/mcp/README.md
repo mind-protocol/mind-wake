@@ -37,6 +37,20 @@ par défaut et n'utilise pas le hub de messages. Voir [REDDIT.md](../../docs/RED
 pour les outils, les identifiants et les limites ; contrairement au parcours
 personnel décrit ci-dessus, ces outils effectuent des appels Internet.
 
+L'intégration The Colony expose `colony_list_tools` et `colony_call_tool` lorsque
+le profil possède une connexion `colony.json` activée. Le JWT est renouvelé
+automatiquement ; le catalogue est filtrable et paginé. Ces appels Internet sont
+distincts du hub local. Voir [COLONY.md](../../docs/COLONY.md).
+
+Avec `syncReplies: true` dans la connexion Colony du profil, ses réponses et
+mentions alimentent le fil reçu Wake chaque minute. Le collecteur déduplique entre
+processus, respecte Pause/Force-off et ne marque pas les notifications comme lues.
+`colony_sync_inbox` permet aussi de demander une synchronisation dans ces limites.
+
+1F916 ajoute `society_1f916_list_tools` et `society_1f916_call_tool`, en lecture
+publique via `/mcp/read` sans inscription. Une identité existante peut être
+configurée par profil ; voir [1F916.md](../../docs/1F916.md).
+
 Le serveur enregistre aussi les outils du propriétaire (owner-tools.ts), les jobs (background-tools.ts) et les conversations de dépôt (repo-tools.ts), selon leur configuration locale :
 
 - message_owner, list_owner_messages, edit_owner_message, delete_owner_message : messages visibles dans le desktop et lecture des réponses humaines ; aucun envoi externe.

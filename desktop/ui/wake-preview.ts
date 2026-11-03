@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 import { projectMarker, projectBadge, undefinedObjectiveBadge } from "./project-marker.js";
 type WakeType = "prepare" | "work" | "free";
 interface Wake {
@@ -15,7 +16,7 @@ export interface WakePreviewModel {
   projects: number;
 }
 const TYPES: readonly WakeType[] = ["prepare", "work", "free"];
-const LABELS: Record<WakeType, string> = { prepare: "Préparation", work: "Travail", free: "Exploration libre" };
+const LABELS: Record<WakeType, string> = { prepare: tr("Préparation"), work: tr("Travail"), free: tr("Exploration libre") };
 function object(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" ? value as Record<string, unknown> : null;
 }
@@ -75,11 +76,11 @@ export function mountWakePreview(root: HTMLElement, saveOrder?: (projectIds: str
     if (!cards[from]?.movable || !cards[to]?.movable) return;
     const source = movable.indexOf(cards[from]!), target = movable.indexOf(cards[to]!);
     const [card] = movable.splice(source, 1); movable.splice(target, 0, card!);
-    busy = true; status.textContent = "Enregistrement du nouvel ordre…";
+    busy = true; status.textContent = tr("Enregistrement du nouvel ordre…");
     root.setAttribute("aria-busy", "true");
     try {
       await saveOrder(movable.map(item => item.wakes[0]!.projectId!), model.revision);
-      status.textContent = "Ordre enregistré pour les prochains réveils.";
+      status.textContent = tr("Ordre enregistré pour les prochains réveils.");
     } catch (error) { status.textContent = String(error); }
     finally { busy = false; root.removeAttribute("aria-busy"); }
   };
@@ -91,11 +92,11 @@ export function mountWakePreview(root: HTMLElement, saveOrder?: (projectIds: str
     const oldScroll = root.querySelector(".wake-plan-cards")?.scrollTop ?? 0;
     root.replaceChildren();
     if (model.state !== "ready") {
-      root.append(element("p", "hint", model.state === "disabled" ? "La rotation des projets est désactivée." : "Le planning des wakes est indisponible pour le moment."));
+      root.append(element("p", "hint", model.state === "disabled" ? tr("La rotation des projets est désactivée.") : tr("Le planning des wakes est indisponible pour le moment.")));
       return;
     }
-    root.append(element("p", "wake-plan-summary", `${model.wakes.length} réveils · ${model.projects} projets · ${model.defined} objectifs définis`),
-      element("p", "wake-plan-hint", "Une carte = un bloc de projet. Glissez les cartes pour réordonner les blocs à venir, ou utilisez les flèches. Le bloc engagé garde sa place."));
+    root.append(element("p", "wake-plan-summary", tr("{0} réveils · {1} projets · {2} objectifs définis", [model.wakes.length, model.projects, model.defined])),
+      element("p", "wake-plan-hint", tr("Une carte = un bloc de projet. Glissez les cartes pour réordonner les blocs à venir, ou utilisez les flèches. Le bloc engagé garde sa place.")));
     const list = element("div", "wake-plan-cards"); list.setAttribute("role", "list");
     const cards = wakeCards(model.wakes);
     cards.forEach((card, index) => {
@@ -110,25 +111,25 @@ export function mountWakePreview(root: HTMLElement, saveOrder?: (projectIds: str
         const controls = element("span", "wake-card-controls");
         for (const [label, offset] of [["↑", -1], ["↓", 1]] as const) {
           const button = element("button", "wake-card-move", label); button.type = "button";
-          button.setAttribute("aria-label", `${offset < 0 ? "Avancer" : "Reculer"} le bloc ${first.title}`);
+          button.setAttribute("aria-label", `${offset < 0 ? tr("Avancer") : tr("Reculer")} le bloc ${first.title}`);
           const target = offset < 0 ? cards.slice(0, index).findLastIndex(item => item.movable) : cards.findIndex((item, i) => i > index && item.movable);
           button.disabled = target < 0; button.addEventListener("click", () => { void move(index, target); });
           controls.append(button);
         }
         heading.append(controls);
       }
-      const count = element("div", "wake-card-count", `${card.wakes.length} réveil${card.wakes.length > 1 ? "s" : ""}`);
-      const range = element("p", "wake-card-range", `Wakes ${first.number}–${last.number} · J${first.day}${first.day !== last.day ? `–J${last.day}` : ""}`);
+      const count = element("div", "wake-card-count", tr("{0} réveil{1}", [card.wakes.length, card.wakes.length > 1 ? "s" : ""]));
+      const range = element("p", "wake-card-range", tr("Wakes {0}–{1} · J{2}{3}", [first.number, last.number, first.day, first.day !== last.day ? `–J${last.day}` : ""]));
       const missing = card.wakes.filter(wake => !wake.objective).length;
       const badges = element("div", "wake-card-statuses");
-      if (missing) { const badge = undefinedObjectiveBadge(); badge.textContent = `? ${missing} à définir`; badges.append(badge); }
-      if (card.wakes.some(wake => wake.state === "running")) badges.append(element("span", "wake-band-state", "En cours"));
-      else if (card.wakes.some(wake => wake.state === "reserved")) badges.append(element("span", "wake-band-state", "Lancement réservé"));
-      else if (!movable) badges.append(element("span", "wake-card-range", "Bloc engagé ou partiel"));
-      const details = element("details", "wake-card-objectives"), summary = element("summary", "", "Voir les objectifs");
+      if (missing) { const badge = undefinedObjectiveBadge(); badge.textContent = tr("? {0} à définir", [missing]); badges.append(badge); }
+      if (card.wakes.some(wake => wake.state === "running")) badges.append(element("span", "wake-band-state", tr("En cours")));
+      else if (card.wakes.some(wake => wake.state === "reserved")) badges.append(element("span", "wake-band-state", tr("Lancement réservé")));
+      else if (!movable) badges.append(element("span", "wake-card-range", tr("Bloc engagé ou partiel")));
+      const details = element("details", "wake-card-objectives"), summary = element("summary", "", tr("Voir les objectifs"));
       details.append(summary);
       for (const wake of card.wakes) {
-        const row = element("p", "wake-card-objective", `Wake ${wake.number} · ${wake.objective || "Objectif à définir"}`);
+        const row = element("p", "wake-card-objective", `Wake ${wake.number} · ${wake.objective || tr("Objectif à définir")}`);
         row.dataset["objectiveDefined"] = String(Boolean(wake.objective));
         details.append(row);
       }
@@ -156,7 +157,7 @@ export function mountWakePreview(root: HTMLElement, saveOrder?: (projectIds: str
       });
       list.append(node);
     });
-    root.append(list, status, element("p", "wake-plan-footnote", `${model.completed} réveils effectués · Ordre enregistré dans le gestionnaire. Les objectifs restent révisables.`));
+    root.append(list, status, element("p", "wake-plan-footnote", tr("{0} réveils effectués · Ordre enregistré dans le gestionnaire. Les objectifs restent révisables.", [model.completed])));
     list.scrollTop = oldScroll;
   };
 }

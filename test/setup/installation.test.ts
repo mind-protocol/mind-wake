@@ -26,6 +26,26 @@ function prepare() {
   );
 }
 const read = (name: string) => fs.readFileSync(path.join(dir, "installation", name), "utf8");
+it("sélectionne le desktop release compilé depuis Git avant un ancien binaire portable", () => {
+  const release = path.join(dir, "desktop/src-tauri/target/release/mind-wake-desktop.exe");
+  const portable = path.join(dir, "bin/mind-wake-desktop.exe");
+  for (const file of [release, portable]) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "test executable sentinel");
+  }
+  const selected = execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      "const {desktopExecutable}=await import(process.argv[1]);console.log(desktopExecutable(process.argv[2]));",
+      moduleUrl,
+      dir,
+    ],
+    { encoding: "utf8" },
+  ).trim();
+  expect(selected).toBe(release);
+});
 it("isolates the explicitly reviewed desktop CLI without switching agent runtime paths", () => {
   const sidecar = path.join(dir, "reviewed sidecar");
   fs.mkdirSync(path.join(sidecar, "dist/cli"), { recursive: true });

@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 export type DocumentScope = 'agent' | 'project' | 'aurore';
 export type LocalDocumentScope = Exclude<DocumentScope, 'aurore'>;
 export function documentScope(value: unknown): DocumentScope {
@@ -7,7 +8,7 @@ export function localDocumentScope(value: unknown): LocalDocumentScope | null {
   return value === 'agent' || value === 'project' ? value : null;
 }
 export function documentScopeLabel(value: DocumentScope): string {
-  return value === 'aurore' ? 'Atelier d’Aurore' : value === 'project' ? 'Projet Wake' : 'Mon atelier';
+  return value === 'aurore' ? tr("Atelier d’Aurore") : value === 'project' ? tr("Projet Wake") : tr("Mon atelier");
 }
 export interface ScopeTicket {readonly scope: DocumentScope; readonly epoch: number}
 /** A return to the same scope must not accept a response from a previous visit. */

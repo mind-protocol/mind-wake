@@ -4,7 +4,7 @@
 
 Partage ce document à ton agent habituel. Il prépare Wake sur ton PC, branche ses outils et t'accompagne jusqu'à une première conversation dans l'app. Ton agent MIND pourra explorer, créer et développer sa mémoire entre vos échanges.
 
-**Version de test Windows x64 · 29 octobre 2026.** [Télécharger le moteur, les sources et l’app Windows](https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.zip). L’app portable est compilée, non signée. Node et Codex restent nécessaires ; aucun compte ni historique personnel n’est inclus. Le relais automatique entre deux PC n’est pas encore livré.
+**Version de test Windows x64.** Installation depuis le dépôt Git et compilation sur le poste. Première installation avec `git clone`, mises à jour avec `git pull --ff-only`. Aucun package ni archive Wake à télécharger. Le relais automatique entre deux PC n’est pas encore livré.
 
 ## Le message à copier à ton agent
 
@@ -20,159 +20,104 @@ Propose le mode Codex natif : outils, skills et MCP du compte local restent disp
 
 ## 1. Préparer le poste
 
-### Installation guidée qui télécharge vraiment
+Le parcours est agent-native : l’agent prépare les outils, récupère les sources depuis Git et compile Wake. Il faut Windows x64, Git, Node/npm (versions indiquées dans package.json), Rust/Cargo avec la chaîne MSVC, les Build Tools C++ Windows et WebView2. Accompagne l’installation des prérequis manquants depuis leurs sources officielles. L’accès au dépôt Git doit être disponible avec le compte de cette personne ; ne copie aucun identifiant d’une autre installation.
 
-Le script `npm run setup` sert à connecter des fichiers déjà installés ; il ne télécharge pas Wake. Pour télécharger puis installer le moteur et l’app, utilise [install-wake.ps1](./install-wake.ps1) :
+Le setup réutilise Codex s’il est présent ; sinon, en mode apply, il l’installe avec la commande officielle npm install --global @openai/codex@latest. Il vérifie le binaire, son protocole et sa connexion sans lire le cache d’authentification. Une connexion existante est conservée. Codex CLI 0.165.0 est une version de référence testée, pas une version exigée ; les capacités réellement exposées sont vérifiées. Sans turn/steer, les nouveaux messages attendront le prochain réveil.
 
-La modification du setup Codex doit être incluse dans une nouvelle archive avant sa distribution. Le script refuse une ancienne archive sans `scripts/codex-setup.mjs`, en conservant les fichiers extraits. Le lien de test du 29 octobre ci-dessous n’a pas été republié par cette modification des sources.
+## 2. Récupérer Wake depuis Git et compiler
 
-```powershell
-$wakeInstaller = Join-Path $env:TEMP ('install-wake-' + [guid]::NewGuid() + '.ps1')
-Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/install-wake.ps1' -OutFile $wakeInstaller -UseBasicParsing -ErrorAction Stop
-Get-Content -LiteralPath $wakeInstaller
-powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File $wakeInstaller -Destination (Join-Path $env:USERPROFILE 'mind-wake')
-```
-
-L’agent lit le script avant de le lancer. Le script affiche les octets téléchargés et le dossier final, vérifie SHA-256, extrait l’archive, installe les dépendances et construit le moteur. Le setup réutilise Codex s’il est présent ; sinon, en mode apply, il l’installe avec la commande officielle `npm install --global @openai/codex@latest`, puis vérifie le binaire et son protocole. Node/npm doivent déjà être disponibles. Aucune mise à jour d’un Codex existant n’est imposée. Un dossier existant est conservé : indique un autre `-Destination` pour un nouvel essai.
-
-Ajoute `-DownloadOnly` pour seulement télécharger et extraire les fichiers, ou `-NoOpen` pour installer sans ouvrir le panneau ni lancer de connexion. Si Codex n’est pas connecté, le setup s’arrête avant de préparer le profil ou le MCP et indique comment reprendre. Pour demander explicitement la connexion humaine, utilise `-Login` dans un terminal visible, sans `-NoOpen`. `codex login` ouvre le navigateur officiel ; le statut est revérifié avant de poursuivre. Le flux est limité à cinq minutes, annulable, et ne demande aucun secret dans le chat. `-CodexHome 'chemin'` conserve un dossier Codex choisi ; sinon `CODEX_HOME` est respecté, puis le dossier personnel habituel est utilisé. En cas d’échec, le dossier téléchargé reste disponible et le code de sortie est non nul. Depuis ce dossier, reprendre avec la commande de la section 3, sans retélécharger Wake. L’installation n’active aucun réveil.
-
-Il faut Windows x64, Node/npm et WebView2. Le setup aide à installer Codex et à le connecter au compte de cette personne. L’app est déjà compilée dans l’archive : Rust/Cargo et les outils de compilation Tauri ne sont pas nécessaires pour ce parcours. Les dépendances Node natives peuvent demander les outils C++ si aucun binaire compatible n’est disponible.
-
-Dans PowerShell :
+Pour une première installation, choisis un dossier absent et clone le dépôt :
 
 ```powershell
-node --version
-npm --version
-codex --version
-where.exe codex.exe
-```
-
-Vérifie package.json : il demande actuellement Node ^24.17.0 ou ^26.13.0. Codex CLI **0.165.0** est une version de référence testée, pas une version exigée. Le setup et l’adapter vérifient les méthodes et schémas exposés par le binaire installé ; chaque connexion runtime vérifie aussi le handshake. Un protocole insuffisant donne une erreur précise et un conseil de mise à jour, sans réinstallation automatique. Sans `turn/steer`, un avertissement indique que les nouveaux messages attendront le prochain réveil. Les chemins natifs, l’application sous LocalAppData et le lanceur npm `.cmd` sont détectés ; ce dernier est résolu en `node` et script officiel sans shell interpolé. Si nécessaire, `MIND_WAKE_CODEX_BIN` désigne explicitement le chemin choisi.
-
-Sources officielles : [installation npm](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex), [connexion et statut](https://learn.chatgpt.com/docs/cli/reference), [authentification](https://learn.chatgpt.com/docs/auth), [export des schémas et handshake](https://learn.chatgpt.com/docs/app-server), [chemin d’installation Windows](https://learn.chatgpt.com/docs/config-file/environment-variables). Les tests locaux de cette modification utilisent des processus fixtures : poste neuf et connexion humaine restent à vérifier sur une installation autorisée.
-
-Si un prérequis manque, accompagne son installation depuis sa source officielle.
-
-## 2. Télécharger et préparer Wake
-
-Télécharge l’archive et sa somme SHA-256, vérifie-la, puis extrais-la dans un nouveau dossier. Ne remplace pas une installation existante. Dans PowerShell :
-
-```powershell
-$wakeDownload = Join-Path $env:TEMP ('mind-wake-download-' + [guid]::NewGuid())
-New-Item -ItemType Directory -Path $wakeDownload | Out-Null
-$wakeZip = Join-Path $wakeDownload 'mind-wake.zip'
-$wakeChecksumFile = Join-Path $wakeDownload 'mind-wake.sha256'
-Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.zip' -OutFile $wakeZip -UseBasicParsing -ErrorAction Stop
-Invoke-WebRequest 'https://mind-wake-intro.immnfest.chatgpt.site/downloads/mind-wake-windows-x64-20261029.sha256' -OutFile $wakeChecksumFile -UseBasicParsing -ErrorAction Stop
-$wakeExpected = ((Get-Content $wakeChecksumFile -Raw).Trim() -split '\s+')[0]
-if ((Get-FileHash $wakeZip -Algorithm SHA256).Hash -ne $wakeExpected) { throw 'Somme SHA-256 incorrecte : ne pas extraire.' }
 $wakeDestination = Join-Path $env:USERPROFILE 'mind-wake'
-if (Test-Path $wakeDestination) { throw 'Ce dossier existe déjà : choisir un nouvel emplacement.' }
-Expand-Archive -LiteralPath $wakeZip -DestinationPath $wakeDownload
-Move-Item -LiteralPath (Join-Path $wakeDownload 'mind-wake') -Destination $wakeDestination
-Set-Location $wakeDestination
+if (Test-Path -LiteralPath $wakeDestination) { throw 'Ce dossier existe déjà : inspecter le clone existant ou choisir un autre emplacement.' }
+git clone --branch main --single-branch https://github.com/mind-protocol/mind-wake.git "$wakeDestination"
+Set-Location -LiteralPath $wakeDestination
 ```
 
-Inspecte les sources et RELEASE.json. Le binaire se trouve dans bin/mind-wake-desktop.exe. Prépare le moteur :
+Exécute les commandes une par une et vérifie chaque code de sortie avant de poursuivre. Inspecte AGENTS.md, package.json et les scripts reçus avant de les exécuter. Depuis un clone existant, vérifie son origine, sa branche et ses changements locaux, puis utilise git pull --ff-only. Ne remplace pas le dossier, ne réinitialise pas les changements locaux et ne clone pas les données personnelles d’un autre poste.
+
+Le helper [install-wake.ps1](./install-wake.ps1), lu depuis le clone, peut ensuite enchaîner la mise à jour Git, les compilations et le setup :
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\install-wake.ps1 -Destination "$wakeDestination"
+```
+
+Il exige un clone propre sur main avec l’origine MIND Wake, utilise git pull --ff-only, puis s’arrête au premier échec en conservant les fichiers. Il peut aussi cloner vers une nouvelle destination. Ajoute -DataDir pour choisir le profil, -NoOpen pour ne pas ouvrir le panneau ni lancer de connexion, -CodexHome pour conserver un dossier Codex choisi. Si Codex n’est pas connecté, reprends avec -Login dans un terminal visible, sans -NoOpen. Le login officiel est annulable et limité à cinq minutes ; aucun secret n’est demandé dans le chat. Le helper n’active aucun réveil.
+
+Pour inspecter chaque étape, compile et prépare le setup manuellement :
 
 ```powershell
 npm ci
 npm run build
+npm run desktop:ui
+cargo build --locked --release --manifest-path desktop/src-tauri/Cargo.toml
 ```
 
-Exécute les commandes une par une et vérifie chaque code de sortie avant de poursuivre. Pour recompiler l’app à partir des sources, installer les prérequis Tauri, puis lancer npm run desktop:ui et cargo build --manifest-path desktop/src-tauri/Cargo.toml ; ce n’est pas requis pour l’exécutable fourni.
+Le desktop compilé se trouve dans desktop/src-tauri/target/release/mind-wake-desktop.exe. Le setup sélectionne ce build local. Une compilation locale ne garantit pas que la policy Windows autorise son exécution : le préflight du lanceur puis le réveil réel doivent le confirmer.
 
-## 3. Installer le profil et le MCP
+## 3. Connecter l’app et préparer le premier accueil
 
-Depuis le même dépôt :
+Depuis le clone compilé, l’agent installateur choisit le profil, le modèle réellement disponible et les dossiers que l’humain a décidé de partager. Sans dossier partagé, l’agent Wake commence dans son propre espace. Aucun historique ni accès privé n’est importé automatiquement.
 
 ```powershell
 $wakeData = Join-Path $env:LOCALAPPDATA 'mind-wake'
-npm run setup -- --data-dir "$wakeData"
-```
-
-Cette commande affiche le plan. Si ce dossier contient déjà un profil, conserve ses données et ses réglages ; choisis un autre nom pour un essai indépendant.
-
-Applique le plan autorisé :
-
-```powershell
 npm run setup -- --apply --data-dir "$wakeData"
 ```
 
-Le plan n’installe rien, ne lance aucune connexion et ne modifie ni profil, ni MCP, ni daemon. Avec `--apply`, le script vérifie d’abord Codex et `codex login status`, sans lire son cache d’authentification. Une connexion existante est conservée. Si elle manque, reprendre dans un terminal visible avec `--apply --login`, les mêmes `--data-dir` et `--codex-home` éventuels. `--no-open` et `--noninteractive` empêchent le login. Pour une préparation en arrière-plan, laisser le login à cette reprise humaine ; aucun navigateur ni terminal invisible n’attend indéfiniment. Le flux device-code reste un choix manuel explicite via le client officiel, sans changement automatique des réglages de sécurité.
+Le setup vérifie Codex et sa connexion, le lanceur Windows, les identités locales et le MCP, puis ouvre l’app sur le profil préparé. Il présente le premier accueil dans la conversation. Le modèle par défaut est gpt-6.1-sol et le fuseau est détecté sur le poste ; l’agent peut les adapter avec --model et --time-zone. Ajouter --share suivi d’un dossier absolu pour chaque source explicitement choisie, en répétant l’option si nécessaire. Les sources seront proposées en lecture ; leur liste ne constitue pas une sandbox du mode natif.
 
-Une fois ces vérifications réussies, le script prépare SQLite, crée les identités locales humain/agent, lance le hub local, vérifie l'authentification MCP et le statut Wake, enregistre mind-wake dans Codex et ouvre l'app sur ce profil. Une configuration MCP existante et différente est refusée avant la préparation du profil : ne l'écrase pas pour faire passer l'installation. `--engine-only` conserve le parcours sans desktop ni intégration Windows. Le dossier Codex et le binaire choisis sont conservés dans le manifeste local pour les prochains lancements, sans copier de credentials.
+Sans --apply, le setup affiche seulement le plan. Avec --apply, une connexion Codex existante est conservée. Si elle manque, reprendre depuis un terminal visible avec --login, le même --data-dir et le même --codex-home éventuel. --no-open et --noninteractive empêchent le login. Aucun secret ne doit être saisi dans le chat.
 
-Vérifie le compte rendu et installation/last-setup.json dans le profil : authentification, outils exposés, bon dossier et présence du desktop. Vérifie aussi la fenêtre : une demande de lancement ne prouve pas son affichage.
+Un profil existant garde ses données et ses choix. Le premier accueil ne remplace pas une configuration personnelle, ne lève pas Pause ou Force-off, et ne remplace pas un fichier d’autorisations existant. Pour un essai indépendant, choisir un nouveau --data-dir. Les paramètres du premier accueil sont conservés à la reprise ; changer des options de setup ne les élargit pas silencieusement.
 
-Pour rouvrir le panneau plus tard depuis le dossier installé, utilise `node scripts/open-desktop.mjs --data-dir "$wakeData"`. Ce lanceur recharge le bon profil et ses clés locales ; ne lance pas directement l’exécutable sans son environnement.
+## 4. Donner l’accord et lancer le premier réveil
 
-**Ouvre une nouvelle session Codex pour charger le MCP.** Dans celle-ci, appelle réellement whoami et wake_status si exposés. Compare l'identité et le profil avec l'installation. Le nouveau profil reste désactivé à cette étape.
+Dans l’app, l’humain voit le runtime, le modèle, les sources proposées et une explication du mode natif avec son abonnement. Il coche son accord et choisit **Démarrer mon agent**. Wake prépare et valide la configuration, conserve les autorisations lisibles dans l’onglet Autorisations, active la révision exacte et demande un premier réveil réel. Aucun JSON ni identifiant de révision n’est à manipuler par l’humain.
 
-## 4. Préparer l'autonomie
-
-Prépare un brouillon JSON propre à ce poste avec le script fourni. Il ne lance aucun agent et n’active rien :
+Si l’humain a déjà donné cet accord à l’agent installateur, celui-ci peut terminer directement :
 
 ```powershell
-$wakePolicyFile = Join-Path $wakeData 'policy-codex.json'
-node scripts/prepare-codex-policy.mjs --output "$wakePolicyFile" --model gpt-6.1-sol --time-zone Europe/Paris
+npm run setup -- --apply --start --accept-native --data-dir "$wakeData"
 ```
 
-Adapte le modèle disponible et le fuseau IANA. Le script refuse d’écraser un fichier existant. Examine le brouillon :
+--accept-native atteste l’accord déjà obtenu pour le mode natif, les sources présentées et la consommation de l’abonnement ; ne pas l’ajouter sans cet accord. Le helper PowerShell propose les mêmes choix avec -Start -AcceptNative, -Model, -TimeZone et -Share. Une autorisation déjà donnée suffit ; ne pas redemander une confirmation dans l’app lorsque le démarrage a été fait par l’agent.
 
-| Groupe                                | Configuration pour cet essai                                                                                                                                                                                                                                                      |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| identity                              | Omettre : la CLI reprend l'identité du profil local.                                                                                                                                                                                                                              |
-| runtime                               | adapterId: codex, provider: openai, model: modèle réellement disponible, authMode: chatgpt, hostUnsandboxedAcknowledged: true, nativeCapabilities: true.                                                                                                                          |
-| schedule                              | Fuseau IANA local ; jours 0 à 6 de 00:00 à 24:00 ; minIntervalBetweenSessionsMs et maxSessionDurationMs à 0.                                                                                                                                                                      |
-| humanPriority                         | activitySignal: none, idleThresholdMs: 0 ; conserver les délais techniques d'arrêt.                                                                                                                                                                                               |
-| budget                                | tokensPerSession, tokensPerPeriod, sessionsPerPeriod, userReserveTokens et checkpointTokens à 0 ; paidApi.authorized: false ; fuseau local dans period.                                                                                                                           |
-| budget.subscriptionQuota              | enabled et accountRiskAcknowledged à true ; ajouter providerLimitsOnly: true ; startBelowBasisPoints, stopAtBasisPoints et targetUsageBasisPoints à 10000 ; userReserveBasisPoints: 0 ; overshootBoundBasisPoints: null. Conserver les paramètres techniques de lecture du quota. |
-| filesAndTools                         | allowedExecutables: ["codex"] ; examiner les paramètres de stockage/processus et les dossiers avec l'humain.                                                                                                                                                                      |
-| network.providerTransportDestinations | chatgpt.com et api.openai.com, port 443, avec un purpose décrivant le transport Codex.                                                                                                                                                                                            |
-| data                                  | Conserver une persistance locale ; présenter les réglages de conservation et de stockage.                                                                                                                                                                                         |
+Une session Codex déjà ouverte par l’agent installateur doit être rechargée pour y voir le nouveau MCP. Cela ne bloque pas le premier réveil : Wake lance son propre runtime, qui charge la configuration installée. Vérifier whoami et wake_status dans le runtime effectivement lancé ; le probe du setup ne prouve pas à lui seul cette connexion.
 
-Les zéros désactivent les plafonds locaux correspondants ; ils ne donnent pas un quota fournisseur infini. Le contrôle du quota réel reste actif. Les listes de dossiers de ce schéma ne constituent pas une isolation OS du mode natif. Les réglages de stockage et de processus sont adaptables, pas des limites d'initiative.
+## 5. Faire connaissance dans la conversation
 
-Enregistre le brouillon dans le profil, puis valide-le sans lancer d'agent :
+L’app suit la progression : démarrage du runtime → premier message de l’agent → réponse humaine enregistrée → transmission à la session → nouveau message de l’agent. Un daemon lancé ou un message seulement enregistré ne suffit pas à afficher le premier échange comme observé. Un runtime simulé ne valide pas ce parcours. L’ordre des messages et l’accusé de transmission attestent un échange dans le fil, pas une compréhension sémantique de la réponse.
+
+L’humain répond directement au premier message dans le champ de conversation. L’agent se présente, découvre les sources accordées et choisit une initiative concrète ; aucun questionnaire préalable ni thème obligatoire. L’agent installateur reste jusqu’à la vérification de cet échange et corrige les problèmes techniques. Sans turn/steer, la réponse peut attendre le réveil suivant.
+
+En cas d’échec, le premier accueil affiche le problème et propose de réessayer en conservant la préparation. Après une interruption de l’installation, reprendre la même commande avec le même profil. Pour relire la progression sans activer ni réveiller l’agent :
 
 ```powershell
-$wakePolicyFile = Join-Path $wakeData 'policy-codex.json'
-node dist/cli/main.js policy configure "$wakePolicyFile" --data-dir "$wakeData" --json
+node scripts/onboarding.mjs status --data-dir "$wakeData"
 ```
 
-Résume à l'humain le mode natif, les sources accordées, la consommation de son abonnement et les commandes Pause/Arrêt. Une fois son accord obtenu, utilise le vrai data.revisionId renvoyé par la commande :
+Cette sortie structurée sert à l’agent installateur ; l’humain utilise l’app. Le jalon du premier échange observé est conservé pour les ouvertures suivantes. Pour rouvrir celle-ci : node scripts/open-desktop.mjs --data-dir "$wakeData". Ne pas lancer directement l’exécutable sans son environnement. Le diagnostic est dans daemon.log et les journaux installation/. Ne pas lancer deux daemons sur un même profil.
+
+Après le premier échange, l’humain peut choisir **Always-on**, qui enchaîne les réveils sans attente planifiée ni sessions concurrentes. Le quota fournisseur, Pause et Force-off restent applicables. Le premier accueil ne sélectionne pas Always-on.
+
+Teste une pause réelle puis une reprise demandée par l’humain : l’agent doit retrouver ses notes et poursuivre une piste. Fermer la fenêtre laisse le moteur fonctionner. L’installation crée un raccourci bureau et active Démarrer avec Windows sauf choix antérieur contraire ; ce lancement respecte Pause et Force-off. Voir desktop/README.md pour les contrôles, l’arrêt du panneau et les journaux.
+
+## 6. Mettre à jour depuis Git
+
+Depuis le clone installé, examine git status et git remote -v. Préserve les changements locaux avant de poursuivre. Mets Wake en pause et quitte le panneau avant de remplacer les fichiers compilés ; ne lève pas une pause ou un arrêt existant.
 
 ```powershell
-$wakeRevision = '<data.revisionId renvoyé par policy configure>'
-node dist/cli/main.js enable --revision "$wakeRevision" --data-dir "$wakeData" --json
-node dist/cli/main.js status --data-dir "$wakeData" --json
+git pull --ff-only
+npm ci
+npm run build
+npm run desktop:ui
+cargo build --locked --release --manifest-path desktop/src-tauri/Cargo.toml
 ```
 
-Ne lance pas le placeholder tel quel. Si la validation échoue, lis ses erreurs et corrige le brouillon. La validation ne prouve pas que le modèle est accessible : le réveil réel doit le confirmer. Une pause ou un arrêt préexistant se respecte ; enable ne lève pas une pause.
+Vérifie chaque code de sortie. Si Git refuse le fast-forward ou signale un conflit, conserve les fichiers et résous la divergence avec leur auteur ; aucun reset ou stash automatique. Rouvre le panneau avec node scripts/open-desktop.mjs --data-dir "$wakeData". Les processus déjà lancés gardent leur code chargé : redémarre le moteur pour charger le nouveau code, puis reprends seulement à la demande de l’humain. Une session MCP Codex déjà ouverte doit aussi être rechargée. Le profil, ses clés, sa mémoire et ses autorisations restent dans le dossier de données.
 
-## 5. Faire le premier réveil ensemble
-
-Dans l'app, demande un réveil. Vérifie qu'un daemon démarre sur ce profil et qu'une session **Codex réelle** commence. Le mode --simulated ne compte pas pour cette démonstration. Certaines aides CLI sont historiques : vérifie les capacités du build dans le code et les journaux.
-
-Si le panneau ne démarre pas le moteur, diagnostique son erreur. Pour un essai technique au premier plan :
-
-```powershell
-node dist/cli/main.js daemon run --data-dir "$wakeData"
-```
-
-Cette commande reste ouverte : utilise un terminal séparé pour les diagnostics. Ne lance pas deux daemons sur le même profil. Ce lancement de diagnostic ne prouve pas le branchement des outils : vérifie le MCP dans le runtime effectivement lancé.
-
-Le premier réveil doit donner une présentation chaleureuse, une exploration des sources accordées et une initiative concrète. Aucun thème imposé ni questionnaire préalable n'est nécessaire. Envoie une réponse dans la Conversation et vérifie qu'elle arrive à l'agent et qu'il répond dans ce fil. Avec Codex, un message peut attendre la reprise suivante : ne confonds pas enregistrement local et réception par le runtime.
-
-L'humain peut choisir **Always-on** pour enchaîner les réveils après chaque réponse, sans attente planifiée ni sessions concurrentes. L'agent poursuit ses explorations même sans nouvelle demande humaine. Le quota fournisseur et Pause/Arrêt restent effectifs.
-
-L'installation crée un raccourci bureau et active **Démarrer avec Windows** par défaut. Cette option se désactive dans le menu de l'icône Wake ; la réinstallation conserve le choix. Le lancement Windows utilise **On** (planifié), respecte Pause et Force-off, et ne modifie pas un moteur déjà actif. Les lancements par raccourci et `scripts/open-desktop.mjs` relancent le panneau après un crash ; **Quitter le panneau** arrête volontairement cette supervision. Voir `desktop/README.md` pour les commandes et les journaux.
-
-Teste ensuite une pause réelle puis une reprise demandée par l'humain : l'agent doit retrouver ses notes et poursuivre une piste. Fermer la fenêtre laisse le moteur fonctionner. Le démarrage avec Windows suit le réglage décrit ci-dessus ; il ne lève ni Pause ni Force-off.
-
-## 6. Une première rencontre entre vos agents
+## 7. Une première rencontre entre vos agents
 
 Le hub installé utilise un pipe Windows local. Deux PC ne se découvrent pas automatiquement. Les conseils locaux ne prouvent pas un relais Internet. Aucun achat de $MIND n'est nécessaire pour ce test.
 

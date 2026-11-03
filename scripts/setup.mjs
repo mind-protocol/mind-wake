@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Local checkout setup; Codex download only on apply; no model call or activation. */
+/** Git checkout setup. First wake requires explicit native consent, in the app or argv. */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,11 @@ import { ensureHub } from "./start-local.mjs";
 import { windowsIntegration } from "./windows-integration.mjs";
 import { startSupervised } from "./desktop-supervisor.mjs";
 import { prepareCodex, codexEnvironment, runProcess } from "./codex-setup.mjs";
+import {
+  prepareOnboarding,
+  onboardingService,
+  settings as onboardingSettings,
+} from "./onboarding.mjs";
 class SetupError extends Error {}
 const repoDir = fileURLToPath(new URL("../", import.meta.url));
 const { values } = parseArgs({
@@ -23,6 +28,11 @@ const { values } = parseArgs({
     "data-dir": { type: "string" },
     "no-open": { type: "boolean" },
     "engine-only": { type: "boolean" },
+    start: { type: "boolean" },
+    "accept-native": { type: "boolean" },
+    model: { type: "string" },
+    "time-zone": { type: "string" },
+    share: { type: "string", multiple: true },
   },
 });
 const dataDir = path.resolve(
@@ -74,11 +84,24 @@ function command(exe, args, env = process.env) {
   return r.stdout;
 }
 try {
+  const welcomeSettings = values["engine-only"]
+    ? null
+    : onboardingSettings({
+        model: values.model,
+        timeZone: values["time-zone"],
+        sources: values.share,
+      });
+  if (values.apply && values.start && !values["accept-native"])
+    throw new SetupError(
+      "--start exige --accept-native après accord humain pour le mode natif et l’abonnement.",
+    );
+  if (values.start && values["engine-only"])
+    throw new SetupError("Le premier accueil nécessite le desktop ; retirer --engine-only.");
   if (process.platform !== "win32")
     throw new SetupError("Cette première installation locale cible Windows.");
   if (!values["engine-only"] && !fs.existsSync(desktopExe))
     throw new SetupError(
-      "Desktop absent : construire le projet (npm run build, npm run desktop:ui, cargo build --manifest-path desktop/src-tauri/Cargo.toml) avant de relancer.",
+      "Desktop absent : construire le projet (npm run build, npm run desktop:ui, cargo build --locked --release --manifest-path desktop/src-tauri/Cargo.toml) avant de relancer.",
     );
   if (!fs.existsSync(path.join(repoDir, "dist/cli/main.js")))
     throw new SetupError("Moteur absent : npm run build.");
@@ -90,6 +113,7 @@ try {
           mode: "plan",
           dataDir,
           codex: await prepareCodex({ env: codexEnv }),
+          firstWelcome: welcomeSettings,
           steps: [
             "vérifier le lancement et l’arrêt du Job Object sur ce poste, sans appel modèle",
             "préparer le profil sans changer son activation",
@@ -101,6 +125,7 @@ try {
               : [
                   "créer le raccourci bureau et activer le démarrage Windows sauf choix antérieur contraire",
                   "ouvrir le desktop sur ce même profil",
+                  "présenter les accès et poursuivre jusqu’au premier échange dans la conversation",
                 ]),
           ],
           apply:
@@ -110,6 +135,10 @@ try {
             quotePowerShell(dataDir) +
             (values["no-open"] ? " --no-open" : "") +
             (values.noninteractive ? " --noninteractive" : "") +
+            (values.start ? " --start --accept-native" : "") +
+            (values.model ? " --model " + quotePowerShell(values.model) : "") +
+            (values["time-zone"] ? " --time-zone " + quotePowerShell(values["time-zone"]) : "") +
+            (values.share ?? []).map((source) => " --share " + quotePowerShell(source)).join("") +
             " --codex-home " +
             quotePowerShell(codexEnv.CODEX_HOME),
         },
@@ -118,11 +147,6 @@ try {
       ),
     );
   } else {
-    command(process.execPath, [
-      path.join(repoDir, "node_modules/typescript/bin/tsc"),
-      "-p",
-      path.join(repoDir, "tsconfig.build.json"),
-    ]);
     const preparedCodex = await prepareCodex({
       apply: true,
       login: values.login,
@@ -196,12 +220,28 @@ try {
       const windows = values["engine-only"]
         ? { installed: false, reason: "engine-only" }
         : windowsIntegration(m.manifestFile, "install");
+      if (!values["engine-only"]) prepareOnboarding(dataDir, welcomeSettings);
       if (!values["engine-only"] && !values["no-open"]) await startSupervised(m.manifestFile);
+      const onboarding = values["engine-only"] ? null : onboardingService(m.manifestFile);
+      const firstConversation = values.start
+        ? await onboarding.start({ acceptNative: values["accept-native"] })
+        : (onboarding?.status() ?? null);
       const result = {
         mode: "installed-local",
         codex: preparedCodex,
         dataDir,
-        engine: { prepared: true, profileState: init.data.profile.state, activationChanged: false },
+        engine: {
+          prepared: true,
+          profileState: firstConversation?.profileState ?? init.data.profile.state,
+          activationChanged:
+            firstConversation != null &&
+            firstConversation.activeRevisionId !== init.data.profile.activePolicyRevisionId,
+        },
+        firstConversation,
+        nextAction:
+          firstConversation?.stage === "consent"
+            ? "Dans l’app, relire les accès et choisir Démarrer mon agent. Après un accord déjà donné : npm run setup -- --apply --start --accept-native avec le même profil."
+            : "Suivre le premier accueil dans la conversation ; répondre au message de l’agent dans l’app.",
         launcherPreflight,
         windows,
         mcp: {
@@ -218,9 +258,9 @@ try {
         runtimeMcpConfig: m.mcpFile,
         manifest: m.manifestFile,
         limits: [
-          "version de test non signée, prérequis Node externe ; Codex officiel réutilisé ou installé",
+          "installation depuis Git et compilation locale ; Codex officiel réutilisé ou installé",
           "clés locales sur disque, coffre Windows non livré",
-          "aucun réveil ni consentement de policy déclenché par setup",
+          "activation et premier réveil uniquement après accord explicite ; échange confirmé séparément",
         ],
       };
       fs.writeFileSync(
@@ -235,7 +275,7 @@ try {
 } catch (error) {
   if (error instanceof Error) process.stderr.write(error.message + "\n");
   process.stderr.write(
-    "Installation incomplète. Vérifier les prérequis, un éventuel conflit du MCP mind-wake et les journaux du hub. Aucune policy activée.\n",
+    "Installation incomplète. Reprendre avec le même profil ; vérifier son état, le premier accueil et les journaux. Une étape déjà réussie est conservée.\n",
   );
   process.exitCode = 1;
 }

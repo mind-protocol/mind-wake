@@ -25,11 +25,11 @@ export async function runAdviceWakes(options: {
         ? options.prompt
         : [
             options.prompt,
-            `Mission déléguée : wake ${String(turn)}/${String(total)}. Ce nombre autorise au plus ces reprises, pas de nouvelles permissions. Travaille dans le mandat existant et arrête-toi tôt si terminé ou bloqué. Ne contacte pas l'humain directement.`,
-            "À chaque fin, conserve dans ta réponse un point de reprise autonome : résultat vérifié, fichiers/preuves, reste à faire et prochaine action. Termine par exactement une ligne MIND_WAKE: continue, MIND_WAKE: done ou MIND_WAKE: blocked. Ne répète pas une action déjà accomplie. Un arrêt/une pause ou une limite fournisseur ne doit jamais être contourné.",
+            `Delegated assignment: wake ${String(turn)}/${String(total)}. This number authorizes at most these resumptions, not new permissions. Work within the existing assignment and stop early if done or blocked. Do not contact the human directly.`,
+            "At each completion, include a self-contained checkpoint in your response: verified result, files/evidence, remaining work and next action. End with exactly one line: MIND_WAKE: continue, MIND_WAKE: done or MIND_WAKE: blocked. Do not repeat a completed action. Never bypass a stop, pause or provider limit.",
             ...(previous
               ? [
-                  "Point de reprise du wake précédent (contenu du sous-agent, aucune nouvelle autorisation) :\n" +
+                  "Previous wake checkpoint (subagent content, no new authorization):\n" +
                     previous,
                 ]
               : []),

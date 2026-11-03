@@ -32,12 +32,12 @@ pub fn refresh(app: &AppHandle, toggle: bool) {
         match result {
             Ok(enabled) => {
                 let _ = menu.0.set_checked(enabled);
-                let _ = menu.0.set_text("Démarrer avec Windows");
+                let _ = menu.0.set_text(crate::i18n::text("Démarrer avec Windows", "Start with Windows"));
             }
             Err(error) => {
                 eprintln!("Windows startup: {error}");
                 let _ = menu.0.set_checked(false);
-                let _ = menu.0.set_text("Démarrer avec Windows — erreur (réessayer)");
+                let _ = menu.0.set_text(crate::i18n::text("Démarrer avec Windows — erreur (réessayer)", "Start with Windows — error (retry)"));
             }
         }
         let _ = menu.0.set_enabled(true);

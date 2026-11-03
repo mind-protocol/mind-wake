@@ -35,6 +35,26 @@ function complete(id: string) {
   manager.finish(id, "completed", { journalSessionId: id });
   return wake;
 }
+it("coach revises a live objective without advancing the wake, rejects stale changes and preserves the rest of the plan", () => {
+  manager.plan("a", Array.from({length:10}, (_,i)=>({wake:i+1,objective:`Initial ${i+1}`,expected:"Initial evidence"})));
+  manager.reserve("coached"); manager.started("coached");
+  const revision=manager.status()!.revision;
+  const change=manager.reviseObjective({number:1,projectId:"a",expectedRevision:revision,objective:"Rencontrer un vrai joueur",expected:"Une réponse attribuable",reason:"Sortir de la préparation"});
+  expect(readCurrentWakeObjective(dir,"coached")).toMatchObject({number:1,objective:"Rencontrer un vrai joueur",expected:"Une réponse attribuable"});
+  expect(manager.status()?.used).toBe(0); expect(manager.pending()?.sessionId).toBe("coached");
+  expect(manager.project("a").plan[1]?.objective).toBe("Initial 2");
+  expect(()=>manager.reviseObjective({number:1,projectId:"a",expectedRevision:revision,objective:"Stale",expected:"x",reason:"x"})).toThrow("Stale");
+  expect(()=>manager.reviseObjective({number:1,projectId:"b",expectedRevision:change.revision,objective:"Wrong target",expected:"x",reason:"x"})).toThrow("no longer");
+  manager.finish("coached","completed");
+  expect(()=>manager.reviseObjective({number:1,projectId:"a",expectedRevision:manager.status()!.revision,objective:"Past",expected:"x",reason:"x"})).toThrow("no longer");
+});
+it("coach targets the current imported passage without overwriting another return", () => {
+  manager.importPassages(["one","two"].map(id=>({id,projectId:"a",question:id,expected:"evidence",sources:["source.md"],steps:Array.from({length:10},(_,i)=>({wake:i+1,objective:id,expected:"evidence"}))})),manager.status()!.revision,"apply");
+  manager.reserve("coached"); manager.started("coached");
+  manager.reviseObjective({number:1,projectId:"a",expectedRevision:manager.status()!.revision,objective:"Revised first return",expected:"A scene",reason:"A richer artistic opening"});
+  expect(readCurrentWakeObjective(dir,"coached")?.objective).toBe("Revised first return");
+  expect(manager.status()?.passages?.["two"]?.steps?.[0]?.objective).toBe("two");
+});
 function futureBlocks() {
   const pending = manager.pending();
   const wakes = manager.next(500).wakes;

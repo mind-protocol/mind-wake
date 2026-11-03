@@ -1,3 +1,4 @@
+import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 /**
  * Second fil Claude Code : sélecteur de la vue d'ensemble (défaut Off) et onglet dédié.
@@ -67,7 +68,7 @@ export function secondThreadModel(data: unknown): SecondThreadModel | null {
     projectId: typeof position?.["projectId"] === "string" ? position["projectId"] : null,
     inBlock: typeof position?.["inBlock"] === "number" ? position["inBlock"] : 0,
     lastOutcome:
-      typeof last?.["outcome"] === "string" ? last["outcome"] : last === null ? null : "en cours",
+      typeof last?.["outcome"] === "string" ? last["outcome"] : last === null ? null : tr("en cours"),
     entries,
   };
 }
@@ -77,18 +78,18 @@ export function secondThreadIsWorking(model: SecondThreadModel): boolean {
 }
 
 export function secondThreadStatus(model: SecondThreadModel): string {
-  if (!model.enabled) return "Second fil désactivé. Son historique est conservé.";
+  if (!model.enabled) return tr("Second fil désactivé. Son historique est conservé.");
   if (model.profile === "stop")
-    return "Second fil en attente : Wake est arrêté ou le mode hôte n’est pas consenti.";
-  if (model.profile === "hold") return "Second fil en pause avec Wake.";
-  if (!model.running) return "Second fil activé ; démarrage du worker Claude Code…";
+    return tr("Second fil en attente : Wake est arrêté ou le mode hôte n’est pas consenti.");
+  if (model.profile === "hold") return tr("Second fil en pause avec Wake.");
+  if (!model.running) return tr("Second fil activé ; démarrage du worker Claude Code…");
   const project =
     model.projectId === null
-      ? "exploration libre"
+      ? tr("exploration libre")
       : `${model.projectId} (${String(model.inBlock)}/10)`;
-  if (secondThreadIsWorking(model)) return `Claude Code travaille sur ${project}.`;
-  if (model.lastOutcome === "rate_limited") return "Claude Code attend le fournisseur avant de reprendre.";
-  return `Claude Code attend le prochain tour sur ${project}.`;
+  if (secondThreadIsWorking(model)) return tr("Claude Code travaille sur {0}.", [project]);
+  if (model.lastOutcome === "rate_limited") return tr("Claude Code attend le fournisseur avant de reprendre.");
+  return tr("Claude Code attend le prochain tour sur {0}.", [project]);
 }
 
 export interface SecondThreadMount {
@@ -105,7 +106,7 @@ const ENSURE_EVERY_MS = 60_000;
 export function mountSecondThread(options: SecondThreadMount): { refresh: () => Promise<void> } {
   const el = (id: string): HTMLElement => {
     const found = document.getElementById(id);
-    if (found === null) throw new Error(`élément #${id} absent`);
+    if (found === null) throw new Error(tr("élément #{0} absent", [id]));
     return found;
   };
   const on = el("second-thread-on"),
@@ -146,11 +147,11 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
           e.role === "event" ? "session" : e.role === "human" ? "owner" : "agent";
         const who =
           e.role === "human"
-            ? `Toi${e.delivered ? "" : " · en attente du prochain tour"}`
+            ? tr("Toi{0}", [e.delivered ? "" : tr(" · en attente du prochain tour")])
             : e.role === "event"
-              ? "État du second fil"
+              ? tr("État du second fil")
               : `Claude Code${e.projectId === null ? "" : ` · ${e.projectId}`}`;
-        meta.textContent = `${who} · ${new Date(e.at).toLocaleString("fr-FR")}`;
+        meta.textContent = `${who} · ${new Date(e.at).toLocaleString(formatLocale())}`;
         let body: HTMLElement;
         if (e.role === "agent") {
           body = renderMarkdown(e.text);
@@ -177,20 +178,20 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
       });
       if (envelope.ok !== true)
         throw new Error(
-          typeof envelope.error?.message === "string" ? envelope.error.message : "refusé",
+          typeof envelope.error?.message === "string" ? envelope.error.message : tr("refusé"),
         );
       model = secondThreadModel(envelope.data);
       render();
     } catch (error) {
       presence.hidden = true;
       tabPresence.hidden = true;
-      status.textContent = `Second fil indisponible : ${error instanceof Error ? error.message : String(error)}`;
+      status.textContent = tr("Second fil indisponible : {0}", [error instanceof Error ? error.message : String(error)]);
     }
   };
 
   const toggle = async (action: "on" | "off") => {
     panelStatus.textContent =
-      action === "on" ? "Activation du second fil…" : "Arrêt du second fil…";
+      action === "on" ? tr("Activation du second fil…") : tr("Arrêt du second fil…");
     try {
       lastEnsure = Date.now();
       const envelope = await options.invoke("second_thread", { action });
@@ -199,7 +200,7 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
       const detail = object(envelope.data)?.["detail"];
       if (typeof detail === "string") panelStatus.textContent = detail;
     } catch (error) {
-      panelStatus.textContent = `Second fil : ${error instanceof Error ? error.message : String(error)}`;
+      panelStatus.textContent = tr("Second fil : {0}", [error instanceof Error ? error.message : String(error)]);
     }
   };
 
@@ -213,20 +214,20 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
     event.preventDefault();
     const value = text.value.trim();
     if (value === "") return;
-    sendStatus.textContent = "Envoi…";
+    sendStatus.textContent = tr("Envoi…");
     void options
       .invoke("second_thread", { action: "send", text: value })
       .then((envelope) => {
         if (envelope.ok !== true)
           throw new Error(
-            typeof envelope.error?.message === "string" ? envelope.error.message : "refusé",
+            typeof envelope.error?.message === "string" ? envelope.error.message : tr("refusé"),
           );
         text.value = "";
-        sendStatus.textContent = "Ajouté au second fil ; Claude Code le lira au prochain tour.";
+        sendStatus.textContent = tr("Ajouté au second fil ; Claude Code le lira au prochain tour.");
         return refresh();
       })
       .catch((error: unknown) => {
-        sendStatus.textContent = `Non envoyé : ${error instanceof Error ? error.message : String(error)}`;
+        sendStatus.textContent = tr("Non envoyé : {0}", [error instanceof Error ? error.message : String(error)]);
       });
   });
   void refresh();

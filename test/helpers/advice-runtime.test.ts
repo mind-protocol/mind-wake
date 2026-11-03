@@ -14,8 +14,8 @@ it("preserves the normal tools and permissions while separating the consultation
 it("explains the relationship, invites investigation and sends the answer to the requesting agent",()=>{
  const prompt=advicePrompt("Question concrète");
  expect(prompt).toContain("Question concrète");
- expect(prompt).toContain("mémoire");
- expect(prompt).toContain("Utilise tes outils habituels");
- expect(prompt).toContain("fichiers restent ceux du repo");
- expect(prompt).toContain("transmise automatiquement");
+ expect(prompt).toContain("memory");
+ expect(prompt).toContain("Use your usual tools");
+ expect(prompt).toContain("files remain those of the repository");
+ expect(prompt).toContain("delivered automatically");
 });

@@ -4,7 +4,7 @@
 
 MIND Wake donne à un agent la continuité pour explorer, fabriquer et apprendre avec les accès autorisés, puis reprendre au réveil suivant. Le profil distingue exécution sur l’hôte et isolation système. L’humain garde les permissions, la pause et l’arrêt d’urgence.
 
-**Statut : version de test Windows avec runtimes réels.** Le moteur et l’app portable sont disponibles dans l’[archive publique et son tutoriel agent-first](https://mind-wake-intro.immnfest.chatgpt.site/install.md). Le parcours recommandé utilise Codex ; les exemples simulés restent disponibles pour tester sans appel modèle. Aucun service public de paiement ou de relais inter-PC n’est livré.
+**Statut : version de test Windows avec runtimes réels.** L’agent habituel suit [install.md](./install.md) : sources via Git, compilation locale, connexion MCP et desktop. Première installation par git clone, mises à jour par git pull --ff-only. Les exemples simulés restent disponibles pour tester sans appel modèle. Aucun service public de paiement ou de relais inter-PC n’est livré.
 
 ## Principes
 
@@ -88,7 +88,7 @@ Chaque commande accepte `--json` pour une sortie structurée versionnée. Aucune
 | MCP et desktop                                                 | Messages locaux, réponses humaines, activité, historique et contrôles                                                                 |
 | Jobs                                                           | Scripts locaux supervisés entre les réveils ; Pause et Force-off les arrêtent                                                         |
 | Conseil et économie                                            | Démonstrations et rails expérimentaux distincts ; aucun service public de paiement validé par ces simulations                         |
-| Parcours agent-first et `install.md`                           | Tutoriel public, archive des sources et app Windows portable non signée ; installation MCP locale                                     |
+| Parcours agent-first et `install.md`                           | Installation depuis Git, compilation locale du desktop et connexion MCP                                     |
 
 Le plan de développement et l'avancement sont dans [docs/PLAN.md](docs/PLAN.md) ; les décisions dans [docs/decisions/](docs/decisions/).
 
@@ -134,11 +134,11 @@ npm run lint
 
 ## Installation produit : un parcours, trois composants
 
-L’installation Wake comprend le moteur local, la connexion MCP côté agent et l’application desktop côté humain. Le desktop reçoit les messages et permet de répondre et contrôler l’agent. L’agent habituel guide l’installation depuis [install.md](./install.md). La CLI reste utilisable pour l’administration et les tests ; fermer la fenêtre n’arrête pas le moteur. L’archive publique contient les sources et l’app portable compilée, non signée, sans données ni comptes personnels.
+L’installation Wake comprend le moteur local, la connexion MCP côté agent et l’application desktop côté humain. Le desktop reçoit les messages et permet de répondre et contrôler l’agent. L’agent habituel guide l’installation depuis [install.md](./install.md). La CLI reste utilisable pour l’administration et les tests ; fermer la fenêtre n’arrête pas le moteur. Les sources sont récupérées exclusivement depuis Git et compilées sur le poste ; aucun package Wake n’est distribué pour ce parcours.
 
 ### Essayer l’installation locale unifiée
 
-Voir [install.md](./install.md). Après téléchargement, npm ci et npm run build, le script npm run setup prépare le profil, vérifie et enregistre le MCP dans Codex, puis ouvre le desktop fourni dans bin/. Une nouvelle session Codex charge le MCP. Le setup préserve les permissions, n’active aucun profil et n’installe aucun démarrage automatique. La désinstallation unifiée complète reste à terminer.
+Voir [install.md](./install.md). Après git clone (ou git pull --ff-only), npm ci, npm run build, npm run desktop:ui et cargo build --locked --release --manifest-path desktop/src-tauri/Cargo.toml, npm run setup prépare le profil, vérifie et enregistre le MCP dans Codex, puis ouvre le desktop compilé localement. Une nouvelle session Codex charge le MCP. Le setup prépare un premier accueil dans la conversation : l’accord humain déclenche la configuration et le premier réveil, sans JSON à manipuler. Après un accord déjà obtenu, --start --accept-native permet à l’agent installateur de terminer directement. Il conserve les permissions existantes ; il crée le raccourci et configure le démarrage Windows en respectant un choix antérieur. Le helper install-wake.ps1 enchaîne ces étapes depuis Git.
 
 ### Capture au réveil (option Windows)
 

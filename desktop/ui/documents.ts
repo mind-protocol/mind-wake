@@ -1,3 +1,4 @@
+import { tr } from "./i18n.js";
 import { auroreDocumentStatus, collectionKey, documentLabel, libraryLabel, modificationAge, visibleDocuments, type LibraryEntry, type AuroreSyncStatus } from './document-library.js';
 import { loadDocumentImages, sanitizeDocument } from './document-images.js';
 import { DocumentScopeState, documentScopeLabel } from './document-scope.js';
@@ -105,12 +106,12 @@ export function initDocuments(invoke: Invoke): void {
   let contextQueue:ContextFile[]=[],contextMode=false;
   const queueHost=document.createElement('div');queueHost.id='document-context-queue';queueHost.hidden=true;queueHost.style.cssText='flex:0 0 auto;display:none;gap:10px;align-items:start;font-size:11px;';
   const queueDetails=document.createElement('details'),queueSummary=document.createElement('summary'),queueList=document.createElement('ol'),recent=document.createElement('button');
-  queueList.style.cssText='max-height:130px;overflow:auto;margin:7px 0;padding-left:20px;';queueDetails.append(queueSummary,queueList);recent.type='button';recent.textContent='Revenir aux récents';recent.style.cssText='font:inherit;padding:5px 8px;margin-left:auto;';queueHost.append(queueDetails,recent);host.insertBefore(queueHost,host.querySelector('.document-workspace'));
+  queueList.style.cssText='max-height:130px;overflow:auto;margin:7px 0;padding-left:20px;';queueDetails.append(queueSummary,queueList);recent.type='button';recent.textContent=tr("Revenir aux récents");recent.style.cssText='font:inherit;padding:5px 8px;margin-left:auto;';queueHost.append(queueDetails,recent);host.insertBefore(queueHost,host.querySelector('.document-workspace'));
   const requestFile=(file:ContextFile):void=>{window.dispatchEvent(new CustomEvent('wake-open-document',{detail:{scope:file.scope,relative:file.relative}}));};
   function renderQueue():void{
     const visible=scopeState.local!==null&&contextQueue.length>0;
-    queueHost.hidden=!visible;queueHost.style.display=visible?'flex':'none';queueSummary.textContent='Fichiers évoqués · '+contextQueue.length;recent.hidden=!contextMode;queueList.replaceChildren();
-    for(const file of contextQueue){const item=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent=(file.scope==='agent'?'Atelier':'Projet Wake')+' / '+file.relative;button.style.cssText='font:inherit;text-align:left;padding:4px;';button.addEventListener('click',()=>{contextMode=true;renderQueue();requestFile(file);});item.append(button);queueList.append(item);}
+    queueHost.hidden=!visible;queueHost.style.display=visible?'flex':'none';queueSummary.textContent=tr("Fichiers évoqués · ")+contextQueue.length;recent.hidden=!contextMode;queueList.replaceChildren();
+    for(const file of contextQueue){const item=document.createElement('li'),button=document.createElement('button');button.type='button';button.textContent=(file.scope==='agent'?tr("Atelier"):tr("Projet Wake"))+' / '+file.relative;button.style.cssText='font:inherit;text-align:left;padding:4px;';button.addEventListener('click',()=>{contextMode=true;renderQueue();requestFile(file);});item.append(button);queueList.append(item);}
   }
   recent.addEventListener('click',()=>{contextMode=false;renderQueue();pagination();});
   let positions:Record<string,number>={};
@@ -119,7 +120,7 @@ export function initDocuments(invoke: Invoke): void {
     if(saved&&typeof saved==='object'&&!Array.isArray(saved))positions=Object.fromEntries(Object.entries(saved).filter(([,value])=>typeof value==='number'&&Number.isFinite(value)&&value>=0));
   }catch{/* Storage is optional. */}
   const stateKey=():string=>'mind-wake.reader-current.'+scope.value;
-  const feedback=(error:unknown):void=>{status.textContent='Lecture indisponible : '+String(error);};
+  const feedback=(error:unknown):void=>{status.textContent=tr("Lecture indisponible : ")+String(error);};
   const shown=():LibraryEntry[]=>visibleDocuments(entries,collection.value,search.value,format.value);
   const remember=():void=>{
     if(renderedRelative&&frame.contentWindow)positions[renderedScope+':'+renderedRelative]=frame.contentWindow.scrollY;
@@ -134,8 +135,8 @@ export function initDocuments(invoke: Invoke): void {
     const before=index>0?list[index-1]:undefined,after=index<0?list[0]:list[index+1];
     previous.dataset['scope']=before?.scope??scope.value;next.dataset['scope']=after?.scope??scope.value;
     previous.disabled=!before;next.disabled=!after;
-    byId('document-previous-title').textContent=before?documentLabel(before):'Début de la liste';
-    byId('document-next-title').textContent=after?documentLabel(after):'Fin de la liste';
+    byId('document-previous-title').textContent=before?documentLabel(before):tr("Début de la liste");
+    byId('document-next-title').textContent=after?documentLabel(after):tr("Fin de la liste");
     previous.dataset['relative']=before?.relative??'';next.dataset['relative']=after?.relative??'';
     back.disabled=position<=0;forward.disabled=position>=history.length-1;
   }
@@ -143,11 +144,11 @@ export function initDocuments(invoke: Invoke): void {
     const now=Date.now();
     for(const time of files.querySelectorAll<HTMLTimeElement>('time[data-modified-at]')) {
       const age=modificationAge(Number(time.dataset['modifiedAt']),now);
-      const git=scopeState.current==='aurore',prefix=git?'Modifié dans Git : ':'Dernière modification : ';
+      const git=scopeState.current==='aurore',prefix=git?tr("Modifié dans Git : "):tr("Dernière modification : ");
       time.textContent=(git?'Git · ':'')+age.label;
       time.setAttribute('aria-label',prefix+age.label);
       if(age.date){time.dateTime=age.date;time.title=prefix+age.date;}
-      else {time.removeAttribute('datetime');time.title=prefix+(time.dataset['dateReason']??'date indisponible');}
+      else {time.removeAttribute('datetime');time.title=prefix+(time.dataset['dateReason']??tr("date indisponible"));}
     }
   }
   let autoRefreshPending=false;
@@ -174,7 +175,7 @@ export function initDocuments(invoke: Invoke): void {
           const relative=current;
           await loadCatalog(false,data);
           if(scopeState.accepts(scopeTicket)&&relative&&entries.some(e=>e.relative===relative))await open(relative,false);
-          else if(scopeState.accepts(scopeTicket)&&relative)status.textContent=auroreDocumentStatus(cloneVersion,cloneSync)+' · document retiré du catalogue, aperçu précédent conservé';
+          else if(scopeState.accepts(scopeTicket)&&relative)status.textContent=auroreDocumentStatus(cloneVersion,cloneSync)+tr(" · document retiré du catalogue, aperçu précédent conservé");
         });
     }catch{/* Keep the visible document; the next local probe can recover. */}
     finally{autoRefreshPending=false;}
@@ -205,8 +206,8 @@ export function initDocuments(invoke: Invoke): void {
   }
   function renderFiles():void{
     const list=shown();files.replaceChildren();
-    byId('document-count').textContent=list.length+' document'+(list.length===1?'':'s')+(scopeState.current==='aurore'?' · catalogue Git':' · plus récents en premier')+(truncated?' · catalogue partiel':'');
-    if(!list.length){const empty=document.createElement('p');empty.className='reader-empty';empty.textContent='Aucun document affiché. Consultez l’état de lecture ou modifiez les filtres.';files.append(empty);}
+    byId('document-count').textContent=list.length+' document'+(list.length===1?'':'s')+(scopeState.current==='aurore'?tr(" · catalogue Git"):tr(" · plus récents en premier"))+(truncated?tr(" · catalogue partiel"):'');
+    if(!list.length){const empty=document.createElement('p');empty.className='reader-empty';empty.textContent=tr("Aucun document affiché. Consultez l’état de lecture ou modifiez les filtres.");files.append(empty);}
     for(const entry of list){
       const button=document.createElement('button');button.type='button';button.className='reader-file';button.title=entry.relative;
       button.setAttribute('aria-current',String(entry.relative===current));
@@ -214,7 +215,7 @@ export function initDocuments(invoke: Invoke): void {
       const meta=document.createElement('small');const ext=/\.html?$/i.test(entry.relative)?'HTML':/\.txt$/i.test(entry.relative)?'TXT':'MD';
       meta.textContent=ext+' · '+entry.relative.split('/').slice(0,-1).join('/');
       const age=document.createElement('time');age.dataset['modifiedAt']=String(entry.modifiedAt??0);age.className='reader-file-age';
-      age.dataset['dateReason']=entry.dateUnavailableReason==='shallow-history-boundary'||entry.dateUnavailableReason==='shallow-history-unavailable'?'historique Git superficiel : dernier commit du chemin non vérifiable':entry.dateUnavailableReason?'historique Git indisponible ou limite de collecte atteinte':'date indisponible';
+      age.dataset['dateReason']=entry.dateUnavailableReason==='shallow-history-boundary'||entry.dateUnavailableReason==='shallow-history-unavailable'?tr("historique Git superficiel : dernier commit du chemin non vérifiable"):entry.dateUnavailableReason?tr("historique Git indisponible ou limite de collecte atteinte"):tr("date indisponible");
       button.append(name,meta,age);button.addEventListener('click',()=>{contextMode=false;renderQueue();void open(entry.relative);if(host.clientWidth<720)setLibrary(false);});files.append(button);
     }
     refreshFileAges();
@@ -234,7 +235,7 @@ export function initDocuments(invoke: Invoke): void {
   async function loadCatalog(restore=false,loaded?:AuroreCatalog,accepts:()=>boolean=()=>true):Promise<void>{
     generation++;pendingOpen=false;
     const ticket=++catalogGeneration,scopeTicket=scopeState.capture(),targetScope=scopeState.current;
-    status.textContent='Ouverture de la bibliothèque…';
+    status.textContent=tr("Ouverture de la bibliothèque…");
     try{
       const data=loaded??await invoke('document_browse',{scope:targetScope,relative:'',read:false,recursive:true}) as AuroreCatalog;
       if(ticket!==catalogGeneration||!scopeState.accepts(scopeTicket)||!accepts())return;
@@ -246,10 +247,10 @@ export function initDocuments(invoke: Invoke): void {
       entries=data.entries;truncated=Boolean(data.truncated);
       // Aurore names must not enter the owner's conversation catalog/context queue.
       if(targetScope!=='aurore')window.dispatchEvent(new CustomEvent('wake-document-catalog',{detail:{scope:targetScope,entries,truncated}}));
-      const selected=collection.value;collection.replaceChildren(new Option('Tous les projets',''));
+      const selected=collection.value;collection.replaceChildren(new Option(tr("Tous les projets"),''));
       for(const key of [...new Set(entries.map(e=>collectionKey(e.relative)))].sort((a,b)=>libraryLabel(a).localeCompare(libraryLabel(b))))collection.add(new Option(libraryLabel(key),key));
       if([...collection.options].some(o=>o.value===selected))collection.value=selected;
-      renderFiles();breadcrumbs();status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync)+(truncated?' · catalogue partiel':''):truncated?'Une partie du catalogue est affichée.':'';
+      renderFiles();breadcrumbs();status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync)+(truncated?tr(" · catalogue partiel"):''):truncated?tr("Une partie du catalogue est affichée."):'';
       if(restore&&!current&&!pendingOpen){
         let saved='';try{saved=localStorage.getItem(stateKey())??'';}catch{/* No saved document. */}
         const initial=targetScope==='aurore'?entries.find(e=>e.relative===saved)??shown()[0]:shown()[0];
@@ -260,7 +261,7 @@ export function initDocuments(invoke: Invoke): void {
   async function open(relative:string,record=true,anchor='',historyIndex?:number,automatic=false):Promise<void>{
     if(!automatic)followLatest=false;
     const targetScope=scopeState.current;
-    remember();const ticket=++generation,scopeTicket=scopeState.capture();pendingOpen=true;status.textContent='Ouverture du document…';
+    remember();const ticket=++generation,scopeTicket=scopeState.capture();pendingOpen=true;status.textContent=tr("Ouverture du document…");
     try{
       const data=await invoke('document_browse',{scope:targetScope,relative,read:true,...(targetScope==='aurore'?{version:cloneVersion}:{})}) as {text:string;format:string;localApp?:unknown;state?:string};
       if(ticket!==generation||!scopeState.accepts(scopeTicket))return;
@@ -273,11 +274,11 @@ export function initDocuments(invoke: Invoke): void {
       const appUrl=atelierUrl(targetScope,relative,data.localApp);
       if(appUrl){
         frame.onload=null;renderedRelative='';frame.hidden=true;appFrame.hidden=false;
-        appFrame.src=appUrl;title.textContent='Atelier DJ · création et mix';
-        outline.replaceChildren(new Option('Application interactive',''));outline.disabled=true;
+        appFrame.src=appUrl;title.textContent=tr("Atelier DJ · création et mix");
+        outline.replaceChildren(new Option(tr("Application interactive"),''));outline.disabled=true;
         breadcrumbs();renderFiles();setLibrary(false);
         try{localStorage.setItem(stateKey(),current);}catch{/* Optional storage. */}
-        status.textContent='Atelier DJ local · commandes et audio sur action explicite. Si le service supervisé est arrêté, la page est indisponible ; Actualiser après reprise.';
+        status.textContent=tr("Atelier DJ local · commandes et audio sur action explicite. Si le service supervisé est arrêté, la page est indisponible ; Actualiser après reprise.");
         return;
       }
       closeApp();
@@ -294,7 +295,7 @@ export function initDocuments(invoke: Invoke): void {
         const imageInvoke:Invoke=(command,args)=>invoke(command,{...args,...(targetScope==='aurore'?{version}:{})});
         void loadDocumentImages(images,doc,targetScope,imageInvoke,()=>ticket===generation&&scopeState.accepts(scopeTicket)&&frame.contentDocument===doc);
         renderedRelative=relative;renderedScope=targetScope;
-        outline.replaceChildren(new Option('Aller à une section…',''));
+        outline.replaceChildren(new Option(tr("Aller à une section…"),''));
         const usedHeadingIds=new Set<string>();
         let n=0;for(const heading of doc.querySelectorAll('h1,h2,h3')){
           if(!heading.id||usedHeadingIds.has(heading.id)){do{n++;}while(doc.getElementById('wake-section-'+n));heading.id='wake-section-'+n;}
@@ -310,16 +311,16 @@ export function initDocuments(invoke: Invoke): void {
           const link=(event.target as Element|null)?.closest('a');if(!link)return;event.preventDefault();const href=link.getAttribute('href')??'';
           try{
             if(href.startsWith('#')){doc.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();return;}
-            if(/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith('/')||href.startsWith(String.fromCharCode(92))){status.textContent='Ce lecteur ouvre les documents locaux HTML, Markdown et texte brut.';return;}
+            if(/^[a-z][a-z0-9+.-]*:/i.test(href)||href.startsWith('/')||href.startsWith(String.fromCharCode(92))){status.textContent=tr("Ce lecteur ouvre les documents locaux HTML, Markdown et texte brut.");return;}
             const url=new URL(href,'https://documents.invalid/'+relative),path=decodeURIComponent(url.pathname.slice(1));
-            if(!/\.(md|markdown|html?|htm|txt)$/i.test(path)){status.textContent='Ce lien ne pointe pas vers un document HTML, Markdown ou texte brut.';return;}
+            if(!/\.(md|markdown|html?|htm|txt)$/i.test(path)){status.textContent=tr("Ce lien ne pointe pas vers un document HTML, Markdown ou texte brut.");return;}
             void open(path,true,decodeURIComponent(url.hash.slice(1)));
           }catch(error){feedback(error);}
         });
       };
       frame.srcdoc='<!doctype html>'+parsed.documentElement.outerHTML;
       breadcrumbs();renderFiles();try{localStorage.setItem(stateKey(),current);}catch{/* Storage is optional. */}
-      status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync):data.format==='html'?'Page HTML · lecture seule':data.format==='text'?'Texte brut · lecture seule':'';
+      status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync):data.format==='html'?tr("Page HTML · lecture seule"):data.format==='text'?tr("Texte brut · lecture seule"):'';
     }catch(error){if(ticket===generation&&scopeState.accepts(scopeTicket)){if(targetScope==='aurore')showCloneState('unavailable');else feedback(error);}}
     finally{if(ticket===generation)pendingOpen=false;}
   }
@@ -332,25 +333,25 @@ export function initDocuments(invoke: Invoke): void {
   const pageClick=(button:HTMLButtonElement):void=>{const relative=button.dataset['relative'];if(!relative)return;if(contextMode&&scopeState.local!==null)requestFile({scope:button.dataset['scope']==='project'?'project':'agent',relative,name:relative.split('/').at(-1)??relative});else void open(relative);};
   previous.addEventListener('click',()=>pageClick(previous));
   next.addEventListener('click',()=>pageClick(next));
-  byId('document-latest').title='Ouvrir le dernier fichier modifié et suivre les prochaines modifications. Choisir ou lire un document suspend ce suivi.';
+  byId('document-latest').title=tr("Ouvrir le dernier fichier modifié et suivre les prochaines modifications. Choisir ou lire un document suspend ce suivi.");
   byId('document-latest').addEventListener('click',()=>{followLatest=true;contextMode=false;renderQueue();const first=shown()[0];if(first)void open(first.relative,true,'',undefined,true);});
   function showCloneState(state:unknown):void{
     if(state==='syncing'||state==='version-changed'){
-      status.textContent=(cloneVersion?auroreDocumentStatus(cloneVersion,cloneSync)+' · ':'')+(state==='syncing'?'Synchronisation en cours · document conservé, actualisez ensuite.':'Version du clone modifiée · document conservé, actualisez le catalogue.');return;
+      status.textContent=(cloneVersion?auroreDocumentStatus(cloneVersion,cloneSync)+' · ':'')+(state==='syncing'?tr("Synchronisation en cours · document conservé, actualisez ensuite."):tr("Version du clone modifiée · document conservé, actualisez le catalogue."));return;
     }
     generation++;pendingOpen=false;current='';renderedRelative='';entries=[];history=[];position=-1;
-    frame.onload=null;closeApp();frame.srcdoc='';outline.replaceChildren(new Option('Sommaire indisponible',''));outline.disabled=true;
-    collection.replaceChildren(new Option('Tous les projets',''));
-    title.textContent='Atelier d’Aurore';
-    status.textContent=state==='not-configured'?'Liaison fichiers non configurée.':state==='invalid-origin'?'Origine du clone invalide.':state==='empty'?'Clone lié sans document lisible.':state==='partial'?'Catalogue du clone partiel · aucun document affiché.':state==='version-changed'?'Version du clone modifiée · actualisez le catalogue.':'Lecture du clone indisponible.';
+    frame.onload=null;closeApp();frame.srcdoc='';outline.replaceChildren(new Option(tr("Sommaire indisponible"),''));outline.disabled=true;
+    collection.replaceChildren(new Option(tr("Tous les projets"),''));
+    title.textContent=tr("Atelier d’Aurore");
+    status.textContent=state==='not-configured'?tr("Liaison fichiers non configurée."):state==='invalid-origin'?tr("Origine du clone invalide."):state==='empty'?tr("Clone lié sans document lisible."):state==='partial'?tr("Catalogue du clone partiel · aucun document affiché."):state==='version-changed'?tr("Version du clone modifiée · actualisez le catalogue."):tr("Lecture du clone indisponible.");
     breadcrumbs();renderFiles();renderQueue();setLibrary(true);
   }
   function changeScope(value:unknown,restore:boolean,keepContext=false):void{
     followLatest=true;
     remember();scopeHistories.set(scopeState.current,{history:[...history],position});scopeState.select(value);scope.value=scopeState.current;
     generation++;catalogGeneration++;pendingOpen=false;current='';documentScope=scopeState.current;renderedRelative='';
-    entries=[];history=[...(scopeHistories.get(scopeState.current)?.history??[])];position=scopeHistories.get(scopeState.current)?.position??-1;cloneVersion=undefined;truncated=false;contextMode=keepContext;collection.replaceChildren(new Option('Tous les projets',''));search.value='';
-    frame.onload=null;closeApp();frame.srcdoc='';outline.replaceChildren(new Option('Sommaire indisponible',''));outline.disabled=true;
+    entries=[];history=[...(scopeHistories.get(scopeState.current)?.history??[])];position=scopeHistories.get(scopeState.current)?.position??-1;cloneVersion=undefined;truncated=false;contextMode=keepContext;collection.replaceChildren(new Option(tr("Tous les projets"),''));search.value='';
+    frame.onload=null;closeApp();frame.srcdoc='';outline.replaceChildren(new Option(tr("Sommaire indisponible"),''));outline.disabled=true;
     collection.disabled=false;search.disabled=false;format.disabled=false;
     byId<HTMLButtonElement>('document-latest').disabled=false;byId<HTMLButtonElement>('document-refresh').disabled=false;
     title.textContent=documentScopeLabel(scopeState.current);renderFiles();breadcrumbs();renderQueue();

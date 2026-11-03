@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-wake-coach"
+description = "Enables the wake_coach command without any pre-configured scope."
+commands.allow = ["wake_coach"]
+
+[[permission]]
+identifier = "deny-wake-coach"
+description = "Denies the wake_coach command without any pre-configured scope."
+commands.deny = ["wake_coach"]

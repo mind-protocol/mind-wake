@@ -1,3 +1,4 @@
+import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { renderMarkdown } from "./markdown.js";
 
@@ -85,15 +86,15 @@ export class ForkReadState {
 }
 
 export function forkStatus(fork: ForkView, model: ForksView): string {
-  if (!fork.enabled) return "Off · historique conservé";
-  if (model.profile === "hold") return "En pause avec Wake";
-  if (model.profile === "stop") return "En attente du profil Codex natif actif";
-  if ((model.retryAtMs ?? 0) > Date.now()) return "En attente du fournisseur";
-  if (!model.running) return "Démarrage du moteur…";
-  if (fork.planning && forkIsWorking(fork, model)) return "Travaille · choix de ses prochains wakes";
-  if (fork.projects.length === 0) return "En attente d’un projet disponible";
-  if (forkIsWorking(fork, model)) return `Travaille · ${fork.lastTurn?.projectId ?? "projet"}`;
-  return fork.lastTurn?.outcome === "rate_limited" ? "En attente du fournisseur" : "On";
+  if (!fork.enabled) return tr("Off · historique conservé");
+  if (model.profile === "hold") return tr("En pause avec Wake");
+  if (model.profile === "stop") return tr("En attente du profil Codex natif actif");
+  if ((model.retryAtMs ?? 0) > Date.now()) return tr("En attente du fournisseur");
+  if (!model.running) return tr("Démarrage du moteur…");
+  if (fork.planning && forkIsWorking(fork, model)) return tr("Travaille · choix de ses prochains wakes");
+  if (fork.projects.length === 0) return tr("En attente d’un projet disponible");
+  if (forkIsWorking(fork, model)) return tr("Travaille · {0}", [fork.lastTurn?.projectId ?? tr("projet")]);
+  return fork.lastTurn?.outcome === "rate_limited" ? tr("En attente du fournisseur") : "On";
 }
 export function mountForks(options: {
   invoke: (
@@ -105,7 +106,7 @@ export function mountForks(options: {
 }): void {
   const element = (id: string): HTMLElement => {
     const found = document.getElementById(id);
-    if (found === null) throw Error(`Élément #${id} absent`);
+    if (found === null) throw Error(tr("Élément #{0} absent", [id]));
     return found;
   };
   const controls = element("fork-controls");
@@ -116,7 +117,7 @@ export function mountForks(options: {
     avatar.className = "fork-icon";
     avatar.dataset["forkIcon"] = String(id);
     avatar.setAttribute("role", "img");
-    avatar.setAttribute("aria-label", `Agent Codex · fork ${String(id)}`);
+    avatar.setAttribute("aria-label", tr("Agent Codex · fork {0}", [String(id)]));
     avatar.textContent = `⑂${String(id)}`;
     return avatar;
   };
@@ -134,10 +135,10 @@ export function mountForks(options: {
   text.rows = 3;
   text.maxLength = 4000;
   text.required = true;
-  text.setAttribute("aria-label", "Message au fork sélectionné");
+  text.setAttribute("aria-label", tr("Message au fork sélectionné"));
   const send = document.createElement("button");
   send.type = "submit";
-  send.textContent = "Envoyer";
+  send.textContent = tr("Envoyer");
   const feedback = document.createElement("p");
   feedback.setAttribute("role", "status");
   form.append(text, send, feedback);
@@ -180,7 +181,7 @@ export function mountForks(options: {
     const working = (): HTMLElement => {
       const node = document.createElement("span");
       node.className = "fork-working";
-      node.textContent = "Travaille";
+      node.textContent = tr("Travaille");
       node.hidden = true;
       return node;
     };
@@ -189,14 +190,14 @@ export function mountForks(options: {
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.setAttribute("role", "switch");
-    toggle.setAttribute("aria-label", `Activer le fork Codex ${String(id)}`);
+    toggle.setAttribute("aria-label", tr("Activer le fork Codex {0}", [String(id)]));
     toggle.setAttribute("aria-checked", "false");
     toggle.textContent = "Off";
     const detail = document.createElement("small");
-    detail.textContent = "Lecture…";
+    detail.textContent = tr("Lecture…");
     const open = document.createElement("button");
     open.type = "button";
-    open.textContent = "Ouvrir le fil";
+    open.textContent = tr("Ouvrir le fil");
     row.append(label, toggle, open, overviewWorking, overviewUnread, detail);
     controls.append(row);
     const tab = document.createElement("button");
@@ -261,7 +262,7 @@ export function mountForks(options: {
       throw Error(
         typeof response.error?.message === "string"
           ? response.error.message
-          : "Commande de fork refusée",
+          : tr("Commande de fork refusée"),
       );
     return response.data as ForksView;
   }
@@ -287,14 +288,14 @@ export function mountForks(options: {
       const count = readState.unread(fork);
       for (const badge of row.unread) {
         badge.hidden = count === 0;
-        badge.textContent = count > 1 ? `Nouveau message · ${String(count)}` : "Nouveau message";
+        badge.textContent = count > 1 ? tr("Nouveau message · {0}", [String(count)]) : tr("Nouveau message");
       }
       const working = fresh && forkIsWorking(fork, model);
       for (const indicator of row.working) indicator.hidden = !working;
       row.tab.dataset["working"] = String(working);
       row.tab.setAttribute(
         "aria-label",
-        `Fork ${String(fork.id)}${working ? " · Travaille" : ""}${count ? ` · ${String(count)} message(s) non lu(s)` : ""}`,
+        `Fork ${String(fork.id)}${working ? tr(" · Travaille") : ""}${count ? ` · ${String(count)} message(s) non lu(s)` : ""}`,
       );
     }
     const working = active !== undefined && fresh && forkIsWorking(active, model);
@@ -342,7 +343,7 @@ export function mountForks(options: {
         const meta = document.createElement("small");
         if (entry.role === "agent") meta.append(icon(current), " ");
         meta.append(
-          `${entry.role === "human" ? "Toi" : entry.role === "agent" ? `Codex · fork ${String(current)}` : entry.activity ? `Activité${entry.source ? ` · ${entry.source}` : ""}` : "État"} · ${new Date(entry.at).toLocaleString("fr-FR")}${entry.delivered ? "" : " · en attente"}`,
+          `${entry.role === "human" ? tr("Toi") : entry.role === "agent" ? `Codex · fork ${String(current)}` : entry.activity ? tr("Activité{0}", [entry.source ? ` · ${entry.source}` : ""]) : tr("État")} · ${new Date(entry.at).toLocaleString(formatLocale())}${entry.delivered ? "" : tr(" · en attente")}`,
         );
         const body =
           entry.role === "agent" ? renderMarkdown(entry.text) : document.createElement("p");
@@ -370,7 +371,7 @@ export function mountForks(options: {
       .then((next) => {
         drafts.set(id, "");
         if (current === id && text.value.trim() === value) text.value = "";
-        feedback.textContent = `Message enregistré pour le fork ${String(id)}, à lire au prochain tour.`;
+        feedback.textContent = tr("Message enregistré pour le fork {0}, à lire au prochain tour.", [String(id)]);
         apply(next);
       })
       .catch(showError)

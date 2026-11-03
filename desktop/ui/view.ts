@@ -1,3 +1,4 @@
+import { tr, formatLocale } from "./i18n.js";
 /**
  * Modèle de vue du panneau « Que fait mon agent ? » (SPEC §21.2). Fonction pure :
  * l'enveloppe JSON de `mind-wake status --json` (ou son absence) devient des libellés.
@@ -30,11 +31,11 @@ const LIGHTS: Readonly<Record<string, Light>> = {
 };
 
 export const LIGHT_LABELS: Readonly<Record<Light, string>> = {
-  awake: "Éveillé",
-  on: "Allumé",
-  off: "Éteint",
-  forced_off: "Arrêt forcé",
-  unknown: "Inconnu",
+  awake: tr("Éveillé"),
+  on: tr("Allumé"),
+  off: tr("Éteint"),
+  forced_off: tr("Arrêt forcé"),
+  unknown: tr("Inconnu"),
 };
 
 export interface Line {
@@ -84,46 +85,46 @@ function num(value: unknown): number | null {
 }
 
 const STATE_LABELS: Readonly<Record<string, { readonly label: string; readonly tone: Tone }>> = {
-  disabled: { label: "Désactivé", tone: "idle" },
-  ready: { label: "Prêt, en attente d'un créneau", tone: "idle" },
-  running: { label: "Travaille", tone: "active" },
-  checkpointing: { label: "Prépare sa sauvegarde", tone: "active" },
-  hibernating: { label: "Hiberne", tone: "idle" },
-  paused: { label: "En pause", tone: "attention" },
-  blocked: { label: "Bloqué", tone: "attention" },
-  stopped: { label: "Arrêté", tone: "stopped" },
+  disabled: { label: tr("Désactivé"), tone: "idle" },
+  ready: { label: tr("Prêt, en attente d'un créneau"), tone: "idle" },
+  running: { label: tr("Travaille"), tone: "active" },
+  checkpointing: { label: tr("Prépare sa sauvegarde"), tone: "active" },
+  hibernating: { label: tr("Hiberne"), tone: "idle" },
+  paused: { label: tr("En pause"), tone: "attention" },
+  blocked: { label: tr("Bloqué"), tone: "attention" },
+  stopped: { label: tr("Arrêté"), tone: "stopped" },
 };
 
 const DAEMON_LABELS: Readonly<Record<string, string>> = {
-  running: "actif",
-  stopped: "arrêté proprement",
-  crashed: "interrompu sans arrêt enregistré",
-  never: "jamais lancé",
+  running: tr("actif"),
+  stopped: tr("arrêté proprement"),
+  crashed: tr("interrompu sans arrêt enregistré"),
+  never: tr("jamais lancé"),
 };
 
 function time(iso: string | null, now: number): string {
   if (iso === null) return "—";
   const at = Date.parse(iso);
   if (Number.isNaN(at)) return "—";
-  return `${new Date(at).toLocaleString("fr-FR")} (${relative(at - now)})`;
+  return `${new Date(at).toLocaleString(formatLocale())} (${relative(at - now)})`;
 }
 
 function relative(deltaMs: number): string {
   const s = Math.round(Math.abs(deltaMs) / 1000);
-  if (s === 0) return "à l'instant";
+  if (s === 0) return tr("à l'instant");
   const span =
     s < 60
       ? `${String(s)} s`
       : s < 3600
         ? `${String(Math.round(s / 60))} min`
         : `${String(Math.round(s / 3600))} h`;
-  return deltaMs >= 0 ? `dans ${span}` : `il y a ${span}`;
+  return deltaMs >= 0 ? tr("dans {0}", [span]) : tr("il y a {0}", [span]);
 }
 
 function unavailable(reason: string, read: StatusRead, now: number): PanelView {
   return {
     activeProject: null,
-    headline: "État indisponible",
+    headline: tr("État indisponible"),
     tone: "unknown",
     light: "unknown",
     canWake: false,
@@ -134,7 +135,7 @@ function unavailable(reason: string, read: StatusRead, now: number): PanelView {
     activity: [],
     consumption: [],
     protection: [],
-    lastContact: read.ok ? relative(read.fetchedAt - now) : "aucun contact réussi",
+    lastContact: read.ok ? relative(read.fetchedAt - now) : tr("aucun contact réussi"),
     // La pause et l'arrêt d'urgence passent par la CLI et SQLite, sans le daemon :
     // ils restent proposés même sans lecture d'état.
     canPause: true,
@@ -145,37 +146,37 @@ function unavailable(reason: string, read: StatusRead, now: number): PanelView {
 
 export function panelView(read: StatusRead | null, now: number): PanelView {
   if (read === null) {
-    return unavailable("Première lecture en cours.", { ok: false, fetchedAt: now, error: "" }, now);
+    return unavailable(tr("Première lecture en cours."), { ok: false, fetchedAt: now, error: "" }, now);
   }
-  if (!read.ok) return unavailable(`Lecture impossible : ${read.error}`, read, now);
+  if (!read.ok) return unavailable(tr("Lecture impossible : {0}", [read.error]), read, now);
   if (now - read.fetchedAt > STALE_AFTER_MS) {
     return unavailable(
-      "Dernière lecture trop ancienne pour être affichée comme l'état courant.",
+      tr("Dernière lecture trop ancienne pour être affichée comme l'état courant."),
       read,
       now,
     );
   }
   const envelope = rec(read.envelope);
   if (envelope?.["schema"] !== "mind-wake.cli" || envelope["schemaVersion"] !== 1) {
-    return unavailable("Format de statut inattendu (schéma mind-wake.cli v1 requis).", read, now);
+    return unavailable(tr("Format de statut inattendu (schéma mind-wake.cli v1 requis)."), read, now);
   }
   const data = rec(envelope["data"]);
   if (data === null) {
     const error = str(rec(envelope["error"])?.["message"]);
-    return unavailable(error ?? "Statut sans données.", read, now);
+    return unavailable(error ?? tr("Statut sans données."), read, now);
   }
   const profile = rec(data["profile"]);
   if (profile === null) {
     return {
-      ...unavailable(str(data["hint"]) ?? "Aucun profil Wake initialisé.", read, now),
-      headline: "Wake n'est pas configuré",
-      lastContact: "à l'instant",
+      ...unavailable(str(data["hint"]) ?? tr("Aucun profil Wake initialisé."), read, now),
+      headline: tr("Wake n'est pas configuré"),
+      lastContact: tr("à l'instant"),
       canPause: false,
       canStop: false,
     };
   }
 
-  const state = str(profile["state"]) ?? "inconnu";
+  const state = str(profile["state"]) ?? tr("inconnu");
   const known = STATE_LABELS[state];
   const daemon = rec(data["daemon"]);
   const daemonState = str(daemon?.["state"]) ?? "never";
@@ -192,15 +193,15 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
   const provenance = str(lastSession?.["provenance"]);
   const consumption: Line[] = [
     {
-      label: "Dernière session",
+      label: tr("Dernière session"),
       value:
         tokens === null
-          ? "tokens inconnus"
-          : `${tokens.toLocaleString("fr-FR")} tokens (${provenance ?? "provenance inconnue"})`,
+          ? tr("tokens inconnus")
+          : `${tokens.toLocaleString(formatLocale())} tokens (${provenance ?? tr("provenance inconnue")})`,
     },
     {
-      label: "Budget disponible",
-      value: `inconnu — ${str(budget?.["detail"]) ?? "non consultable"}`,
+      label: tr("Budget disponible"),
+      value: tr("inconnu — {0}", [str(budget?.["detail"]) ?? tr("non consultable")]),
     },
   ];
   if (caps !== null) {
@@ -208,11 +209,11 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
     const perPeriod = num(caps["tokensPerPeriod"]);
     const sessions = num(caps["sessionsPerPeriod"]);
     consumption.push({
-      label: "Plafonds",
+      label: tr("Plafonds"),
       value: [
-        perSession === null ? null : `${perSession.toLocaleString("fr-FR")} tokens/session`,
-        perPeriod === null ? null : `${perPeriod.toLocaleString("fr-FR")} tokens/période`,
-        sessions === null ? null : `${String(sessions)} sessions/période`,
+        perSession === null ? null : `${perSession.toLocaleString(formatLocale())} tokens/session`,
+        perPeriod === null ? null : tr("{0} tokens/période", [perPeriod.toLocaleString(formatLocale())]),
+        sessions === null ? null : tr("{0} sessions/période", [String(sessions)]),
         str(period?.["kind"]),
       ]
         .filter((part) => part !== null)
@@ -224,23 +225,23 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
   const quota = rec(budget?.["subscriptionQuota"]);
   const protection: Line[] = [
     {
-      label: "Réserve humaine",
-      value: reserve === null ? "non définie" : `${reserve.toLocaleString("fr-FR")} tokens`,
+      label: tr("Réserve humaine"),
+      value: reserve === null ? tr("non définie") : `${reserve.toLocaleString(formatLocale())} tokens`,
     },
     {
-      label: "Garde de quota fournisseur",
+      label: tr("Garde de quota fournisseur"),
       value:
         quota === null
-          ? "aucune"
+          ? tr("aucune")
           : quota["enabled"] === true
-            ? `départ sous ${str(quota["startBelow"]) ?? "?"}, arrêt à ${str(quota["stopAt"]) ?? "?"} — jauge du fournisseur, pas une borne de tokens`
-            : "désactivée",
+            ? tr("départ sous {0}, arrêt à {1} — jauge du fournisseur, pas une borne de tokens", [str(quota["startBelow"]) ?? "?", str(quota["stopAt"]) ?? "?"])
+            : tr("désactivée"),
     },
-    { label: "Prochain réveil", value: time(str(profile["nextWakeAt"]), now) },
+    { label: tr("Prochain réveil"), value: time(str(profile["nextWakeAt"]), now) },
   ];
 
   return {
-    headline: known?.label ?? `État ${state}`,
+    headline: known?.label ?? tr("État {0}", [state]),
     activeProject: str(data["activeProject"]),
     tone: known?.tone ?? "unknown",
     light: LIGHTS[state] ?? "unknown",
@@ -250,27 +251,27 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
       ["ready", "hibernating", "running", "checkpointing"].includes(state),
     canAlwaysOn:
       state === "stopped" || (!locked && ["ready", "hibernating", "running", "checkpointing", "paused"].includes(state)),
-    reason: profile["stateReason"] === "launch.allowed" ? "L’agent travaille sur une session autorisée." : str(profile["stateReason"]) ?? "motif non communiqué",
+    reason: profile["stateReason"] === "launch.allowed" ? tr("L’agent travaille sur une session autorisée.") : str(profile["stateReason"]) ?? tr("motif non communiqué"),
     simulated,
     activity: [
-      { label: "Exploration", value: str(experiment?.["title"]) ?? "aucune exploration active" },
+      { label: tr("Exploration"), value: str(experiment?.["title"]) ?? tr("aucune exploration active") },
       {
-        label: "Dernier événement",
+        label: tr("Dernier événement"),
         value:
           lastEvent === null
             ? "—"
             : `${str(lastEvent["reason"]) ?? str(lastEvent["type"]) ?? "?"} · ${time(str(lastEvent["at"]), now)}`,
       },
       {
-        label: "Dernière session",
+        label: tr("Dernière session"),
         value:
           lastSession === null
-            ? "aucune"
+            ? tr("aucune")
             : `${str(lastSession["outcome"]) ?? "?"} — ${str(lastSession["reason"]) ?? ""}`,
       },
       {
         label: "Daemon",
-        value: `${DAEMON_LABELS[daemonState] ?? daemonState}${simulated ? " (SIMULÉ)" : ""}`,
+        value: `${DAEMON_LABELS[daemonState] ?? daemonState}${simulated ? tr(" (SIMULÉ)") : ""}`,
       },
     ],
     consumption,
