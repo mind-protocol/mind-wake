@@ -17,6 +17,7 @@ import { resolveDataDir } from "../../src/cli/paths.js";
 import { processContext } from "../../src/cli/context.js";
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
+import { registerWakeManagerTools } from "./wake-manager-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
 import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
@@ -527,6 +528,7 @@ server.registerTool(
 
 registerOwnerTools(server, process.env);
 registerBackgroundTools(server, process.env);
+registerWakeManagerTools(server, process.env);
 registerRepoTools(server, process.env);
 registerPeerTaskLocalTools(server, process.env, async () => {
   if (hub === null) throw Error("Authenticated local hub required for peer decisions");

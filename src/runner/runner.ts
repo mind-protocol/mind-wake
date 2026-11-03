@@ -207,6 +207,7 @@ export interface RunnerDeps {
   readonly now?: () => Date;
   /** Checkpoints candidats, à valider par S8 ; le runner ne publie rien. */
   readonly onCheckpointCandidate?: (candidate: CheckpointCandidate) => void;
+  readonly onSessionStarted?: (sessionId: SessionId) => void;
   readonly options?: Partial<RunnerOptions>;
 }
 
@@ -273,6 +274,7 @@ export class SessionRunner {
   readonly #liveChecks: RunnerDeps["liveChecks"];
   readonly #now: () => Date;
   readonly #onCheckpoint: RunnerDeps["onCheckpointCandidate"];
+  readonly #onStarted: RunnerDeps["onSessionStarted"];
   readonly #options: RunnerOptions;
   readonly #journal: JournalWriter;
   #active: ActiveSession | null = null;
@@ -287,6 +289,7 @@ export class SessionRunner {
     this.#liveChecks = deps.liveChecks;
     this.#now = deps.now ?? (() => new Date());
     this.#onCheckpoint = deps.onCheckpointCandidate;
+    this.#onStarted = deps.onSessionStarted;
     this.#options = { ...DEFAULT_RUNNER_OPTIONS, ...deps.options };
     this.#journal = new JournalWriter(deps.uow.journal);
     this.host = {
@@ -522,7 +525,9 @@ export class SessionRunner {
           reservationId: session.reservation.id,
           policy: session.revision,
           context: session.grant.context,
-          ...(session.grant.systemContext === undefined ? {} : { systemContext: session.grant.systemContext }),
+          ...(session.grant.systemContext === undefined
+            ? {}
+            : { systemContext: session.grant.systemContext }),
           ...(session.grant.wakeImage === undefined ? {} : { wakeImage: session.grant.wakeImage }),
           maxInputTokens: session.grant.maxInputTokens,
           deadline: Number.isFinite(session.deadlineMs) ? utc(session.deadlineMs) : null,
@@ -644,7 +649,9 @@ export class SessionRunner {
       ...(command.env === undefined ? {} : { env: command.env }),
       ...(command.cwd === undefined ? {} : { cwd: command.cwd }),
       ...(session.revision.groups.runtime.nativeCapabilities === true
-        ? (command.maxProcesses === undefined ? {} : { maxProcesses: command.maxProcesses })
+        ? command.maxProcesses === undefined
+          ? {}
+          : { maxProcesses: command.maxProcesses }
         : { maxProcesses: Math.min(command.maxProcesses ?? maxProcesses, maxProcesses) }),
     });
     return session.process;
@@ -752,6 +759,8 @@ export class SessionRunner {
         session.ended = event.exitReason;
         break;
       case "started":
+        this.#onStarted?.(session.ref.sessionId);
+        break;
       case "activity":
       case "artifact_candidate":
         break;
