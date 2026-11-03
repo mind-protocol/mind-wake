@@ -436,6 +436,7 @@ describe("sortie JSON versionnée", () => {
       dataDir: h.dataDir,
       executionMode: "on",
       keyboardContext: { state: "off", bufferedChanges: 0 },
+      wakePreview: {state: "unavailable", dayLength: 50, blockLength: 10, completed: 0, wakes: []},
       persistence: "memory",
       profile: {
         id: "default",

@@ -1,9 +1,11 @@
-import { messageLinks } from './message-links.js';
+import { externalUrl, markdownLinks, messageLinks } from './message-links.js';
 /** Pure matching against known local documents; no filesystem or DOM access. */
 export type FileScope = 'agent' | 'project';
 export interface KnownFile { scope:FileScope; relative:string; name:string }
-export interface FileCatalog { scope:FileScope; entries:readonly {relative:string;name?:string}[] }
-export interface FileMention { start:number; end:number; text:string; files:KnownFile[] }
+/** `root` is the absolute folder of the catalogue, when known, for absolute Markdown destinations. */
+export interface FileCatalog { scope:FileScope; entries:readonly {relative:string;name?:string}[]; root?:string|undefined }
+/** `label` is set for a Markdown link: `text` keeps the whole `[label](destination)` source. */
+export interface FileMention { start:number; end:number; text:string; files:KnownFile[]; label?:string }
 
 interface Span { start:number; end:number }
 interface Index { aliases:Map<string,KnownFile[]>; matcher:RegExp|null }
@@ -59,10 +61,37 @@ function fencedSpans(text:string):Span[]{
   if(active)spans.push({start:active.start,end:text.length});return spans;
 }
 
+const rootKey=(value:string):string=>key(value.replaceAll('\\','/').replace(/^\/\/\?\//,'').replace(/\/+$/,''));
+
+/** A local destination resolves only to an exact catalogue path, never to a bare suffix. */
+function linkedFiles(destination:string,catalogs:readonly FileCatalog[],index:Index):KnownFile[]{
+  let path=destination.trim();
+  try{path=decodeURI(path);}catch{/* keep the literal destination */}
+  path=path.replace(/^file:\/\/\/?/i,'').replaceAll('\\','/').replace(/[?#].*$/,'');
+  if(/^\/[a-z]:\//i.test(path))path=path.slice(1);
+  const known=(scope:FileScope|null,relative:string):KnownFile[]=>{
+    const normalized=normalizeReference(relative);if(!normalized)return [];
+    return (index.aliases.get(key(normalized))??[]).filter(file=>(!scope||file.scope===scope)&&key(file.relative)===key(normalized));
+  };
+  if(!/^(?:[a-z]:)?\//i.test(path))return known(null,path);
+  for(const catalog of catalogs){
+    if(!catalog.root)continue;
+    const root=rootKey(catalog.root);
+    if(root&&key(path).startsWith(root+'/')){const files=known(catalog.scope,path.slice(root.length+1));if(files.length)return files;}
+  }
+  return [];
+}
+
 /** Offsets are JavaScript UTF-16 offsets, suitable for splitting a DOM text node. */
 export function findFileMentions(text:string,catalogs:readonly FileCatalog[]):FileMention[]{
   const index=indexFor(catalogs);if(!index.matcher||!text)return [];
   const protectedSpans=[...fencedSpans(text),...messageLinks(text).map(({start,end})=>({start,end}))],mentions:FileMention[]=[];
+  for(const link of markdownLinks(text)){
+    protectedSpans.push({start:link.start,end:link.end});
+    if(link.image||externalUrl(link.destination))continue;
+    const files=linkedFiles(link.destination,catalogs,index);
+    if(files.length)mentions.push({start:link.start,end:link.end,text:text.slice(link.start,link.end),files,label:link.label});
+  }
   const protect=(regex:RegExp):void=>{for(const m of text.matchAll(regex))protectedSpans.push({start:m.index,end:m.index+m[0].length});};
   // Protocols, web addresses and email are never treated as local filenames.
   protect(/\b[a-z][a-z0-9+.-]*:[^\s<>"'`]+/gi);

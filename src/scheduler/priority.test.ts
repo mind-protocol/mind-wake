@@ -117,6 +117,7 @@ describe("signal d'activité observé en continu (daemon en mode réel)", () => 
         while (watcher.latest() === null && performance.now() - begin < 10_000) await settle();
         const first = watcher.latest();
         expect(first).not.toBeNull();
+        expect(typeof first?.mindForeground).toBe("boolean");
         await new Promise((resolve) => setTimeout(resolve, 1_000));
         const later = watcher.latest();
         expect((later?.observedAtMs ?? 0) - (first?.observedAtMs ?? 0)).toBeGreaterThan(500);

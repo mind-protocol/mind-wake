@@ -1,5 +1,6 @@
+import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
-import { withWakeManager, WAKE_MANAGER_INSTRUCTIONS } from "./wake-manager.js";
+import { withWakeManager } from "./wake-manager.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
 import { collectAgentScreenshot } from "./agent-screenshot-policy.js";
 import {
@@ -119,6 +120,8 @@ import { AgentWakeups, type QuotaSource } from "./wakeups.js";
 import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
 import { currentContextEvent } from "./current-context.js";
+import { ownerIsWatching, ownerPresenceEvent } from "./owner-presence.js";
+import { OwnerProgressReminder } from "../communication/owner-progress-reminder.js";
 import { openSharedInboxSession, type SharedInboxSession } from "../communication/shared-inbox.js";
 import { ownerMessagePending } from "../communication/owner-inbox.js";
 import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
@@ -260,6 +263,7 @@ export class WakeDaemon implements SessionLauncher {
   #backgroundJobs: BackgroundJobs | null = null;
   #workspaceSync: WorkspaceGitSync | null = null;
   #auroreSync: AuroreGitSync | null = null;
+  #ownerProgress: OwnerProgressReminder | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -654,6 +658,9 @@ export class WakeDaemon implements SessionLauncher {
         };
         this.#workspaceSync = new WorkspaceGitSync(this.#o.dataDir, syncAllowed);
         this.#auroreSync = new AuroreGitSync(this.#o.dataDir, syncAllowed);
+        this.#ownerProgress = new OwnerProgressReminder(this.#o.dataDir,
+          () => syncAllowed() && ownerIsWatching(this.#idleWatcher?.latest() ?? null));
+        this.#ownerProgress.start();
       }
       if (real !== null && real.sandbox === null) {
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
@@ -682,6 +689,7 @@ export class WakeDaemon implements SessionLauncher {
   }
 
   #close(): void {
+    this.#ownerProgress?.close();
     this.#keyboardContext.close();
     const at = utcNow();
     try {
@@ -795,7 +803,16 @@ export class WakeDaemon implements SessionLauncher {
     const startedAtMs = Date.now();
     let result: SessionResult;
     let sharedInbox: SharedInboxSession | null = null;
+    let projectLease: InstanceLock | null = null;
+    const reservedProject=withWakeManager(workspaceDirFor(this.#o.dataDir),m=>m.pending()?.projectId ?? null);
     try {
+      if(reservedProject) {
+        while(activeClaudeProject(this.#o.dataDir)===reservedProject || !(projectLease=tryProjectLease(this.#o.dataDir,reservedProject))) {
+          const state=uow.profiles.get(this.#o.profileId);
+          if(this.#abort.signal.aborted || !state || ["paused","checkpointing","stopped","disabled"].includes(state.state))throw Error("Wake arrêté pendant l’attente du projet réservé");
+          await new Promise(resolve=>setTimeout(resolve,500));
+        }
+      }
       const visual = await collectAgentScreenshot({
         artifactsDir: this.#root.real,
         stateDir: this.#o.dataDir,
@@ -880,6 +897,7 @@ export class WakeDaemon implements SessionLauncher {
         ...(humanRequested ? { humanRequested: true } : {}),
       });
       result = await running.done;
+      if(reservedProject && result.outcome==="orphaned")uncertainProjectLease(this.#o.dataDir,reservedProject,"Terminaison de la session principale non confirmée");
     } catch (error) {
       // Lancement impossible (arrêt survenu entre-temps…) : la session préparée devient
       // orpheline, sa réservation reste incertaine ; rien n'est relancé.
@@ -901,6 +919,7 @@ export class WakeDaemon implements SessionLauncher {
       };
     } finally {
       sharedInbox?.stop();
+      projectLease?.release();
     }
     this.#sessions.delete(ticket.sessionId);
     try {
@@ -998,16 +1017,27 @@ export class WakeDaemon implements SessionLauncher {
         if (pending.projectId) m.mirror(pending.projectId);
       }
       const assigned = m.reserve(ticket.sessionId);
-      return assigned ? m.prompt(assigned) : null;
+      return assigned ? {
+        event: m.prompt(assigned),
+        instructions: m.instructions(assigned),
+        context: {
+          number: assigned.number,
+          inBlock: assigned.inBlock,
+          projectId: assigned.projectId,
+          contextPath: assigned.contextPath,
+          summary: assigned.projectId ? m.project(assigned.projectId).context?.summary ?? null : null,
+        },
+      } : null;
     });
     const composition = composeWake({
       templates: this.#templates,
       events: [
         ...events,
-        ...(rotation ? [rotation] : []),
+        ...[ownerPresenceEvent(this.#idleWatcher?.latest() ?? null)].filter((e) => e !== null),
+        ...(rotation ? [rotation.event] : []),
         ...(this.#backgroundJobs?.store.events(true) ?? []),
-        // Contexte en cours noté par l'agent : rappel de son projet et de ses réveils budgétés.
-        ...[currentContextEvent(artifactsDirFor(this.#o.dataDir))].filter((e) => e !== null),
+        // With rotation, the selected reservation supersedes the legacy free-form note.
+        ...[currentContextEvent(artifactsDirFor(this.#o.dataDir), rotation?.context ?? null)].filter((e) => e !== null),
       ],
       revision,
       isolation,
@@ -1026,7 +1056,7 @@ export class WakeDaemon implements SessionLauncher {
     const managedComposition = rotation
       ? {
           ...composition,
-          systemContext: `${composition.systemContext}\n\n${WAKE_MANAGER_INSTRUCTIONS}`,
+          systemContext: `${composition.systemContext}\n\n${rotation.instructions}`,
         }
       : composition;
     recordWakePrompt(db, this.#o.profileId, ticket.sessionId, managedComposition, utcNow());

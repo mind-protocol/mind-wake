@@ -29,3 +29,8 @@ desktop/src-tauri/gen/
 .codex/
 output/
 *.lnk
+
+# Temporary test and compiler caches
+.cache/
+**/node-compile-cache/
+outputs/fork-test-tmp/

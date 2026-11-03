@@ -31,6 +31,12 @@ server-main.ts ── lecture seule ── src/cli/commands/{status,journal}.ts,
 
 ## Outils locaux complémentaires
 
+Une intégration Reddit optionnelle ajoute les lectures et, si explicitement
+activées, les publications via OAuth dans ce même serveur. Elle est désactivée
+par défaut et n'utilise pas le hub de messages. Voir [REDDIT.md](../../docs/REDDIT.md)
+pour les outils, les identifiants et les limites ; contrairement au parcours
+personnel décrit ci-dessus, ces outils effectuent des appels Internet.
+
 Le serveur enregistre aussi les outils du propriétaire (owner-tools.ts), les jobs (background-tools.ts) et les conversations de dépôt (repo-tools.ts), selon leur configuration locale :
 
 - message_owner, list_owner_messages, edit_owner_message, delete_owner_message : messages visibles dans le desktop et lecture des réponses humaines ; aucun envoi externe.

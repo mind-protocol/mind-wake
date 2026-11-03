@@ -114,6 +114,14 @@ pub fn wake(verb: Verb) -> Result<CliRun, String> {
     run(wake_args(verb.args())?, None)
 }
 
+pub fn wake_order(revision: u64, project_ids: Vec<String>) -> Result<CliRun, String> {
+    if project_ids.is_empty() || project_ids.len() > 50 || project_ids.iter().any(|id| id.len() > 128) {
+        return Err("Ordre de projets invalide".into());
+    }
+    let input = serde_json::json!({"revision": revision, "projectIds": project_ids}).to_string();
+    run(wake_args(&["wake-order"])? , Some(input))
+}
+
 /// Read-only local Git binding; no endpoint or path is accepted from the webview.
 pub fn aurore_document(relative: String, read: bool, image: bool, version: Option<String>) -> Result<CliRun, String> {
     let input = serde_json::json!({"relative": relative, "read": read, "image": image, "version": version}).to_string();
@@ -298,6 +306,66 @@ pub fn restart_daemon() -> Result<CliRun, String> {
         }
     }
     Err("Le nouveau moteur n’a pas confirmé son démarrage. Consulter daemon.log avant de réessayer.".into())
+}
+
+/// Second fil Claude Code : actions fixes. « on » et « ensure » démarrent le worker détaché
+/// s'il est activé, arrêté et que le profil le permet ; le texte passe par l'entrée standard.
+pub fn second_thread(action: &str, text: Option<String>) -> Result<CliRun, String> {
+    if action == "send" {
+        let body = text.ok_or("Message manquant")?;
+        if body.trim().is_empty() || body.chars().count() > 4000 { return Err("Message vide ou trop long".into()); }
+        return run(wake_args(&["second-thread", "send"])?, Some(body));
+    }
+    let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", _ => return Err("Action inconnue".into()) };
+    let result = run(wake_args(&["second-thread", verb])?, None)?;
+    if matches!(action, "on" | "ensure") && result.exit_code == 0 {
+        let data = serde_json::from_str::<serde_json::Value>(&result.stdout).map(|j| j["data"].clone()).unwrap_or_default();
+        if data["enabled"] == true && data["running"] == false && data["profile"] == "run" {
+            start_second_thread(data["dataDir"].as_str().ok_or("dossier de données inconnu")?)?;
+        }
+    }
+    Ok(result)
+}
+
+pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>) -> Result<CliRun, String> {
+    let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action inconnue".into()) };
+    let body = if matches!(action, "on" | "off" | "send") {
+        let slot = id.filter(|n| (2..=8).contains(n)).ok_or("Fork attendu : 2 à 8")?;
+        if action == "send" && text.as_ref().is_none_or(|s| s.trim().is_empty() || s.chars().count() > 4000) { return Err("Message vide ou trop long".into()); }
+        Some(serde_json::json!({"id":slot,"text":text}).to_string())
+    } else { None };
+    let result = run(wake_args(&["forks", verb])?, body)?;
+    if matches!(action, "on" | "ensure") && result.exit_code == 0 {
+        let data = serde_json::from_str::<serde_json::Value>(&result.stdout).map(|j| j["data"].clone()).unwrap_or_default();
+        let enabled = data["forks"].as_array().is_some_and(|rows| rows.iter().any(|r| r["enabled"] == true));
+        if enabled && data["running"] == false && data["profile"] == "run" {
+            start_parallel_worker(data["dataDir"].as_str().ok_or("Dossier de données inconnu")?, "forks", "forks.log")?;
+        }
+    }
+    Ok(result)
+}
+
+fn start_second_thread(data_dir: &str) -> Result<(), String> {
+    start_parallel_worker(data_dir, "second-thread", "second-thread.log")
+}
+
+fn start_parallel_worker(data_dir: &str, worker: &str, log_name: &str) -> Result<(), String> {
+    let log = std::fs::OpenOptions::new().create(true).append(true)
+        .open(PathBuf::from(data_dir).join(log_name))
+        .map_err(|e| format!("journal du second fil : {e}"))?;
+    let err = log.try_clone().map_err(|e| e.to_string())?;
+    let mut command = Command::new(node());
+    command.args(wake_args(&[worker, "run", "--data-dir", data_dir])?)
+        .stdin(Stdio::null()).stdout(log).stderr(err);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+        command.creation_flags(CREATE_NO_WINDOW | DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP);
+    }
+    command.spawn().map(|_| ()).map_err(|e| format!("démarrage du second fil : {e}"))
 }
 
 /// Réponse de l'humain à son agent (`mind-wake reply`) : clé vérifiée ici puis par la CLI,

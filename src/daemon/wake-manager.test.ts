@@ -3,7 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { WakeManager, contextPath } from "./wake-manager.js";
+import { WakeManager, contextPath, WAKE_MANAGER_INSTRUCTIONS, readCurrentWakeObjective } from "./wake-manager.js";
+import { updatePromptImprovementProject, PROMPT_IMPROVEMENT_PROJECT } from "./prompt-improvement-project.js";
+import { readCounter, readCurrentProject } from "./project-change.js";
 let dir: string, manager: WakeManager;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-manager-"));
@@ -33,6 +35,106 @@ function complete(id: string) {
   manager.finish(id, "completed", { journalSessionId: id });
   return wake;
 }
+function futureBlocks() {
+  const pending = manager.pending();
+  const wakes = manager.next(500).wakes;
+  return wakes.filter(w => w.inBlock === 1 && (!pending || w.sessionId !== pending.sessionId) &&
+    wakes.some(end => end.number === w.number + 9 && end.projectId === w.projectId && end.inBlock === 10)).map(w => w.projectId!);
+}
+it("persists a reordered queue and executes it without preview consumption or lost blocks", () => {
+  const order = futureBlocks();
+  const [first] = order.splice(0, 1); order.splice(2, 0, first!);
+  manager.reorderBlocks(order, manager.status()!.revision);
+  expect(manager.status()?.used).toBe(0);
+  expect(manager.next(30).wakes.filter(w => w.inBlock === 1).map(w => w.projectId)).toEqual(order.slice(0, 3));
+  manager.close(); manager = new WakeManager(dir);
+  expect(manager.next(30).wakes.filter(w => w.inBlock === 1).map(w => w.projectId)).toEqual(order.slice(0, 3));
+  for (let i = 0; i < 20; i++) expect(complete(`ordered-${i}`)?.projectId).toBe(order[Math.floor(i / 10)]);
+  expect(manager.status()?.used).toBe(20);
+  expect(manager.next(1).wakes[0]?.projectId).toBe(order[2]);
+});
+it("keeps a reserved block and its remaining wakes ahead of a reordered future queue", () => {
+  manager.reserve("reserved"); manager.started("reserved");
+  const order = futureBlocks().reverse();
+  manager.reorderBlocks(order, manager.status()!.revision);
+  expect(manager.pending()?.projectId).toBe("a");
+  manager.finish("reserved", "completed");
+  expect(manager.next(9).wakes.every(w => w.projectId === "a")).toBe(true);
+  for (let i = 0; i < 9; i++) complete(`remainder-${i}`);
+  expect(complete("next-ordered")?.projectId).toBe(order[0]);
+});
+it("rejects stale or incomplete reorders without changing the live queue", () => {
+  const order = futureBlocks(), revision = manager.status()!.revision;
+  expect(() => manager.reorderBlocks(order.slice(1), revision)).toThrow("blocs disponibles");
+  manager.reorderBlocks(order, revision);
+  expect(() => manager.reorderBlocks(order.reverse(), revision)).toThrow("planning a changé");
+  expect(manager.status()?.used).toBe(0);
+});
+it("projects only the actually running wake and follows plan revisions without consuming slots", () => {
+  manager.reserve("current");
+  expect(readCurrentWakeObjective(dir, "current")).toBeNull();
+  manager.started("current");
+  expect(readCurrentWakeObjective(dir, "other")).toBeNull();
+  expect(readCurrentWakeObjective(dir, "current")).toMatchObject({number: 1, inBlock: 1, title: "Project a", objective: "Retrouver le contexte et préparer le plan du bloc."});
+  const plan = Array.from({length: 10}, (_, i) => ({wake: i + 1, objective: `Objectif ${i + 1}`, expected: "Preuve"}));
+  manager.plan("a", plan);
+  expect(readCurrentWakeObjective(dir, "current")).toMatchObject({objective: "Objectif 1", expected: "Preuve"});
+  manager.plan("a", plan.map(s => ({...s, objective: "Révisé"})));
+  expect(readCurrentWakeObjective(dir, "current")?.objective).toBe("Révisé");
+  expect(manager.status()?.used).toBe(0);
+  manager.finish("current", "completed");
+  expect(readCurrentWakeObjective(dir, "current")).toBeNull();
+  manager.reserve("second");
+  manager.started("second");
+  expect(readCurrentWakeObjective(dir, "second")).toMatchObject({number: 2, inBlock: 2});
+});
+it("loads the planning skill at block preparation and leaves a planned work wake short", () => {
+  const first = manager.reserve("prepare");
+  expect(first).not.toBeNull();
+  expect(manager.instructions(first!)).toContain("name: planifier-wakes");
+  manager.plan("a", Array.from({ length: 10 }, (_, i) => ({ wake: i + 1, objective: `work ${i + 1}`, expected: "observed result" })));
+  manager.started("prepare");
+  manager.finish("prepare", "completed");
+  const work = manager.reserve("work");
+  expect(work?.inBlock).toBe(2);
+  expect(manager.instructions(work!)).toBe(WAKE_MANAGER_INSTRUCTIONS);
+  expect(manager.prompt(work!)).toContain('"objective":"work 2"');
+});
+it("loads the planning skill when a work wake has no plan", () => {
+  complete("unplanned-first");
+  const work = manager.reserve("unplanned-next");
+  expect(work?.phase).toBe("work");
+  expect(manager.instructions(work!)).toContain("plan de bloc absent ou incomplet");
+  expect(manager.instructions(work!)).toContain("name: planifier-wakes");
+});
+it("revisits planning at the next block even with an existing complete plan", () => {
+  for (const id of ["a", "b"]) manager.plan(id, Array.from({ length: 10 }, (_, i) => ({ wake: i + 1, objective: "work", expected: "result" })));
+  for (let i = 0; i < 10; i++) complete(`first-block-${i}`);
+  const next = manager.reserve("next-block");
+  expect(next?.projectId).toBe("b");
+  expect(manager.instructions(next!)).toContain("début de bloc");
+  expect(manager.instructions(next!)).toContain("name: planifier-wakes");
+});
+it("prioritizes prompt improvement across an in-flight wake and releases rotation after compression", () => {
+  manager.reserve("in-flight");
+  manager.started("in-flight");
+  updatePromptImprovementProject(dir, true);
+  expect(readCurrentProject(dir)).toBe(PROMPT_IMPROVEMENT_PROJECT);
+  expect(readCounter(dir)?.["projects"]).toHaveProperty("a");
+  manager.finish("in-flight", "completed");
+  expect(manager.next(20).wakes.every(wake => wake.projectId === PROMPT_IMPROVEMENT_PROJECT)).toBe(true);
+  for (let i = 0; i < 10; i++) expect(complete(`improve-${i}`)?.projectId).toBe(PROMPT_IMPROVEMENT_PROJECT);
+  updatePromptImprovementProject(dir, false);
+  expect(manager.next(1).wakes[0]?.projectId).not.toBe(PROMPT_IMPROVEMENT_PROJECT);
+  expect(readCounter(dir)?.["projects"]).toHaveProperty(PROMPT_IMPROVEMENT_PROJECT);
+});
+it("does not reactivate a paused prompt improvement project on another warning", () => {
+  updatePromptImprovementProject(dir, true);
+  manager.setStatus(PROMPT_IMPROVEMENT_PROJECT, "paused", "human pause");
+  updatePromptImprovementProject(dir, true);
+  expect(manager.next(1).wakes[0]?.projectId).toBe("a");
+  expect(manager.project(PROMPT_IMPROVEMENT_PROJECT).status).toBe("paused");
+});
 it("previews 500 wakes in 50-wake days and ten-wake blocks without consuming anything", () => {
   const wakes = manager.next(500).wakes;
   expect(wakes).toHaveLength(500);

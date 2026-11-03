@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
+import { workspaceDirFor } from "../daemon/paths.js";
+import { withPromptSizeWarning, withoutPromptSizeWarning } from "./prompt-size-warning.js";
 
 export const OWNER_MESSAGES_DB = "owner-messages.sqlite";
 export interface OwnerMessage {
@@ -59,6 +61,18 @@ export function readOwnerMessages(dataDir: string): OwnerMessage[] | null {
     db.close();
   }
 }
+
+/** Only successful publications count as news; neither tool activity nor message deletion does. */
+export function latestOwnerPublication(dataDir: string): number | null | undefined {
+  const file = filename(dataDir);
+  if (!fs.existsSync(file)) return undefined;
+  const db = new Database(file, { readonly: true, fileMustExist: true });
+  try {
+    if (!db.prepare("SELECT 1 FROM channel_state WHERE active=1").get()) return undefined;
+    const row = db.prepare("SELECT MAX(created_at) AS at FROM messages").get() as { at: string | null };
+    return row.at === null ? null : Date.parse(row.at);
+  } finally { db.close(); }
+}
 export class OwnerMessages {
   readonly #db: Database.Database;
   constructor(
@@ -107,10 +121,11 @@ export class OwnerMessages {
           .prepare("SELECT * FROM messages WHERE request_key=?")
           .get(requestKey) as Row | undefined;
         if (existing !== undefined) {
-          if (existing.agent_id !== this.agentId || existing.text !== text || existing.deleted)
+          if (existing.agent_id !== this.agentId || withoutPromptSizeWarning(existing.text) !== withoutPromptSizeWarning(text) || existing.deleted)
             throw new OwnerMessageError("conflict", "This request key was already used.");
           return project(existing);
         }
+        text = withPromptSizeWarning(workspaceDirFor(this.dataDir), text);
         const at =
             createdAt === undefined ? new Date().toISOString() : new Date(createdAt).toISOString(),
           id = `own_${randomUUID()}`;
@@ -146,6 +161,7 @@ export class OwnerMessages {
             "conflict",
             "Message changed: list messages and retry with the current version.",
           );
+        if (text !== null) text = withPromptSizeWarning(workspaceDirFor(this.dataDir), text);
         const at = new Date().toISOString(),
           version = row.version + 1;
         this.#db

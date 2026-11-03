@@ -13,6 +13,8 @@ import type {
 } from "../contracts/index.js";
 import { POLICY_SCHEMA_VERSION } from "../contracts/index.js";
 import { openStore, type Store } from "../store/index.js";
+import { ownerPresenceEvent } from "./owner-presence.js";
+import { WAKE_HOME_SYSTEM_PROMPT } from "../adapters/wake-system-prompt.js";
 import {
   NUDGES,
   WAKE_FIELDS,
@@ -84,6 +86,15 @@ function inputs(overrides: Partial<WakeInputs> = {}): WakeInputs {
 }
 
 describe("composition d'un réveil", () => {
+  it("carries native desktop presence in the wake message beside the shared communication rule", () => {
+    const now = Date.parse("2026-11-03T12:00:00Z");
+    const event = ownerPresenceEvent({ idleMs: 100, observedAtMs: now,
+      mindForeground: false, mindLastForegroundAtMs: now - 30_000 }, now);
+    const wake = composeWake(inputs({ events: [event!] }));
+    expect(wake.text).toContain("human potentially watching=true");
+    expect(WAKE_HOME_SYSTEM_PROMPT).toContain("within the last 30 seconds");
+    expect(WAKE_HOME_SYSTEM_PROMPT).toContain("more than 120 seconds");
+  });
   it("appends ÉTAPES while preserving the entire default prompt and its events", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-steps-compose-"));
     try {

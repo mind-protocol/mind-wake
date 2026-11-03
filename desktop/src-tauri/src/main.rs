@@ -100,6 +100,21 @@ async fn wake_history() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn wake_order(revision: u64, project_ids: Vec<String>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_order(revision, project_ids)).await
+}
+
+#[tauri::command]
+async fn second_thread(action: String, text: Option<String>) -> Result<CliRun, String> {
+    blocking(move || cli::second_thread(&action, text)).await
+}
+
+#[tauri::command]
+async fn wake_forks(action: String, id: Option<u8>, text: Option<String>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_forks(&action, id, text)).await
+}
+
+#[tauri::command]
 async fn workspace_sync_status() -> Result<CliRun, String> {
     blocking(|| cli::workspace_sync("status", None)).await
 }
@@ -331,6 +346,9 @@ fn main() {
             wake_on,
             wake_always_on,
             wake_messages,            wake_history,
+            wake_order,
+            second_thread,
+            wake_forks,
             workspace_sync_status,
             workspace_sync_configure,
             workspace_sync_now,

@@ -1,15 +1,26 @@
 /** Durable project rotation. One wake = one actually started principal session. */
 import fs from "node:fs";
 import path from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { readCounter, readCurrentProject } from "./project-change.js";
 import { atomicJson, withProjectLock } from "./steps-coordination.js";
+import { assertProjectActivation, projectStatus } from "./project-capacity.js";
+export { projectStatus } from "./project-capacity.js";
 
 export interface WakeBlockStep {
   wake: number;
   objective: string;
   expected: string;
+}
+export interface WakePassage {
+  id: string;
+  projectId: string;
+  question: string;
+  expected: string;
+  sources: string[];
+  steps?: WakeBlockStep[];
 }
 export interface ProjectContext {
   summary: string;
@@ -29,6 +40,9 @@ export interface RotationProject {
   handoff: Record<string, unknown> | null;
 }
 interface RotationState {
+  blockOrder?: {id: string; projectId: string}[];
+  passages?: Record<string, WakePassage>;
+  currentPassageId?: string | undefined;
   version: 1;
   enabled: boolean;
   revision: number;
@@ -37,8 +51,11 @@ interface RotationState {
   position: number;
   lastProject: string | null;
   projects: RotationProject[];
+  promptImprovementProject?: string | null;
 }
 export interface WakeSlot {
+  orderedBlockId?: string;
+  passageId?: string;
   number: number;
   day: number;
   inDay: number;
@@ -59,27 +76,76 @@ interface Allocation {
 }
 export const WAKE_DAY = 50,
   WAKE_BLOCK = 10;
-export const WAKE_MANAGER_INSTRUCTIONS = `Gestionnaire de réveils : les journées sont des repères de 50 sessions principales réellement démarrées, sans plafond de compute. Chaque bloc de dix porte sur un projet ; le premier réveil retrouve son contexte avec get_wake_project, vérifie les informations périmées et les améliorations possibles, puis prépare les neuf suivants avec plan_wake_block. Les demandes humaines actuelles priment et le plan reste révisable. Consulte le contexte sauvegardé du projet précédent si nécessaire ; une trace brute marquée needsReview ne constitue pas un résumé validé. Conserve les nouveautés utiles avec save_wake_context, particulièrement avant de terminer le dixième réveil et de changer de projet. Si un projet est réellement bloqué, note la cause et les conditions de reprise via set_wake_project_status. Si tous les projets sont indisponibles, respecte leurs pauses et explore une piste personnelle utile. Les sous-sessions et les tours de rappel ne consomment pas de réveils supplémentaires. Ce mécanisme ne modifie aucune autorisation et ne lève jamais Pause ou Force-off.`;
+export const WAKE_MANAGER_INSTRUCTIONS = "Le gestionnaire fournit l’affectation et l’intention du wake. Pour créer ou réviser la suite, utiliser le skill planifier-wakes ; sinon poursuivre l’étape et conserver le contexte utile avec save_wake_context. Les demandes humaines et les contrôles de Wake priment.";
+export const WAKE_PLANNING_SKILL_FILE = fileURLToPath(new URL("../../prompts/wake/planning/SKILL.md", import.meta.url));
 export const managerFile = (workspace: string) =>
   path.join(workspace, "artifacts", "wake-manager.sqlite");
-function projectStatus(status: unknown): RotationProject["status"] {
-  const text = (typeof status === "string" ? status : "").toLowerCase();
-  if (/pause|arrêt|arrete|stopped/.test(text)) return "paused";
-  if (/attend|bloqu|blocked/.test(text)) return "blocked";
-  if (/termin[eé]|^fini$|archiv/.test(text)) return "archived";
-  return "active";
+
+export interface CurrentWakeObjective {
+  passageId?: string;
+  passage?: WakePassage | undefined;
+  objectiveDefined: boolean;
+  projectId: string | null;
+  sessionId: string;
+  at: string;
+  number: number;
+  inBlock: number;
+  title: string;
+  objective: string;
+  expected: string | null;
+}
+
+/** Read-only projection for the human feed; never reserve or advance a wake here. */
+export function readCurrentWakeObjective(workspace: string, sessionId: string | null): CurrentWakeObjective | null {
+  if (!sessionId || !fs.existsSync(managerFile(workspace))) return null;
+  let db: Database.Database | undefined;
+  try {
+    const file = managerFile(workspace), stat = fs.lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink()) return null;
+    db = new Database(file, { readonly: true, fileMustExist: true });
+    return db.transaction(() => {
+      const row = db!.prepare("SELECT payload FROM allocations WHERE session_id=? AND started=1 AND finished=0").get(sessionId) as {payload: string} | undefined;
+      const saved = db!.prepare("SELECT payload FROM rotation_state WHERE id=1").get() as {payload: string} | undefined;
+      if (!row || !saved) return null;
+      const wake = JSON.parse(row.payload) as WakeSlot;
+      const state = JSON.parse(saved.payload) as RotationState;
+      const project = state.projects.find(p => p.id === wake.projectId);
+      const step = stepsForWake(state, wake, project).find(s => s.wake === wake.inBlock);
+      const event = db!.prepare("SELECT at FROM rotation_events WHERE kind='reserved' AND json_extract(payload,'$.sessionId')=? ORDER BY id DESC LIMIT 1").get(sessionId) as {at: string} | undefined;
+      if (!event) return null;
+      return {...(wake.passageId ? {passageId: wake.passageId, passage: state.passages?.[wake.passageId]} : {}), sessionId, projectId: wake.projectId, objectiveDefined: Boolean(step?.objective.trim()), at: event.at, number: wake.number, inBlock: wake.inBlock, title: wake.title,
+        objective: step?.objective.trim() || (wake.passageId ? PASSAGE_PREPARATION : wake.phase === "free" ? "Explorer librement." : wake.phase === "prepare" ? "Retrouver le contexte et préparer le plan du bloc." : "Objectif de cette étape pas encore planifié."),
+        expected: step?.expected || null};
+    })();
+  } catch {
+    return null; // Optional display must not prevent reading the conversation.
+  } finally {
+    db?.close();
+  }
 }
 function slot(state: RotationState): WakeSlot {
+  let orderedBlockId: string | undefined;
+  let passageId = state.currentPassageId;
   let project = state.projects.find((p) => p.id === state.project && p.status === "active");
   let position = state.position;
-  if (!project || position >= WAKE_BLOCK) {
-    project = state.projects
+  const maintenance = state.projects.find((p) => p.id === state.promptImprovementProject && p.status === "active");
+  if (maintenance) {
+    passageId = undefined;
+    if (project?.id !== maintenance.id || position >= WAKE_BLOCK) position = 0;
+    project = maintenance;
+  } else if (!project || position >= WAKE_BLOCK) {
+    const ordered = state.blockOrder?.find(item => state.projects.some(p => p.id === item.projectId && p.status === "active"));
+    project = (ordered ? state.projects.find(p => p.id === ordered.projectId) : undefined) ?? state.projects
       .filter((p) => p.status === "active")
       .sort((a, b) => a.used - b.used || state.projects.indexOf(a) - state.projects.indexOf(b))[0];
+    orderedBlockId = ordered?.id;
+    passageId = ordered && state.passages?.[ordered.id] ? ordered.id : undefined;
     position = 0;
   }
   const number = state.used + 1;
   return {
+    ...(orderedBlockId ? {orderedBlockId} : {}),
+    ...(passageId ? {passageId} : {}),
     number,
     day: Math.floor((number - 1) / WAKE_DAY) + 1,
     inDay: ((number - 1) % WAKE_DAY) + 1,
@@ -93,12 +159,27 @@ function slot(state: RotationState): WakeSlot {
   };
 }
 function advance(state: RotationState, wake: WakeSlot) {
+  if (wake.orderedBlockId && state.blockOrder) state.blockOrder = state.blockOrder.filter(item => item.id !== wake.orderedBlockId);
   state.used++;
   const project = state.projects.find((p) => p.id === wake.projectId);
   if (project) project.used++;
   state.project = wake.projectId;
   state.position = wake.projectId ? wake.inBlock : 0;
   state.lastProject = wake.projectId;
+  state.currentPassageId = wake.passageId;
+}
+export function stepsForWake(state: RotationState, wake: WakeSlot, project?: RotationProject | null) {
+  // An undetailed passage must never inherit the previous passage's ten intentions.
+  return wake.passageId ? state.passages?.[wake.passageId]?.steps ?? [] : project?.plan ?? [];
+}
+const PASSAGE_PREPARATION = "À définir : préparer les dix intentions de ce passage à partir de sa question et de ses sources.";
+function validateSteps(steps: WakeBlockStep[]) {
+  if (!Array.isArray(steps) || steps.length !== WAKE_BLOCK ||
+      new Set(steps.map(s => s?.wake)).size !== WAKE_BLOCK || Array.from(steps).some(s =>
+        !s || !Number.isInteger(s.wake) || s.wake < 1 || s.wake > WAKE_BLOCK ||
+        typeof s.objective !== "string" || !s.objective.trim() ||
+        typeof s.expected !== "string" || !s.expected.trim()))
+    throw Error("Plan must contain exactly wakes 1 through 10 with objective and expected result");
 }
 export function contextPath(id: string): string {
   return `artifacts/wake-manager/${createHash("sha256").update(id).digest("hex").slice(0, 20)}/context.json`;
@@ -106,9 +187,9 @@ export function contextPath(id: string): string {
 
 export class WakeManager {
   readonly db: Database.Database;
-  constructor(readonly workspace: string) {
+  constructor(readonly workspace: string, options: { readOnly?: boolean } = {}) {
     const artifacts = path.join(workspace, "artifacts");
-    fs.mkdirSync(artifacts, { recursive: true });
+    if (!options.readOnly) fs.mkdirSync(artifacts, { recursive: true });
     if (fs.lstatSync(artifacts).isSymbolicLink())
       throw Error("Unsafe workspace artifacts directory");
     const file = managerFile(workspace);
@@ -117,7 +198,8 @@ export class WakeManager {
       (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink())
     )
       throw Error("Unsafe wake manager database");
-    this.db = new Database(file);
+    this.db = new Database(file, options.readOnly ? { readonly: true, fileMustExist: true } : {});
+    if (options.readOnly) return;
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("synchronous = FULL");
     this.db.pragma("busy_timeout = 5000");
@@ -155,6 +237,8 @@ export class WakeManager {
     if (!registry || typeof registry !== "object" || Array.isArray(registry))
       throw Error("Workspace project registry unavailable");
     const rows = registry as Record<string, Record<string, unknown>>;
+    state.promptImprovementProject = typeof counter?.["promptImprovementProject"] === "string"
+      ? counter["promptImprovementProject"] : null;
     const ids = Object.keys(rows).filter((id) => /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(id));
     for (const id of ids) {
       const item = rows[id];
@@ -214,6 +298,94 @@ export class WakeManager {
   }
   status() {
     return this.read();
+  }
+  /** Owner reorders complete future blocks; the reserved block keeps its place. */
+  reorderBlocks(projectIds: string[], expectedRevision: number) {
+    return this.db.transaction(() => {
+      const state = this.read();
+      if (!state?.enabled) throw Error("La rotation des projets est désactivée.");
+      if (state.revision !== expectedRevision) throw Error("Le planning a changé. Actualise-le avant de déplacer une carte.");
+      this.sync(state);
+      if (!Array.isArray(projectIds) || projectIds.length < 1 || projectIds.length > 50 ||
+          projectIds.some(id => typeof id !== "string" || !state.projects.some(p => p.id === id && p.status === "active")))
+        throw Error("Ordre de projets invalide.");
+      // Compare to the actual preview: a drag must preserve all complete future blocks.
+      const pending = this.pending();
+      const preview = this.next(500).wakes;
+      const eligible = preview.filter(w => w.inBlock === 1 && w.projectId && (!pending || w.sessionId !== pending.sessionId) &&
+        preview.some(end => end.number === w.number + WAKE_BLOCK - 1 && end.projectId === w.projectId && end.inBlock === WAKE_BLOCK));
+      const canonical = (ids: string[]) => JSON.stringify([...ids].sort());
+      if (canonical(projectIds) !== canonical(eligible.map(w => w.projectId!))) throw Error("Les blocs disponibles ont changé. Actualise le planning.");
+      // Project-only drag preserves FIFO identities within each project.
+      const protectedId = pending?.orderedBlockId;
+      const queue = (state.blockOrder ?? []).filter(item => item.id !== protectedId);
+      if (queue.some(item => !eligible.some(w => w.orderedBlockId === item.id)))
+        throw Error("Réorganisation impossible sans perdre des passages hors aperçu ou indisponibles.");
+      const reordered = projectIds.map(projectId => {
+        const index = queue.findIndex(item => item.projectId === projectId);
+        return index < 0 ? {id: randomUUID(), projectId} : queue.splice(index, 1)[0]!;
+      });
+      const protectedBlock = state.blockOrder?.filter(item => item.id === protectedId) ?? [];
+      state.blockOrder = [...protectedBlock, ...reordered];
+      this.write(state, "blocks_reordered", {projectIds});
+      return {revision: state.revision};
+    }).immediate();
+  }
+  /** Replace only future, unengaged blocks. Validation performs no writes. */
+  importPassages(passages: WakePassage[], expectedRevision: number, mode: "validate" | "apply") {
+    if (mode !== "validate" && mode !== "apply") throw Error("Choose explicit validate or apply mode");
+    const run = () => this.db.transaction(() => {
+      const state = this.read();
+      if (!state?.enabled) throw Error("Rotation not enabled");
+      if (!Number.isSafeInteger(expectedRevision) || state.revision !== expectedRevision)
+        throw Error("Stale planning revision");
+      this.sync(state); // Availability is rechecked, never repaired.
+      if (!Array.isArray(passages) || passages.length < 1 || passages.length > 50)
+        throw Error("Import requires between 1 and 50 passages of ten wakes");
+      const seen = new Set<string>();
+      for (const passage of passages) {
+        if (!passage || typeof passage.id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(passage.id) ||
+            seen.has(passage.id) || Object.hasOwn(state.passages ?? {}, passage.id) ||
+            state.blockOrder?.some(b => b.id === passage.id)) throw Error("Duplicate or invalid passage ID");
+        seen.add(passage.id);
+        if (!state.projects.some(p => p.id === passage.projectId && p.status === "active"))
+          throw Error("Unknown or unavailable project");
+        if (typeof passage.question !== "string" || !passage.question.trim() ||
+            typeof passage.expected !== "string" || !passage.expected.trim() ||
+            !Array.isArray(passage.sources) || passage.sources.length === 0 ||
+            passage.sources.some(source => typeof source !== "string" || !source.trim()))
+          throw Error("Passage requires question, expected result and sources");
+        if (passage.steps !== undefined) validateSteps(passage.steps);
+      }
+      const pending = this.pending();
+      const protectedBlocks = state.blockOrder?.filter(b => b.id === pending?.orderedBlockId) ?? [];
+      // project/position/currentPassageId and the pending allocation are untouched.
+      state.blockOrder = [...protectedBlocks, ...passages.map(p => ({id: p.id, projectId: p.projectId}))];
+      state.passages ??= {};
+      for (const passage of passages) state.passages[passage.id] = structuredClone(passage);
+      const counts: Record<string, number> = Object.create(null) as Record<string, number>;
+      for (const passage of passages) counts[passage.projectId] = (counts[passage.projectId] ?? 0) + WAKE_BLOCK;
+      if (mode === "apply") this.write(state, "passages_imported", {passages});
+      return {mode, revision: state.revision, passages: passages.length, positions: passages.length * WAKE_BLOCK, counts};
+    })[mode === "apply" ? "immediate" : "deferred"]();
+    if (mode === "validate") return run();
+    const result = withProjectLock(this.workspace, run);
+    if (!result) throw Error("Project registry is busy");
+    return result;
+  }
+  /** Target one passage, never the global project plan or another return. */
+  planPassage(passageId: string, steps: WakeBlockStep[], expectedRevision: number) {
+    validateSteps(steps);
+    return this.db.transaction(() => {
+      const state = this.read();
+      if (!state || !Number.isSafeInteger(expectedRevision) || state.revision !== expectedRevision)
+        throw Error("Stale planning revision");
+      const passage = Object.hasOwn(state.passages ?? {}, passageId) ? state.passages![passageId] : undefined;
+      if (!passage) throw Error("Unknown passage");
+      passage.steps = [...steps].sort((a, b) => a.wake - b.wake);
+      this.write(state, "passage_plan_saved", {passageId, steps});
+      return {revision: state.revision, passage};
+    }).immediate();
   }
   pending(): (WakeSlot & { started: boolean }) | null {
     const row = this.db.prepare("SELECT * FROM allocations WHERE finished=0 LIMIT 1").get() as
@@ -323,7 +495,7 @@ export class WakeManager {
     if (!project) throw Error("Unknown workspace project");
     const registry = readCounter(this.workspace)?.["projects"] as
       Record<string, unknown> | undefined;
-    return { ...project, registry: registry?.[id] ?? null, contextPath: contextPath(id) };
+    return { ...project, passages: Object.values(state?.passages ?? {}).filter(p => p.projectId === id), registry: registry?.[id] ?? null, contextPath: contextPath(id) };
   }
   saveContext(id: string, context: ProjectContext, sourceSessionId: string | null) {
     return this.db
@@ -345,19 +517,14 @@ export class WakeManager {
       .immediate();
   }
   plan(id: string, steps: WakeBlockStep[]) {
-    if (
-      steps.length !== 10 ||
-      new Set(steps.map((s) => s.wake)).size !== 10 ||
-      steps.some((s) => !Number.isInteger(s.wake) || s.wake < 1 || s.wake > 10)
-    )
-      throw Error("Plan must contain exactly wakes 1 through 10");
+    validateSteps(steps);
     return this.db
       .transaction(() => {
         const state = this.read();
         if (state) this.sync(state);
         const project = state?.projects.find((p) => p.id === id);
         if (!state || !project) throw Error("Unknown project");
-        project.plan = steps.sort((a, b) => a.wake - b.wake);
+        project.plan = [...steps].sort((a, b) => a.wake - b.wake);
         this.write(state, "plan_saved", { projectId: id, steps });
         return project;
       })
@@ -375,6 +542,7 @@ export class WakeManager {
         typeof projects[id] !== "object"
       )
         throw Error("Unknown workspace project");
+      if (status === "active") assertProjectActivation(counter, id);
       projects[id]["status"] =
         status === "active"
           ? "en cours"
@@ -412,23 +580,41 @@ export class WakeManager {
   }
   prompt(wake: WakeSlot): string {
     const project = wake.projectId ? this.project(wake.projectId) : null;
+    const state = this.read()!;
+    const passage = wake.passageId ? state.passages?.[wake.passageId] : undefined;
+    const steps = stepsForWake(state, wake, project);
     return [
       "GESTIONNAIRE DE RÉVEILS — affectation courante (données).",
       JSON.stringify({
         wake,
+        passage: passage ?? null,
+        preparation: wake.passageId && steps.length === 0 ? PASSAGE_PREPARATION : null,
         previousContextPath: wake.fromProject ? contextPath(wake.fromProject) : null,
         project: project
           ? {
               id: project.id,
               title: project.title,
-              step: project.plan.find((step) => step.wake === wake.inBlock) ?? null,
-              planAvailable: project.plan.length === 10,
+              step: steps.find((step) => step.wake === wake.inBlock) ?? null,
+              planAvailable: steps.length === 10,
               contextPath: project.contextPath,
               handoff: project.handoff,
+              previousProjectContext: project.context,
             }
           : null,
       }),
     ].join("\n\n");
+  }
+  instructions(wake: WakeSlot): string {
+    if (!wake.projectId) return WAKE_MANAGER_INSTRUCTIONS;
+    const project = this.project(wake.projectId);
+    const steps = stepsForWake(this.read()!, wake, project);
+    const reasons: string[] = [];
+    if (wake.phase === "prepare") reasons.push("début de bloc : préparer ou revoir les prochains wakes");
+    if (steps.length !== WAKE_BLOCK) reasons.push("plan de bloc absent ou incomplet");
+    else if (!steps.some((step) => step.wake === wake.inBlock)) reasons.push("intention du wake manquante");
+    if (wake.switching && project.handoff?.["needsReview"] === true) reasons.push("reprise à vérifier dans les sources");
+    if (reasons.length === 0) return WAKE_MANAGER_INSTRUCTIONS;
+    return [WAKE_MANAGER_INSTRUCTIONS, `Skill planifier-wakes — ${reasons.join(" ; ")}.`, fs.readFileSync(WAKE_PLANNING_SKILL_FILE, "utf8")].join("\n\n");
   }
 }
 

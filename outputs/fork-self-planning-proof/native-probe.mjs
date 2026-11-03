@@ -1,0 +1,33 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import {randomUUID} from 'node:crypto';
+import {seedSimulatedProfile} from '../../test/demo/harness.ts';
+import {ForkPlanning} from '../../dist/daemon/fork-planning.js';
+import {setForkEnabled} from '../../dist/daemon/forks.js';
+import {forkPlannerConfig} from '../../dist/daemon/fork-runtime.js';
+import {discoverCodex} from '../../dist/adapters/codex/executable.js';
+import {buildAppServerCommand} from '../../dist/adapters/codex/command.js';
+import {hostPassthroughEnv} from '../../dist/adapters/codex/launch.js';
+import {RpcClient} from '../../dist/adapters/codex/rpc.js';
+import {ProcessTreeSupervisor} from '../../dist/runner/process-tree.js';
+const dataDir=path.resolve('outputs/fork-self-planning-proof/profile');fs.mkdirSync(dataDir,{recursive:true});
+seedSimulatedProfile(dataDir);
+const workspace=path.join(dataDir,'workspace');fs.mkdirSync(path.join(workspace,'artifacts'),{recursive:true});
+fs.writeFileSync(path.join(workspace,'artifacts/projets-compteur.json'),JSON.stringify({current:'a',projects:{a:{status:'en cours'},b:{status:'en cours'}}}));
+const planner=new ForkPlanning(dataDir);setForkEnabled(dataDir,2,true);planner.seed(2,[{projectId:'b',objective:'Preuve MCP',expected:'Trois outils connectés'}]);
+const token=randomUUID();planner.begin(2,token);
+const executable=discoverCodex();if(!executable)throw Error('Codex absent');
+const command=buildAppServerCommand({executable,codexHome:process.env.CODEX_HOME??path.join(os.homedir(),'.codex'),workspaceDir:workspace,channel:null,nativeCapabilities:true,allowUserCodexHome:true,extraConfig:forkPlannerConfig({id:2,dataDir,planningSession:token})});
+const supervisor=new ProcessTreeSupervisor(path.join(dataDir,'runtime'));
+const child=supervisor.spawn('fork-proof',randomUUID(),{executable:command.executable,args:command.args,cwd:workspace,env:{...hostPassthroughEnv(),...command.env}});
+const rpc=new RpcClient(child,{requestTimeoutMs:30000,onClose:()=>{},onNotification:()=>{}});
+try {
+ await child.started();await rpc.request('initialize',{clientInfo:{name:'mind_fork_planner_probe',version:'0.1.0'}});rpc.notify('initialized',{});
+ const result=await rpc.request('mcpServerStatus/list',{serverName:'mind_fork_planner',detail:'toolsAndAuthOnly'});
+ const server=result.data?.find(s=>s.name==='mind_fork_planner');
+ const names=server?.tools ? (Array.isArray(server.tools)?server.tools.map(t=>t.name):Object.keys(server.tools)):[];
+ const proof={runtime:'real Codex app-server',modelTurnStarted:false,serverFound:Boolean(server),toolNames:names};
+ fs.writeFileSync('outputs/fork-self-planning-proof/native-result.json',JSON.stringify(proof,null,2));console.log(JSON.stringify(proof));
+ if(!['get_my_wakes','reassign_my_wakes','claim_project'].every(n=>names.includes(n)))throw Error('Tools not all connected');
+}finally{await child.terminateTree();await rpc.done;planner.finish(2,token,false);planner.close();}

@@ -5,10 +5,12 @@
  */
 
 import { inlineCodeRanges } from "./message-links.js";
+import { wakePreviewModel } from "./wake-preview.js";
+import { projectWakesModel } from "./project-wakes.js";
 
 export interface ConversationItem {
   /** `session` : réponse d'une session Claude Code / Codex réveillée pour aider l'agent. */
-  readonly from: "agent" | "human" | "session" | "activity" | "received" | "context" | "sent";
+  readonly from: "agent" | "human" | "session" | "activity" | "received" | "context" | "sent" | "objective" | "plan";
   readonly at: string;
   readonly text: string;
   readonly id?: string;
@@ -27,9 +29,13 @@ export interface ConversationItem {
   /** Explicit local Wake → repo helper route, never inferred from body/name. */
   readonly sentToSubagent?: boolean;
   readonly headerStatus?: string;
+  readonly project?: {id: string | null; title: string};
+  readonly projectRows?: readonly {id: string | null; title: string; text: string; objectiveDefined: boolean}[];
+  readonly objectiveDefined?: boolean;
 }
 
 export interface Conversation {
+  readonly projectWakes?: unknown;
   readonly items: readonly ConversationItem[];
   /** Horodatage de la note de l'agent, pour repérer une nouvelle écriture. */
   readonly agentUpdatedAt: string | null;
@@ -81,13 +87,14 @@ export function plainText(markdown: string, preserveInline = false): string {
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */
 export function renderConversationMeta(element: Pick<HTMLElement, "textContent"> & Partial<Pick<HTMLElement, "ownerDocument" | "append">>, item: ConversationItem): void {
+  if (item.from === "plan") { element.textContent = "Les 10 prochains wakes"; return; }
   const subagent = item.from === "sent" && item.sentToSubagent === true;
   const sentLabel = subagent ? "Vers un sous-agent" : "Vers un pair";
   const compactSource = subagent ? `${item.headerNames?.[0] ?? "Ton agent"} → ${item.headerNames?.[1] ?? "sous-agent"}${item.headerStatus ? ` · ${item.headerStatus}` : ""}` : item.source;
   const who = item.from === "sent" ? `${sentLabel} · ${compactSource ?? "source inconnue"}`
     : item.from === "context" ? `Copie de contexte · ${item.source ?? "source inconnue"}`
     : item.from === "received" ? `Reçu · ${item.source ?? "source inconnue"}`
-    : item.from === "activity" ? "Activité" : item.from === "human" ? `Toi${item.humanRecipient ? ` → ${item.humanRecipient}` : ""}${item.source ? ` · ${item.source}` : ""}`
+    : item.from === "objective" ? "Objectif en cours" : item.from === "activity" ? `Activité${item.source ? ` · Sous-session · ${item.source}` : ""}` : item.from === "human" ? `Toi${item.humanRecipient ? ` → ${item.humanRecipient}` : ""}${item.source ? ` · ${item.source}` : ""}`
     : item.from === "session" ? `Aide · ${item.source ?? "session"}` : "Ton agent";
   const direction = subagent ? "down" : item.from === "sent" || item.from === "agent" || (item.from === "human" && item.humanRecipient) ? "out"
     : item.from === "received" || item.from === "session" || item.from === "human" ? "in" : null;
@@ -225,6 +232,20 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
     return { items: [], agentUpdatedAt: null, note: str(data["hint"]) ?? "Aucun profil Wake." };
   }
   const items: ConversationItem[] = [];
+  const hasProjectPlan=projectWakesModel(data["projectWakes"])!==null;
+  const objective = rec(data["currentWakeObjective"]);
+  const sessionId = str(objective?.["sessionId"]), objectiveAt = str(objective?.["at"]);
+  const title = str(objective?.["title"]), intention = str(objective?.["objective"]);
+  const number = objective?.["number"], inBlock = objective?.["inBlock"];
+  if (!hasProjectPlan && sessionId && objectiveAt && Number.isFinite(Date.parse(objectiveAt)) && title && intention &&
+      typeof number === "number" && Number.isSafeInteger(number) && number > 0 &&
+      typeof inBlock === "number" && Number.isSafeInteger(inBlock) && inBlock >= 1 && inBlock <= 10) {
+    const expected = str(objective?.["expected"]);
+    items.push({from: "objective", id: `wake-objective:${sessionId}`, at: objectiveAt,
+      ...(typeof objective?.["objectiveDefined"] === "boolean" ? {objectiveDefined: objective["objectiveDefined"]} : {}),
+      ...(typeof objective?.["projectId"] === "string" ? {project: {id: objective["projectId"], title}} : {}),
+      text: `Wake ${number} · ${title} · étape ${inBlock}/10\n${intention}${expected ? `\nRésultat attendu : ${expected}` : ""}`});
+  }
   const agent = rec(data["agentNote"]);
   const agentText = str(agent?.["text"]);
   let agentAt = str(agent?.["updatedAt"]);
@@ -320,11 +341,24 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
   items.push(...sessionAnswers(helpers));
   for(const raw of Array.isArray(data["publicActivity"])?data["publicActivity"]:[]) {
     const a=rec(raw),id=str(a?.["id"]),at=str(a?.["at"]),text=str(a?.["text"]);
-    if(id && at && text && Number.isFinite(Date.parse(at)))items.push({from:"activity",id,at,text});
+    if(id && at && text && Number.isFinite(Date.parse(at))) {
+      const final=a?.["kind"]==="final";
+      const source=str(a?.["source"]);
+      items.push({from:final?(source?"session":"agent"):"activity",id,at,text,...(source?{source,headerNames:[source]}:{})});
+      if(final && !source && (agentAt===null || at>agentAt))agentAt=at;
+    }
   }
   // La note est réécrite par l'agent : on l'ordonne à sa dernière modification.
   items.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const preview = wakePreviewModel(data["upcomingWakes"]);
+  const next = preview.wakes.filter(wake => wake.state !== "running").slice(0, 10);
+  if (!hasProjectPlan && preview.state === "ready" && next.length) {
+    const lines = next.map(wake => `☐ Wake ${wake.number} · ${wake.title} — ${wake.objective?.trim() || (wake.phase === "free" ? "Exploration libre : piste à choisir" : "Objectif à planifier")}${wake.phase === "prepare" ? " (début de bloc)" : ""}`);
+    items.push({from: "plan", id: "upcoming-wakes", at: "1970-01-01T00:00:00.000Z", text: `${lines.join("\n")}\n\nPrévision révisable · mise à jour automatique · wake en cours exclu.`,
+      projectRows: next.map((wake, i) => ({id: wake.projectId, title: wake.title, text: lines[i]!, objectiveDefined: Boolean(wake.objective)}))});
+  }
   return {
+    projectWakes: data["projectWakes"],
     items,
     agentUpdatedAt: agentAt,
     note:

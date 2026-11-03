@@ -1,0 +1,1257 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Que fait mon agent ? — MIND Wake</title>
+    
+    
+    
+    
+  <style>:root {
+  color-scheme: light dark;
+  --bg: #fbfaf8;
+  --fg: #1c1b19;
+  --muted: #5f5b55;
+  --line: #e2ded8;
+  --active: #1f6f4a;
+  --idle: #35577d;
+  --attention: #8a5a00;
+  --stopped: #9b1c1c;
+  --unknown: #5f5b55;
+  font:
+    14px/1.45 "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    sans-serif;
+}
+
+.wake-plan-summary { margin:0 0 14px; font-size:13px; color:var(--muted); }
+.wake-plan-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; max-height:560px; overflow-y:auto; padding:4px; scrollbar-gutter:stable; }
+.wake-project-card { min-width:0; padding:14px; border:1px solid var(--line); border-top:5px solid var(--project-color); border-radius:10px; background:var(--bg); }
+.wake-project-card[data-movable="true"] { cursor:grab; }
+.wake-card-heading { display:flex; align-items:start; gap:8px; }
+.wake-card-title { flex:1; min-width:0; overflow-wrap:anywhere; font-size:13px; }
+.wake-card-count { font-size:22px; font-weight:650; margin:12px 0 4px; }
+.wake-card-range { font-size:10px; color:var(--muted); margin:4px 0; }
+.wake-card-statuses { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0; }
+.wake-card-controls { display:flex; flex:none; gap:3px; }
+.wake-card-controls button { padding:2px 6px; font-size:12px; }
+.wake-card-objectives { margin-top:10px; font-size:11px; cursor:auto; }
+.wake-card-objectives summary { cursor:pointer; }
+.wake-card-objective { border-top:1px solid var(--line); padding-top:7px; overflow-wrap:anywhere; }
+.wake-card-objective[data-objective-defined="false"] { color:var(--attention); }
+.wake-card-dragging { opacity:.45; }
+.wake-project-card.wake-card-drop { outline:3px dashed var(--idle); outline-offset:-3px; }
+.project-badge { display:inline-flex; align-items:center; justify-content:center; flex:none; width:22px; height:22px; border-radius:5px; background:var(--project-color); color:#243447; font-size:12px; font-weight:700; line-height:1; vertical-align:middle; }
+.objective-undefined-badge { display:inline-block; flex:none; padding:2px 6px; border:1px dashed currentColor; border-radius:5px; color:var(--attention); background:var(--bg); font-size:10px; font-weight:600; line-height:1.4; vertical-align:middle; }
+.project-legend { display:flex; flex-wrap:wrap; gap:8px 16px; margin:12px 0; }
+.project-legend-item { display:inline-flex; align-items:center; gap:6px; font-size:11px; }
+#chat li.project-objective { border-left:3px solid var(--project-color); }
+#chat .project-plan-row { display:flex; align-items:baseline; gap:7px; margin:5px 0; }
+.wake-plan-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-bottom:16px; }
+#view-panel>.wake-plan-section { color-scheme:light; --bg:#fbfcff; --fg:#243447; --muted:#68798e; --line:#e5ebf3; color:var(--fg); background:#fff; box-shadow:0 6px 24px #29415f06; }
+.wake-stat { text-align:left; display:flex; flex-direction:column; gap:5px; padding:12px 9px; background:color-mix(in srgb,var(--wake-color) 15%,white); border:1px solid var(--line); border-top:3px solid var(--wake-color); border-radius:11px; min-width:0; color:var(--fg); }
+[data-wake-type="prepare"] { --wake-color:#91b4f4; }
+[data-wake-type="work"] { --wake-color:#83d5bf; }
+[data-wake-type="free"] { --wake-color:#f0c17d; }
+.wake-stat[aria-pressed="true"] { outline:2px solid var(--wake-color); outline-offset:1px; }
+.wake-stat-label { font-size:11px; line-height:1.3; }
+.wake-stat-count { font-size:26px; font-weight:650; line-height:1.2; }
+.wake-stat-share { font-size:10px; color:var(--muted); }
+.wake-plan-hint,.wake-plan-footnote { font-size:11px; line-height:1.5; color:var(--muted); margin:10px 0; }
+.wake-plan-days { display:flex; flex-direction:column; gap:16px; margin:16px 0; max-height:480px; overflow-y:auto; padding:4px; scrollbar-gutter:stable; }
+.wake-plan-day { display:grid; grid-template-columns:28px minmax(0,1fr); gap:8px; align-items:start; }
+.wake-plan-day-label { font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.wake-plan-grid { display:flex; flex-direction:column; gap:5px; min-width:0; }
+button.wake-band { display:flex; flex-wrap:wrap; align-items:center; gap:8px; width:100%; min-width:0; min-height:38px; padding:7px 10px; margin:0; border:0; border-radius:6px; background:var(--project-color); color:#243447; text-align:left; font-size:12px; font-weight:600; line-height:1.4; cursor:pointer; transition:opacity .15s; }
+button.wake-band:hover { filter:brightness(.96); }
+.wake-band-project { flex:1 1 140px; min-width:0; overflow-wrap:anywhere; }
+.wake-band-number,.wake-band-state { flex:none; font-size:10px; }
+.wake-band-state { border:1px solid currentColor; padding:1px 5px; border-radius:4px; }
+button.wake-band[data-objective-defined="false"] { position:relative; background-image:repeating-linear-gradient(135deg,transparent 0 4px,#ffffff40 4px 6px); }
+button.wake-band[aria-pressed="true"],button.wake-band:focus-visible { outline:2px solid var(--fg); outline-offset:1px; }
+button.wake-band[data-state="running"] { box-shadow:inset 0 0 0 2px var(--fg); }
+button.wake-band.wake-band-muted { opacity:.18; }
+.wake-plan-detail { border:1px solid var(--line); border-left:3px solid var(--project-color,var(--idle)); background:var(--bg); border-radius:8px; padding:12px; overflow-wrap:anywhere; }
+.wake-plan-detail-meta { font-size:10px; color:var(--muted); margin-bottom:5px; }
+.wake-plan-detail-project { font-size:13px; }
+.wake-plan-detail-objective { font-size:12px; margin:6px 0 0; }
+#chat li[data-from="plan"] { max-width:100%; background:var(--bg); border:1px solid var(--border); }
+#chat li[data-from="plan"] .conversation-body > p { white-space:pre-wrap; line-height:1.8; font-size:12px; }
+.wake-plan-detail-expected { font-size:11px; color:var(--muted); margin:6px 0 0; }
+@media (prefers-reduced-motion:reduce) { button.wake-band { transition:none; } }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1a18;
+    --fg: #f1efeb;
+    --muted: #a8a39b;
+    --line: #34322e;
+    --active: #6fcf9c;
+    --idle: #8db4e0;
+    --attention: #e7b45a;
+    --stopped: #f08a8a;
+    --unknown: #a8a39b;
+  }
+}
+
+/* `hidden` doit l'emporter sur les `display` des classes (badge SIMULÉ, sections vides). */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+main {
+  padding: 16px;
+}
+
+header {
+  border-left: 4px solid var(--unknown);
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+
+/* L'état se lit par son libellé ; la couleur ne fait que le doubler (W06). */
+header[data-tone="active"] {
+  border-color: var(--active);
+}
+header[data-tone="idle"] {
+  border-color: var(--idle);
+}
+header[data-tone="attention"] {
+  border-color: var(--attention);
+}
+header[data-tone="stopped"] {
+  border-color: var(--stopped);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+h1 {
+  margin: 2px 0 4px;
+  font-size: 20px;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#reason {
+  margin: 0;
+}
+
+.badge {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 2px 8px;
+  border: 1px solid var(--attention);
+  border-radius: 4px;
+  color: var(--attention);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+section {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+button {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--idle);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.danger {
+  border-color: var(--stopped);
+  color: var(--stopped);
+  font-weight: 600;
+}
+
+button.danger[data-armed="true"] {
+  background: var(--stopped);
+  color: var(--bg);
+}
+
+#feedback {
+  min-height: 1.4em;
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+footer {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+footer p {
+  margin: 6px 0 0;
+}
+
+/* --- Voyant, sélecteur, graphe, fils ------------------------------------------------ */
+
+.light {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--unknown);
+}
+.light[data-light="awake"] {
+  background: var(--idle);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--idle) 25%, transparent);
+}
+.light[data-light="on"] {
+  background: var(--active);
+}
+.light[data-light="off"] {
+  background: var(--attention);
+}
+.light[data-light="forced_off"] {
+  background: var(--stopped);
+}
+
+.tabs {
+  flex-wrap: wrap;
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.tabs button[aria-selected="true"] {
+  border-bottom-color: var(--idle);
+  font-weight: 600;
+}
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--idle);
+}
+.count {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--idle);
+  color: var(--bg);
+  font-size: 11px;
+  text-align: center;
+}
+
+.switch-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.switch button {
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--line);
+}
+.switch button:last-child {
+  border-right: none;
+}
+.switch button[aria-pressed="true"] {
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+}
+.switch button.danger[aria-pressed="true"],
+.switch button.danger[data-armed="true"] {
+  background: var(--stopped);
+  color: var(--bg);
+}
+.hint {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.chart .axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.chart .tick {
+  fill: var(--muted);
+  font-size: 9px;
+  text-anchor: middle;
+}
+.chart .bar {
+  fill: var(--active);
+}
+.chart .bar.simulated {
+  fill: var(--attention);
+}
+.chart .bar.unknown {
+  fill: var(--line);
+}
+.chart .wake {
+  fill: var(--idle);
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.threads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.threads button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin-bottom: 6px;
+  text-align: left;
+}
+.threads button[data-unread="true"] strong::before {
+  content: "● ";
+  color: var(--idle);
+}
+.threads span,
+.threads small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.messages {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+.messages li {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-width: 88%;
+}
+/* Réponse d'une session réveillée pour aider l'agent : distincte de l'agent et de l'humain. */
+.messages li[data-from="session"] {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--attention) 8%, transparent);
+}
+.messages li[data-self="true"] {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--idle) 12%, transparent);
+}
+.messages p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#reply-form,
+#chat-form {
+  display: grid;
+  gap: 6px;
+}
+textarea {
+  font: inherit;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+}
+.link {
+  border: none;
+  padding: 0;
+  color: var(--idle);
+}
+
+/* Full last message in the thread list, including its paragraph breaks. */
+.threads button {
+  gap: 8px;
+}
+.threads .thread-preview {
+  white-space: pre-wrap;
+  color: inherit;
+  font-weight: 400;
+}
+
+/* Four modes remain readable in the narrow Windows panel. */
+.delivery-receipt { white-space: nowrap; font-weight: 700; }
+.message-wait { display: block; margin-top: .35rem; opacity: .75; }
+.delivery-receipt[data-delivered="true"] { color: var(--idle); }
+#wake-history-messages li { max-width: 100%; }
+#wake-history-messages li[data-from="prompt"] { border-color: var(--wake-instructions); }
+.repo-pointers { white-space: pre-wrap; overflow-wrap: anywhere; }
+#agent-thread-messages li { max-width: 96%; }
+
+.switch {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+.switch button {
+  padding: 8px 6px;
+  font-size: 13px;
+  white-space: normal;
+}
+
+/* Workspace layout: fixed navigation, independent reading panes, persistent composer. */
+:root { --bg:#f7f8f6; --surface:#fff; --nav:#eef1ec; --fg:#1e2b26; --muted:#68766d; --line:#dfe5df; --idle:#23745c; --active:#23745c; font-size:14px; }
+@media(prefers-color-scheme:dark) { :root { --bg:#111a18; --surface:#17231f; --nav:#0d1512; --fg:#e4eee6; --muted:#93a79a; --line:#2a3a31; --idle:#8bd9b4; --active:#8bd9b4; } }
+* { box-sizing:border-box; }
+html,body { height:100%; overflow:hidden; }
+main { height:100dvh; display:grid; grid-template-columns:190px minmax(0,1fr); grid-template-rows:68px minmax(0,1fr); padding:0; }
+.app-brand { grid-column:1/-1; display:flex; gap:12px; align-items:center; padding:0 26px; border-bottom:1px solid var(--line); background:var(--surface); }
+.app-brand strong { font-size:17px; letter-spacing:.03em; }
+.app-brand strong span { color:var(--muted); font-weight:400; }
+.brand-symbol { display:grid; place-items:center; width:32px; height:32px; background:var(--idle); color:var(--surface); border-radius:10px; font-size:25px; font-weight:700; font-family:Georgia,serif; }
+.app-status { margin-left:auto; font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+.app-status::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--muted); }
+.app-status[data-tone="active"]::before { background:var(--active); box-shadow:0 0 0 4px color-mix(in srgb,var(--active) 12%,transparent); }
+.tabs { grid-column:1; grid-row:2; display:flex; flex-direction:column; align-items:stretch; flex-wrap:nowrap; gap:6px; margin:0; padding:24px 12px; border:0; border-right:1px solid var(--line); background:var(--nav); }
+.tabs button { flex:none; display:flex; align-items:center; gap:8px; text-align:left; border:0; border-radius:9px; padding:11px 12px; color:var(--muted); font-size:13px; }
+.tabs button[aria-selected="true"] { color:var(--fg); background:var(--surface); box-shadow:0 1px 4px #00000008; }
+.tabs button:hover { background:color-mix(in srgb,var(--surface) 70%,transparent); }
+main>[role="tabpanel"] { grid-column:2; grid-row:2; min-width:0; min-height:0; overflow:auto; padding:28px 32px; scrollbar-gutter:stable; }
+h1 { font-size:27px; letter-spacing:-.04em; font-weight:650; }
+h2 { font-size:20px; color:var(--fg); letter-spacing:-.025em; margin-bottom:10px; font-weight:600; }
+p { line-height:1.65; }
+.hint { line-height:1.55; font-size:12px; }
+button { transition:background .12s,border-color .12s; }
+button:hover:not(:disabled) { border-color:var(--idle); }
+#view-panel>section,#view-panel>details { margin:14px 0; border:1px solid var(--line); border-radius:13px; background:var(--surface); padding:18px; }
+#view-panel>header { padding:12px 0 12px 16px; margin-bottom:18px; }
+#view-panel section h2 { font-size:13px; color:var(--muted); letter-spacing:.015em; font-weight:600; margin-bottom:14px; }
+#reason { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
+#input-sharing { font-size:11px; border-color:var(--line); color:var(--muted); }
+#feedback:empty,#runtime-link-status:empty,#chat-status:empty,.hint:empty { display:none; }
+dl { grid-template-columns:minmax(90px,.5fr) minmax(0,1fr); gap:10px 16px; font-size:12px; }
+.switch { border-radius:9px; background:var(--bg); }
+.switch button { padding:10px 6px; }
+.switch button[aria-pressed="true"] { background:var(--idle); color:var(--surface); }
+#pause { margin-left:auto; }
+.technical-details>summary { cursor:pointer; font-size:13px; color:var(--muted); }
+.technical-details section { margin-top:12px; }
+main>#view-chat { display:flex; flex-direction:column; padding:0; overflow:hidden; gap:0; }
+.view-heading { padding:24px 30px 16px; border-bottom:1px solid var(--line); background:var(--surface); }
+.view-heading h2 { margin:0 0 4px; }
+#chat { flex:1; min-height:0; overflow-y:auto; padding:20px 28px; margin:0; scrollbar-gutter:stable; }
+#chat-older { padding:10px; text-align:center; background:var(--surface); }
+.messages li { border:0; background:var(--surface); border-radius:13px; padding:15px 18px; margin-bottom:18px; max-width:96%; box-shadow:0 1px 0 var(--line); }
+.messages li small { font-size:11px; color:var(--muted); display:block; margin-bottom:8px; }
+.messages li[data-self="true"] { background:color-mix(in srgb,var(--idle) 10%,var(--surface)); max-width:85%; }
+.messages p { line-height:1.7; margin:0; font-size:14px; }
+#chat li[data-from="activity"] { background:transparent; border:0; border-radius:0; box-shadow:none; padding:4px 2px; margin:4px 0 12px; max-width:100%; color:var(--muted); }
+#chat li[data-from="activity"] small { margin-bottom:3px; font-size:10px; opacity:.8; }
+#chat li[data-from="activity"] p { font-size:13px; line-height:1.55; }
+#chat-note { padding:0 28px; }
+#chat-form { flex:none; background:var(--surface); border-top:1px solid var(--line); padding:16px 24px; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:12px; }
+#chat-text { min-height:56px; max-height:160px; resize:vertical; border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--bg); }
+#chat-form button[type="submit"],#reply-form button[type="submit"] { background:var(--idle); color:var(--surface); border-color:var(--idle); border-radius:9px; padding:11px 18px; font-weight:600; }
+#chat-status { grid-column:1/-1; overflow-wrap:anywhere; }
+textarea:focus,select:focus { outline:2px solid color-mix(in srgb,var(--idle) 30%,transparent); outline-offset:2px; }
+.runtime-links { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.runtime-links>span { display:none; }
+.runtime-links .link { border:1px solid var(--line); border-radius:8px; padding:7px 11px; background:var(--surface); font-size:12px; }
+#wake-history-messages .wake-placeholder { color:var(--muted); box-shadow:none; background:transparent; }
+#wake-history-messages { margin-top:20px; }
+#wake-history-messages li>strong { color:var(--muted); font-size:11px; letter-spacing:.02em; display:block; margin-bottom:12px; font-weight:500; }
+#wake-history-messages .wake-cue { font-size:22px; letter-spacing:-.035em; margin-bottom:12px; }
+#wake-history-messages details { border-top:1px solid var(--line); padding-top:10px; }
+summary { cursor:pointer; color:var(--muted); font-size:12px; padding:4px 0; }
+pre { white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.65 Consolas,monospace; background:var(--bg); border-radius:8px; padding:14px; max-height:50vh; overflow:auto; }
+.threads button { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:12px; }
+.threads .thread-preview { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; font-size:13px; line-height:1.6; }
+.repo-pointers { border:1px solid var(--line); border-radius:9px; padding:12px; margin:12px 0; }
+#agent-thread-title,#thread-subject { margin-top:18px; }
+.count { background:color-mix(in srgb,var(--idle) 14%,var(--surface)); color:var(--idle); }
+@media(max-width:700px) {
+ main { grid-template-columns:minmax(0,1fr); grid-template-rows:58px 52px minmax(0,1fr); }
+ .app-brand { padding:0 18px; }
+ .tabs { grid-row:2; grid-column:1; flex-direction:row; padding:6px 10px; overflow-x:auto; border-right:0; border-bottom:1px solid var(--line); gap:2px; }
+ .tabs button { white-space:nowrap; padding:8px 10px; font-size:12px; }
+ main>[role="tabpanel"] { grid-column:1; grid-row:3; padding:20px 18px; }
+ #chat { padding:16px; }
+ .view-heading { padding:18px; }
+ #chat-form { padding:12px 16px; }
+ .messages li { padding:13px 14px; }
+ .messages p { font-size:13px; }
+ .app-status { max-width:130px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+}
+@media(prefers-reduced-motion:reduce) { * { transition:none !important; } }
+.app-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; }
+.app-controls button { padding:7px 10px; font-size:12px; }
+.message-markdown { min-width:0; overflow-wrap:anywhere; }
+.message-markdown h3 { font-size:15px; margin:16px 0 8px; }
+.message-markdown ul, .message-markdown ol { margin:8px 0; padding-left:24px; }
+.messages .message-markdown li { border:0; background:none; box-shadow:none; padding:0; margin:5px 0; max-width:100%; white-space:pre-wrap; }
+.message-markdown blockquote { margin:10px 0; padding-left:12px; border-left:3px solid var(--line); white-space:pre-wrap; }
+.markdown-table { overflow-x:auto; margin:12px 0; }
+.markdown-table table { border-collapse:collapse; width:100%; font-size:12px; }
+.markdown-table th, .markdown-table td { border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top; }
+.message-markdown code { font-family:Consolas,monospace; background:var(--bg); padding:1px 3px; }
+@media(max-width:700px) {
+ main { grid-template-rows:auto 52px minmax(0,1fr); }
+ .app-brand { flex-wrap:wrap; padding:10px 18px; }
+ .app-controls { width:100%; }
+}
+
+/* Persistent agent state and a dedicated settings destination. */
+.tabs { overflow-y:auto; }
+.tab-links { display:flex; flex-direction:column; gap:6px; }
+.tabs #state { margin:0 0 12px; padding:0 0 14px; border-bottom:1px solid var(--line); }
+.tabs #state h1 { font-size:16px; letter-spacing:-.02em; line-height:1.4; }
+.tabs #state p { margin:6px 0 0; }
+.tabs #state .light { width:10px; height:10px; flex-shrink:0; }
+#view-settings section { max-width:780px; padding:20px; background:var(--surface); border:1px solid var(--line); border-radius:13px; }
+#view-settings dd { overflow-wrap:anywhere; }
+@media(max-width:700px) {
+ main { grid-template-rows:58px auto minmax(0,1fr); }
+ .tabs { flex-direction:column; max-height:32vh; }
+ .tab-links { flex-direction:row; overflow-x:auto; flex-shrink:0; }
+ .tabs #state { margin:0; padding:4px 8px; }
+ .tabs #state h1 { margin:0; font-size:13px; }
+}
+
+main>#view-documents { display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+.document-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.document-toolbar label { display:flex; align-items:center; gap:8px; }
+#document-location,#document-status { margin:0; overflow-wrap:anywhere; }
+#document-status:empty { display:none; }
+.document-workspace { display:grid; grid-template-columns:220px minmax(0,1fr); flex:1; min-height:0; gap:16px; }
+#document-files { overflow:auto; display:flex; flex-direction:column; gap:4px; }
+#document-files button { text-align:left; overflow-wrap:anywhere; flex-shrink:0; padding:8px; }
+#document-frame { width:100%; height:100%; min-height:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+@media(max-width:850px) {
+ .document-workspace { grid-template-columns:minmax(0,1fr); grid-template-rows:130px minmax(0,1fr); }
+}
+
+/* Immediate outgoing feedback; polling reuses these nodes while sending. */
+.message-outgoing { animation: message-arrive 180ms ease-out; }
+.message-outgoing[data-sending="true"] small::after {
+  content: "";
+  display: inline-block;
+  width: .7em;
+  height: .7em;
+  margin-left: .6em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: message-sending .8s linear infinite;
+}
+@keyframes message-arrive {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes message-sending { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .message-outgoing, .message-outgoing[data-sending="true"] small::after { animation: none; }
+}
+/* Native owner preferences, persisted in the active agent workspace. */
+.authorization-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.authorization-toolbar input[type="file"] { display: block; max-width: 240px; }
+.authorization-card { padding: 18px; margin: 12px 0; border: 1px solid #74908466; border-radius: 12px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 250px); gap: 14px; }
+.authorization-card h2 { font-size: 1rem; margin: 0; }
+.authorization-card label { grid-column: 1 / -1; }
+.authorization-card textarea { display: block; box-sizing: border-box; width: 100%; margin-top: 6px; font: inherit; resize: vertical; }
+#authorization-context { white-space: pre-wrap; font: inherit; }
+#authorization-file { overflow-wrap: anywhere; }
+@media (max-width: 650px) { .authorization-card { grid-template-columns: minmax(0, 1fr); } }
+
+/* The reader remains beside the conversation, independently of the active tab. */
+@media(min-width:1101px) {
+ main { grid-template-columns:190px minmax(300px,.85fr) minmax(460px,1.15fr); }
+ main>#view-documents { grid-column:3; grid-row:2; }
+}
+main>#view-documents { min-width:0; min-height:0; padding:18px; border-left:1px solid var(--line); background:var(--surface); }
+#view-documents>h2 { margin:0; font-size:16px; }
+#view-documents .document-workspace { grid-template-columns:minmax(0,1fr); grid-template-rows:120px minmax(0,1fr); }
+#document-files { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); align-content:start; }
+@media(min-width:701px) and (max-width:1100px) {
+ main { grid-template-columns:170px minmax(0,1fr); grid-template-rows:68px minmax(200px,1fr) minmax(240px,1fr); }
+ main>#view-documents { grid-column:2; grid-row:3; }
+ .tabs { grid-row:2/4; }
+}
+@media(max-width:700px) {
+ main { grid-template-rows:auto auto minmax(140px,1fr) minmax(220px,1fr); }
+ main>#view-documents { grid-column:1; grid-row:4; padding:10px; }
+ #view-documents .document-workspace { grid-template-rows:60px minmax(0,1fr); }
+}
+
+#view-projects:not([hidden]){display:flex;flex-direction:column;min-height:0;overflow:hidden}.projects-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px}.projects-toolbar h1{font-size:20px;margin:0}#projects-frame{border:1px solid var(--line);border-radius:12px;flex:1;min-height:360px;width:100%;background:#f4f3eb}#projects-status{margin:8px 0;font-size:11px}
+
+/* The generic hint flex-basis belongs to horizontal forms, not this reader. */
+#view-documents>h2, #view-documents>.document-toolbar, #document-location, #document-status, #projects-status, .projects-toolbar { flex:0 0 auto; }
+
+
+/* The reader is a small publishing platform, with its own library and pagination. */
+main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto; }
+#view-documents>.reader-header,#view-documents>.reader-controls,#view-documents>.reader-pagination,
+#view-documents>#document-location,#view-documents>#document-status { flex:0 0 auto; }
+.reader-header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.reader-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+#engine-restart-status { margin:8px 18px; font-size:13px; }
+.reader-eyebrow { display:block; font-size:9px; font-weight:750; letter-spacing:.16em; color:#75877a; margin-bottom:6px; }
+.reader-header h2 { font:600 23px/1.2 Georgia,serif; color:#203f34; margin:0; max-width:650px; overflow-wrap:anywhere; }
+.reader-controls { display:flex; flex-wrap:wrap; align-items:center; gap:7px; padding:5px 0; }
+.reader-controls button { min-height:38px; padding:8px 12px; font-size:11px; background:white; }
+#view-documents .reader-icon { width:38px; min-width:38px; height:38px; padding:0; font-size:20px; background:white; }
+.reader-scope { margin-left:auto; }
+.reader-scope select { max-width:150px; min-height:38px; font-size:11px; background:#edf3ec; border-color:#d9e4d8; }
+.reader-breadcrumb { display:flex; align-items:center; gap:7px; min-height:22px; overflow:hidden; white-space:nowrap; color:#8a988d; font-size:10px; }
+.reader-breadcrumb button { border:0; background:none; padding:2px 0; color:#4c755e; font-size:10px; min-width:0; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
+.reader-breadcrumb [aria-current] { overflow:hidden; text-overflow:ellipsis; color:#65776a; }
+#document-status { font-size:10px; margin:0; color:#748479; }
+#view-documents .document-workspace { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:14px; flex:1 0 240px; min-height:240px; position:relative; }
+#view-documents[data-library="open"] .document-workspace { grid-template-columns:220px minmax(0,1fr); }
+#document-library { display:flex; flex-direction:column; min-height:0; gap:9px; padding:14px; border:1px solid #dce5d9; border-radius:12px; background:#fff; overflow:hidden; }
+#document-library[hidden] { display:none; }
+#document-library label { display:flex; flex-direction:column; gap:5px; font-size:10px; font-weight:650; color:#687e6c; }
+#document-library select,#document-search { box-sizing:border-box; width:100%; min-width:0; background:#f8faf6; font-size:11px; padding:9px; border:1px solid #d9e3d7; border-radius:7px; }
+.reader-format { display:flex!important; flex-direction:row!important; align-items:center; }
+#document-count { margin:0; font-size:9px; line-height:1.5; color:#809082; flex:0 0 auto; }
+#view-documents #document-files { display:flex; flex-direction:column; overflow:auto; min-height:0; gap:5px; padding-right:2px; }
+#document-files .reader-file { display:block; text-align:left; border:1px solid transparent; background:transparent; border-radius:8px; padding:10px; flex-shrink:0; }
+.reader-file strong,.reader-file small { display:block; line-height:1.5; overflow-wrap:anywhere; }
+.reader-file strong { font-size:11px; font-weight:600; }
+.reader-file small { font-size:9px; color:#8b978e; margin-top:3px; }
+#document-files .reader-file:hover { background:#f2f6ef; }
+#document-files .reader-file[aria-current="true"] { border-color:#bfd4c1; background:#edf5e9; color:#21563e; }
+.reader-empty { font-size:11px; color:#75877a; }
+.reader-page { display:flex; flex-direction:column; min-width:0; min-height:0; gap:7px; }
+.reader-outline { display:flex; align-items:center; gap:10px; color:#75877a; font-size:10px; flex:0 0 auto; }
+.reader-outline select { max-width:65%; flex:1; min-width:0; border:0; background:transparent; padding:5px; font-size:10px; color:#45684f; }
+#view-documents #document-frame, #view-documents #local-atelier-frame { flex:1; height:0; min-height:0; width:100%; box-sizing:border-box; border:1px solid #dce5d9; border-radius:12px; background:white; }
+.reader-pagination { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; padding:6px 0; position:sticky; bottom:0; z-index:3; background:#f8faf6; }
+.reader-pagination button { display:flex; align-items:center; gap:14px; justify-content:flex-start; min-height:70px; padding:14px 18px; text-align:left; border-radius:12px; background:white; border:1px solid #d5e2d2; color:#3f604a; min-width:0; }
+.reader-pagination button>span:not([aria-hidden]) { min-width:0; }
+.reader-pagination button>span[aria-hidden] { font-size:24px; }
+.reader-pagination strong { display:block; font-size:17px; font-weight:650; line-height:1.3; }
+.reader-pagination small { display:block; margin-top:4px; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; opacity:.78; }
+#document-next { justify-content:space-between; background:#23674f; border-color:#23674f; color:white; }
+#document-next:hover:not(:disabled) { background:#194e3b; }
+.reader-pagination button:disabled { opacity:.4; cursor:default; }
+#view-documents button:focus-visible,#view-documents select:focus-visible,#view-documents input:focus-visible { outline:3px solid #86b79b; outline-offset:2px; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+@media(max-width:1450px) {
+ #view-documents[data-library="open"] #document-library { position:absolute; inset:0 auto 0 0; width:min(260px,85%); z-index:2; box-shadow:12px 0 26px #143b2520; }
+ #view-documents[data-library="open"] .document-workspace { grid-template-columns:minmax(0,1fr); }
+ .reader-header h2 { font-size:20px; }
+}
+@media(max-width:700px) {
+ .reader-pagination button { min-height:62px; padding:12px; gap:8px; }
+ .reader-pagination strong { font-size:16px; }
+ .reader-controls { gap:5px; }
+ .reader-controls button { padding:7px 9px; }
+}
+
+/* Project selection lives once in the global sidebar. */
+#sidebar-project-menu { display:flex; flex-direction:column; gap:7px; flex:0 0 auto; padding:12px 8px 16px; margin-bottom:6px; border-bottom:1px solid var(--line); min-width:0; }
+#sidebar-project-menu label { font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+#sidebar-project-menu select { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:42px; padding:10px 9px; border:1px solid #c8d9c8; border-radius:9px; background:var(--surface); color:var(--fg); font:inherit; font-size:12px; text-overflow:ellipsis; }
+#sidebar-project-menu select:focus-visible { outline:3px solid #86b79b; outline-offset:2px; }
+@media(max-width:700px) {
+ #sidebar-project-menu { padding:6px 8px 10px; margin-bottom:0; gap:5px; }
+ #sidebar-project-menu select { min-height:40px; }
+}
+
+/* Ephemeral activity and invitation beside the conversation composer. */
+#chat-presence { flex:0 0 auto; color:#4c755e; padding:0 14px; height:22px; font-size:21px; letter-spacing:5px; }
+#chat-presence[hidden] { display:none; }
+#chat-progress-reminder { flex:0 0 auto; padding:2px 14px; color:var(--muted, #68786e); font-size:11px; }
+#chat-progress-reminder::before { content:"· "; color:#7b9985; }
+#chat-progress-reminder[hidden] { display:none; }
+#chat-presence>span[aria-hidden] { display:inline-block; animation:chat-presence-pulse 1.2s ease-in-out infinite; }
+@keyframes chat-presence-pulse { 0%,100% { opacity:.35; transform:translateY(0); } 50% { opacity:1; transform:translateY(-2px); } }
+#chat-form .chat-actions { display:flex; flex-direction:column; align-self:stretch; gap:7px; }
+#chat-bump { background:#f5cc4b; color:#3e3513; border-color:#dab034; }
+#chat-bump:hover:not(:disabled) { background:#ffdb68; }
+@media(prefers-reduced-motion:reduce) { #chat-presence>span[aria-hidden] { animation:none; } }
+
+.reader-file-age { display:block; margin-top:5px; color:#55765d; font-size:10px; line-height:1.4; }
+#chat li[data-invitation] { width:fit-content; min-width:145px; max-width:240px; padding:9px 12px; }
+.bump-invitation-icon { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#f5cc4b; color:#3e3513; font-size:24px; font-weight:700; line-height:1; }
+/* Conversation stays mounted and visible; navigation changes the companion pane. */
+@media(min-width:1101px) {
+  main > [role="tabpanel"]:not(#view-chat) { grid-column:3; grid-row:2; }
+}
+@media(min-width:701px) and (max-width:1100px) {
+  main > [role="tabpanel"]:not(#view-chat) { grid-column:2; grid-row:3; }
+}
+@media(max-width:700px) {
+  main > [role="tabpanel"]:not(#view-chat) { grid-column:1; grid-row:4; }
+}
+#agent-active-project { margin:8px 0; font-size:12px; font-weight:600; line-height:1.5; overflow-wrap:anywhere; color:var(--fg); }
+/* A reserved preview area keeps loading images from moving the conversation. */
+.conversation-body { min-width: 0; }
+.conversation-body > p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Received content keeps the same readable body, with a visible source cue in both themes. */
+:root { --peer-message: #08675e; --session-message: #6940a0; }
+@media (prefers-color-scheme: dark) {
+  :root { --peer-message: #79dbca; --session-message: #c9adff; }
+}
+.messages li[data-from="received"] {
+  border-left: 4px solid var(--peer-message);
+  background: color-mix(in srgb, var(--peer-message) 10%, var(--surface, var(--bg)));
+}
+.messages li[data-from="received"] > small { color: var(--peer-message); }
+.messages li[data-from="session"] {
+  border-left: 4px solid var(--session-message);
+  background: color-mix(in srgb, var(--session-message) 8%, var(--surface, var(--bg)));
+}
+.messages li[data-from="session"] > small { color: var(--session-message); }
+.messages li[data-from="context"] {
+  border-left: 3px dashed var(--muted);
+  background: color-mix(in srgb, var(--muted) 6%, var(--surface, var(--bg)));
+}
+
+:root { --sent-peer-message: #91480b; }
+@media (prefers-color-scheme: dark) { :root { --sent-peer-message: #ffc486; } }
+.messages li[data-from="sent"] {
+  border-left: 4px solid var(--sent-peer-message);
+  background: color-mix(in srgb, var(--sent-peer-message) 9%, var(--surface, var(--bg)));
+}
+.messages li[data-from="sent"] > small { color: var(--sent-peer-message); }
+
+:root { --human-peer-message: #284cc6; }
+@media (prefers-color-scheme: dark) { :root { --human-peer-message: #a6bbff; } }
+.messages li[data-from="human"][data-recipient="auroracle"] {
+  border-left: 4px solid var(--human-peer-message);
+  background: color-mix(in srgb, var(--human-peer-message) 12%, var(--surface, var(--bg)));
+}
+.messages li[data-from="human"][data-recipient="auroracle"] > small { color: var(--human-peer-message); }
+
+.messages li > small strong { font-weight: 700; color: inherit; }
+.message-direction { display: inline; font-weight: 600; margin-right: .2em; }
+/* Only the explicitly projected Wake → repo helper route gets the smaller body. */
+#chat li[data-from="sent"]:has(.message-direction-subagent) .conversation-body > p { font-size: 12px; }
+.message-images { display: grid; gap: 12px; margin-top: 10px; white-space: normal; }
+.message-images figure { margin: 0; width: min(100%, 22rem); min-width: 0; }
+.message-images button { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 5px; background: #f0f2ed; border: 1px solid #d7dfd5; border-radius: 8px; cursor: zoom-in; overflow: hidden; }
+.message-images button:disabled { cursor: default; opacity: 1; }
+.message-images img { width: 100%; height: 100%; object-fit: contain; }
+.message-images figcaption { font-size: 11px; overflow-wrap: anywhere; margin-top: 4px; }
+.message-image-status { display: block; font-size: 11px; min-height: 1.4em; color: #58665c; }
+.message-image-dialog { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0; padding: 24px; border: 0; background: rgb(15 22 19 / 94%); color: #fff; box-sizing: border-box; }
+.message-image-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.message-image-dialog > div { display: flex; flex-direction: column; gap: 10px; height: 100%; max-width: 1400px; margin: auto; }
+.message-image-dialog button { align-self: flex-end; flex: 0 0 auto; }
+.message-image-dialog img { min-height: 0; width: 100%; flex: 1 1 auto; object-fit: contain; }
+.message-image-dialog p, .message-image-dialog small { margin: 0; overflow-wrap: anywhere; flex: 0 0 auto; }
+
+.messages li > small .message-author { font-size: 13px; font-weight: 700; }
+.message-provenance { display: block; margin-top: 4px; font-size: 10px; font-weight: 400; overflow-wrap: anywhere; }
+.message-provenance summary { cursor: pointer; width: fit-content; }
+.message-inline-code { color: #7751a4; background: #f4eef9; border-radius: 3px; }
+@media (prefers-color-scheme: dark) { .message-inline-code { color: #d7b6fa; background: #30273b; } }
+
+.workspace-sync-form { display:grid; gap:10px; max-width:820px; }
+.workspace-sync-form > label { font-weight:600; }
+.workspace-sync-form > input { width:100%; box-sizing:border-box; padding:10px 12px; font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+.workspace-sync-form .hint { margin:0 0 6px; }
+.workspace-sync-toggle { display:flex; align-items:center; gap:10px; }
+.workspace-sync-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.workspace-sync-details dd { overflow-wrap:anywhere; white-space:pre-wrap; }
+
+/* Wake instructions stay recognizable in the conversation and wake history. */
+:root { --wake-instructions:#a94b08; }
+@media(prefers-color-scheme:dark) { :root { --wake-instructions:#ffac63; } }
+#chat li[data-from="objective"],
+#wake-history-messages li[data-from="prompt"] { color:var(--wake-instructions); }
+#chat li[data-from="objective"] > small,
+#wake-history-messages li[data-from="prompt"] > strong { color:var(--wake-instructions); }
+
+/* Outgoing agent messages use the same inline presentation as public activity. */
+#chat li[data-from="sent"] { background:transparent; border:0; border-radius:0; box-shadow:none; padding:4px 2px; margin:4px 0 12px; max-width:100%; color:var(--muted); }
+#chat li[data-from="sent"] > small { margin-bottom:3px; font-size:10px; opacity:.8; color:var(--muted); }
+#chat li[data-from="sent"] .conversation-body > p { font-size:13px; line-height:1.55; }
+
+/* Keep the solo conversation usable beside its companion document reader. */
+main > #view-chat { overflow-y:auto; }
+#view-chat > :not(#chat) { flex-shrink:0; }
+#view-chat > #chat { flex:1 0 180px; min-height:180px; }
+#view-chat > details { flex:0 0 auto; }
+#view-chat > details[open] { max-height:35vh; overflow:auto; }
+@media(min-width:851px) and (max-width:1100px) {
+  main { grid-template-columns:170px minmax(320px,1fr) minmax(280px,.85fr); grid-template-rows:68px minmax(0,1fr); }
+  main > #view-documents, main > [role="tabpanel"]:not(#view-chat) { grid-column:3; grid-row:2; }
+  .tabs { grid-row:2; }
+}
+@media(min-width:701px) and (max-width:850px) {
+  main:has(#tab-chat[aria-selected="true"]) { grid-template-rows:68px minmax(0,1fr); }
+  main:has(#tab-chat[aria-selected="true"]) > #view-documents { display:none; }
+  main:has(#tab-chat[aria-selected="true"]) > .tabs { grid-row:2; }
+}
+@media(max-width:700px) {
+  main:has(#tab-chat[aria-selected="true"]) { grid-template-rows:auto auto minmax(0,1fr); }
+  main:has(#tab-chat[aria-selected="true"]) > #view-documents { display:none; }
+  #view-chat .view-heading { padding:10px 16px; }
+}
+/* Independent Codex forks, controlled from the overview. */
+.fork-control { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: .65rem 0; border-bottom: 1px solid #8883; }
+.fork-control small { flex-basis: 100%; overflow-wrap: anywhere; }
+.fork-control [role="switch"][aria-checked="true"] { background: #245b47; color: white; }
+.fork-icon { display:inline-grid; place-items:center; vertical-align:middle; min-width:28px; height:28px; padding:0 4px; border-radius:9px; background:var(--fork-color,#426e5a); color:white; font-size:14px; font-weight:700; letter-spacing:0; }
+.fork-icon[data-fork-icon="2"] { --fork-color:#426e5a; }
+.fork-icon[data-fork-icon="3"] { --fork-color:#546caf; }
+.fork-icon[data-fork-icon="4"] { --fork-color:#8c5699; }
+.fork-icon[data-fork-icon="5"] { --fork-color:#a75d35; }
+.fork-icon[data-fork-icon="6"] { --fork-color:#387787; }
+.fork-icon[data-fork-icon="7"] { --fork-color:#9a5269; }
+.fork-icon[data-fork-icon="8"] { --fork-color:#74652d; }
+.fork-working, .fork-unread { display:inline-flex; align-items:center; gap:5px; margin-left:7px; padding:3px 7px; border-radius:10px; font-size:11px; font-weight:600; line-height:1.3; vertical-align:middle; }
+.fork-working { color:#295841; background:#e2eee5; }
+.fork-unread { color:#614505; background:#ffedb6; }
+.fork-working::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; animation:fork-work-pulse 1.4s ease-in-out infinite; }
+.fork-presence { color:#426e5a; font-size:13px; }
+.fork-presence::after { content:" ···"; display:inline-block; animation:fork-work-pulse 1.4s ease-in-out infinite; }
+#view-forks .messages .fork-icon { min-width:20px; height:20px; border-radius:6px; font-size:11px; }
+@keyframes fork-work-pulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+@media(prefers-reduced-motion:reduce) { .fork-working::before, .fork-presence::after { animation:none; } }
+#view-forks textarea { width: 100%; box-sizing: border-box; }
+#view-chat > #view-forks { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+#view-forks > h2, #view-forks > p { margin:10px 28px; }
+#view-forks > .messages { flex:1; min-height:0; overflow-y:auto; padding:20px 28px; }
+#view-forks > form { flex:none; padding:16px 24px; border-top:1px solid var(--line); }
+
+/* Both conversations occupy the same column; switching preserves each draft. */
+.conversation-tabs { display:flex; flex-wrap:wrap; gap:16px; }
+.conversation-tabs button { border:0; border-radius:0; background:transparent; color:var(--muted); padding:0 0 8px; font-size:18px; font-weight:600; }
+.conversation-tabs button[aria-selected="true"] { color:var(--fg); border-bottom:2px solid var(--idle); }
+#general-conversation, #view-chat > #view-second { display:flex; flex:1; flex-direction:column; min-height:0; overflow:hidden; }
+.conversation-description, #second-thread-status { margin:10px 28px; }
+#general-conversation > #chat, #second-thread-messages { flex:1; min-height:0; overflow-y:auto; padding:20px 28px; margin:0; scrollbar-gutter:stable; }
+#second-thread-form { flex:none; background:var(--surface); border-top:1px solid var(--line); padding:16px 24px; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:12px; }
+#second-thread-text { width:100%; box-sizing:border-box; min-height:56px; max-height:160px; resize:vertical; border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:var(--bg); }
+#second-thread-send-status { grid-column:1/-1; }
+#second-thread-form button[type="submit"] { background:var(--idle); color:var(--surface); border-color:var(--idle); border-radius:9px; padding:11px 18px; font-weight:600; }
+
+/* Status hints must not reserve 100% of a vertical conversation's height. */
+main > #view-chat { display:grid; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+#view-chat > #general-conversation,
+#view-chat > #view-second,
+#view-chat > #view-forks { grid-row:2; min-width:0; min-height:0; height:100%; box-sizing:border-box; }
+#general-conversation > :not(.messages),
+#view-second > :not(.messages),
+#view-forks > :not(.messages) { flex:0 0 auto; }
+#general-conversation > .messages,
+#view-second > .messages,
+#view-forks > .messages { flex:1 1 0; min-height:0; overflow-y:auto; }
+</style></head>
+  <body>
+    <section id="wake-loading" class="wake-loading" aria-label="Chargement de MIND Wake">
+      <div class="wake-loading-grain" aria-hidden="true"></div>
+      <div class="wake-loading-top"><span class="wake-loading-wordmark">MIND <span>Wake</span></span><span class="wake-loading-caption">UN ESPACE POUR L’INITIATIVE</span></div>
+      <div class="wake-loading-center">
+        <div class="wake-loading-orbits" aria-hidden="true"><i></i><i></i><i></i><span class="wake-loading-symbol">m</span></div>
+        <p class="wake-loading-eyebrow">LA SUITE COMMENCE ICI</p>
+        <h1>Les idées prennent vie.</h1>
+        <p class="wake-loading-subtitle">Un peu de curiosité. De nouvelles possibilités.</p>
+        <div class="wake-loading-progress" aria-hidden="true"><span></span></div>
+        <p id="wake-loading-status" class="wake-loading-status" role="status">Ouverture de ton espace…</p>
+        <button id="wake-loading-skip" type="button">Accéder à l’interface <span aria-hidden="true">↗</span></button>
+      </div>
+      <footer class="wake-loading-footer"><span><b aria-hidden="true"></b> La curiosité continue.</span><span>EXPLORER · CRÉER · REPRENDRE</span></footer>
+    </section>
+    <main>
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status">Connexion…</span>
+      <div class="app-controls" role="group" aria-label="Application">
+        <button id="app-restart" type="button">Redémarrer l’app</button>
+        <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter">Plein écran</button>
+        <span id="app-control-status" role="status"></span>
+      </div>
+      </div>
+      <nav class="tabs" aria-label="Navigation et état de Wake">
+        <header id="state" data-tone="unknown" aria-live="polite">
+          <h1>
+            <span
+              id="light"
+              class="light"
+              data-light="unknown"
+              role="img"
+              aria-label="Voyant : inconnu"
+            ></span>
+            <span id="headline">État indisponible</span>
+          </h1>
+          <p id="agent-active-project" role="status" hidden></p>
+          <p id="input-sharing" class="badge" role="status" hidden></p>
+          <p id="reason">Première lecture en cours.</p>
+          <p id="simulated" class="badge" hidden>SIMULÉ — aucune donnée réelle de fournisseur</p>
+        </header>
+        <section id="sidebar-project-menu" aria-label="Projet courant">
+          <label for="document-collection">Projet courant</label>
+          <select id="document-collection" aria-label="Projet courant"><option value="">Tous les projets</option></select>
+        </section>
+        <div class="tab-links" role="tablist" aria-label="Vues">
+        <button
+          id="tab-panel"
+          role="tab"
+          type="button"
+          aria-selected="true"
+          aria-controls="view-panel"
+        >
+          Vue d’ensemble
+        </button>
+        <button
+          id="tab-chat"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="view-chat"
+        >
+          Conversation <span id="chat-new" class="dot" hidden aria-label="nouveau"></span>
+        </button>
+        <button
+          id="tab-threads"
+          role="tab"
+          type="button"
+          aria-selected="false"
+          aria-controls="view-threads"
+          hidden
+        >
+          Rencontres <span id="unread" class="count" hidden></span>
+        </button>
+        <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history">Réveils</button>
+        <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents">Conseils <span id="agents-count" class="count" hidden></span></button>
+        <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects">Projets et tâches</button>
+        <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents">Documents</button>
+        <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations">Autorisations</button>
+        <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings">Réglages</button>
+        </div>
+      </nav>
+
+      <div id="view-projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
+        <div class="projects-toolbar"><h1>Projets et tâches</h1><button id="projects-refresh" type="button">Actualiser</button></div>
+        <p id="projects-status" role="status" class="hint"></p>
+        <iframe id="projects-frame" title="Cartes des projets et tâches" sandbox="allow-same-origin" referrerpolicy="no-referrer"></iframe>
+      </div>
+
+      <div id="view-authorizations" role="tabpanel" aria-labelledby="tab-authorizations" hidden>
+        <h1>Autorisations de mon agent</h1>
+        <p>Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
+        <div class="authorization-toolbar">
+          <button id="authorization-reload" type="button">Recharger les choix</button>
+          <label class="button">Importer un JSON <input id="authorization-import" type="file" accept=".json,application/json"></label>
+          <button id="authorization-save" type="button" disabled>Enregistrer</button>
+          <input id="authorization-search" type="search" placeholder="Rechercher une action" aria-label="Rechercher une autorisation">
+        </div>
+        <p id="authorization-file" class="hint"></p>
+        <p id="authorization-status" role="status" aria-live="polite"></p>
+        <p id="authorization-summary"></p>
+        <div id="authorization-entries"></div>
+        <details><summary>Exemple et portée</summary><pre id="authorization-context"></pre></details>
+      </div>
+      <aside id="view-documents" aria-label="Navigateur de documents">
+        <header class="reader-header">
+          <div><span class="reader-eyebrow">MIND / L’ATELIER</span><h2 id="document-title">Vos documents, au même endroit.</h2></div>
+          <div class="reader-actions">
+          <button id="document-refresh" class="reader-icon" type="button" aria-label="Actualiser le document et la bibliothèque" title="Actualiser">↻</button>
+        <button id="engine-restart" type="button" title="Interrompt la session en cours et recharge le moteur. Pause et Force-off restent respectés.">Redémarrer le moteur</button>
+          </div>
+        </header>
+        <p id="engine-restart-status" role="status" hidden></p>
+        <nav class="reader-controls" aria-label="Navigation du lecteur">
+          <button id="document-back" class="reader-icon" type="button" disabled aria-label="Retour dans l’historique" title="Retour dans l’historique">←</button>
+          <button id="document-forward" class="reader-icon" type="button" disabled aria-label="Avancer dans l’historique" title="Avancer dans l’historique">→</button>
+          <button id="document-explore" type="button" aria-controls="document-library" aria-expanded="false">☰ Explorer</button>
+          <button id="document-latest" type="button">Dernière modification</button>
+          <label class="reader-scope"><span class="sr-only">Espace de documents</span><select id="document-scope" aria-label="Espace de documents"><option value="agent">Mon atelier</option><option value="project">Projet Wake</option><option value="aurore">Atelier d’Aurore</option></select></label>
+        </nav>
+        <nav id="document-location" class="reader-breadcrumb" aria-label="Chemin du document"></nav>
+        <p id="document-status" role="status"></p>
+        <div class="document-workspace">
+          <section id="document-library" hidden aria-label="Bibliothèque de documents">
+
+            <input id="document-search" type="search" aria-label="Rechercher un document" placeholder="Rechercher un document…">
+            <label class="reader-format">Afficher<select id="document-format"><option value="">Tous les documents</option><option value="html">Pages HTML</option><option value="md">Textes Markdown</option><option value="txt">Textes bruts (.txt)</option></select></label>
+            <p id="document-count"></p><nav id="document-files" aria-label="Documents du projet"></nav>
+          </section>
+          <div class="reader-page">
+            <label class="reader-outline">Dans cette page<select id="document-sections" aria-label="Sections du document" disabled><option>Sommaire indisponible</option></select></label>
+            <iframe id="document-frame" title="Document HTML, Markdown ou texte brut" sandbox="allow-same-origin" referrerpolicy="no-referrer" srcdoc="&lt;p&gt;Ouvrez la bibliothèque pour choisir un document.&lt;/p&gt;"></iframe>
+          </div>
+        </div>
+        <nav class="reader-pagination" aria-label="Parcourir les documents récents">
+          <button id="document-previous" type="button" disabled><span aria-hidden="true">←</span><span><strong>Précédent</strong><small id="document-previous-title">Début de la liste</small></span></button>
+          <button id="document-next" type="button" disabled><span><strong>Suivant</strong><small id="document-next-title">Fin de la liste</small></span><span aria-hidden="true">→</span></button>
+        </nav>
+      </aside>
+
+      <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <h1>Réglages</h1>
+        <section aria-labelledby="h-workspace-sync">
+          <h2 id="h-workspace-sync">Dossier de Wake et dépôt GitHub</h2>
+          <form id="workspace-sync-form" class="workspace-sync-form">
+            <label for="workspace-sync-folder">Dossier de travail de l’agent</label>
+            <input id="workspace-sync-folder" type="text" required spellcheck="false" autocomplete="off" placeholder="C:\Users\…\workspace" />
+            <p class="hint">Choisir un dossier existant. Le changement prendra effet au prochain lancement du moteur ; ses fichiers ne sont pas déplacés.</p>
+            <label for="workspace-sync-url">URL du dépôt GitHub</label>
+            <input id="workspace-sync-url" type="text" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git" />
+            <label class="workspace-sync-toggle"><input id="workspace-sync-enabled" type="checkbox" /> Synchroniser automatiquement toutes les minutes</label>
+            <p class="hint">Pull, commit des modifications et push dans ce dépôt existant, selon son .gitignore. Le remote origin et la branche suivie doivent être configurés. Pause et Force-off arrêtent la synchronisation. Aucun dépôt GitHub n’est créé.</p>
+            <div class="workspace-sync-actions"><button id="workspace-sync-save" type="submit">Enregistrer</button><button id="workspace-sync-now" type="button" disabled>Synchroniser maintenant</button></div>
+          </form>
+          <p id="workspace-sync-feedback" role="status"></p>
+          <p id="workspace-sync-effect" class="hint"></p>
+          <dl class="workspace-sync-details">
+            <dt>Dossier utilisé par le moteur</dt><dd id="workspace-sync-active">Chargement…</dd>
+            <dt>Synchronisation</dt><dd id="workspace-sync-state">Chargement…</dd>
+            <dt>Dernière tentative</dt><dd id="workspace-sync-last-attempt">—</dd>
+            <dt>Dernière réussite</dt><dd id="workspace-sync-last-success">—</dd>
+            <dt>Prochain passage</dt><dd id="workspace-sync-next">—</dd>
+            <dt>Erreur ou blocage</dt><dd id="workspace-sync-error">—</dd>
+          </dl>
+        </section>
+        <section aria-labelledby="h-update">
+          <h2 id="h-update">Mises à jour de l’application</h2>
+          <dl>
+            <dt>Version exécutée</dt><dd id="app-version">Chargement…</dd>
+            <dt>Fraîcheur des sources</dt><dd id="app-revision-date">Chargement…</dd>
+            <dt>Compilation</dt><dd id="app-build-date">Chargement…</dd>
+          </dl>
+          <p>Vérification au démarrage et toutes les 6 heures. Installation en arrière-plan, disponible au prochain lancement.</p>
+          <button id="app-update-check" type="button">Rechercher et installer une mise à jour</button>
+          <p id="app-update-status" role="status"></p>
+        </section>
+      </div>
+
+      <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+        <h2>Réveils de l’agent</h2>
+        <p class="runtime-links">
+          <button id="open-system-prompt" type="button" class="link" disabled>Prompt système MIND ↗</button>
+          <span aria-hidden="true"> · </span>
+          <button id="open-agent-folder" type="button" class="link">Dossier de l’agent ↗</button>
+        </p>
+        <p id="runtime-link-status" class="hint" role="status"></p>
+        <p class="hint">Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.</p>
+        <p id="wake-history-status" class="hint" role="status"></p>
+        <ol id="wake-history-messages" class="messages" aria-label="Fil des réveils et réponses"></ol>
+      </div>
+      <div id="view-agents" role="tabpanel" aria-labelledby="tab-agents" hidden>
+        <h2>Conseils et échanges</h2>
+        <p class="hint">Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.</p>
+        <p id="agents-status" class="hint" role="status"></p>
+        <ul id="agents-list" class="threads"></ul>
+        <article id="agent-thread" hidden>
+          <button id="agent-thread-back" type="button" class="link">← Conversations des agents</button>
+          <h2 id="agent-thread-title"></h2>
+          <p id="agent-thread-pointers" class="hint repo-pointers"></p>
+          <ol id="agent-thread-messages" class="messages"></ol>
+        </article>
+      </div>
+      <div id="view-panel" role="tabpanel" aria-labelledby="tab-panel">
+
+
+        <section class="switch-section" aria-label="Mode de l'agent">
+          <div class="switch" role="group" aria-label="On, réveil, always-on ou arrêt forcé">
+            <button id="mode-on" type="button" aria-pressed="false">On</button>
+            <button id="mode-wake" type="button" aria-pressed="false">Réveil</button>
+            <button
+              id="mode-always"
+              type="button"
+              aria-pressed="false"
+              title="Relance dès la fin de chaque réponse"
+            >
+              Always-on
+            </button>
+            <button id="mode-off" type="button" aria-pressed="false" class="danger">
+              Force-off
+            </button>
+          </div>
+          <button id="pause" type="button">Pause</button>
+        </section>
+        <p id="feedback" role="status"></p>
+
+        <section class="switch-section" aria-label="Second fil Claude Code">
+          <div class="switch" role="group" aria-label="Second fil Claude Code">
+            <button id="second-thread-off" type="button" aria-pressed="true">Off</button>
+            <button id="second-thread-on" type="button" aria-pressed="false" title="Fil Claude Code parallèle, sur d’autres projets">Second fil Claude</button>
+          </div>
+        </section>
+        <p id="second-thread-feedback" class="hint" role="status"></p>
+        <section aria-labelledby="h-forks">
+          <h2 id="h-forks">Forks Codex</h2>
+          <p class="hint">Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
+          <div id="fork-controls"></div>
+          <p id="fork-feedback" role="status"></p>
+        </section>
+
+        <section class="wake-plan-section" aria-labelledby="h-wake-plan">
+          <h2 id="h-wake-plan">Les prochains wakes</h2>
+          <div id="wake-plan"><p class="hint">Lecture du planning…</p></div>
+        </section>
+
+        <section aria-labelledby="h-chart">
+          <h2 id="h-chart">Réveils et consommation — 24 h</h2>
+          <div id="chart" class="chart"></div>
+          <p id="chart-summary" class="hint"></p>
+        </section>
+
+        <section aria-labelledby="h-activity">
+          <h2 id="h-activity">Activité</h2>
+          <dl id="activity"></dl>
+        </section>
+        <details class="technical-details"><summary>Consommation et réglages détaillés</summary>
+
+        <section aria-labelledby="h-consumption">
+          <h2 id="h-consumption">Consommation</h2>
+          <dl id="consumption"></dl>
+        </section>
+        <section aria-labelledby="h-protection">
+          <h2 id="h-protection">Protection de l'humain</h2>
+          <dl id="protection"></dl>
+        </section>
+
+        </details>
+
+        <footer>
+          <p id="last-contact"></p>
+        </footer>
+      </div>
+
+      <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
+        <div class="view-heading">
+          <div class="conversation-tabs" role="tablist" aria-label="Conversation">
+            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation">Toi et ton agent</button>
+            <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden>Fil Claude</button>
+          </div>
+        </div>
+        <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
+        <p class="hint conversation-description">Votre conversation, au fil des réveils.</p>
+        <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
+        <ol id="chat" class="messages" aria-live="polite"></ol>
+        <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
+        <div id="chat-progress-reminder" role="status" hidden></div>
+        <p id="chat-note" class="hint"></p>
+        <form id="chat-form">
+            <label for="chat-recipient">Destinataire</label>
+            <select id="chat-recipient" aria-describedby="chat-recipient-status">
+              <option value="owner">Mon agent</option>
+              <option value="auroracle" hidden disabled>Correspondant non configuré</option>
+            </select>
+            <p id="chat-recipient-status" class="hint" role="status"></p>
+          <textarea
+            id="chat-text"
+            rows="3"
+            maxlength="4000"
+            required
+            aria-label="Message à ton agent"
+            placeholder="Écris à ton agent…"
+          ></textarea>
+          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit">Envoyer</button></div>
+          <p id="chat-status" class="hint" role="status"></p>
+        </form>
+        </div>
+        <div id="view-forks" role="tabpanel" hidden></div>
+<div id="view-second" role="tabpanel" aria-labelledby="tab-second" hidden>
+
+        <p id="second-thread-status" class="hint" role="status"></p>
+        <ol id="second-thread-messages" class="messages" aria-live="polite"></ol>
+        <form id="second-thread-form">
+          <textarea id="second-thread-text" rows="3" maxlength="4000" required aria-label="Message au second fil" placeholder="Écris au second fil…"></textarea>
+          <div class="chat-actions"><button type="submit">Envoyer</button></div>
+          <p id="second-thread-send-status" class="hint" role="status"></p>
+        </form>
+      </div>
+      </div>
+
+
+      <div id="view-threads" role="tabpanel" aria-labelledby="tab-threads" hidden>
+        <p id="threads-status" class="hint" role="status"></p>
+        <ul id="threads" class="threads"></ul>
+        <article id="thread" hidden>
+          <button id="thread-back" type="button" class="link">← Tous les fils</button>
+          <h2 id="thread-subject"></h2>
+          <ol id="messages" class="messages"></ol>
+          <form id="reply-form">
+            <label for="reply-text">Répondre</label>
+            <textarea id="reply-text" rows="3" maxlength="4000" required></textarea>
+            <button type="submit">Envoyer dans ce fil</button>
+            <p id="reply-status" class="hint" role="status"></p>
+          </form>
+        </article>
+      </div>
+    </main>
+  <script>
+document.getElementById('wake-loading').remove();
+for(const el of document.querySelectorAll('main > [role="tabpanel"]'))el.hidden=el.id!=='view-chat';
+const right=document.getElementById('view-documents');right.hidden=false;
+const ids=['general-conversation','view-second','view-forks'];
+const fork=document.getElementById('view-forks');fork.innerHTML='<h2>Fork</h2><p class="hint">Status</p><ol class="messages"></ol><form><textarea rows="3"></textarea><button>Envoyer</button></form>';
+for(const id of ['chat','second-thread-messages'])document.getElementById(id).innerHTML='<li>Message test</li>'.repeat(30);
+fork.querySelector('ol').innerHTML='<li>Message test</li>'.repeat(30);
+document.getElementById('second-thread-status').textContent='Claude travaille';const result={};for(const id of ids){for(const other of ids)document.getElementById(other).hidden=id!==other;
+const panel=document.getElementById(id),messages=panel.querySelector('ol'),status=panel.querySelector('.hint');
+result[id]={panel:Math.round(panel.getBoundingClientRect().height),messages:Math.round(messages.getBoundingClientRect().height),status:status?Math.round(status.getBoundingClientRect().height):null,right:Math.round(right.getBoundingClientRect().width)};}
+document.title='LAYOUT_RESULT '+JSON.stringify(result);
+</script></body>
+</html>

@@ -8,6 +8,10 @@ import { parseArgs } from "node:util";
 import { daemonRun } from "./commands/daemon.js";
 import { changeExecutionMode } from "./commands/execution-mode.js";
 import { workspaceSync } from "./commands/workspace-sync.js";
+import { wakeOrder } from "./commands/wake-order.js";
+import { wakePassages } from "./commands/wake-passages.js";
+import { secondThread } from "./commands/second-thread.js";
+import { forks } from "./commands/forks.js";
 import { doctor } from "./commands/doctor.js";
 import { enable } from "./commands/enable.js";
 import { exportCommand } from "./commands/export.js";
@@ -43,6 +47,13 @@ de transaction ou de session guest. Seul \`daemon run\` lance des sessions, au p
 plan, et seulement avec l'adapter factice (--simulated).
 
 Commandes :
+  forks status|on|off|send|run
+                Forks Codex 2 à 8 ; on/off/send lisent un objet JSON {id,text?} sur stdin
+  wake-order    Réordonne les blocs futurs (JSON sur l’entrée standard)
+  wake-passages Importe/valide les passages ou prépare un passage (JSON explicite)
+  second-thread status|on|off|send|run
+                Second fil Claude Code (défaut off) : fil séparé, autre ordre de projets ;
+                send lit le message sur l’entrée standard
   doctor        Diagnostic local, sans appel modèle ni accès réseau
   init          Prépare un profil désactivé, sans budget ni permission
   always-on     Enchaîne les réveils dès la fin de chaque réponse
@@ -137,7 +148,7 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       },
     });
     const [first, second, ...rest] = positionals;
-    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync") && second !== undefined;
+    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync" || first === "second-thread" || first === "forks") && second !== undefined;
     command = grouped ? `${first} ${second}` : (first ?? "help");
     const args = grouped ? rest : positionals.slice(1);
     // Seuls `export` et `policy configure` prennent un argument positionnel.
@@ -161,6 +172,26 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     const dataDir = resolveDataDir(ctx, values["data-dir"]);
     let result: CommandResult<unknown>;
     switch (command) {
+      case "forks status":
+      case "forks on":
+      case "forks off":
+      case "forks send":
+      case "forks run":
+        result = await forks(ctx, dataDir, second ?? "status");
+        break;
+      case "second-thread status":
+      case "second-thread on":
+      case "second-thread off":
+      case "second-thread send":
+      case "second-thread run":
+        result = await secondThread(ctx, dataDir, second);
+        break;
+      case "wake-order":
+        result = await wakeOrder(ctx, dataDir) as CommandResult<unknown>;
+        break;
+      case "wake-passages":
+        result = await wakePassages(ctx, dataDir);
+        break;
       case "workspace-sync status":
       case "workspace-sync configure":
       case "workspace-sync now":

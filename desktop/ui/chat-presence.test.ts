@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { agentIsWorking, automaticBumpKind, BUMP_TEXT, LEGACY_BUMP_TEXT, resolveBumpText } from "./chat-presence.js";
+import { agentIsWorking, automaticBumpKind, BUMP_TEXT, LEGACY_BUMP_TEXT, resolveBumpText, progressReminderLabel } from "./chat-presence.js";
 import type { StatusRead } from "./view.js";
 const now = 20000;
 function read(state: string, daemon = "running", mode = "native"): StatusRead {
   return { ok: true, fetchedAt: now, envelope: { schema: "mind-wake.cli", schemaVersion: 1, ok: true, data: { profile: {state}, daemon: {state:daemon, mode} } } };
 }
 describe("conversation presence", () => {
+  it("shows the real reminder state and clears stale, paused and unavailable status", () => {
+    const reminder = (state: string, profile = "running"): StatusRead => ({ok: true, fetchedAt: now,
+      envelope: {ok: true, data: {profile: {state: profile}, daemon: {state: "running"}, ownerProgressReminder: {state}}},
+    });
+    expect(progressReminderLabel(reminder("pending"), now)).toBe("Rappel en attente");
+    expect(progressReminderLabel(reminder("delivered"), now)).toBe("Rappel transmis");
+    expect(progressReminderLabel(reminder("delivered"), now + 10001)).toBeNull();
+    expect(progressReminderLabel(reminder("delivered", "paused"), now)).toBeNull();
+    expect(progressReminderLabel(read("running"), now)).toBeNull();
+    expect(progressReminderLabel({ok: false, fetchedAt: now, error: "offline"}, now)).toBeNull();
+  });
   it("shows only a live running or checkpointing native session", () => {
     expect(agentIsWorking(read("running"),now)).toBe(true);
     expect(agentIsWorking(read("checkpointing"),now)).toBe(true);

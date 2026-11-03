@@ -97,6 +97,7 @@ export function initDocuments(invoke: Invoke): void {
   const previous=byId<HTMLButtonElement>('document-previous'),next=byId<HTMLButtonElement>('document-next');
   let entries:LibraryEntry[]=[],current='',documentScope='agent',generation=0,catalogGeneration=0,pendingOpen=false;
   let renderedRelative='',renderedScope='agent',cloneVersion:string|undefined;
+  let followLatest=true,localRefreshPending=false;
   let cloneSync:AuroreSyncStatus|undefined;
   const scopeHistories=new Map<string,{history:string[];position:number}>();
   let history:string[]=[],position=-1,truncated=false;
@@ -184,8 +185,24 @@ export function initDocuments(invoke: Invoke): void {
   // A version probe reads HEAD/status only, never the network or full history when unchanged.
   let lastProbeAt=0;
   window.addEventListener('wake-interface-ready',()=>{
-    const now=Date.now();if(now-lastProbeAt<5000)return;lastProbeAt=now;void refreshAurore(true);
+    const now=Date.now();if(now-lastProbeAt<5000)return;lastProbeAt=now;void refreshAurore(true);void refreshLocal();
   });
+  async function refreshLocal():Promise<void>{
+    if(scopeState.current==='aurore'||pendingOpen||localRefreshPending)return;
+    localRefreshPending=true;
+    const scopeTicket=scopeState.capture(),docTicket=generation,catalogTicket=catalogGeneration;
+    const previousEntries=entries;
+    try{
+      const data=await invoke('document_browse',{scope:scopeState.current,relative:'',read:false,recursive:true}) as AuroreCatalog;
+      if(!scopeState.accepts(scopeTicket)||docTicket!==generation||catalogTicket!==catalogGeneration)return;
+      entries=data.entries;truncated=Boolean(data.truncated);
+      window.dispatchEvent(new CustomEvent('wake-document-catalog',{detail:{scope:scopeState.current,entries,truncated}}));
+      renderFiles();
+      const latest=shown()[0],previous=previousEntries.find(entry=>entry.relative===latest?.relative);
+      if(followLatest&&latest&&(latest.relative!==current||latest.modifiedAt!==previous?.modifiedAt))await open(latest.relative,true,'',undefined,true);
+    }catch{/* Preserve the reader when a local refresh fails. */}
+    finally{localRefreshPending=false;}
+  }
   function renderFiles():void{
     const list=shown();files.replaceChildren();
     byId('document-count').textContent=list.length+' document'+(list.length===1?'':'s')+(scopeState.current==='aurore'?' · catalogue Git':' · plus récents en premier')+(truncated?' · catalogue partiel':'');
@@ -235,12 +252,13 @@ export function initDocuments(invoke: Invoke): void {
       renderFiles();breadcrumbs();status.textContent=targetScope==='aurore'?auroreDocumentStatus(cloneVersion,cloneSync)+(truncated?' · catalogue partiel':''):truncated?'Une partie du catalogue est affichée.':'';
       if(restore&&!current&&!pendingOpen){
         let saved='';try{saved=localStorage.getItem(stateKey())??'';}catch{/* No saved document. */}
-        const initial=entries.find(e=>e.relative===saved)??entries.find(e=>e.relative==='artifacts/projets.html')??shown()[0];
-        if(initial)await open(initial.relative);else setLibrary(true);
+        const initial=targetScope==='aurore'?entries.find(e=>e.relative===saved)??shown()[0]:shown()[0];
+        if(initial)await open(initial.relative,true,'',undefined,true);else setLibrary(true);
       }
     }catch(error){if(ticket===catalogGeneration&&scopeState.accepts(scopeTicket)&&accepts()){if(targetScope==='aurore')showCloneState('unavailable');else feedback(error);}}
   }
-  async function open(relative:string,record=true,anchor='',historyIndex?:number):Promise<void>{
+  async function open(relative:string,record=true,anchor='',historyIndex?:number,automatic=false):Promise<void>{
+    if(!automatic)followLatest=false;
     const targetScope=scopeState.current;
     remember();const ticket=++generation,scopeTicket=scopeState.capture();pendingOpen=true;status.textContent='Ouverture du document…';
     try{
@@ -270,6 +288,8 @@ export function initDocuments(invoke: Invoke): void {
       frame.onload=()=>{
         if(ticket!==generation||!scopeState.accepts(scopeTicket))return;
         const doc=frame.contentDocument;if(!doc)return;
+        const reading=():void=>{if(ticket===generation&&scopeState.accepts(scopeTicket))followLatest=false;};
+        for(const event of ['pointerdown','wheel','keydown'])doc.addEventListener(event,reading,{passive:true});
         const version=cloneVersion;
         const imageInvoke:Invoke=(command,args)=>invoke(command,{...args,...(targetScope==='aurore'?{version}:{})});
         void loadDocumentImages(images,doc,targetScope,imageInvoke,()=>ticket===generation&&scopeState.accepts(scopeTicket)&&frame.contentDocument===doc);
@@ -312,7 +332,8 @@ export function initDocuments(invoke: Invoke): void {
   const pageClick=(button:HTMLButtonElement):void=>{const relative=button.dataset['relative'];if(!relative)return;if(contextMode&&scopeState.local!==null)requestFile({scope:button.dataset['scope']==='project'?'project':'agent',relative,name:relative.split('/').at(-1)??relative});else void open(relative);};
   previous.addEventListener('click',()=>pageClick(previous));
   next.addEventListener('click',()=>pageClick(next));
-  byId('document-latest').addEventListener('click',()=>{contextMode=false;renderQueue();const first=shown()[0];if(first)void open(first.relative);});
+  byId('document-latest').title='Ouvrir le dernier fichier modifié et suivre les prochaines modifications. Choisir ou lire un document suspend ce suivi.';
+  byId('document-latest').addEventListener('click',()=>{followLatest=true;contextMode=false;renderQueue();const first=shown()[0];if(first)void open(first.relative,true,'',undefined,true);});
   function showCloneState(state:unknown):void{
     if(state==='syncing'||state==='version-changed'){
       status.textContent=(cloneVersion?auroreDocumentStatus(cloneVersion,cloneSync)+' · ':'')+(state==='syncing'?'Synchronisation en cours · document conservé, actualisez ensuite.':'Version du clone modifiée · document conservé, actualisez le catalogue.');return;
@@ -325,6 +346,7 @@ export function initDocuments(invoke: Invoke): void {
     breadcrumbs();renderFiles();renderQueue();setLibrary(true);
   }
   function changeScope(value:unknown,restore:boolean,keepContext=false):void{
+    followLatest=true;
     remember();scopeHistories.set(scopeState.current,{history:[...history],position});scopeState.select(value);scope.value=scopeState.current;
     generation++;catalogGeneration++;pendingOpen=false;current='';documentScope=scopeState.current;renderedRelative='';
     entries=[];history=[...(scopeHistories.get(scopeState.current)?.history??[])];position=scopeHistories.get(scopeState.current)?.position??-1;cloneVersion=undefined;truncated=false;contextMode=keepContext;collection.replaceChildren(new Option('Tous les projets',''));search.value='';

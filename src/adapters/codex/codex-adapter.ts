@@ -18,6 +18,7 @@ import {
   ownerMessagePending,
 } from "../../communication/owner-inbox.js";
 import { CodexOwnerSteering } from "./owner-steering.js";
+import { claimProgressReminder, finishProgressReminder } from "../../communication/owner-progress-reminder.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
  * `codex app-server` (JSON-RPC sur stdio, protocole vérifié), un fil Codex repris d'un réveil
@@ -626,6 +627,8 @@ export class CodexAdapter implements RuntimeAdapter {
       if (inbox) releaseOwnerClaims(inbox);
       const initialClaim = randomUUID();
       const incoming = inbox ? claimOwnerMessages(inbox, request.sessionId, initialClaim) : [];
+      const progressReminder = inbox && !incoming.length
+        ? claimProgressReminder(inbox, request.sessionId, initialClaim) : null;
       const context = request.context;
       let started: Record<string, unknown>;
       session.projectStart = readCurrentProject(this.#options.workspaceDir);
@@ -635,15 +638,19 @@ export class CodexAdapter implements RuntimeAdapter {
           input: [
             ...codexWakeInput(context, request.wakeImage),
             ...ownerContent(incoming, "codex"),
+            ...(progressReminder ? [{ type: "text", text: progressReminder }] : []),
           ],
           ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
           ...(this.#options.effort === undefined ? {} : { effort: this.#options.effort }),
         });
       } catch (error) {
+        if (inbox && progressReminder) finishProgressReminder(inbox, request.sessionId, initialClaim, false);
         if (inbox) releaseOwnerClaims(inbox, request.sessionId);
         throw error;
       }
       const turnId = asRecord(started["turn"])?.["id"];
+      if (inbox && progressReminder) finishProgressReminder(inbox, request.sessionId, initialClaim,
+        typeof turnId === "string" && !session.ended && !session.cancelling);
       if (typeof turnId !== "string") throw new Error("turn/start sans identifiant de tour");
       if (inbox && incoming.length) confirmOwnerClaim(inbox, request.sessionId, initialClaim);
       if (typeof turnId === "string") session.turnId ??= turnId;

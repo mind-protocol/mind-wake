@@ -1,6 +1,6 @@
 /**
  * Implémentations du signal de priorité humaine. Aucune ne capture de contenu : seule
- * la durée d'inactivité (ou un état fixé par test) est lue.
+ * la durée d'inactivité et la présence de la fenêtre principale MIND sont lues.
  */
 
 import { execFile, spawn } from "node:child_process";
@@ -68,6 +68,33 @@ Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
 public static class MindWakeIdle {
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+  [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inheritHandle, uint processId);
+  [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+  [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+  static extern bool QueryFullProcessImageName(IntPtr process, uint flags, System.Text.StringBuilder name, ref uint size);
+  [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+  static extern int GetWindowText(IntPtr window, System.Text.StringBuilder text, int count);
+  public static int MindForeground() {
+    try {
+      var window = GetForegroundWindow();
+      if (window == IntPtr.Zero) return 0;
+      uint pid;
+      if (GetWindowThreadProcessId(window, out pid) == 0) return -1;
+      var process = OpenProcess(0x1000, false, pid);
+      if (process == IntPtr.Zero) return -1;
+      try {
+        var name = new System.Text.StringBuilder(32768);
+        uint size = (uint)name.Capacity;
+        if (!QueryFullProcessImageName(process, 0, name, ref size)) return -1;
+        if (!String.Equals(System.IO.Path.GetFileName(name.ToString()), "mind-wake-desktop.exe", StringComparison.OrdinalIgnoreCase)) return 0;
+      } finally { CloseHandle(process); }
+      var title = new System.Text.StringBuilder(256);
+      GetWindowText(window, title, title.Capacity);
+      return title.ToString() == "Que fait mon agent ? — MIND Wake" ? 1 : 0;
+    } catch { return -1; }
+  }
   [StructLayout(LayoutKind.Sequential)]
   struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
   [DllImport("user32.dll")]
@@ -119,6 +146,27 @@ export function windowsIdleSource(timeoutMs: DurationMs = 10_000): IdleSource {
 export interface IdleObservation {
   readonly idleMs: DurationMs;
   readonly observedAtMs: number;
+  /** Main desktop window only; undefined when foreground observation failed. */
+  readonly mindForeground?: boolean;
+  readonly mindLastForegroundAtMs?: number;
+}
+
+/** Decode native metadata without treating missing/failed foreground reads as absence. */
+export function parseWindowsActivity(
+  line: string,
+  observedAtMs: number,
+  previous: IdleObservation | null,
+): IdleObservation | null {
+  const [idleText, foreground] = line.trim().split("|");
+  const idleMs = Number(idleText);
+  if (!idleText || !Number.isSafeInteger(idleMs) || idleMs < 0) return null;
+  const last = foreground === "1" ? observedAtMs : previous?.mindLastForegroundAtMs;
+  return {
+    idleMs,
+    observedAtMs,
+    ...(foreground === "0" || foreground === "1" ? { mindForeground: foreground === "1" } : {}),
+    ...(last === undefined ? {} : { mindLastForegroundAtMs: last }),
+  };
 }
 
 /**
@@ -173,7 +221,7 @@ export function pollingIdleWatcher(
  */
 export function windowsIdleWatcher(intervalMs = 250, now: () => number = Date.now): IdleWatcher {
   const script = `${WINDOWS_IDLE_SCRIPT.replace(/\[MindWakeIdle\]::IdleMs\(\)\s*$/, "")}
-while ($true) { [Console]::Out.WriteLine([MindWakeIdle]::IdleMs()); [Console]::Out.Flush(); Start-Sleep -Milliseconds ${String(Math.max(50, Math.floor(intervalMs)))} }
+while ($true) { [Console]::Out.WriteLine(([string][MindWakeIdle]::IdleMs()) + '|' + ([string][MindWakeIdle]::MindForeground())); [Console]::Out.Flush(); Start-Sleep -Milliseconds ${String(Math.max(50, Math.floor(intervalMs)))} }
 `;
   const encoded = Buffer.from(script, "utf16le").toString("base64");
   let latest: IdleObservation | null = null;
@@ -192,10 +240,8 @@ while ($true) { [Console]::Out.WriteLine([MindWakeIdle]::IdleMs()); [Console]::O
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() ?? "";
       for (const line of lines) {
-        const value = Number(line.trim());
-        if (line.trim() !== "" && Number.isSafeInteger(value) && value >= 0) {
-          latest = { idleMs: value, observedAtMs: now() };
-        }
+        const observation = parseWindowsActivity(line, now(), latest);
+        if (observation !== null) latest = observation;
       }
     });
     child.on("error", () => undefined);

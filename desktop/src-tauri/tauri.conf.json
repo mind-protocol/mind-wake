@@ -13,6 +13,7 @@
     "windows": [
       {
         "label": "main",
+        "dragDropEnabled": false,
         "title": "Que fait mon agent ? — MIND Wake",
         "width": 960,
         "height": 680,

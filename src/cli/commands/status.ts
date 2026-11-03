@@ -2,6 +2,8 @@ import { executionMode, type ExecutionMode } from "../../daemon/execution-mode.j
 import { keyboardContextStatus } from "../../daemon/keyboard-context.js";
 import { readCurrentProject } from "../../daemon/project-change.js";
 import { workspaceDirFor } from "../../daemon/paths.js";
+import { readWakePreview, type WakePreview } from "../../daemon/wake-preview.js";
+import { readProgressReminderStatus, type ProgressReminderStatus } from "../../communication/owner-progress-reminder.js";
 /**
  * `status` : état courant, expérience active, dernière activité, budget, prochain réveil
  * et motif d'attente (SPEC §3.3). Lecture seule.
@@ -139,6 +141,8 @@ const NO_DAEMON: DaemonStatus = {
 };
 
 export interface StatusData {
+  readonly ownerProgressReminder?: ProgressReminderStatus | null;
+  readonly wakePreview?: WakePreview;
   readonly activeProject?: string | null;
   readonly keyboardContext?: { readonly state: string; readonly bufferedChanges: number };
   readonly dataDir: string;
@@ -283,7 +287,11 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
           };
     return {
       dataDir: dataDir.path,
+      ownerProgressReminder: daemon.state === "running" && !profile.emergencyStopLocked &&
+        ["ready", "running", "hibernating"].includes(profile.state)
+        ? readProgressReminderStatus(dataDir.path, ctx.now().getTime()) : null,
       activeProject: readCurrentProject(workspaceDirFor(dataDir.path)),
+      wakePreview: readWakePreview(workspaceDirFor(dataDir.path)),
       executionMode: executionMode(dataDir.path),
       keyboardContext: keyboardContextStatus(
         dataDir.path,

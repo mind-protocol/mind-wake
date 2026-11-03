@@ -10,10 +10,13 @@ export function externalUrl(value: string): string | null {
   } catch {return null;}
 }
 
-/** Recognize explicit Markdown and bare web links without interpreting HTML. */
-export function messageLinks(text: string): MessageLink[] {
-  const result: MessageLink[] = [], reserved: {start: number; end: number}[] = [];
-  for (const match of text.matchAll(/(?:^|\n)[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]*\1[^\n]*(?:\n|$)|$)|`[^`\n]*`/g)) reserved.push({start: match.index, end: match.index + match[0].length});
+export interface MarkdownLink {readonly start: number; readonly end: number; readonly label: string; readonly destination: string; readonly image: boolean}
+const codeSpans = (text: string): {start: number; end: number}[] =>
+  [...text.matchAll(/(?:^|\n)[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:\n[ \t]*\1[^\n]*(?:\n|$)|$)|`[^`\n]*`/g)].map(match => ({start: match.index, end: match.index + match[0].length}));
+
+/** Explicit `[label](destination)` links outside code, whatever their destination. */
+export function markdownLinks(text: string): MarkdownLink[] {
+  const result: MarkdownLink[] = [], reserved = codeSpans(text);
   const blocked = (start: number, end: number): boolean => reserved.some(span => start < span.end && end > span.start);
   for (const match of text.matchAll(/!?\[([^\]\n]*)\]\(\s*/g)) {
     const start = match.index;
@@ -35,9 +38,21 @@ export function messageLinks(text: string): MessageLink[] {
       const suffix = /^\s*(?:"[^"\n]*"\s*)?\)/.exec(text.slice(cursor));
       if (!suffix) continue; close = cursor + suffix[0].length - 1;
     }
-    const end = close + 1, href = externalUrl(destination);
+    const end = close + 1;
     reserved.push({start, end});
-    if (href && !match[0].startsWith('!')) result.push({start, end, label: match[1] || destination, href});
+    result.push({start, end, label: match[1] || destination, destination, image: match[0].startsWith('!')});
+  }
+  return result;
+}
+
+/** Recognize explicit Markdown and bare web links without interpreting HTML. */
+export function messageLinks(text: string): MessageLink[] {
+  const result: MessageLink[] = [], reserved = codeSpans(text);
+  const blocked = (start: number, end: number): boolean => reserved.some(span => start < span.end && end > span.start);
+  for (const link of markdownLinks(text)) {
+    reserved.push({start: link.start, end: link.end});
+    const href = externalUrl(link.destination);
+    if (href && !link.image) result.push({start: link.start, end: link.end, label: link.label, href});
   }
   for (const match of text.matchAll(/https?:\/\/[^\s<>"'`]+/gi)) {
     let raw = match[0];

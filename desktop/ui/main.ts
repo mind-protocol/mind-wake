@@ -1,7 +1,11 @@
+import { projectWakesCard } from "./project-wakes.js";
 import { initProjects } from "./projects.js";
+import { mountWakePreview } from "./wake-preview.js";
 import { initWorkspaceSync } from "./workspace-sync.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
+import { mountSecondThread } from "./second-thread.js";
+import { mountForks } from "./forks.js";
 /**
  * Panneau « Que fait mon agent ? » et fils privés. Chaque lecture et chaque action passe
  * par une commande Rust qui exécute la CLI correspondante (`mind-wake … --json`,
@@ -10,10 +14,11 @@ import { bindChatDraft } from "./chat-draft.js";
  * Le texte des messages est inséré comme texte, jamais comme HTML.
  */
 
-import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, type BumpKind } from "./chat-presence.js";
+import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, progressReminderLabel, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountAuthorizations } from "./authorizations.js";
 import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
+import { projectBadge, projectMarker, undefinedObjectiveBadge } from "./project-marker.js";
 import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
@@ -117,6 +122,13 @@ byId("engine-restart").addEventListener("click", async () => {
 });
 
 let lastRead: StatusRead | null = null;
+const renderWakePreview = mountWakePreview(byId("wake-plan"), async (projectIds, revision) => {
+  if (!tauri) throw Error("Réorganisation disponible dans l’application MIND Wake.");
+  const result = await tauri.core.invoke("wake_order", {projectIds, revision}) as CliRun;
+  const envelope = JSON.parse(result.stdout) as Envelope;
+  if (result.exitCode !== 0 || envelope.ok !== true) throw Error(String(envelope.error?.message ?? "Ordre non enregistré."));
+  // The regular status poll reads the persisted order after this callback returns.
+});
 let stopArmedUntil = 0;
 let tick = 0;
 let openThread: string | null = null;
@@ -203,6 +215,7 @@ async function refresh(): Promise<void> {
   try {
     const envelope = await invoke("wake_status");
     lastRead = { ok: true, fetchedAt: Date.now(), envelope };
+    renderWakePreview((envelope.data as { wakePreview?: unknown } | undefined)?.wakePreview);
     const input = (envelope.data as { keyboardContext?: { state?: string } } | undefined)
       ?.keyboardContext;
     const indicator = document.getElementById("input-sharing");
@@ -219,6 +232,7 @@ async function refresh(): Promise<void> {
     }
   } catch (error) {
     lastRead = { ok: false, fetchedAt: Date.now(), error: message(error) };
+    renderWakePreview(null);
   }
   render(panelView(lastRead, Date.now()));
   renderChatPresence();
@@ -584,7 +598,7 @@ async function refreshChat(): Promise<void> {
   }
   if (outgoingChat.size) byId("chat-note").textContent = "";
   messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent" || item.from === "received") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
-  const signature=JSON.stringify(model.items.slice(-chatVisibleCount));
+  const signature=JSON.stringify([model.items.slice(-chatVisibleCount),model.projectWakes]);
   if(signature===chatSignature && !reconciled)return;
   const chatPane=byId("chat");
   const firstRender=chatSignature==="";
@@ -600,6 +614,12 @@ async function refreshChat(): Promise<void> {
       li.dataset["from"] = item.from;
       if (item.humanRecipient === "Auroracle") li.dataset["recipient"] = "auroracle";
       renderConversationMeta(meta, item);
+      if (item.objectiveDefined === false) meta.append(" ", undefinedObjectiveBadge());
+      if (item.project) {
+        meta.prepend(projectBadge(item.project.id, item.project.title), " ");
+        li.style.setProperty("--project-color", projectMarker(item.project.id, item.project.title).color);
+        li.classList.add("project-objective");
+      }
       const delivery = conversationReceipt(item);
       if (delivery) {
         const receipt = document.createElement("span");
@@ -613,6 +633,21 @@ async function refreshChat(): Promise<void> {
       const kind = automaticBumpKind(item);
       if (kind !== null) li.dataset["invitation"] = kind;
       const body = conversationBody(conversationText(item, plainText), kind, item.text);
+      if (item.projectRows) {
+        body.replaceChildren();
+        const details=document.createElement("details"),summary=document.createElement("summary");
+        summary.textContent="Les 10 prochains wakes";details.append(summary);body.append(details);
+        for (const row of item.projectRows) {
+          const line = document.createElement("p");
+          line.className = "project-plan-row";
+          line.append(projectBadge(row.id, row.title), document.createTextNode(` ${row.text}`));
+          if (!row.objectiveDefined) line.append(" ", undefinedObjectiveBadge());
+          details.append(line);
+        }
+        const note = document.createElement("small");
+        note.textContent = "Prévision révisable · mise à jour automatique · wake en cours exclu.";
+        details.append(note);
+      }
       li.append(meta, body);
       if (item.pendingReason) {
         const wait = document.createElement("small");
@@ -623,6 +658,8 @@ async function refreshChat(): Promise<void> {
       return li;
     }),
   );
+  const objectives = projectWakesCard(model.projectWakes);
+  if (objectives) chatPane.append(objectives);
   chatPane.append(...outgoingChat.values());
   chatPane.scrollTop=follow?chatPane.scrollHeight:oldTop+(chatPane.scrollHeight-oldHeight);
   chatLoadingOlder=false;
@@ -633,6 +670,13 @@ function renderChatPresence(): void {
   const visible = agentIsWorking(lastRead, Date.now());
   const presence = byId("chat-presence");
   if (presence.hidden !== !visible) presence.hidden = !visible;
+  const label = progressReminderLabel(lastRead, Date.now());
+  const reminder = byId("chat-progress-reminder");
+  reminder.hidden = label === null;
+  if (reminder.textContent !== (label ?? "")) reminder.textContent = label ?? "";
+  reminder.title = label === "Rappel transmis"
+    ? "Le rappel de nouvelles a été transmis à l’agent. En attente d’un message."
+    : "60 secondes sans nouvelles : un rappel attend d’être transmis à l’agent.";
 }
 // Expire the indication even if a status request is stuck.
 setInterval(renderChatPresence, 1000);
@@ -760,9 +804,22 @@ byId("chat-form").addEventListener("submit", (event) => {
 
 // --- Navigation et événements -------------------------------------------------------------
 
-type Tab = "panel" | "chat" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
+type Tab = "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
 
+let conversationTab: "general" | "second" | "forks" = "general";
+function selectConversation(tab: "general" | "second" | "forks"): void {
+  conversationTab = tab;
+  byId("general-conversation").hidden = conversationTab !== "general";
+  byId("view-second").hidden = conversationTab !== "second";
+  byId("view-forks").hidden = conversationTab !== "forks";
+  if (tab !== "forks") document.querySelectorAll("[data-fork-tab]").forEach((button) => button.setAttribute("aria-selected", "false"));
+  byId("conversation-general").setAttribute("aria-selected", String(conversationTab === "general"));
+  byId("tab-second").setAttribute("aria-selected", String(conversationTab === "second"));
+}
 function selectTab(tab: Tab): void {
+  if (tab === "second") { selectConversation("second"); return; }
+  if (tab === "forks") { selectConversation("forks"); return; }
+  if (tab === "chat") selectConversation("general");
   document.querySelector("main")?.setAttribute("data-active-tab", tab);
   byId("tab-documents").setAttribute("aria-selected", String(tab === "documents"));
   for (const name of ["panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects"] as const) {
@@ -789,6 +846,7 @@ function selectTab(tab: Tab): void {
 byId("tab-panel").addEventListener("click", () => {
   selectTab("panel");
 });
+byId("conversation-general").addEventListener("click", () => selectConversation("general"));
 byId("tab-chat").addEventListener("click", () => {
   selectTab("chat");
 });
@@ -830,6 +888,24 @@ byId("mode-off").addEventListener("click", () => {
 
 void refresh();
 setInterval(() => void refresh(), POLL_MS);
+
+if (tauri !== undefined) mountForks({
+  invoke: async (cmd, args) => invoke(cmd, args),
+  selectTab: () => selectTab("forks"),
+  decorate: (body, text) => {
+    messageLinks(body);
+    appendMessageImages(body, text, (command, args) => tauri.core.invoke(command, args));
+  },
+});
+
+if (tauri !== undefined) mountSecondThread({
+  invoke: async (cmd, args) => invoke(cmd, args),
+  selectTab: () => selectTab("second"),
+  decorate: (body, text) => {
+    messageLinks(body);
+    appendMessageImages(body, text, (command, args) => tauri.core.invoke(command, args));
+  },
+});
 
 // Repo-agent conversations: read-only observation of the actual exchanged messages.
 let agentThreads: RepoThread[] = [];

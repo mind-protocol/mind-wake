@@ -128,7 +128,9 @@ fn catalog(base: &Path, start: &Path) -> Result<serde_json::Value, String> {
         if truncated { break; }
     }
     entries.sort_by(|a,b| b["modifiedAt"].as_u64().cmp(&a["modifiedAt"].as_u64()).then(a["relative"].as_str().cmp(&b["relative"].as_str())));
-    Ok(serde_json::json!({"entries":entries,"truncated":truncated}))
+    // Lets the conversation resolve absolute Markdown destinations inside this root.
+    let root = base.to_string_lossy().trim_start_matches(r"\\?\").replace('\\', "/");
+    Ok(serde_json::json!({"entries":entries,"truncated":truncated,"root":root}))
 }
 
 #[cfg(test)]

@@ -26,7 +26,8 @@ import {
 } from "../../communication/owner-inbox.js";
 import { saveStepsResult, nextWakeStep } from "../../daemon/wake-steps.js";
 import { appendRepoMessage } from "../../communication/repo-conversations.js";
-import { readOwnerMessages } from "../../communication/owner-messages.js";
+import { OwnerMessages, readOwnerMessages } from "../../communication/owner-messages.js";
+import { OwnerProgressReminder, PROGRESS_REMINDER } from "../../communication/owner-progress-reminder.js";
 import { canReadQuota } from "../../runner/host.js";
 import type { Sandbox } from "../../sandbox/sandbox.js";
 import { SpawnedCodexProcess } from "../../../test/fixtures/codex/process.js";
@@ -187,6 +188,24 @@ async function collect(a: CodexAdapter, req: StartRequest): Promise<AdapterEvent
 }
 
 describe("protocole app-server", () => {
+  it("delivers a queued private progress reminder at the next native wake", async () => {
+    h.attestation = { confined: false, selfTestPassed: false, detail: "host" };
+    const messages = new OwnerMessages(h.dir, "agent");
+    messages.publish("Bonjour", "hello", new Date(Date.now() - 60_001).toISOString());
+    messages.close();
+    const monitor = new OwnerProgressReminder(h.dir, () => true);
+    monitor.start();
+    try {
+      const subject = adapter({ transport: undefined, nativeCapabilities: true, ownerInboxDir: h.dir });
+      const req = request();
+      await collect(subject, { ...req, policy: { ...req.policy,
+        groups: { runtime: { hostUnsandboxedAcknowledged: true, nativeCapabilities: true } },
+      } as unknown as PolicyRevision });
+      expect(JSON.stringify(h.requests("turn/start")[0])).toContain(PROGRESS_REMINDER);
+      expect(readOwnerReceipts(h.dir)).toEqual({});
+      expect(readOwnerMessages(h.dir)).toHaveLength(1);
+    } finally { monitor.close(); }
+  });
   it("accounts for planning usage arriving before the turn/start response", async () => {
     h.flow = "steps-stop-early-usage.json";
     let captured = "none";

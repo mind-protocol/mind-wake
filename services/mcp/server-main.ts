@@ -5,7 +5,8 @@
  * Adaptateur mince : toute décision (permissions, pseudonymes, idempotence, débit, taille,
  * acceptation du guide) est prise par le hub local ; la clé de liaison reste dans ce
  * processus et n'apparaît dans aucune sortie d'outil. Aucune ressource, aucun prompt,
- * aucun sampling, aucun accès fichier ou réseau, aucune commande réservée à l'humain.
+ * aucun sampling ni commande réservée à l'humain. Les outils Reddit optionnels
+ * utilisent séparément l'API Internet OAuth quand MIND_REDDIT_ENABLED=1.
  *
  * Environnement : MIND_MCP_HUB_PIPE (pipe local du hub), MIND_MCP_LINK_KEY (clé de liaison
  * de la partie), MIND_WAKE_DATA_DIR (facultatif, données Wake à consulter).
@@ -19,6 +20,7 @@ import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import { registerWakeManagerTools } from "./wake-manager-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
+import { registerRedditTools } from "./reddit-tools.js";
 import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
 import { McpServer } from "@modelcontextprotocol/server";
@@ -530,6 +532,7 @@ registerOwnerTools(server, process.env);
 registerBackgroundTools(server, process.env);
 registerWakeManagerTools(server, process.env);
 registerRepoTools(server, process.env);
+registerRedditTools(server, process.env);
 registerPeerTaskLocalTools(server, process.env, async () => {
   if (hub === null) throw Error("Authenticated local hub required for peer decisions");
   const self = await hub.call<{ kind: string; ref: string }>({ op: "whoami" });

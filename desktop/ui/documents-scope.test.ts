@@ -57,6 +57,67 @@ function fixture(savedScope='agent') {
 afterEach(()=>{vi.clearAllTimers();vi.useRealTimers();vi.unstubAllGlobals();});
 const tick=async():Promise<void>=>{await Promise.resolve();await Promise.resolve();};
 
+function readable(f:ReturnType<typeof fixture>):void{
+  f.parse.mockReturnValue({querySelectorAll:()=>[],querySelector:()=>null,createElement:()=>new Element(),head:{prepend:()=>{}},documentElement:{outerHTML:'<html>fixture</html>'}});
+}
+const localEntries=[{name:'old.html',relative:'old.html',modifiedAt:1000},{name:'latest.html',relative:'latest.html',modifiedAt:2000}];
+it('starts on the latest modification and follows new files and updates to that file',async()=>{
+  const f=fixture();readable(f);f.storage.set('mind-wake.reader-current.agent','old.html');
+  f.requests[0]!.resolve({entries:localEntries});await tick();
+  expect(f.requests.at(-1)!.args['relative']).toBe('latest.html');
+  f.requests.at(-1)!.resolve({text:'latest',format:'html'});await tick();
+  f.event('wake-interface-ready',undefined);
+  const entries=[...localEntries,{name:'new.html',relative:'new.html',modifiedAt:3000}];
+  f.requests.at(-1)!.resolve({entries});await tick();
+  expect(f.requests.at(-1)!.args).toMatchObject({relative:'new.html',read:true});
+  f.requests.at(-1)!.resolve({text:'new',format:'html'});await tick();
+  vi.advanceTimersByTime(5000);f.event('wake-interface-ready',undefined);
+  f.requests.at(-1)!.resolve({entries:entries.map(e=>e.relative==='new.html'?{...e,modifiedAt:4000}:e)});await tick();
+  expect(f.requests.at(-1)!.args).toMatchObject({relative:'new.html',read:true});
+});
+it('preserves a manually selected document, including when a refresh is already in flight, until Latest is clicked',async()=>{
+  const f=fixture();readable(f);
+  f.requests[0]!.resolve({entries:localEntries});await tick();
+  f.requests.at(-1)!.resolve({text:'latest',format:'html'});await tick();
+  f.event('wake-interface-ready',undefined);const delayed=f.requests.at(-1)!;
+  f.node('document-files').children[1]!.dispatchEvent({type:'click'});
+  f.requests.at(-1)!.resolve({text:'old',format:'html'});await tick();
+  const entries=[...localEntries,{name:'new.html',relative:'new.html',modifiedAt:3000}];
+  const count=f.requests.length;delayed.resolve({entries});await tick();
+  expect(f.requests).toHaveLength(count);
+  vi.advanceTimersByTime(5000);f.event('wake-interface-ready',undefined);
+  f.requests.at(-1)!.resolve({entries});await tick();
+  expect(f.requests.at(-1)!.args['read']).toBe(false);
+  expect(f.storage.get('mind-wake.reader-current.agent')).toBe('old.html');
+  f.node('document-latest').dispatchEvent({type:'click'});
+  expect(f.requests.at(-1)!.args).toMatchObject({relative:'new.html',read:true});
+});
+it('does not reopen an unchanged document or accept a local refresh from a previous scope',async()=>{
+  const f=fixture();readable(f);
+  f.requests[0]!.resolve({entries:localEntries});await tick();
+  f.requests.at(-1)!.resolve({text:'latest',format:'html'});await tick();
+  f.event('wake-interface-ready',undefined);
+  const count=f.requests.length;f.requests.at(-1)!.resolve({entries:localEntries});await tick();
+  expect(f.requests).toHaveLength(count);
+  vi.advanceTimersByTime(5000);f.event('wake-interface-ready',undefined);const delayed=f.requests.at(-1)!;
+  f.select('project');const afterScope=f.requests.length;
+  delayed.resolve({entries:[{name:'foreign.html',relative:'foreign.html',modifiedAt:9999}]});await tick();
+  expect(f.requests).toHaveLength(afterScope);
+  expect(f.node('document-files').textContent).not.toContain('foreign');
+});
+it('suspends automatic replacement when the reader interacts with the displayed page',async()=>{
+  const f=fixture();readable(f);
+  f.requests[0]!.resolve({entries:localEntries});await tick();
+  f.requests.at(-1)!.resolve({text:'latest',format:'html'});await tick();
+  const doc=Object.assign(new Element(),{getElementById:()=>null});
+  (f.node('document-frame') as unknown as {contentDocument:Element}).contentDocument=doc;
+  f.node('document-frame').onload?.();doc.dispatchEvent({type:'wheel'});
+  f.event('wake-interface-ready',undefined);
+  f.requests.at(-1)!.resolve({entries:[...localEntries,{name:'new.html',relative:'new.html',modifiedAt:3000}]});await tick();
+  expect(f.requests.at(-1)!.args['read']).toBe(false);
+  expect(f.storage.get('mind-wake.reader-current.agent')).toBe('latest.html');
+});
+
 it('opens the native-approved atelier in its own frame and destroys it when leaving its scope',async()=>{
   const f=fixture();
   const app=f.node('view-documents').children.find(child=>child.id==='local-atelier-frame')!;

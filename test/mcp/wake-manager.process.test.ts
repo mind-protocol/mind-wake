@@ -6,6 +6,7 @@ import { startHarness } from "./harness.js";
 import { seedSimulatedProfile, PROFILE } from "../demo/harness.js";
 import { workspaceDirFor, controlDbPath } from "../../src/daemon/paths.js";
 import { openStore } from "../../src/store/index.js";
+import { WakeManager } from "../../src/daemon/wake-manager.js";
 
 it("exposes the rotation through real MCP stdio and preserves Pause", async () => {
   const h = await startHarness();
@@ -78,6 +79,17 @@ it("exposes the rotation through real MCP stdio and preserves Pause", async () =
     ).toBe(false);
     const after = await party.call("get_next_wakes", { count: 1 });
     expect(after.data["wakes"]).toMatchObject([{ projectId: "b" }]);
+    const manager = new WakeManager(workspaceDirFor(dir));
+    let passageRevision: number;
+    try {
+      manager.importPassages(["return1","return2"].map(id=>({id,projectId:"b",question:id,expected:"proof",sources:["fixture.md"]})),manager.status()!.revision,"apply");
+      passageRevision=manager.status()!.revision;
+    } finally { manager.close(); }
+    const targeted = {project_id:"b",passage_id:"return2",expected_revision:passageRevision,steps:Array.from({length:10},(_,i)=>({wake:i+1,objective:"new return",expected:"proof"}))};
+    expect((await party.call("plan_wake_block",targeted)).isError).toBe(false);
+    expect((await party.call("plan_wake_block",targeted)).isError).toBe(true);
+    const project = await party.call("get_wake_project",{project_id:"b"});
+    expect(project.data["passages"]).toMatchObject([{id:"return1"},{id:"return2",steps:targeted.steps}]);
     const control = openStore(controlDbPath(dir));
     try {
       control.uow.profiles.transition(PROFILE, {
@@ -90,6 +102,7 @@ it("exposes the rotation through real MCP stdio and preserves Pause", async () =
       control.close();
     }
     expect((await party.call("configure_wake_rotation", { enabled: false })).isError).toBe(true);
+    expect((await party.call("plan_wake_block", {...targeted,expected_revision:passageRevision+1})).isError).toBe(true);
     expect((await party.call("get_next_wakes", { count: 1 })).isError).toBe(false);
   } finally {
     await h.close();

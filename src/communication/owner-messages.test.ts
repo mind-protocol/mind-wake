@@ -3,9 +3,47 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { OwnerMessages, readOwnerMessages } from "./owner-messages.js";
+import { workspaceDirFor } from "../daemon/paths.js";
+import { readCounter, readCurrentProject } from "../daemon/project-change.js";
+import { PROMPT_IMPROVEMENT_PROJECT } from "../daemon/prompt-improvement-project.js";
 let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "owner-msg-"));
+});
+it("prefixes oversized instruction warnings, preserves retries and refreshes on edit", () => {
+  const workspace = workspaceDirFor(dir);
+  fs.mkdirSync(path.join(workspace, "artifacts"), { recursive: true });
+  const personality = path.join(workspace, "artifacts/PERSONALITY.md");
+  const system = path.join(workspace, "SYSTEM.md");
+  fs.writeFileSync(personality, "a".repeat(5000));
+  fs.writeFileSync(system, "😀".repeat(5000));
+  const store = new OwnerMessages(dir, "a");
+  try {
+    expect(store.publish("Au seuil", "at-limit").text).toBe("Au seuil");
+    fs.appendFileSync(personality, "a");
+    const sent = store.publish("Bonjour", "oversized");
+    expect(sent.text).toMatch(/^⚠️ .*artifacts\/PERSONALITY.md \(5001 caractères\)/u);
+    expect(sent.text).toContain("Les prompts ne doivent pas devenir une liste de règles.");
+    expect(sent.text).toContain("intégrées au cockpit via des hooks bien pensés ou d’autres systèmes adaptés");
+    expect(sent.text).toContain("Compresse l’information à l’indispensable");
+    expect(sent.text).toContain("sans dates, chronologie, répétitions ni détails superflus");
+    expect(sent.text.endsWith("\n\nBonjour")).toBe(true);
+    expect(sent.text).not.toContain("SYSTEM.md");
+    expect(readCurrentProject(workspace)).toBe(PROMPT_IMPROVEMENT_PROJECT);
+    expect(readCounter(workspace)?.["promptImprovementProject"]).toBe(PROMPT_IMPROVEMENT_PROJECT);
+    fs.appendFileSync(system, "😀");
+    expect(store.publish("Bonjour", "oversized")).toEqual(sent);
+    const edited = store.change(sent.id, 1, "Suite");
+    expect(edited.text).toContain("SYSTEM.md (5001 caractères)");
+    expect(edited.text).toContain("artifacts/PERSONALITY.md (5001 caractères)");
+    fs.writeFileSync(personality, "court");
+    fs.unlinkSync(system);
+    expect(store.change(sent.id, 2, edited.text).text).toBe("Suite");
+    expect(readCounter(workspace)?.["promptImprovementProject"]).toBeUndefined();
+    expect(readOwnerMessages(dir)?.find(message => message.id === sent.id)?.text).toBe("Suite");
+  } finally {
+    store.close();
+  }
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 it("publishes once, edits in place, rejects stale edits and deletes without resurrection", () => {

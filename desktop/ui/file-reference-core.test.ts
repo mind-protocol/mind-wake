@@ -67,6 +67,25 @@ it('ne transforme pas un courriel connu même en code inline',()=>{
  expect(findFileMentions('`a@b.md`', [known])).toEqual([]);
 });
 
+it('résout un lien Markdown local, absolu sous une racine connue ou relatif exact',()=>{
+ const rooted:FileCatalog[]=[
+  {scope:'agent',root:'\\\\?\\C:\\Users\\me\\workspace',entries:[{relative:'artifacts/projets/plan/REDDIT-STATUT.md'},{relative:'artifacts/notes.md'}]},
+  {scope:'project',root:'C:/repo',entries:[{relative:'docs/guide.md'}]},
+ ];
+ const text='Voir [brouillon Reddit](C:/Users/me/workspace/artifacts/projets/plan/REDDIT-STATUT.md) et [guide](<C:\\repo\\docs\\guide.md>) puis [notes](artifacts/notes.md).';
+ const refs=findFileMentions(text,rooted);
+ expect(refs.map(r=>[r.label,r.files[0]?.scope,r.files[0]?.relative])).toEqual([
+  ['brouillon Reddit','agent','artifacts/projets/plan/REDDIT-STATUT.md'],['guide','project','docs/guide.md'],['notes','agent','artifacts/notes.md']]);
+ for(const ref of refs)expect(text.slice(ref.start,ref.end)).toBe(ref.text);
+ expect(findFileMentions(refs[0]!.text,rooted)[0]).toMatchObject({start:0,end:refs[0]!.text.length});
+ expect(findFileMentions('[x](file:///C:/Users/me/workspace/artifacts/notes.md) [y](/C:/Users/me/workspace/artifacts/notes.md)',rooted)).toHaveLength(2);
+});
+it('ne résout pas un lien Markdown hors racine, par suffixe, en code ou en image',()=>{
+ const rooted:FileCatalog[]=[{scope:'agent',root:'C:/Users/me/workspace',entries:[{relative:'artifacts/notes.md'}]},{scope:'project',entries:[{relative:'README.md'}]}];
+ const text='[a](C:/other/artifacts/notes.md) [b](C:/Users/me/workspace-old/artifacts/notes.md) [c](C:/x/README.md) `[d](artifacts/notes.md)` ![e](artifacts/notes.md) [f](unknown/notes.md)';
+ expect(findFileMentions(text,rooted)).toEqual([]);
+});
+
 it('detects txt paths and unique or ambiguous basenames with punctuation and backticks',()=>{
  const path='artifacts/projets/delegation-entre-ateliers/machinetomachine-draft.txt';
  const textFiles:FileCatalog[]=[

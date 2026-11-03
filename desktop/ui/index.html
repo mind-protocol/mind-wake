@@ -233,6 +233,25 @@
         </section>
         <p id="feedback" role="status"></p>
 
+        <section class="switch-section" aria-label="Second fil Claude Code">
+          <div class="switch" role="group" aria-label="Second fil Claude Code">
+            <button id="second-thread-off" type="button" aria-pressed="true">Off</button>
+            <button id="second-thread-on" type="button" aria-pressed="false" title="Fil Claude Code parallèle, sur d’autres projets">Second fil Claude</button>
+          </div>
+        </section>
+        <p id="second-thread-feedback" class="hint" role="status"></p>
+        <section aria-labelledby="h-forks">
+          <h2 id="h-forks">Forks Codex</h2>
+          <p class="hint">Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
+          <div id="fork-controls"></div>
+          <p id="fork-feedback" role="status"></p>
+        </section>
+
+        <section class="wake-plan-section" aria-labelledby="h-wake-plan">
+          <h2 id="h-wake-plan">Les prochains wakes</h2>
+          <div id="wake-plan"><p class="hint">Lecture du planning…</p></div>
+        </section>
+
         <section aria-labelledby="h-chart">
           <h2 id="h-chart">Réveils et consommation — 24 h</h2>
           <div id="chart" class="chart"></div>
@@ -262,10 +281,18 @@
       </div>
 
       <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
-        <div class="view-heading"><h2>Toi et ton agent</h2><p class="hint">Votre conversation, au fil des réveils.</p></div>
+        <div class="view-heading">
+          <div class="conversation-tabs" role="tablist" aria-label="Conversation">
+            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation">Toi et ton agent</button>
+            <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden>Fil Claude<span id="second-thread-tab-presence" hidden> · Travaille</span></button>
+          </div>
+        </div>
+        <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
+        <p class="hint conversation-description">Votre conversation, au fil des réveils.</p>
         <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
         <ol id="chat" class="messages" aria-live="polite"></ol>
         <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden><span aria-hidden="true">•••</span><span class="sr-only">Ton agent travaille</span></div>
+        <div id="chat-progress-reminder" role="status" hidden></div>
         <p id="chat-note" class="hint"></p>
         <form id="chat-form">
             <label for="chat-recipient">Destinataire</label>
@@ -285,7 +312,21 @@
           <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit">Envoyer</button></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>
+        </div>
+        <div id="view-forks" role="tabpanel" hidden></div>
+<div id="view-second" role="tabpanel" aria-labelledby="tab-second" hidden>
+
+        <p id="second-thread-status" class="hint" role="status"></p>
+        <ol id="second-thread-messages" class="messages" aria-live="polite"></ol>
+        <div id="second-thread-presence" role="status" hidden><span aria-hidden="true">•••</span> Claude travaille</div>
+        <form id="second-thread-form">
+          <textarea id="second-thread-text" rows="3" maxlength="4000" required aria-label="Message au second fil" placeholder="Écris au second fil…"></textarea>
+          <div class="chat-actions"><button type="submit">Envoyer</button></div>
+          <p id="second-thread-send-status" class="hint" role="status"></p>
+        </form>
       </div>
+      </div>
+
 
       <div id="view-threads" role="tabpanel" aria-labelledby="tab-threads" hidden>
         <p id="threads-status" class="hint" role="status"></p>

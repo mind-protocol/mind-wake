@@ -13,6 +13,8 @@ Découpage : `docs/PLAN.md`, tranches D0–D5.
 
 ## Lancer (développement)
 
+La vue d’ensemble affiche les 500 prochains wakes sous forme de carrés, regroupés par journée logique de 50. Les couleurs et cartes distinguent préparation, travail et exploration libre. Cliquer sur un carré montre le projet, l’intention disponible et le résultat attendu ; les cartes mettent un type en évidence. Le nombre d’intentions définies distingue les créneaux prévus des plans déjà écrits. Cet aperçu révisable ne fixe pas d’horaires et sa lecture ne réserve ni ne consomme de réveils.
+
 Prérequis : Node (voir `package.json`), Rust ≥ 1.90 avec la chaîne MSVC, Build Tools C++, WebView2.
 
 ```bash
@@ -29,13 +31,17 @@ Cette commande construit la CLI (`dist/`), compile l'UI (`desktop/ui/build/`), p
 
 ## Messages avec ton agent
 
+Les onglets **Toi et ton agent** et **Fil Claude**, placés côte à côte au-dessus de la conversation, affichent chacun leur fil dans la même colonne. Un clic bascule les messages et le champ de saisie ; chaque brouillon est conservé.
+
 Le fil de conversation et son champ de saisie restent visibles pendant les changements d’onglet. Les vues du menu remplacent le contenu du panneau voisin (à droite sur grand écran, en dessous sur une fenêtre étroite). Documents et Conversation montrent le lecteur dans ce panneau ; le brouillon et le défilement du fil sont conservés.
 
-Le lecteur de documents à droite ouvre automatiquement le dernier fichier consulté dans l’espace sélectionné. Sans historique, il choisit une page d’accueil disponible (`index.html`, `objectifs.html`, `README.md`, etc.). Un fichier mémorisé disparu déclenche un repli vers l’accueil ; les erreurs ou dossiers sans document affichent une indication explicite au lieu d’un cadre vide.
+Le lecteur à droite ouvre le dernier fichier modifié dans l’espace local sélectionné et suit les modifications lors des actualisations du panneau (au plus toutes les cinq secondes). Choisir un document ou interagir avec la page (clic, défilement ou clavier) suspend ce suivi pour préserver la lecture. **Dernière modification** reprend le suivi, dans les filtres courants. L’espace d’Aurore conserve son fonctionnement distinct : reprise du document mémorisé et actualisation du clone Git. Les erreurs ou dossiers sans document affichent une indication explicite.
 
 L’onglet **Autorisations** du menu latéral édite les décisions et périmètres de `workspace/AUTORISATIONS.json` du profil actif. Il propose un import JSON explicite si les choix n’existent pas encore, une recherche et un enregistrement avec détection des modifications concurrentes. Les commandes natives de lecture et d’écriture sont réservées à la fenêtre principale ; aucun chemin de fichier libre n’est accepté du webview. Les choix personnels du dépôt ne sont pas appliqués automatiquement aux nouveaux utilisateurs. Le MCP relit le fichier au prochain appel de `unsure_what_to_do`.
 
 L'onglet **Messages** montre ce que ton agent Wake t'écrit et te permet de lui répondre, sans hub ni réseau :
+
+Les réponses finales du fil Codex actif apparaissent aussi dans la conversation sous **Ton agent**, avec leur texte complet et leur date. Les commentaires intermédiaires et noms d’outils gardent la présentation discrète **Activité** ; le raisonnement privé n’est pas lu.
 
 - **Ce qu'il t'écrit** : sa note de travail `artifacts/questions-for-human.md`, rendue comme texte non fiable (`mind-wake messages`).
 - **Ce que tu lui réponds** (`mind-wake reply`, texte sur l'entrée standard) :
@@ -103,6 +109,8 @@ Le panneau et les fils ont été pilotés dans l'application réelle par le port
 - Lecture du ledger dans `status`.
 
 ## Messages éditables de l’agent
+
+Le fil remonte aussi les sous-sessions natives Codex rattachées au fil Wake courant : mission explicite de lancement/reprise, démarrage, commentaires publics, noms des outils et réponses finales. L’activité porte le nom de la sous-session ; ses résultats apparaissent sous « Aide ». Les descendants imbriqués sont inclus, les sessions sans lien avec Wake et l’historique hérité avant le lancement sont exclus. La lecture porte sur les 512 Ko les plus récents de chaque journal, avec 80 entrées par session et 240 au total ; une activité plus ancienne peut donc sortir de cette vue. Cela ne fournit pas encore le suivi détaillé des sous-agents Claude ou des consultations de dépôt, qui gardent leurs canaux existants.
 
 Le MCP local expose publication, liste, modification et suppression lorsque le canal humain est activé (`MIND_WAKE_OWNER_MESSAGES=1`). La CLI `messages --json` fournit `agentMessages` avec ID, version, date initiale et date de modification ; l’app relit ce fil et remplace son affichage à chaque actualisation. Les éditions restent au même emplacement et portent la mention « modifié ». Les suppressions retirent uniquement le message de l’agent ; les réponses de l’humain restent visibles. La note historique reste le repli tant qu’aucune mutation du nouveau canal n’a abouti.
 

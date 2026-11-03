@@ -131,9 +131,11 @@ export function registerWakeManagerTools(
     "plan_wake_block",
     {
       description:
-        "Save exactly ten wake intentions for a project. Wake1 retrieves context, checks improvements and prepares wakes2–10. Plans remain revisable; this call neither consumes wakes nor authorizes actions.",
+        "Save ten intentions. For an imported passage, passage_id and expected_revision are required to target that return without overwriting other passages. Without them, updates the legacy global project plan only. Never consumes wakes or authorizes actions.",
       inputSchema: z.strictObject({
         project_id: id,
+        passage_id: id.optional(),
+        expected_revision: z.number().int().nonnegative().optional(),
         steps: z
           .array(
             z.strictObject({
@@ -147,7 +149,15 @@ export function registerWakeManagerTools(
       annotations: { openWorldHint: false },
     },
     (a) =>
-      call(true, (m) => ({ project: m.plan(a.project_id, a.steps), path: m.mirror(a.project_id) })),
+      call(true, (m) => {
+        if (a.passage_id !== undefined || a.expected_revision !== undefined) {
+          if (!a.passage_id || a.expected_revision === undefined ||
+              m.status()?.passages?.[a.passage_id]?.projectId !== a.project_id)
+            throw Error("Passage, project and expected_revision must match");
+          return m.planPassage(a.passage_id, a.steps, a.expected_revision);
+        }
+        return {project: m.plan(a.project_id, a.steps), path: m.mirror(a.project_id)};
+      }),
   );
   server.registerTool(
     "set_wake_project_status",

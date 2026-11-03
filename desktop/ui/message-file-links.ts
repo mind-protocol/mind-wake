@@ -62,7 +62,7 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   const complete=new Map<'agent'|'project',boolean>();
   const state=new MessageFileQueue();
   let catalogsReady=false,scheduled=false,deferred:KnownFile|undefined;
-  const roots='#chat,#messages,#agent-thread-messages,#wake-history-messages';
+  const roots='#chat,#messages,#agent-thread-messages,#wake-history-messages,#fork-thread-messages,#second-thread-messages';
   const catalogValues=():FileCatalog[]=>catalogsReady?[...catalogs.values()]:[];
   const refreshReadiness=():void=>{catalogsReady=!refreshGate.busy&&complete.get('agent')===true&&complete.get('project')===true;};
   const dispatchQueue=():void=>{window.dispatchEvent(new CustomEvent('wake-document-queue',{detail:{entries:[...state.entries]}}));};
@@ -96,9 +96,9 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
     if(opens.length){dispatchQueue();for(const file of opens)autoOpen(file);}
   }
   function choose(file:KnownFile):void{state.append(file);dispatchQueue();deferred=undefined;notice.hidden=true;open(file);}
-  function link(mention:{text:string;files:KnownFile[]}):HTMLElement{
+  function link(mention:{text:string;files:KnownFile[];label?:string}):HTMLElement{
     const wrapper=document.createElement('span');wrapper.dataset['fileReference']='true';
-    const button=document.createElement('button');button.type='button';button.textContent=mention.text;
+    const button=document.createElement('button');button.type='button';button.textContent=mention.label??mention.text;
     button.className='message-file-link';button.style.cssText='font:inherit;line-height:inherit;padding:0 3px;border:0;border-radius:3px;background:#fff0df;color:#99500d;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer;';
     button.title=mention.files.length===1?'Ouvrir dans le lecteur : '+mention.files[0]!.relative:'Plusieurs fichiers correspondent ; choisir le bon document';
     const label=document.createElement('span');
@@ -150,14 +150,14 @@ export function initMessageFileLinks(invoke:Invoke):MessageFileLinks {
   window.addEventListener('wake-document-catalog',event=>{
     const data=(event as CustomEvent<{scope:'agent'|'project';entries:{name:string;relative:string}[];truncated?:boolean}>).detail;
     if(!data||!['agent','project'].includes(data.scope)||!Array.isArray(data.entries))return;
-    catalogs.set(data.scope,{scope:data.scope,entries:data.entries});complete.set(data.scope,!data.truncated);refreshReadiness();scheduleDecoration();settleNewMessages();
+    catalogs.set(data.scope,{scope:data.scope,entries:data.entries,root:catalogs.get(data.scope)?.root});complete.set(data.scope,!data.truncated);refreshReadiness();scheduleDecoration();settleNewMessages();
   });
   observer.observe(document.body,{childList:true,subtree:true,characterData:true});
   const refreshGate=new CatalogRefreshGate(async()=>{
     catalogsReady=false;complete.set('agent',false);complete.set('project',false);
     await Promise.allSettled((['agent','project'] as const).map(async scope=>{
-      const data=await invoke('document_browse',{scope,relative:'',read:false,recursive:true}) as {entries:{name:string;relative:string}[];truncated?:boolean};
-      catalogs.set(scope,{scope,entries:data.entries});complete.set(scope,!data.truncated);
+      const data=await invoke('document_browse',{scope,relative:'',read:false,recursive:true}) as {entries:{name:string;relative:string}[];truncated?:boolean;root?:string};
+      catalogs.set(scope,{scope,entries:data.entries,root:data.root});complete.set(scope,!data.truncated);
     }));
   },()=>{refreshReadiness();scheduleDecoration();settleNewMessages();});
   const accept=(messages:readonly FileMessage[],historical=false,live=false):void=>{

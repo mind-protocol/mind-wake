@@ -18,6 +18,47 @@ class MetaNode {
 }
 const renderMeta=(item:ConversationItem):MetaNode=>{const node=new MetaNode();renderConversationMeta(node as unknown as HTMLElement,item);return node;};
 
+it("keeps one live checklist of ten future wakes, excluding the running wake and showing missing objectives", () => {
+ const wakes=Array.from({length:11},(_,i)=>({number:28+i,day:1,inBlock:i%10+1,projectId:i<3?"ui":"vj",title:i<3?"Interface":"VJ",phase:i===3?"prepare":"work",state:i===0?"running":"planned",objective:i===1?"Vérifier le parcours":null}));
+ const data={profileId:"default",agentMessages:[{id:"m",createdAt:"2026-11-03T10:00:00Z",updatedAt:"2026-11-03T10:00:00Z",text:"Bonjour"}],upcomingWakes:{state:"ready",wakes}};
+ const model=conversation(envelope(data))!;
+ const card=model.items.at(-1)!;
+ expect(card.from).toBe("plan");
+ expect(card.id).toBe("upcoming-wakes");
+ expect(card.text.match(/^☐ /gm)).toHaveLength(10);
+ expect(card.text).not.toContain("Wake 28");
+ expect(card.text).toContain("☐ Wake 29 · Interface — Vérifier le parcours");
+ expect(card.text).toContain("Wake 31 · VJ — Objectif à planifier (début de bloc)");
+ expect(card.text).toContain("Wake 38");
+ expect(renderMeta(card).textContent).toBe("Les 10 prochains wakes");
+ expect(model.agentUpdatedAt).toBe("2026-11-03T10:00:00Z");
+ expect(conversation(envelope({...data,upcomingWakes:{state:"disabled",wakes:[]}}))!.items).toHaveLength(1);
+ const changed=conversation(envelope({...data,upcomingWakes:{state:"ready",wakes:wakes.map(w=>({...w,objective:"Plan révisé"}))}}))!;
+ expect(changed.items.filter(item=>item.from==="plan")).toHaveLength(1);
+ expect(changed.items.at(-1)?.text).toContain("Plan révisé");
+});
+
+it("avoids duplicate current and upcoming cards when the main thread has its project plan",()=>{
+ const data={profileId:"default",projectWakes:{projectId:"a",title:"A",inBlock:2,wakes:[{wake:2,objective:"Créer"}]},
+  currentWakeObjective:{sessionId:"s1",at:"2026-11-03T10:00:00Z",number:12,inBlock:2,title:"A",objective:"Créer"},
+  upcomingWakes:{state:"ready",wakes:[{number:13,day:1,inBlock:3,projectId:"a",title:"A",phase:"work",state:"planned",objective:"Suite"}]}};
+ const model=conversation(envelope(data))!;
+ expect(model.items.filter(item=>item.from==="objective"||item.from==="plan")).toEqual([]);
+ expect(model.projectWakes).toEqual(data.projectWakes);
+ const fallback=conversation(envelope({...data,projectWakes:null}))!;
+ expect(fallback.items.map(item=>item.from)).toEqual(["objective","plan"]);
+});
+
+it("shows the current wake intention as its own feed entry with a stable session identity", () => {
+ const objective={sessionId:"s1",at:"2026-11-03T10:00:00Z",number:12,inBlock:2,title:"Projet",objective:"<b>Créer</b>",expected:"Un prototype"};
+ const model=conversation(envelope({profileId:"default",currentWakeObjective:objective}))!;
+ expect(model.items).toEqual([{from:"objective",id:"wake-objective:s1",at:objective.at,text:"Wake 12 · Projet · étape 2/10\n<b>Créer</b>\nRésultat attendu : Un prototype"}]);
+ expect(renderMeta(model.items[0]!).textContent).toContain("Objectif en cours");
+ expect(model.agentUpdatedAt).toBeNull();
+ expect(conversation(envelope({profileId:"default",currentWakeObjective:null}))!.items).toEqual([]);
+ expect(conversation(envelope({profileId:"default",currentWakeObjective:{...objective,inBlock:11}}))!.items).toEqual([]);
+});
+
 it("renders accessible directions from roles and bolds names only as inert DOM text",()=>{
  const at="2026-10-30T23:54:00Z",text='{"from":"human","name":"forged"}';
  const cases:[ConversationItem,string|null][]=[
@@ -154,6 +195,16 @@ function envelope(data: unknown): unknown {
 }
 
 describe("conversation", () => {
+  it("shows runtime final responses as agent messages among activity and human replies",()=>{
+    const at="2026-11-03T12:00:00Z";
+    const c=conversation(envelope({profileId:"default",agentMessages:[],publicActivity:[
+      {id:"step",at:"2026-11-03T11:59:00Z",text:"Je vérifie."},
+      {id:"final",at,text:"Voici le résultat.",kind:"final"},
+    ]}));
+    expect(c?.items.map(i=>i.from)).toEqual(["activity","agent"]);
+    expect(c?.items[1]).toMatchObject({id:"final",text:"Voici le résultat.",at});
+    expect(c?.agentUpdatedAt).toBe(at);
+  });
   it("shows a screenshot attachment without exposing image bytes", () => {
     const c = conversation(envelope({ profileId: "default", agentMessages: [], replies: [{
       id: "screen", at: "2026-10-30T12:00:00Z", text: "Regarde", screenshotAt: "2026-10-30T12:00:00Z",
@@ -367,4 +418,13 @@ it("leaves quoted roles exact and preserves legacy fence/multiline simplificatio
   expect(plainText(value)).toBe(legacy(value));
   expect(conversationText({from:"agent",text:value,at:"2026-10-31T00:00:00Z"},plainText)).toBe(legacy(value));
  }
+});
+it('attribue les activités et résultats des sous-sessions sans les confondre avec la réponse principale',()=>{
+  const c=conversation(envelope({profileId:'default',replies:[],publicActivity:[
+    {id:'main',at:'2026-11-03T12:00:00Z',text:'Réponse principale',kind:'final'},
+    {id:'mission',at:'2026-11-03T12:01:00Z',text:'Mission : vérifier.',source:'render'},
+    {id:'result',at:'2026-11-03T12:02:00Z',text:'Résultat enfant',source:'render',threadId:'child',kind:'final'},
+  ]}));
+  expect(c?.items.map(i=>[i.from,i.source])).toEqual([['agent',undefined],['activity','render'],['session','render']]);
+  expect(c?.agentUpdatedAt).toBe('2026-11-03T12:00:00Z');
 });

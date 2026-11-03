@@ -22,7 +22,9 @@ import {recipientEntries} from "../../communication/recipient-history.js";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { artifactsDirFor } from "../../daemon/paths.js";
+import { artifactsDirFor, workspaceDirFor } from "../../daemon/paths.js";
+import { readCurrentWakeObjective, type CurrentWakeObjective } from "../../daemon/wake-manager.js";
+import { readWakePreview, readProjectWakeObjectives, type WakePreview } from "../../daemon/wake-preview.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
@@ -55,6 +57,9 @@ interface LogEntry extends HumanReply {
 }
 
 export interface MessagesData {
+  readonly upcomingWakes?: WakePreview;
+  readonly currentWakeObjective?: CurrentWakeObjective | null;
+  readonly projectWakes?: ReturnType<typeof readProjectWakeObjectives>;
   readonly sentMessages?: readonly SentMessage[];
   readonly recipientSentMessages?: readonly {id:string;at:string;text:string;state:string;threadId:string|null;messageId:string|null;senderRef:string;recipientRef:string}[];
   readonly receivedMessages?: readonly ReceivedMessage[];
@@ -189,13 +194,14 @@ export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<Messa
   const managed = readOwnerMessages(dataDir.path);
   const activeSession = withReadStore(ctx,dataDir,({uow}) => uow?.sessions.listOpen(DEFAULT_PROFILE_ID)[0]?.id ?? null);
   const messageWait = readMessageWait(dataDir.path,activeSession);
+  const currentWakeObjective = readCurrentWakeObjective(workspaceDirFor(dataDir.path), activeSession);
   const agentStatus = withReadStore(ctx,dataDir,({uow}) => {
     const profile=uow?.profiles.get(DEFAULT_PROFILE_ID);
     return profile ? {state:profile.state,reason:profile.stateReason,nextWakeAt:profile.nextWakeAt} : null;
   });
   return {
     exitCode: EXIT_OK,
-    data: { profileId: DEFAULT_PROFILE_ID, hint: null, recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)), publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
+    data: { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)), publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
     human: formatMessages,
   };
 }

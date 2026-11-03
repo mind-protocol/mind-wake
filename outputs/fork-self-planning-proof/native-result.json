@@ -1,0 +1,10 @@
+{
+  "runtime": "real Codex app-server",
+  "modelTurnStarted": false,
+  "serverFound": true,
+  "toolNames": [
+    "reassign_my_wakes",
+    "claim_project",
+    "get_my_wakes"
+  ]
+}
