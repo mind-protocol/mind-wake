@@ -96,6 +96,10 @@ it("injects desktop messages once, in order, and retains deduplication across wa
   };
   expect(result).toMatchObject({ hookSpecificOutput: { hookEventName: "PostToolUse" } });
   expect(result.hookSpecificOutput.additionalContext).toContain("Bonjour human-1");
+  expect(result.hookSpecificOutput.additionalContext).toContain(
+    "New direct message from your human",
+  );
+  expect(result.hookSpecificOutput.additionalContext).not.toContain("not a new request for you");
   expect(result.hookSpecificOutput.additionalContext.indexOf("human-1")).toBeLessThan(
     result.hookSpecificOutput.additionalContext.indexOf("human-2"),
   );

@@ -157,6 +157,12 @@
           <select id="app-language"><option value="en">English</option><option value="fr">Français</option></select>
           <p class="hint" data-i18n="Le changement de langue recharge l’interface.">Le changement de langue recharge l’interface.</p>
         </section>
+        <section aria-labelledby="h-duo">
+          <h2 id="h-duo">Mode Duo</h2>
+          <label><input id="duo-enabled" type="checkbox" disabled> Garder la conversation visuelle active</label>
+          <p class="hint">Quand Wake est actif, rappeler à l’agent de montrer du contenu à l’écran après 30 secondes sans changement de ses post-it ou repères. Aucune capture régulière du bureau.</p>
+          <p id="duo-status" role="status">Chargement…</p>
+        </section>
         <section aria-labelledby="h-workspace-sync">
           <h2 id="h-workspace-sync" data-i18n="Dossier de Wake et dépôt GitHub">Dossier de Wake et dépôt GitHub</h2>
           <form id="workspace-sync-form" class="workspace-sync-form">

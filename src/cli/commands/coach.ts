@@ -1,3 +1,4 @@
+import { duoEnabled, configureDuo } from "../../communication/duo-reminder.js";
 import {
   coachEnabled,
   configureCoach,
@@ -16,6 +17,10 @@ export async function coach(
   dataDir: DataDir,
   action: string,
 ): Promise<CommandResult<unknown>> {
+  if (["duo-status", "duo-on", "duo-off"].includes(action)) {
+    if (action !== "duo-status") configureDuo(dataDir.path, action === "duo-on");
+    return { exitCode: 0, data: { enabled: duoEnabled(dataDir.path) }, human: () => `Mode Duo ${duoEnabled(dataDir.path) ? "activé" : "désactivé"}.` };
+  }
   if (action === "on" || action === "off") configureCoach(dataDir.path, action === "on");
   else if (action === "send") sendToCoach(dataDir.path, (await ctx.readStdin?.()) ?? "");
   else if (action !== "status") throw Error("Action coach attendue : status, on, off ou send.");

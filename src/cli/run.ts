@@ -48,7 +48,7 @@ de transaction ou de session guest. Seul \`daemon run\` lance des sessions, au p
 plan, et seulement avec l'adapter factice (--simulated).
 
 Commandes :
-  coach status|on|off|send
+  coach status|on|off|send|duo-status|duo-on|duo-off
                 Coach : relit le dernier wake et intervient par la messagerie du principal
   forks status|on|off|send|run
                 Forks Codex 2 à 8 ; on/off/send lisent un objet JSON {id,text?} sur stdin
@@ -175,6 +175,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     const dataDir = resolveDataDir(ctx, values["data-dir"]);
     let result: CommandResult<unknown>;
     switch (command) {
+      case "coach duo-status":
+      case "coach duo-on":
+      case "coach duo-off":
       case "coach status":
       case "coach on":
       case "coach off":

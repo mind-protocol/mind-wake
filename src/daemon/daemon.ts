@@ -1,3 +1,4 @@
+import path from "node:path";
 import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
 import { WakeCoach } from "./coach.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
@@ -122,6 +123,7 @@ import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
 import { currentContextEvent } from "./current-context.js";
 import { ownerIsWatching, ownerPresenceEvent } from "./owner-presence.js";
+import { DuoMonitor } from "../communication/duo-reminder.js";
 import { OwnerProgressReminder } from "../communication/owner-progress-reminder.js";
 import { openSharedInboxSession, type SharedInboxSession } from "../communication/shared-inbox.js";
 import { ownerMessagePending } from "../communication/owner-inbox.js";
@@ -265,6 +267,7 @@ export class WakeDaemon implements SessionLauncher {
   #workspaceSync: WorkspaceGitSync | null = null;
   #auroreSync: AuroreGitSync | null = null;
   #ownerProgress: OwnerProgressReminder | null = null;
+  #duo: DuoMonitor | null = null;
   #coach: WakeCoach | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
@@ -663,6 +666,8 @@ export class WakeDaemon implements SessionLauncher {
         this.#ownerProgress = new OwnerProgressReminder(this.#o.dataDir,
           () => syncAllowed() && ownerIsWatching(this.#idleWatcher?.latest() ?? null));
         this.#ownerProgress.start();
+        this.#duo = new DuoMonitor(this.#o.dataDir, path.join(workspaceDirFor(this.#o.dataDir), "artifacts", "overlay", "content-state.json"), syncAllowed);
+        this.#duo.start();
         const coachPolicy = resolvePolicy(uow.policies, profileId);
         this.#coach = new WakeCoach({
           dataDir: this.#o.dataDir, workspace: workspaceDirFor(this.#o.dataDir),
@@ -706,6 +711,7 @@ export class WakeDaemon implements SessionLauncher {
 
   #close(): void {
     this.#ownerProgress?.close();
+    this.#duo?.close();
     this.#keyboardContext.close();
     const at = utcNow();
     try {

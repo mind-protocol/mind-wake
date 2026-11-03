@@ -3,35 +3,284 @@
   "title": "Post-its d'agent (marks.json)",
   "description": "Fichier lu par postit.ps1. Coordonnées dans un repère 1280x720 mis à l'échelle de l'écran principal ; temps en secondes depuis l'ouverture.",
   "type": "object",
-  "required": ["marks"],
+  "required": [
+    "marks"
+  ],
   "properties": {
-    "ttl_seconds": { "type": "integer", "minimum": 1, "default": 60, "description": "Durée de vie totale : tout s'efface ensuite. Conseillé : ~45." },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 60,
+      "description": "Durée de vie totale : tout s'efface ensuite. Conseillé : ~45."
+    },
     "marks": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["kind"],
+        "required": [
+          "kind"
+        ],
         "properties": {
-          "kind": { "enum": ["sticky", "box", "text"], "description": "sticky = post-it cliquable (croix ✕) ; box = cadre rouge ; text = souligne un texte trouvé à l'écran par OCR Windows." },
-          "at": { "type": "number", "minimum": 0, "default": 0, "description": "Apparition, en s après l'ouverture." },
-          "for": { "type": "number", "exclusiveMinimum": 0, "description": "Durée d'affichage en s (sinon jusqu'à ttl_seconds)." },
-          "x": { "type": "number", "description": "sticky/box : bord gauche, repère 1280x720." },
-          "y": { "type": "number", "description": "sticky/box : bord haut, repère 1280x720." },
-          "w": { "type": "number", "description": "box : largeur. sticky : largeur (défaut 300). Repère 1280x720." },
-          "h": { "type": "number", "description": "box : hauteur, repère 1280x720." },
-          "text": { "type": "string", "description": "sticky : contenu. \\n = nouvelle ligne ; ligne \"# Titre\" = titre gras ; ligne \"**…**\" = gras ; emoji acceptés (rendu monochrome)." },
-          "color": { "type": "string", "pattern": "^(jaune|rose|bleu|vert|orange|violet|#[0-9A-Fa-f]{6})$", "default": "jaune", "description": "sticky : couleur de fond." },
-          "shape": { "enum": ["note", "arrondi", "bulle"], "default": "note", "description": "sticky : note = carré + ombre ; arrondi = coins ronds ; bulle = bulle de BD avec queue en bas à gauche." },
-          "note": { "type": "string", "description": "box/text : légende affichée sous la marque, préfixée par « agent : »." },
-          "find": { "type": "string", "description": "text : mots à chercher à l'écran (OCR, insensible à la casse, correspondance partielle par mot)." },
-          "max": { "type": "integer", "minimum": 1, "default": 3, "description": "text : nombre maximal d'occurrences soulignées." }
+          "kind": {
+            "enum": [
+              "sticky",
+              "box",
+              "text"
+            ],
+            "description": "sticky = post-it cliquable (croix ✕) ; box = cadre rouge ; text = souligne un texte trouvé à l'écran par OCR Windows."
+          },
+          "at": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0,
+            "description": "Apparition, en s après l'ouverture."
+          },
+          "for": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Durée d'affichage en s (sinon jusqu'à ttl_seconds)."
+          },
+          "x": {
+            "type": "number",
+            "description": "sticky/box : bord gauche, repère 1280x720."
+          },
+          "y": {
+            "type": "number",
+            "description": "sticky/box : bord haut, repère 1280x720."
+          },
+          "w": {
+            "type": "number",
+            "description": "box : largeur. sticky : largeur (défaut 300). Repère 1280x720."
+          },
+          "h": {
+            "type": "number",
+            "description": "box : hauteur, repère 1280x720."
+          },
+          "text": {
+            "type": "string",
+            "description": "sticky : contenu. \\n = nouvelle ligne ; ligne \"# Titre\" = titre gras ; ligne \"**…**\" = gras ; emoji acceptés (rendu monochrome)."
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^(jaune|rose|bleu|vert|orange|violet|#[0-9A-Fa-f]{6})$",
+            "default": "jaune",
+            "description": "sticky : couleur de fond."
+          },
+          "shape": {
+            "enum": [
+              "note",
+              "arrondi",
+              "bulle"
+            ],
+            "default": "note",
+            "description": "sticky : note = carré + ombre ; arrondi = coins ronds ; bulle = bulle de BD avec queue en bas à gauche."
+          },
+          "note": {
+            "type": "string",
+            "description": "box/text : légende affichée sous la marque, préfixée par « agent : »."
+          },
+          "find": {
+            "type": "string",
+            "description": "text : mots à chercher à l'écran (OCR, insensible à la casse, correspondance partielle par mot)."
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 3,
+            "description": "text : nombre maximal d'occurrences soulignées."
+          },
+          "question": {
+            "type": "object",
+            "required": [
+              "id",
+              "mode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.:-]{1,80}$",
+                "description": "Stable unique question identity; never reuse for another question"
+              },
+              "mode": {
+                "enum": [
+                  "yes_no",
+                  "choice"
+                ]
+              },
+              "options": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "label"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_.:-]{1,80}$"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "mode": {
+                      "const": "choice"
+                    }
+                  }
+                },
+                "then": {
+                  "required": [
+                    "options"
+                  ]
+                }
+              }
+            ]
+          },
+          "reply_to": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:-]{1,120}$",
+            "description": "Explicit source message ID. Adds Repondre and Emote; no capture. Unique existing message or stable note ID."
+          }
         },
         "allOf": [
-          { "if": { "properties": { "kind": { "const": "sticky" } } }, "then": { "required": ["x", "y", "text"] } },
-          { "if": { "properties": { "kind": { "const": "box" } } }, "then": { "required": ["x", "y", "w", "h"] } },
-          { "if": { "properties": { "kind": { "const": "text" } } }, "then": { "required": ["find"] } }
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "sticky"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "x",
+                "y",
+                "text"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "box"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "x",
+                "y",
+                "w",
+                "h"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "text"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "find"
+              ]
+            }
+          },
+          {
+            "if": {
+              "required": [
+                "question"
+              ]
+            },
+            "then": {
+              "properties": {
+                "kind": {
+                  "const": "sticky"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "reply_transport": {
+      "type": "object",
+      "required": [
+        "cli",
+        "data_dir",
+        "response_dir"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cli": {
+          "type": "string",
+          "description": "Absolute existing Wake dist/cli/main.js"
+        },
+        "data_dir": {
+          "type": "string",
+          "description": "Absolute data directory of this owner instance"
+        },
+        "response_dir": {
+          "type": "string",
+          "description": "Absolute local directory for selections and delivery receipts"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "marks": {
+            "contains": {
+              "required": [
+                "question"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reply_transport"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "marks": {
+            "contains": {
+              "required": [
+                "reply_to"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "reply_transport"
         ]
       }
     }
-  }
+  ]
 }

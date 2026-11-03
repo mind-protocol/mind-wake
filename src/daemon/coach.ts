@@ -40,12 +40,48 @@ export function coachEnabled(dataDir: string): boolean {
     return false;
   }
 }
-export function configureCoach(dataDir: string, enabled: boolean): void {
+export function coachEveryWakes(dataDir: string): number {
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(dataDir, COACH_CONFIG), "utf8"));
+    if (Number.isSafeInteger(config?.everyWakes) && config.everyWakes > 0)
+      return config.everyWakes as number;
+  } catch {
+    /* Older installations use the default cadence. */
+  }
+  return 10;
+}
+export function configureCoach(
+  dataDir: string,
+  enabled: boolean,
+  everyWakes = coachEveryWakes(dataDir),
+): void {
+  if (!Number.isSafeInteger(everyWakes) || everyWakes < 1)
+    throw Error("Cadence coach attendue : entier positif");
   fs.mkdirSync(dataDir, { recursive: true });
   const file = path.join(dataDir, COACH_CONFIG),
     tmp = `${file}.${String(process.pid)}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify({ version: 1, enabled }) + "\n");
+  fs.writeFileSync(tmp, JSON.stringify({ version: 1, enabled, everyWakes }) + "\n");
   fs.renameSync(tmp, file);
+}
+
+/** Separate from run state so a finishing asynchronous review cannot overwrite the count. */
+function coachWakeDue(dataDir: string, wakeId: string): boolean {
+  const file = path.join(dataDir, "coach-cadence.json");
+  let count = 0,
+    lastWakeId: string | null = null;
+  try {
+    const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (Number.isSafeInteger(saved.count) && saved.count >= 0) count = saved.count;
+    if (typeof saved.lastWakeId === "string") lastWakeId = saved.lastWakeId;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+  if (lastWakeId === wakeId) return false;
+  count += 1;
+  const tmp = `${file}.${String(process.pid)}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify({ count, lastWakeId: wakeId }) + "\n");
+  fs.renameSync(tmp, file);
+  return count % coachEveryWakes(dataDir) === 0;
 }
 interface CoachState {
   threadId: string | null;
@@ -69,7 +105,7 @@ export function readCoachState(dataDir: string): CoachState {
   }
 }
 
-/** One persistent coaching conversation; one review opportunity per principal wake. */
+/** One persistent coaching conversation; periodic reviews plus direct human replies. */
 export class WakeCoach {
   private pending: Promise<void> | undefined;
   private closing = false;
@@ -98,13 +134,17 @@ export class WakeCoach {
   }
   review(wakeId: string): void {
     if (
-      this.pending ||
       this.closing ||
       this.blocked ||
       !this.options.allowed() ||
       !coachEnabled(this.options.dataDir)
     )
       return;
+    if (wakeId === "human-message") {
+      if (!coachEntries(this.options.dataDir).some((e) => e.role === "human" && !e.delivered))
+        return;
+    } else if (!coachWakeDue(this.options.dataDir, wakeId)) return;
+    if (this.pending) return;
     this.pending = this.run(wakeId)
       .catch((error: unknown) => {
         if (error instanceof ForkTerminationError) this.blocked = true;

@@ -5,9 +5,13 @@
 # Tout s'efface après ttl_seconds. Ne tape rien, ne clique rien. Voir README.md et marks.schema.json.
 param(
   [string]$Marks = (Join-Path $PSScriptRoot '..\..\overlay\marks.json'),
-  [string]$Log = ''
+  [string]$Log = '',
+  [string]$ContentStateFile = '',
+  [string]$DataDir = $env:MIND_WAKE_DATA_DIR
 )
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+. (Join-Path $PSScriptRoot 'reply-postit.ps1') -Library
+. (Join-Path $PSScriptRoot 'content-state.ps1')
 Add-Type @'
 using System; using System.Runtime.InteropServices;
 using System.Drawing; using System.Windows.Forms;
@@ -53,6 +57,8 @@ if (-not $Log) { $Log = Join-Path (Split-Path $Marks) 'overlay.log' }
 function Write-Log($msg) { "$(Get-Date -f o) $msg" | Add-Content -Encoding UTF8 $Log }
 try { $m = Get-Content -Raw -Encoding UTF8 $Marks | ConvertFrom-Json }
 catch { Write-Log "marks.json invalide ($Marks): $_"; exit 1 }
+if (-not $DataDir -and $m.reply_transport.data_dir) { $DataDir = $m.reply_transport.data_dir }
+$ContentStateFile = Resolve-PostitContentState $ContentStateFile $DataDir $PSScriptRoot
 $scr = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
 $sx = $scr.Width / 1280.0; $sy = $scr.Height / 720.0   # repère de coordonnées : 1280x720
 
@@ -150,12 +156,37 @@ function New-Sticky($k) {
     $tw = $W - 2*$pad - $(if ($lines.Count -eq 0) { $close } else { 0 })
     $lh = [System.Windows.Forms.TextRenderer]::MeasureText($t, $font, (New-Object System.Drawing.Size $tw, 0), $TF).Height
     [void]$lines.Add(@($t, $font, $H, $tw, $lh)); $H += $lh + 2 }   # $lh (et non $h) : PowerShell confond $h et $H
+  $questionY = $H
+  $question = $k.question
+  $options = @()
+  if ($question) {
+    if ("$($question.id)" -notmatch '^[A-Za-z0-9_.:-]{1,80}$') { throw 'question.id invalide' }
+    if ($question.mode -eq 'yes_no') { $options = @([pscustomobject]@{id='yes';label='Oui'},[pscustomobject]@{id='no';label='Non'}) }
+    elseif ($question.mode -eq 'choice') { $options = @($question.options) }
+    else { throw 'question.mode invalide' }
+    if ($options.Count -lt 2 -or $options.Count -gt 8) { throw '2 à 8 options requises' }
+    foreach ($option in $options) {
+      if ("$($option.id)" -notmatch '^[A-Za-z0-9_.:-]{1,80}$' -or -not $option.label -or "$($option.label)".Length -gt 100) { throw 'option invalide' }
+    }
+    if (@($options.id | Select-Object -Unique).Count -ne $options.Count) { throw 'option.id dupliqué' }
+    if (-not $m.reply_transport.cli -or -not $m.reply_transport.data_dir -or -not $m.reply_transport.response_dir) { throw 'reply_transport explicite requis' }
+    foreach ($p in @($m.reply_transport.cli,$m.reply_transport.data_dir,$m.reply_transport.response_dir)) {
+      if (-not [IO.Path]::IsPathRooted($p) -or "$p".Contains('"')) { throw 'Chemin transport absolu requis, sans guillemet' }
+    }
+    $H += ($options.Count * 38) + 58
+  }
   $H += 26   # pied de page
+  if ($k.reply_to) {
+    if ("$($k.reply_to)" -notmatch '^[A-Za-z0-9_.:-]{1,120}$' -or -not $m.reply_transport) { throw 'reply_to et reply_transport explicites requis' }
+    $H += 40
+  }
   $sf = New-Object PostitForm
   $sf.FormBorderStyle='None'; $sf.TopMost=$true; $sf.ShowInTaskbar=$false; $sf.StartPosition='Manual'
   $sf.Bounds = New-Object System.Drawing.Rectangle ([int]($scr.X+$k.x*$sx)),([int]($scr.Y+$k.y*$sy)),($W+6),($H+6+$tail)
   $sf.BackColor=[System.Drawing.Color]::Magenta; $sf.TransparencyKey=$sf.BackColor
   $sf.Tag = @{ W=$W; H=$H; tail=$tail; shape=$shape; bg=(Get-StickyColor $k.color); lines=$lines; pad=$pad; close=$close }
+  if ($question) { Add-QuestionControls $sf $k $options $questionY }
+  if ($k.reply_to) { Add-ConversationControls $sf $k ($H-64) }
   # WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW : cliquable mais ne prend jamais le focus
   $sf.Add_Shown({ param($s,$e) $h=$s.Handle; $ex=[PostitW]::GetWindowLong($h,-20)
     [void][PostitW]::SetWindowLong($h,-20,$ex -bor 0x08000000 -bor 0x80) })
@@ -179,6 +210,110 @@ function New-Sticky($k) {
     if ($e.X -ge $d.W-$d.close-4 -and $e.Y -le $d.close+4) { Write-Log 'post-it fermé par la croix'; $s.Close() } })
   $sf }
 
+# Buttons are child controls: their clicks never start a drag or dismiss the note.
+function Add-ConversationControls($form, $mark, $top) {
+  $reply=New-Object Windows.Forms.Button; $reply.Text='Répondre'; $reply.TabStop=$false
+  $reply.Bounds=New-Object Drawing.Rectangle 14,$top,110,32; $reply.BackColor=[Drawing.Color]::White
+  $reply.Tag=@{form=$form;id="$($mark.reply_to)";transport=$m.reply_transport}
+  $reply.Add_Click({param($s,$e)
+    $d=$s.Tag
+    if ($d.form.Tag.editor -and -not $d.form.Tag.editor.IsDisposed) { return }
+    $d.form.Tag.editor=New-ReplyPostit $d.transport $d.id $null $d.form
+    $d.form.Tag.editor.Show()
+  })
+  $emote=New-Object Windows.Forms.Button; $emote.Text='Émote'; $emote.TabStop=$false
+  $emote.Bounds=New-Object Drawing.Rectangle 132,$top,100,32; $emote.BackColor=[Drawing.Color]::White
+  $emote.Tag=$reply.Tag
+  $emote.Add_Click({param($s,$e)
+    $menu=New-PostitEmoteMenu $s.Tag
+    $menu.Show($s,0,$s.Height)
+  })
+  $form.Controls.AddRange(@($reply,$emote)); $form.Tag.replyButton=$reply; $form.Tag.emoteButton=$emote
+}
+function New-PostitEmoteMenu($route) {
+    $menu=New-Object Windows.Forms.ContextMenuStrip
+    foreach ($label in @("👍 J'aime", "❤️ J'adore", '😂 Drôle', '🤔 À creuser')) {
+      $item=$menu.Items.Add($label); $item.Tag=@{route=$route;label=$label}
+      $item.Add_Click({param($i,$event)
+        $d=$i.Tag.route
+        $f=New-ReplyPostit $d.transport $d.id $null $d.form
+        $f.Tag.input.Text='Reaction : '+$i.Tag.label
+        Send-FreeformPostit $f
+        if (-not $f.IsDisposed) { $f.Show() }
+      })
+    }
+    return $menu
+}
+function Add-QuestionControls($form, $mark, $options, $top) {
+  $d = $form.Tag
+  $form.Text = 'Marco - ' + $mark.question.id
+  $form.AccessibleName = "$($mark.text)"
+  $hash = [Security.Cryptography.SHA256]::Create()
+  try { $key = ([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes("$($mark.question.id)")))).Replace('-','').ToLowerInvariant() }
+  finally { $hash.Dispose() }
+  [void][IO.Directory]::CreateDirectory($m.reply_transport.response_dir)
+  $d.selectionFile = Join-Path $m.reply_transport.response_dir ($key + '.json')
+  $d.question = $mark.question; $d.questionText = "$($mark.text)"; $d.buttons = @(); $d.transport = $m.reply_transport
+  $d.selection = $null; $d.process = $null
+  if (Test-Path -LiteralPath $d.selectionFile) {
+    $d.selection = Get-Content -Raw -Encoding UTF8 -LiteralPath $d.selectionFile | ConvertFrom-Json
+    if ($d.selection.question_id -ne $mark.question.id -or $d.selection.question -ne $d.questionText) { throw 'question.id déjà utilisé pour une autre question' }
+  }
+  foreach ($option in $options) {
+    $button = New-Object System.Windows.Forms.Button
+    $button.Text = "$($option.label)"; $button.Font = $fontN
+    $button.BackColor = [Drawing.Color]::White; $button.ForeColor = [Drawing.Color]::Black
+    $button.UseVisualStyleBackColor = $false; $button.FlatStyle = 'Flat'
+    $button.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),34
+    $button.Tag = @{ form=$form; id="$($option.id)"; label="$($option.label)" }; $button.TabStop = $false
+    $button.Add_Click({ param($s,$e)
+      $state = $s.Tag.form.Tag
+      if ($state.selection) { return }
+      $state.selection = [pscustomobject]@{ schema='mind.postit.selection.v1'; question_id="$($state.question.id)"; question=$state.questionText; option_id=$s.Tag.id; option=$s.Tag.label; message_id=('postit:' + [IO.Path]::GetFileNameWithoutExtension($state.selectionFile)); clicked_at=[DateTime]::UtcNow.ToString('o') }
+      try {
+        # CreateNew keeps the first selection across two simultaneous overlays.
+        $stream = New-Object IO.FileStream $state.selectionFile,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
+        try { $bytes = [Text.Encoding]::UTF8.GetBytes(($state.selection | ConvertTo-Json -Compress)); $stream.Write($bytes,0,$bytes.Length) } finally { $stream.Dispose() }
+      } catch {
+        try { $state.selection = Get-Content -Raw -Encoding UTF8 -LiteralPath $state.selectionFile | ConvertFrom-Json }
+        catch { $state.selection = $null; $state.status.Text = 'Sauvegarde impossible. Réessaie.'; return }
+      }
+      foreach ($b in $state.buttons) { $b.Enabled = $false }
+      Start-PostitReply $s.Tag.form
+      # The human has answered: dismiss only this question. Its bounded transport
+      # process finishes independently and persists the delivery receipt.
+      $s.Tag.form.Close()
+    })
+    $form.Controls.Add($button); $d.buttons += $button; $top += 38
+  }
+  $status = New-Object System.Windows.Forms.Label; $status.Font = $fontF
+  $status.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),28
+  $status.Text = 'Clique pour répondre à Marco.'; $status.BackColor = $d.bg; $d.status=$status; $form.Controls.Add($status)
+  $retry = New-Object System.Windows.Forms.Button; $retry.Text = "Réessayer l'envoi"; $retry.TabStop=$false
+  $retry.BackColor = [Drawing.Color]::White; $retry.ForeColor = [Drawing.Color]::Black
+  $retry.UseVisualStyleBackColor = $false; $retry.FlatStyle = 'Flat'
+  $retry.Bounds = New-Object Drawing.Rectangle 14,($top+28),($d.W-28),28
+  $retry.Tag=$form; $retry.Visible=$false; $retry.Add_Click({param($s,$e) Start-PostitReply $s.Tag})
+  $d.retry=$retry; $form.Controls.Add($retry)
+  if ($d.selection) {
+    foreach ($b in $d.buttons) { $b.Enabled = $false }
+    $status.Text = 'Choix conservé : ' + $d.selection.option; $retry.Visible = $true
+  }
+}
+function Start-PostitReply($form) {
+  $d=$form.Tag
+  if ($d.process -and -not $d.process.HasExited) { return }
+  $d.retry.Visible=$false; $d.status.Text='Choix : ' + $d.selection.option + ' · envoi…'
+  try {
+    $info=New-Object Diagnostics.ProcessStartInfo
+    $info.FileName='node'; $info.UseShellExecute=$false; $info.CreateNoWindow=$true
+    $info.Arguments='"' + (Join-Path $PSScriptRoot 'postit-reply.mjs') + '" --selection "' + $d.selectionFile + '" --cli "' + $d.transport.cli + '" --data-dir "' + $d.transport.data_dir + '"'
+    $d.process=[Diagnostics.Process]::Start($info)
+  } catch { $d.status.Text='Conservé localement ; envoi non confirmé.'; $d.retry.Visible=$true; Write-Log 'Transport post-it indisponible' }
+}
+
+$questionIds = @($m.marks | Where-Object { $_.question } | ForEach-Object { $_.question.id })
+if (@($questionIds | Select-Object -Unique).Count -ne $questionIds.Count) { throw 'question.id doit etre unique dans marks.json' }
 $stickies = New-Object System.Collections.ArrayList
 foreach ($k in @($m.marks | ? { $_.kind -eq 'sticky' })) {
   try { [void]$stickies.Add([pscustomobject]@{ k=$k; form=(New-Sticky $k); state=0 }) }
@@ -205,11 +340,29 @@ $r.Add_Tick({ $el = $sw.Elapsed.TotalSeconds
   try {
     $vis = ($m.marks | ? { $_.kind -ne 'sticky' } | % { [int](Is-Visible $_ $el) }) -join ''
     if ($vis -ne $script:last) { $script:last = $vis; $f.Invalidate() }
+    $published = $false
     foreach ($st in $stickies) { $a = [double]$st.k.at
-      if ($st.state -eq 0 -and $el -ge $a) { $st.state = 1; if (-not $st.form.IsDisposed) { $st.form.Show($f) } }
-      if ($st.state -eq 1 -and $st.k.for -and $el -ge $a + [double]$st.k.for) { $st.state = 2; if (-not $st.form.IsDisposed) { $st.form.Close() } } }
+      if (-not $st.form.IsDisposed -and $st.form.Tag.process -and $st.form.Tag.process.HasExited) {
+        $d=$st.form.Tag
+        try {
+          $receipt=Get-Content -Raw -Encoding UTF8 -LiteralPath ($d.selectionFile+'.delivery.json') | ConvertFrom-Json
+          if ($receipt.status -eq 'queued' -and $receipt.message_id -eq $d.selection.message_id) { $d.status.Text='Transmis à Marco : ' + $d.selection.option; $d.retry.Visible=$false }
+          else { $d.status.Text='Conservé localement ; envoi non confirmé.'; $d.retry.Visible=$true }
+        } catch { $d.status.Text='Conservé localement ; envoi non confirmé.'; $d.retry.Visible=$true }
+        $d.process.Dispose(); $d.process=$null
+      }
+      if ($st.state -eq 0 -and $el -ge $a) { $st.state = 1; if (-not $st.form.IsDisposed) { $st.form.Show($f); $published = $true } }
+      if ($st.state -eq 1 -and $st.k.for -and $el -ge $a + [double]$st.k.for -and -not ($st.form.Tag.editor -and -not $st.form.Tag.editor.IsDisposed)) { $st.state = 2; if (-not $st.form.IsDisposed) { $st.form.Close() } } }
+    if ($published) {
+      try { Write-PostitContentState $ContentStateFile @($stickies | Where-Object { $_.state -eq 1 -and -not $_.form.IsDisposed } | ForEach-Object { $_.k }) }
+      catch { Write-Log "marqueur contenu indisponible: $_" }
+    }
   } catch { Write-Log "erreur minuterie: $_" } }); $r.Start()
-$t = New-Object System.Windows.Forms.Timer; $t.Interval = $ttl*1000; $t.Add_Tick({ $f.Close() }); $t.Start()
+$t = New-Object System.Windows.Forms.Timer; $t.Interval = $ttl*1000; $t.Add_Tick({
+  # A human writing a reply keeps this conversation alive until they send/close.
+  $editing=@($stickies | Where-Object { -not $_.form.IsDisposed -and $_.form.Tag.editor -and -not $_.form.Tag.editor.IsDisposed })
+  if ($editing.Count -eq 0) { $f.Close() }
+}); $t.Start()
 Write-Log "affiché $(@($m.marks).Count) marque(s) dont $(@($m.marks | ? { $_.kind -eq 'sticky' }).Count) post-it(s), ttl $ttl s, OCR: $(($needles | % { "'$_'=$(@($found[$_]).Count)" }) -join ' ')"
 try { [System.Windows.Forms.Application]::Run($f) } catch { Write-Log "erreur: $_" }
 Write-Log 'fermé'

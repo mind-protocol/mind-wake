@@ -1,3 +1,4 @@
+import { initDuo } from "./duo.js";
 import { tr, formatLocale } from "./i18n.js";
 import { mountOnboarding } from "./onboarding.js";
 import { projectWakesCard } from "./project-wakes.js";
@@ -1093,6 +1094,7 @@ async function showAppVersion(): Promise<void> {
 void showAppVersion();
 
 byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
+if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });

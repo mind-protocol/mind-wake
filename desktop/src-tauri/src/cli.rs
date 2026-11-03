@@ -320,7 +320,7 @@ pub fn restart_daemon() -> Result<CliRun, String> {
 /// Second fil Claude Code : actions fixes. « on » et « ensure » démarrent le worker détaché
 /// s'il est activé, arrêté et que le profil le permet ; le texte passe par l'entrée standard.
 pub fn wake_coach(action: &str, text: Option<String>) -> Result<CliRun, String> {
-    let verb = match action { "status" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action coach inconnue".into()) };
+    let verb = match action { "duo-status" => "duo-status", "duo-on" => "duo-on", "duo-off" => "duo-off", "status" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action coach inconnue".into()) };
     let body = if action == "send" {
         let body = text.ok_or("Message manquant")?;
         if body.trim().is_empty() || body.chars().count() > 4000 { return Err("Message vide ou trop long".into()); }

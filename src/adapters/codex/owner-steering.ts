@@ -1,3 +1,4 @@
+import { claimDuoReminder, finishDuoReminder } from "../../communication/duo-reminder.js";
 import { randomUUID } from "node:crypto";
 import {
   claimOwnerMessages,
@@ -13,6 +14,7 @@ export class CodexOwnerSteering {
   #stopped = false;
   #busy = false;
   #progressClaim: string | null = null;
+  #duoClaim: string | null = null;
   #timer: NodeJS.Timeout;
   constructor(
     private readonly inbox: string,
@@ -34,9 +36,11 @@ export class CodexOwnerSteering {
     try {
       const claim = randomUUID();
       const messages = claimOwnerMessages(this.inbox, this.sessionId, claim);
-      const reminder = messages.length ? null : claimProgressReminder(this.inbox, this.sessionId, claim);
+      const duo = messages.length ? null : claimDuoReminder(this.inbox, claim);
+      const reminder = duo ?? (messages.length ? null : claimProgressReminder(this.inbox, this.sessionId, claim));
       if (!messages.length && !reminder) return;
-      if (reminder) this.#progressClaim = claim;
+      if (duo) this.#duoClaim = claim;
+      else if (reminder) this.#progressClaim = claim;
       const accepted = await this.rpc.request("turn/steer", {
         threadId: this.threadId,
         expectedTurnId: this.turnId,
@@ -45,7 +49,10 @@ export class CodexOwnerSteering {
       });
       if (this.#canConfirm() && accepted["turnId"] === this.turnId) {
         if (messages.length) confirmOwnerClaim(this.inbox, this.sessionId, claim);
-        if (reminder) {
+        if (duo) {
+          finishDuoReminder(this.inbox, claim, true);
+          this.#duoClaim = null;
+        } else if (reminder) {
           finishProgressReminder(this.inbox, this.sessionId, claim, true);
           this.#progressClaim = null;
         }
@@ -71,6 +78,10 @@ export class CodexOwnerSteering {
     this.#stopped = true;
     clearInterval(this.#timer);
     try {
+      if (this.#duoClaim) {
+        finishDuoReminder(this.inbox, this.#duoClaim, false);
+        this.#duoClaim = null;
+      }
       if (this.#progressClaim) {
         finishProgressReminder(this.inbox, this.sessionId, this.#progressClaim, false);
         this.#progressClaim = null;

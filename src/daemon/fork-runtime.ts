@@ -1,3 +1,4 @@
+import { DuoSteering } from "../communication/duo-steering.js";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -176,6 +177,7 @@ export async function runForkTurn(
       }
     },
   });
+  let duoSteering: DuoSteering | undefined;
   let terminating = false;
   const watch = setInterval(() => {
     if (input.control() !== "run" && !terminating) {
@@ -261,7 +263,7 @@ export async function runForkTurn(
     if (input.control() !== "run") {
       result.outcome = "interrupted";
     } else {
-      await rpc.request("turn/start", {
+      const started = await rpc.request("turn/start", {
         threadId,
         input: [
           {
@@ -276,6 +278,15 @@ export async function runForkTurn(
         ],
       });
       result.accepted = true;
+      const turnId = asRecord(started["turn"])?.["id"];
+      if (input.coachSession && typeof turnId === "string") {
+        duoSteering = new DuoSteering(input.dataDir, () => input.control() === "run" && !terminating,
+          async text => {
+            const accepted = await rpc.request("turn/steer", { threadId, expectedTurnId: turnId,
+              input: [{ type: "text", text }] });
+            return accepted["turnId"] === turnId;
+          });
+      }
       await done;
     }
   } catch (error) {
@@ -286,6 +297,7 @@ export async function runForkTurn(
         classifyCodexError(null, result.detail).kind === "rate_limited" ? "rate_limited" : "error";
     }
   } finally {
+    duoSteering?.stop();
     clearInterval(watch);
   }
   const termination = await child.terminateTree();

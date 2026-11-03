@@ -32,5 +32,6 @@ output/
 
 # Temporary test and compiler caches
 .cache/
+.tmp/
 **/node-compile-cache/
 outputs/fork-test-tmp/

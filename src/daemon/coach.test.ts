@@ -13,6 +13,7 @@ import {
   WakeCoach,
   sendToCoach,
   coachEntries,
+  coachEveryWakes,
 } from "./coach.js";
 import type { ForkTurnInput, ForkTurnResult } from "./fork-runtime.js";
 import { coachRuntimeConfig } from "./fork-runtime.js";
@@ -43,6 +44,57 @@ async function settle(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
+it("reviews every tenth wake, preserves cadence on restart and toggles, and does not count direct messages", async () => {
+  configureCoach(dir, true);
+  expect(coachEveryWakes(dir)).toBe(10);
+  let calls = 0;
+  const create = () =>
+    new WakeCoach({
+      dataDir: dir,
+      workspace,
+      allowed: () => true,
+      turn: async (input) => {
+        calls++;
+        input.onThread("coach-thread");
+        input.onSourceTurn?.(`source-${calls}`);
+        return { ...completed, text: "COACH_NO_MESSAGE" };
+      },
+    });
+  const first = create();
+  for (let n = 1; n <= 5; n++) {
+    first.review(`wake-${n}`);
+    await settle();
+  }
+  expect(calls).toBe(0);
+  sendToCoach(dir, "Une question directe");
+  first.review("human-message");
+  await settle();
+  expect(calls).toBe(1);
+  await first.close();
+  configureCoach(dir, false);
+  configureCoach(dir, true);
+  expect(coachEveryWakes(dir)).toBe(10);
+  const next = create();
+  for (let n = 6; n <= 9; n++) {
+    next.review(`wake-${n}`);
+    await settle();
+  }
+  expect(calls).toBe(1);
+  next.review("wake-10");
+  await settle();
+  expect(calls).toBe(2);
+  next.review("wake-10");
+  for (let n = 11; n <= 19; n++) {
+    next.review(`wake-${n}`);
+    await settle();
+  }
+  expect(calls).toBe(2);
+  next.review("wake-20");
+  await settle();
+  await next.close();
+  expect(calls).toBe(3);
+});
+
 it("is opt-in, follows main wakes and resumes a separate thread without duplicate deliveries", async () => {
   let calls = 0;
   const turn = (input: ForkTurnInput) => {
@@ -64,7 +116,7 @@ it("is opt-in, follows main wakes and resumes a separate thread without duplicat
   first.review("main-1");
   await settle();
   expect(calls).toBe(0);
-  configureCoach(dir, true);
+  configureCoach(dir, true, 1);
   expect(coachEnabled(dir)).toBe(true);
   first.review("main-1");
   first.review("main-concurrent");
@@ -84,7 +136,7 @@ it("is opt-in, follows main wakes and resumes a separate thread without duplicat
 });
 
 it("drops a result when Pause or Off arrives during coaching, and close cancels the runtime", async () => {
-  configureCoach(dir, true);
+  configureCoach(dir, true, 1);
   let allowed = true,
     release!: (result: ForkTurnResult) => void;
   let input!: ForkTurnInput;
@@ -122,7 +174,7 @@ it("drops a result when Pause or Off arrives during coaching, and close cancels 
 });
 
 it("keeps silence when appropriate and waits after a provider refusal", async () => {
-  configureCoach(dir, true);
+  configureCoach(dir, true, 1);
   let calls = 0;
   const coach = new WakeCoach({
     dataDir: dir,
@@ -151,7 +203,7 @@ it("keeps silence when appropriate and waits after a provider refusal", async ()
   expect(readCoachState(dir).retryAt).toBeGreaterThan(Date.now());
 });
 it("delivers a direct human conversation without forwarding the reply to the principal", async () => {
-  configureCoach(dir, true);
+  configureCoach(dir, true, 1);
   sendToCoach(dir, "Peux-tu m'expliquer ton nouveau cap ?");
   const coach = new WakeCoach({
     dataDir: dir,
