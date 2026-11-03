@@ -779,4 +779,3 @@ main > #view-chat { overflow-y:auto; }
   main:has(#tab-chat[aria-selected="true"]) > #view-documents { display:none; }
   #view-chat .view-heading { padding:10px 16px; }
 }
-
