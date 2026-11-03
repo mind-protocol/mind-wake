@@ -9,3 +9,5 @@ Le mode restauré est Always-on : une seule session à la fois, la suivante apr�
 Les documents `CONVERSATION.md`, `CHANGELOG-CONVERSATION.md`, `PLAN-PATTERN-CONVERSATION.md` et `CATALOGUE-PATTERNS-CONVERSATION.md` sont conservés comme archives du chantier retiré. Ils ne décrivent plus le parcours actif. Le journal des anciennes conversations reste dans le profil ; le code compilé retiré est conservé dans `.local/rollback-solo-20261103/`.
 
 Validation du code restauré : 47 tests ciblés réussis sur le scheduler, les commandes Always-on et le raccord desktop. La compilation, le lancement installé et l’observation du runtime doivent être distingués de ces essais isolés.
+
+Observation du profil habituel le 3 novembre : moteur réel démarré en Always-on, première session terminée sans simulation, puis nouvelle session en cours avec une seule session ouverte. Le panneau solo reconstruit a été relancé. Sa capture à 960 × 714 a révélé l’ancienne compression du fil ; les seules règles de hauteur et d’adaptation du correctif CSS indépendant sont donc conservées, sans réintroduire le système à six rôles.
