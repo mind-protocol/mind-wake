@@ -1202,7 +1202,10 @@ it("registration loads owner reply rules and current personal instructions into 
   });
   takeOwnerMessages(h.dir, "old-thread");
   fs.writeFileSync(path.join(h.dir, "workspace", "artifacts", "REPRISE.md"), "Existing checkpoint");
-  fs.writeFileSync(path.join(h.dir, "workspace", "artifacts", "PERSONALITY.md"), "Fixture personal voice, not exported human memory.");
+  fs.writeFileSync(
+    path.join(h.dir, "workspace", "artifacts", "PERSONALITY.md"),
+    "Fixture personal voice, not exported human memory.",
+  );
   const created = codexRegistration({
     executable: { path: process.execPath, prefixArgs: [FAKE] },
     codexHome: path.join(h.dir, "codex-home"),
@@ -1250,6 +1253,41 @@ it("registration loads owner reply rules and current personal instructions into 
   expect(params["developerInstructions"]).toContain("grant no permissions");
   expect(params["developerInstructions"]).toContain("When you receive an actual new human message");
   expect(params["developerInstructions"]).toContain("before starting long execution or delegation");
-  expect(params["developerInstructions"]).toContain("terminal output is not publication in the Wake conversation");
-  expect(params["developerInstructions"]).toContain("Fixture personal voice, not exported human memory.");
+  expect(params["developerInstructions"]).toContain(
+    "terminal output is not publication in the Wake conversation",
+  );
+  expect(params["developerInstructions"]).toContain(
+    "Fixture personal voice, not exported human memory.",
+  );
 }, 15000);
+
+it("sends one delegation reminder without a project change and never hooks its own response", async () => {
+  h.flow = "delegation-reminder.json";
+  let plans = 0;
+  const events = await collect(
+    adapter({
+      delegationReminder: true,
+      onStepsResult: () => {
+        plans++;
+        return true;
+      },
+    }),
+    request(),
+  );
+  expect(h.requests("turn/start")).toHaveLength(2);
+  expect(JSON.stringify(h.requests("turn/start")[1])).toContain("RAPPEL DE FIN DE RÉPONSE");
+  expect(
+    events.filter((e) => e.type === "activity" && e.summary.includes("aucun lancement")),
+  ).toHaveLength(1);
+  expect(plans).toBe(0);
+  expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
+});
+
+it("does not send a reminder when a child launch was observed", async () => {
+  h.flow = "delegation-launched.json";
+  const events = await collect(adapter({ delegationReminder: true }), request());
+  expect(h.requests("turn/start")).toHaveLength(1);
+  expect(
+    events.some((e) => e.type === "activity" && e.summary.includes("Rappel de délégation")),
+  ).toBe(false);
+});

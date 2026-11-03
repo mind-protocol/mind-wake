@@ -16,6 +16,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { DELEGATION_REMINDER, DelegationEvidence } from "../../daemon/delegation-reminder.js";
 import { fileURLToPath } from "node:url";
 import type {
   AdapterCapabilities,
@@ -93,6 +94,7 @@ export type ClaudeAutonomy =
 
 export interface ClaudeAdapterOptions {
   readonly stepsStopHook?: boolean;
+  readonly delegationReminder?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly launcher: ClaudeLauncher;
   /** Relais fournisseur ; obligatoire pour un lancement confiné (seule sortie réseau). */
@@ -218,6 +220,8 @@ interface ClaudeSession {
   readonly request: StartRequest;
   projectStart: string | null;
   stepsStopSent: boolean;
+  delegation: DelegationEvidence;
+  delegationOnly: boolean;
   stepsStopComplete: boolean;
   stepsUsageComplete: boolean;
   cancelling: boolean;
@@ -578,6 +582,8 @@ export class ClaudeAdapter implements RuntimeAdapter {
       request,
       projectStart,
       stepsStopSent: false,
+      delegation: new DelegationEvidence(),
+      delegationOnly: false,
       stepsStopComplete: false,
       stepsUsageComplete: true,
       cancelling: false,
@@ -665,7 +671,9 @@ export class ClaudeAdapter implements RuntimeAdapter {
             type: "activity",
             sessionId,
             at,
-            summary: "ÉTAPES : flux du bilan interrompu ; usage du bilan inconnu",
+            summary: session.delegationOnly
+              ? "Rappel de délégation : flux interrompu, usage inconnu"
+              : "ÉTAPES : flux du bilan interrompu ; usage du bilan inconnu",
           };
           await this.#finish(sessionId, session);
           yield { type: "ended", sessionId, at: this.#at(), exitReason: "result:success" };
@@ -684,6 +692,13 @@ export class ClaudeAdapter implements RuntimeAdapter {
         return;
       }
       session.foregroundYield?.observe(line);
+      if (!session.stepsStopSent) {
+        try {
+          session.delegation.claude(JSON.parse(line));
+        } catch {
+          /* malformed stream is handled below */
+        }
+      }
       {
         try {
           for (const r of pendingStepsRequests(this.#options.workspaceFor(sessionId)))
@@ -957,6 +972,8 @@ export class ClaudeAdapter implements RuntimeAdapter {
             session.projectStart,
             readCurrentProject(this.#options.workspaceFor(sessionId)),
           );
+          const reminder =
+            this.#options.delegationReminder === true && !session.delegation.accepted;
           const transition =
             change &&
             !session.stepsStopSent &&
@@ -1007,9 +1024,8 @@ export class ClaudeAdapter implements RuntimeAdapter {
             }
           }
           if (
-            transition !== null &&
-            change !== null &&
-            this.#options.stepsStopHook === true &&
+            ((transition !== null && change !== null && this.#options.stepsStopHook === true) ||
+              reminder) &&
             !session.stepsStopSent &&
             !item.isError &&
             !rateLimited &&
@@ -1023,17 +1039,25 @@ export class ClaudeAdapter implements RuntimeAdapter {
             )
           ) {
             session.stepsStopSent = true;
+            session.delegationOnly = transition === null;
             // No human claim/delivery into the JSON-only turn. Pending text stays queued.
             session.foregroundYield?.stop();
             try {
               session.process.send(
                 userMessageLine(
-                  stepsStopPrompt(
-                    this.#options.workspaceFor(sessionId),
-                    change,
-                    sessionId,
-                    this.#options.ownerInboxDir,
-                  ),
+                  [
+                    reminder ? DELEGATION_REMINDER : null,
+                    transition !== null && change !== null
+                      ? stepsStopPrompt(
+                          this.#options.workspaceFor(sessionId),
+                          change,
+                          sessionId,
+                          this.#options.ownerInboxDir,
+                        )
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n"),
                 ),
               );
             } catch {
@@ -1041,8 +1065,9 @@ export class ClaudeAdapter implements RuntimeAdapter {
                 type: "activity",
                 sessionId,
                 at: this.#at(),
-                summary:
-                  "ÉTAPES : bilan non transmis ; travail précédent terminé, usage à rapprocher",
+                summary: session.delegationOnly
+                  ? "Rappel de délégation non transmis ; réponse principale terminée"
+                  : "ÉTAPES : bilan non transmis ; travail précédent terminé, usage à rapprocher",
               };
               await this.#finish(sessionId, session);
               yield { type: "ended", sessionId, at: this.#at(), exitReason: "result:success" };
@@ -1052,14 +1077,22 @@ export class ClaudeAdapter implements RuntimeAdapter {
               type: "activity",
               sessionId,
               at: this.#at(),
-              summary: "ÉTAPES : bilan de fin de réponse (un passage)",
+              summary: reminder
+                ? "Rappel de délégation : aucun lancement ni reprise attesté (un passage)"
+                : "ÉTAPES : bilan de fin de réponse (un passage)",
             };
             break;
           }
           const humanPending =
             this.#options.ownerInboxDir !== undefined &&
             ownerMessagePending(this.#options.ownerInboxDir);
-          if (isStepsResult && !item.isError && !session.cancelling && !humanPending) {
+          if (
+            isStepsResult &&
+            !session.delegationOnly &&
+            !item.isError &&
+            !session.cancelling &&
+            !humanPending
+          ) {
             let saved = false;
             try {
               const raw = (JSON.parse(line) as { result?: unknown }).result;
@@ -1077,19 +1110,30 @@ export class ClaudeAdapter implements RuntimeAdapter {
                 : "ÉTAPES : bilan incomplet (vérifier réponse, fichier et fil)",
             };
           }
+          if (isStepsResult && session.delegationOnly && !item.isError)
+            yield {
+              type: "activity",
+              sessionId,
+              at: this.#at(),
+              summary: "Rappel de délégation : retour de fin de réponse terminé",
+            };
           if (isStepsResult && humanPending)
             yield {
               type: "activity",
               sessionId,
               at: this.#at(),
-              summary: "ÉTAPES : bilan non publié ; message humain en attente prioritaire",
+              summary: session.delegationOnly
+                ? "Rappel de délégation interrompu : message humain prioritaire"
+                : "ÉTAPES : bilan non publié ; message humain en attente prioritaire",
             };
           if (isStepsResult && item.isError)
             yield {
               type: "activity",
               sessionId,
               at: this.#at(),
-              summary: "ÉTAPES : résultat de bilan en erreur ; travail précédent terminé",
+              summary: session.delegationOnly
+                ? "Rappel de délégation en erreur ; réponse principale terminée"
+                : "ÉTAPES : résultat de bilan en erreur ; travail précédent terminé",
             };
           await this.#finish(sessionId, session);
           const reason = isStepsResult ? "success" : (item.terminalReason ?? item.subtype);

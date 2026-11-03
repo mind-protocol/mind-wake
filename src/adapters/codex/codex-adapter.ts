@@ -1,4 +1,5 @@
 import path from "node:path";
+import { DELEGATION_REMINDER, DelegationEvidence } from "../../daemon/delegation-reminder.js";
 import { checkCodexCompatibility, type CodexCompatibility } from "./compatibility.js";
 import os from "node:os";
 import { codexWakeInput } from "../wake-image.js";
@@ -90,6 +91,7 @@ export type CodexLaunchMode = "autonomous" | "manual";
 
 export interface CodexAdapterOptions {
   readonly stepsStopHook?: boolean;
+  readonly delegationReminder?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
   readonly executable: CodexExecutable;
@@ -202,9 +204,11 @@ class EventQueue {
 }
 
 interface CodexSession {
+  delegation: DelegationEvidence;
   projectStart: string | null;
   delegatedUsageUncertain: boolean;
   planning: boolean;
+  reminderOnly: boolean;
   planningPreviousTurnId: string | null;
   planningUsageSeen: boolean;
   planningWorkUsageSeen: boolean;
@@ -483,8 +487,10 @@ export class CodexAdapter implements RuntimeAdapter {
     const turnDone = new Promise<void>((resolve) => (resolveTurn = resolve));
     const session: CodexSession = {
       projectStart: null,
+      delegation: new DelegationEvidence(),
       delegatedUsageUncertain: false,
       planning: false,
+      reminderOnly: false,
       planningPreviousTurnId: null,
       planningUsageSeen: false,
       planningWorkUsageSeen: false,
@@ -674,6 +680,7 @@ export class CodexAdapter implements RuntimeAdapter {
           summary: "turn/steer absent : messages conservés pour le prochain réveil",
         });
       await session.turnDone;
+      const reminder = this.#options.delegationReminder === true && !session.delegation.accepted;
       const change = projectChange(
         session.projectStart,
         readCurrentProject(this.#options.workspaceDir),
@@ -701,9 +708,8 @@ export class CodexAdapter implements RuntimeAdapter {
       }
       // One additional turn inside the same supervised session; never recursive.
       if (
-        transition !== null &&
-        change !== null &&
-        this.#options.stepsStopHook === true &&
+        ((transition !== null && change !== null && this.#options.stepsStopHook === true) ||
+          reminder) &&
         session.turn === "completed" &&
         !session.cancelling &&
         !session.process.hasExited &&
@@ -716,6 +722,7 @@ export class CodexAdapter implements RuntimeAdapter {
         session.planningWorkUsageSeen = session.usageReports > 0;
         session.turnId = null;
         session.planning = true;
+        session.reminderOnly = transition === null;
         session.stepsResult = "";
         session.turn = "pending";
         session.turnDone = new Promise<void>((resolve) => {
@@ -725,12 +732,21 @@ export class CodexAdapter implements RuntimeAdapter {
           type: "activity",
           sessionId: session.sessionId,
           at: this.#now(),
-          summary: "ÉTAPES : bilan de fin de réponse (un passage)",
+          summary: reminder
+            ? "Rappel de délégation : aucun lancement ni reprise attesté (un passage)"
+            : "ÉTAPES : bilan de fin de réponse (un passage)",
         });
         const planned = await rpc.request("turn/start", {
           threadId: session.threadId,
           input: codexWakeInput(
-            stepsStopPrompt(this.#options.workspaceDir, change, request.sessionId, inbox),
+            [
+              reminder ? DELEGATION_REMINDER : null,
+              transition !== null && change !== null
+                ? stepsStopPrompt(this.#options.workspaceDir, change, request.sessionId, inbox)
+                : null,
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
             undefined,
           ),
           ...(this.#options.model === undefined ? {} : { model: this.#options.model }),
@@ -750,7 +766,8 @@ export class CodexAdapter implements RuntimeAdapter {
         ) {
           let saved = false;
           try {
-            saved = this.#options.onStepsResult?.(request, session.stepsResult) === true;
+            if (transition !== null)
+              saved = this.#options.onStepsResult?.(request, session.stepsResult) === true;
           } catch {
             /* reported without losing measured usage */
           }
@@ -758,16 +775,21 @@ export class CodexAdapter implements RuntimeAdapter {
             type: "activity",
             sessionId: session.sessionId,
             at: this.#now(),
-            summary: saved
-              ? "ÉTAPES : bilan sauvegardé et publié dans le fil"
-              : "ÉTAPES : bilan incomplet (vérifier réponse, fichier et fil)",
+            summary:
+              transition === null
+                ? "Rappel de délégation : retour de fin de réponse terminé"
+                : saved
+                  ? "ÉTAPES : bilan sauvegardé et publié dans le fil"
+                  : "ÉTAPES : bilan incomplet (vérifier réponse, fichier et fil)",
           });
         } else if (inbox && ownerMessagePending(inbox)) {
           this.#emit(session, {
             type: "activity",
             sessionId: session.sessionId,
             at: this.#now(),
-            summary: "ÉTAPES : bilan non publié ; message humain en attente prioritaire",
+            summary: session.reminderOnly
+              ? "Rappel de délégation interrompu : message humain prioritaire"
+              : "ÉTAPES : bilan non publié ; message humain en attente prioritaire",
           });
         }
       }
@@ -800,8 +822,9 @@ export class CodexAdapter implements RuntimeAdapter {
         type: "activity",
         sessionId: session.sessionId,
         at: this.#now(),
-        summary:
-          "ÉTAPES : bilan indisponible ; travail précédent terminé, usage du bilan incertain",
+        summary: session.reminderOnly
+          ? "Rappel de délégation indisponible ; réponse principale terminée, usage du retour incertain"
+          : "ÉTAPES : bilan indisponible ; travail précédent terminé, usage du bilan incertain",
       });
       return "completed";
     }
@@ -974,6 +997,7 @@ export class CodexAdapter implements RuntimeAdapter {
 
   #onItemCompleted(session: CodexSession, item: JsonRecord | null, turnId: unknown): void {
     if (item === null) return;
+    if (!session.planning) session.delegation.codex(item, session.threadId);
     if (session.planning) {
       if (
         typeof turnId !== "string" ||
@@ -1085,7 +1109,9 @@ export class CodexAdapter implements RuntimeAdapter {
           type: "activity",
           sessionId: session.sessionId,
           at: this.#now(),
-          summary: "ÉTAPES : fin de bilan sans identifiant de tour ; usage incertain",
+          summary: session.reminderOnly
+            ? "Rappel de délégation sans identifiant de tour ; usage incertain"
+            : "ÉTAPES : fin de bilan sans identifiant de tour ; usage incertain",
         });
         session.resolveTurn();
         return;
@@ -1111,7 +1137,9 @@ export class CodexAdapter implements RuntimeAdapter {
           type: "activity",
           sessionId: session.sessionId,
           at: this.#now(),
-          summary: "ÉTAPES : résultat de bilan en erreur ; travail précédent terminé",
+          summary: session.reminderOnly
+            ? "Rappel de délégation en erreur ; réponse principale terminée"
+            : "ÉTAPES : résultat de bilan en erreur ; travail précédent terminé",
         });
     }
     session.resolveTurn();

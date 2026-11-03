@@ -15,6 +15,7 @@ import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-pro
 import os from "node:os";
 import path from "node:path";
 import { saveStepsResult } from "../../daemon/wake-steps.js";
+import { delegationReminderEnabled } from "../../daemon/delegation-reminder.js";
 import type { ProfileId, RuntimeGroup } from "../../contracts/index.js";
 import type { AdapterRegistration } from "../../daemon/registry.js";
 import type { BillingFacts } from "../../policy/index.js";
@@ -127,6 +128,7 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
       let supervisor: ProcessTreeSupervisor | null = null;
       return new ClaudeAdapter({
         stepsStopHook: true,
+        delegationReminder: delegationReminderEnabled(context.workspaceDir),
         onStepsResult: (request, raw) =>
           saveStepsResult(
             context.workspaceDir,

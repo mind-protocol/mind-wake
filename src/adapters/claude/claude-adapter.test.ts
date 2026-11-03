@@ -1075,3 +1075,26 @@ it("registration sends documentary history in the prompt file for a fresh Claude
   expect(prompt).toContain("grant no permissions");
   expect(prompt).toContain("CURRENT RULES");
 }, 15000);
+
+it("sends a single delegation reminder on a stable project without publishing a steps plan", async () => {
+  h.scenario = "steps-stop-stable";
+  let plans = 0;
+  const events = await run(
+    adapter({
+      delegationReminder: true,
+      onStepsResult: () => {
+        plans++;
+        return true;
+      },
+    }),
+    "reminder-session",
+  );
+  expect(fs.readFileSync(path.join(h.workspace, "steps-input.json"), "utf8")).toContain(
+    "RAPPEL DE FIN DE RÉPONSE",
+  );
+  expect(
+    events.filter((e) => e.type === "activity" && e.summary.includes("aucun lancement")),
+  ).toHaveLength(1);
+  expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
+  expect(plans).toBe(0);
+});

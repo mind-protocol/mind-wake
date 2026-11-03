@@ -1,0 +1,29 @@
+{
+  "extends": "success.json",
+  "on": {
+    "turn/start": {
+      "result": { "turn": { "id": "turn_1", "status": "inProgress" } },
+      "then": [
+        {
+          "notify": "item/completed",
+          "params": {
+            "threadId": "thr_1",
+            "turnId": "turn_1",
+            "item": {
+              "id": "delegation-1",
+              "type": "collabAgentToolCall",
+              "tool": "spawnAgent",
+              "status": "completed",
+              "senderThreadId": "thr_1",
+              "receiverThreadIds": ["child_1"]
+            }
+          }
+        },
+        {
+          "notify": "turn/completed",
+          "params": { "turn": { "id": "turn_1", "status": "completed" } }
+        }
+      ]
+    }
+  }
+}

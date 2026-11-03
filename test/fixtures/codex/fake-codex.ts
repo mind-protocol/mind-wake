@@ -313,7 +313,9 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     }
   }
   const handler =
-    method === "turn/start" && JSON.stringify(message["params"]).includes("ÉTAPES — coordination")
+    method === "turn/start" &&
+    (JSON.stringify(message["params"]).includes("ÉTAPES — coordination") ||
+      JSON.stringify(message["params"]).includes("RAPPEL DE FIN DE RÉPONSE"))
       ? (flow.on["turn/steps"] ?? flow.on[method])
       : flow.on[method];
   chain = chain.then(async () => {

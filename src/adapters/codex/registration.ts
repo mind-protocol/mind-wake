@@ -12,6 +12,7 @@ import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-pro
 import { discoverCodex, executableFromPath } from "./executable.js";
 import path from "node:path";
 import { saveStepsResult } from "../../daemon/wake-steps.js";
+import { delegationReminderEnabled } from "../../daemon/delegation-reminder.js";
 import type { ProfileId, StartRequest } from "../../contracts/index.js";
 import type { AdapterRegistration } from "../../daemon/registry.js";
 import { ProcessTreeSupervisor } from "../../runner/process-tree.js";
@@ -70,6 +71,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
     create: (context) =>
       new CodexAdapter({
         stepsStopHook: true,
+        delegationReminder: delegationReminderEnabled(context.workspaceDir),
         onStepsResult: (request, raw) =>
           saveStepsResult(
             context.workspaceDir,
