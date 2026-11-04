@@ -9,7 +9,7 @@ export function bindChatDraft(field: Field, recipient: Field, storage?: Store): 
     if (saved && typeof saved === 'object' && !field.value) {
       const value = saved as Record<string, unknown>;
       if (typeof value['text'] === 'string' && value['text'].length <= 4000 &&
-          ['owner', 'auroracle'].includes(String(value['recipient']))) {
+          ['owner', 'auroracle', 'all'].includes(String(value['recipient']))) {
         field.value = value['text'];recipient.value = String(value['recipient']);
       }
     }

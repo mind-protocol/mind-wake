@@ -1,0 +1,53 @@
+{
+  "name": "mind-lumina-companion",
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "dependencies": {
+    "@expo/metro-runtime": "~58.0.17",
+    "@expo/vector-icons": "^15.0.2",
+    "expo": "~58.0.23",
+    "expo-asset": "~58.0.20",
+    "expo-audio": "~58.0.11",
+    "expo-auth-session": "~58.0.17",
+    "expo-clipboard": "~58.0.4",
+    "expo-constants": "~58.0.15",
+    "expo-crypto": "~58.0.7",
+    "expo-file-system": "~58.0.13",
+    "expo-font": "~58.0.11",
+    "expo-image-picker": "~58.0.10",
+    "expo-linear-gradient": "~58.0.3",
+    "expo-linking": "~58.0.16",
+    "expo-router": "~58.0.30",
+    "expo-secure-store": "~58.0.2",
+    "expo-speech": "~58.0.3",
+    "expo-status-bar": "~58.0.4",
+    "expo-web-browser": "~58.0.7",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1",
+    "react-native-screens": "~4.30.1",
+    "react-native-web": "^0.21.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "~19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~58.0.4",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web --port 3230",
+    "typecheck": "tsc --noEmit",
+    "lint": "expo lint",
+    "test": "node scripts/test-all.mjs",
+    "build:web": "expo export --platform web",
+    "preview": "node scripts/serve-preview.mjs",
+    "check:dev": "node scripts/check-dev.mjs"
+  },
+  "private": true,
+  "type": "module"
+}

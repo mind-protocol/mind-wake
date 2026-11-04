@@ -295,6 +295,7 @@ export function initDocuments(invoke: Invoke): void {
         const imageInvoke:Invoke=(command,args)=>invoke(command,{...args,...(targetScope==='aurore'?{version}:{})});
         void loadDocumentImages(images,doc,targetScope,imageInvoke,()=>ticket===generation&&scopeState.accepts(scopeTicket)&&frame.contentDocument===doc);
         renderedRelative=relative;renderedScope=targetScope;
+        window.dispatchEvent(new CustomEvent('wake-document-loaded',{detail:{scope:targetScope,relative,title:title.textContent,characters:doc.body.textContent?.length??0,visible:host.getBoundingClientRect().width>0&&!host.hidden}}));
         outline.replaceChildren(new Option(tr("Aller à une section…"),''));
         const usedHeadingIds=new Set<string>();
         let n=0;for(const heading of doc.querySelectorAll('h1,h2,h3')){
@@ -375,4 +376,5 @@ export function initDocuments(invoke: Invoke): void {
     contextMode=Boolean(contextQueue.length);renderQueue();pagination();
   });
   setLibrary(false);changeScope(scopeState.current,true);
+  host.dataset['documentsReady']='true';window.dispatchEvent(new Event('wake-documents-ready'));
 }

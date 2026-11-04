@@ -57,3 +57,28 @@ it("real MCP publish/edit/delete updates the desktop CLI, preserves human replie
   expect(duplicate.data["message"]).toEqual(sent.data["message"]);
   expect(messages(ctx, dataDir).data.agentMessages).toHaveLength(1);
 }, 60000);
+
+it("saves an image through the real MCP tool and exposes its durable preview through the desktop conversation", async () => {
+  h = await startHarness();
+  const dir = path.join(h.dir, "image-wake");
+  fs.mkdirSync(dir, { recursive: true });
+  seedSimulatedProfile(dir);
+  const workspace = path.join(dir, "workspace");
+  fs.mkdirSync(workspace, { recursive: true });
+  const source = path.join(workspace, "source.png");
+  const bytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aS1cAAAAASUVORK5CYII=", "base64");
+  fs.writeFileSync(source, bytes);
+  const client = await h.party("agent", { MIND_WAKE_DATA_DIR: dir, MIND_WAKE_OWNER_MESSAGES: "1" });
+  const input = { source_path: "source.png", title: "Image de test", prompt: "Un pixel", idempotency_key: "publish-image-001" };
+  const published = await client.call("publish_image", input);
+  expect(published.isError).toBe(false);
+  const image = published.data["image"] as { reference: string; absolutePath: string };
+  expect(fs.readFileSync(image.absolutePath)).toEqual(bytes);
+  const retry = await client.call("publish_image", input);
+  expect(retry.data["message"]).toEqual(published.data["message"]);
+  fs.unlinkSync(source);
+  const snapshot = messages(processContext(), { path: dir, source: "option" }).data;
+  expect(snapshot.agentMessages).toHaveLength(1);
+  expect(snapshot.agentMessages?.[0]?.text).toContain(`![Image de test](<${image.reference}>)`);
+  expect(fs.readFileSync(image.absolutePath)).toEqual(bytes);
+}, 60000);

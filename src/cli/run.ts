@@ -27,6 +27,7 @@ import { resume } from "./commands/resume.js";
 import { status } from "./commands/status.js";
 import { stop } from "./commands/stop.js";
 import { wake } from "./commands/wake.js";
+import { broadcastTargets, broadcastHuman } from "../communication/broadcast.js";
 import { messages, reply } from "./commands/messages.js";
 import { wakeHistory } from "./commands/wake-history.js";
 import { uninstall } from "./commands/uninstall.js";
@@ -260,6 +261,19 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "wake-history":
         result = wakeHistory(dataDir) as CommandResult<unknown>;
         break;
+      case "broadcast-status":
+        result = {exitCode:EXIT_OK,data:{recipients:broadcastTargets(dataDir.path),scope:'Principal + rôles keeper actifs ; jobs CLI sans canal signalés. Forks 2-8 exclus. Sous-agents natifs non exposés.'},human:d=>JSON.stringify(d)};
+        break;
+      case "broadcast-send": {
+        const text=await ctx.readStdin?.() ?? '';
+        const key=values["idempotency-key"] ?? '';
+        const receipt=await broadcastHuman(dataDir.path,key,text,async()=>{
+          const sent=await reply({...ctx,readStdin:async()=>text},dataDir,key,false,undefined,true);
+          if(sent.exitCode!==EXIT_OK)throw Error(JSON.stringify(sent.data));
+        });
+        result={exitCode:EXIT_OK,data:receipt,human:d=>JSON.stringify(d)};
+        break;
+      }
       case "reply":
         result = (await reply(ctx, dataDir, values["idempotency-key"], values["capture-screen"] === true)) as CommandResult<unknown>;
         break;
@@ -348,7 +362,7 @@ const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   "recheck-ms": ["daemon run"],
   "wake-screenshot": ["daemon run"],
   "exit-after-sessions": ["daemon run"],
-  "idempotency-key": ["reply"],
+  "idempotency-key": ["reply", "broadcast-send"],
   "capture-screen": ["reply"],
 };
 

@@ -70,6 +70,8 @@ export interface ClaudeRegistrationConfig {
   readonly model: string;
   /** Dossier de configuration dédié (`CLAUDE_CONFIG_DIR`) ; absent : connexion par défaut. */
   readonly configDir?: string;
+  /** Chemin explicite du Git Bash déjà installé sur Windows. */
+  readonly gitBashPath?: string;
   readonly systemPrompt?: string;
   /** Configuration MCP administrée hors de l’espace de l’agent (mode hôte). */
   readonly mcpConfigFile?: string;
@@ -99,6 +101,7 @@ export function defaultClaudeConfig(
 ): ClaudeRegistrationConfig {
   const configDir = env["MIND_WAKE_CLAUDE_CONFIG_DIR"];
   const mcpConfigFile = env["MIND_WAKE_CLAUDE_MCP_CONFIG"];
+  const gitBashPath = env["CLAUDE_CODE_GIT_BASH_PATH"];
   const compact = Number(env["MIND_WAKE_CLAUDE_COMPACT_TOKENS"] ?? DEFAULT_COMPACT_ABOVE_TOKENS);
   return {
     compactAboveTokens:
@@ -107,6 +110,7 @@ export function defaultClaudeConfig(
       env["MIND_WAKE_CLAUDE_EXE"] ?? path.join(os.homedir(), ".local", "bin", "claude.exe"),
     model: env["MIND_WAKE_CLAUDE_MODEL"] ?? DEFAULT_CLAUDE_MODEL,
     ...(configDir === undefined ? {} : { configDir }),
+    ...(gitBashPath === undefined ? {} : { gitBashPath }),
     ...(mcpConfigFile === undefined ? {} : { mcpConfigFile }),
   };
 }
@@ -153,6 +157,7 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
           ? {}
           : { executablePrefixArgs: config.executablePrefixArgs }),
         ...(config.configDir === undefined ? {} : { configDir: config.configDir }),
+        ...(config.gitBashPath === undefined ? {} : { gitBashPath: config.gitBashPath }),
         ...(config.extraEnv === undefined ? {} : { extraEnv: config.extraEnv }),
         ...(config.compactAboveTokens === undefined
           ? {}

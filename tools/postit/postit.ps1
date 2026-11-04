@@ -173,7 +173,8 @@ function New-Sticky($k) {
     foreach ($p in @($m.reply_transport.cli,$m.reply_transport.data_dir,$m.reply_transport.response_dir)) {
       if (-not [IO.Path]::IsPathRooted($p) -or "$p".Contains('"')) { throw 'Chemin transport absolu requis, sans guillemet' }
     }
-    $H += ($options.Count * 38) + 58
+    $otherCount=if($question.allow_other -eq $false){0}else{1}
+    $H += (($options.Count+$otherCount) * 38) + 58
   }
   $H += 26   # pied de page
   if ($k.reply_to) {
@@ -221,28 +222,62 @@ function Add-ConversationControls($form, $mark, $top) {
     $d.form.Tag.editor=New-ReplyPostit $d.transport $d.id $null $d.form
     $d.form.Tag.editor.Show()
   })
-  $emote=New-Object Windows.Forms.Button; $emote.Text='Émote'; $emote.TabStop=$false
+  $emote=New-Object Windows.Forms.Button; $emote.Text='Réagir'; $emote.TabStop=$false
   $emote.Bounds=New-Object Drawing.Rectangle 132,$top,100,32; $emote.BackColor=[Drawing.Color]::White
+  foreach($action in @($reply,$emote)) {
+    $action.UseVisualStyleBackColor=$false; $action.FlatStyle='Flat'; $action.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185)
+    $action.ForeColor=[Drawing.Color]::FromArgb(33,102,77); $action.Cursor=[Windows.Forms.Cursors]::Hand
+    $action.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(232,240,233)
+  }
   $emote.Tag=$reply.Tag
   $emote.Add_Click({param($s,$e)
-    $menu=New-PostitEmoteMenu $s.Tag
-    $menu.Show($s,0,$s.Height)
+    $d=$s.Tag
+    if ($d.form.Tag.editor -and -not $d.form.Tag.editor.IsDisposed) { return }
+    $d.form.Tag.editor=New-PostitReactionPicker $d
+    $d.form.Tag.editor.Show()
   })
   $form.Controls.AddRange(@($reply,$emote)); $form.Tag.replyButton=$reply; $form.Tag.emoteButton=$emote
 }
-function New-PostitEmoteMenu($route) {
-    $menu=New-Object Windows.Forms.ContextMenuStrip
-    foreach ($label in @("👍 J'aime", "❤️ J'adore", '😂 Drôle', '🤔 À creuser')) {
-      $item=$menu.Items.Add($label); $item.Tag=@{route=$route;label=$label}
-      $item.Add_Click({param($i,$event)
-        $d=$i.Tag.route
-        $f=New-ReplyPostit $d.transport $d.id $null $d.form
-        $f.Tag.input.Text='Reaction : '+$i.Tag.label
-        Send-FreeformPostit $f
-        if (-not $f.IsDisposed) { $f.Show() }
-      })
-    }
-    return $menu
+function New-PostitReactionPicker($route) {
+  $picker=New-Object ReplyPostitForm
+  $picker.Text='Réagir au message de Marco'; $picker.FormBorderStyle='None'; $picker.TopMost=$true
+  $picker.ShowInTaskbar=$false; $picker.StartPosition='Manual'; $picker.AutoScaleMode='Dpi'
+  $picker.ClientSize=New-Object Drawing.Size 360,480
+  $picker.BackColor=[Drawing.Color]::FromArgb(247,248,244); $picker.ForeColor=[Drawing.Color]::FromArgb(34,49,47)
+  $picker.Font=New-Object Drawing.Font 'Segoe UI',10
+  $anchor=New-Object Drawing.Point ($route.form.Right+4),$route.form.Top
+  $area=[Windows.Forms.Screen]::FromPoint($anchor).WorkingArea
+  $picker.Location=Resolve-ReplyPostitPosition $anchor $area $picker.Width $picker.Height
+  $title=New-Object Windows.Forms.Label; $title.Text='Réagir'; $title.Font=New-Object Drawing.Font 'Segoe UI',16,([Drawing.FontStyle]::Bold); $title.Bounds=New-Object Drawing.Rectangle 20,16,270,30
+  $subtitle=New-Object Windows.Forms.Label; $subtitle.Text="Ce que ce message t’inspire."; $subtitle.ForeColor=[Drawing.Color]::FromArgb(100,116,110); $subtitle.Bounds=New-Object Drawing.Rectangle 20,52,320,23
+  $close=New-Object ReplyCardButton; $close.Text='×'; $close.AccessibleName='Fermer sans réagir'; $close.Font=New-Object Drawing.Font 'Segoe UI',16; $close.Bounds=New-Object Drawing.Rectangle 308,14,32,32; $close.BackColor=$picker.BackColor; $close.DialogResult='Cancel'; $close.TabIndex=4
+  $close.Tag=$picker; $close.Add_Click({param($s,$e) $s.Tag.Close()}); $picker.CancelButton=$close
+  $hint=New-Object Windows.Forms.Label; $hint.Text='Un clic pour envoyer · Échap pour fermer'; $hint.ForeColor=$subtitle.ForeColor; $hint.Font=New-Object Drawing.Font 'Segoe UI',9; $hint.Bounds=New-Object Drawing.Rectangle 20,450,320,20
+  $picker.Controls.AddRange(@($title,$subtitle,$close,$hint))
+  $picker.Tag=@{buttons=@();sending=$false;route=$route;hint=$hint}
+  $choices=Get-Content -Raw -Encoding UTF8 -LiteralPath (Join-Path $PSScriptRoot 'emotes.json') | ConvertFrom-Json
+  $list=New-Object Windows.Forms.Panel; $list.Bounds=New-Object Drawing.Rectangle 12,82,340,360; $list.AutoScroll=$true
+  $picker.Controls.Add($list)
+  for($index=0;$index -lt $choices.Count;$index++) {
+    $choice=$choices[$index]; $button=New-Object ReplyReactionButton
+    $button.Symbol=$choice.symbol; $button.Text=$choice.label; $button.AccessibleName=$choice.label
+    $button.Font=New-Object Drawing.Font 'Segoe UI',10,([Drawing.FontStyle]::Bold); $button.ForeColor=[Drawing.Color]::FromArgb(33,102,77); $button.Cursor=[Windows.Forms.Cursors]::Hand
+    $button.Bounds=New-Object Drawing.Rectangle (4+160*($index%2)),(4+90*[Math]::Floor($index/2)),152,82
+    $button.TabIndex=$index; $button.Tag=@{picker=$picker;label=($choice.symbol+' '+$choice.label)}
+    $button.Add_Click({param($s,$e)
+      $picker=$s.Tag.picker; if($picker.Tag.sending){return}; $picker.Tag.sending=$true
+      try {
+        $d=$picker.Tag.route
+        $reply=New-ReplyPostit $d.transport $d.id $null $d.form
+        $reply.Tag.input.Text='Reaction : '+$s.Tag.label
+        Send-FreeformPostit $reply
+        if(-not $reply.IsDisposed){$d.form.Tag.editor=$reply; $reply.Show()}
+        $picker.Close()
+      } catch { $picker.Tag.sending=$false; $picker.Tag.hint.Text='Envoi impossible. Réessaie.' }
+    })
+    $list.Controls.Add($button); $picker.Tag.buttons+=@($button)
+  }
+  return $picker
 }
 function Add-QuestionControls($form, $mark, $options, $top) {
   $d = $form.Tag
@@ -264,27 +299,24 @@ function Add-QuestionControls($form, $mark, $options, $top) {
     $button.Text = "$($option.label)"; $button.Font = $fontN
     $button.BackColor = [Drawing.Color]::White; $button.ForeColor = [Drawing.Color]::Black
     $button.UseVisualStyleBackColor = $false; $button.FlatStyle = 'Flat'
+    $button.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185)
+    $button.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(232,240,233)
+    $button.Cursor=[Windows.Forms.Cursors]::Hand; $button.AutoEllipsis=$true
+    $button.TextAlign='MiddleLeft'; $button.Padding=New-Object Windows.Forms.Padding 10,0,10,0
     $button.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),34
     $button.Tag = @{ form=$form; id="$($option.id)"; label="$($option.label)" }; $button.TabStop = $false
     $button.Add_Click({ param($s,$e)
-      $state = $s.Tag.form.Tag
-      if ($state.selection) { return }
-      $state.selection = [pscustomobject]@{ schema='mind.postit.selection.v1'; question_id="$($state.question.id)"; question=$state.questionText; option_id=$s.Tag.id; option=$s.Tag.label; message_id=('postit:' + [IO.Path]::GetFileNameWithoutExtension($state.selectionFile)); clicked_at=[DateTime]::UtcNow.ToString('o') }
-      try {
-        # CreateNew keeps the first selection across two simultaneous overlays.
-        $stream = New-Object IO.FileStream $state.selectionFile,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
-        try { $bytes = [Text.Encoding]::UTF8.GetBytes(($state.selection | ConvertTo-Json -Compress)); $stream.Write($bytes,0,$bytes.Length) } finally { $stream.Dispose() }
-      } catch {
-        try { $state.selection = Get-Content -Raw -Encoding UTF8 -LiteralPath $state.selectionFile | ConvertFrom-Json }
-        catch { $state.selection = $null; $state.status.Text = 'Sauvegarde impossible. Réessaie.'; return }
-      }
-      foreach ($b in $state.buttons) { $b.Enabled = $false }
-      Start-PostitReply $s.Tag.form
-      # The human has answered: dismiss only this question. Its bounded transport
-      # process finishes independently and persists the delivery receipt.
-      $s.Tag.form.Close()
+      Send-QuestionChoice $s.Tag.form $s.Tag.id $s.Tag.label
     })
     $form.Controls.Add($button); $d.buttons += $button; $top += 38
+  }
+  if($mark.question.allow_other -ne $false) {
+    $other=New-Object Windows.Forms.Button; $other.Text='Autre…'; $other.AccessibleName='Autre réponse'; $other.Font=$fontN
+    $other.BackColor=[Drawing.Color]::White; $other.ForeColor=[Drawing.Color]::Black; $other.UseVisualStyleBackColor=$false; $other.FlatStyle='Flat'
+    $other.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185); $other.Cursor=[Windows.Forms.Cursors]::Hand; $other.TextAlign='MiddleLeft'; $other.Padding=New-Object Windows.Forms.Padding 10,0,10,0
+    $other.Bounds=New-Object Drawing.Rectangle 14,$top,($d.W-28),34; $other.Tag=$form; $other.TabStop=$false
+    $other.Add_Click({param($s,$e) Open-QuestionOtherEditor $s.Tag})
+    $d.otherButton=$other; $d.buttons+=$other; $form.Controls.Add($other); $top+=38
   }
   $status = New-Object System.Windows.Forms.Label; $status.Font = $fontF
   $status.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),28
@@ -299,6 +331,43 @@ function Add-QuestionControls($form, $mark, $options, $top) {
     foreach ($b in $d.buttons) { $b.Enabled = $false }
     $status.Text = 'Choix conservé : ' + $d.selection.option; $retry.Visible = $true
   }
+}
+function Send-QuestionChoice($form, [string]$OptionId, [string]$OptionText, $Editor=$null) {
+  $state=$form.Tag
+  if($state.selection){return}
+  $state.selection=[pscustomobject]@{schema='mind.postit.selection.v1';question_id="$($state.question.id)";question=$state.questionText;option_id=$OptionId;option=$OptionText;message_id=('postit:'+[IO.Path]::GetFileNameWithoutExtension($state.selectionFile));clicked_at=[DateTime]::UtcNow.ToString('o')}
+  try {
+    # The same CreateNew slot arbitrates fixed options and free text.
+    $stream=New-Object IO.FileStream $state.selectionFile,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
+    try{$bytes=[Text.Encoding]::UTF8.GetBytes(($state.selection|ConvertTo-Json -Compress));$stream.Write($bytes,0,$bytes.Length)}finally{$stream.Dispose()}
+  } catch {
+    try{$state.selection=Get-Content -Raw -Encoding UTF8 -LiteralPath $state.selectionFile|ConvertFrom-Json;if($state.selection.question_id -ne $state.question.id -or $state.selection.question -ne $state.questionText){throw 'Question identity mismatch'}}
+    catch{$state.selection=$null;$state.status.Text='Sauvegarde impossible. Réessaie.';if($Editor){$Editor.Tag.status.Text=$state.status.Text};return}
+  }
+  foreach($button in $state.buttons){$button.Enabled=$false}
+  Start-PostitReply $form
+  if($Editor){$Editor.Tag.pending=$true;$Editor.Close()}
+  if($state.editor -and -not $state.editor.IsDisposed){$state.editor.Close()}
+  $form.Close()
+}
+function Show-QuestionOtherEditor($editor){$editor.Show()}
+function Open-QuestionOtherEditor($form) {
+  $state=$form.Tag
+  if($state.selection -or ($state.editor -and -not $state.editor.IsDisposed)){return}
+  $editor=New-ReplyPostit $state.transport "$($state.question.id)" $null $form
+  $editor.Text='Autre réponse';$editor.Tag.questionForm=$form
+  $editor.Tag.status.Text='Ta réponse libre à cette question. Aucune capture jointe.'+"`n"+'Entrée : envoyer · Maj+Entrée : ligne · Échap : annuler'
+  $state.editor=$editor
+  Show-QuestionOtherEditor $editor
+}
+function Send-QuestionOther($editor) {
+  $state=$editor.Tag.questionForm.Tag
+  if($state.selection -or $editor.Tag.pending){return}
+  $text=$editor.Tag.input.Text.Trim()
+  if(-not $text){[void]$editor.Tag.input.Focus();return}
+  $complete="Réponse au post-it [$($state.question.id)]`nQuestion : $($state.questionText)`nChoix [other] : $text"
+  if($complete.Length -gt 4000){$editor.Tag.status.Text='Réponse trop longue avec la question (4000 caractères maximum).';return}
+  Send-QuestionChoice $editor.Tag.questionForm 'other' $text $editor
 }
 function Start-PostitReply($form) {
   $d=$form.Tag

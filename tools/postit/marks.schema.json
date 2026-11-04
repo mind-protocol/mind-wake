@@ -108,6 +108,11 @@
                   "choice"
                 ]
               },
+              "allow_other": {
+                "type": "boolean",
+                "default": true,
+                "description": "Offer Other with a free-text answer; opening or canceling the editor sends nothing."
+              },
               "options": {
                 "type": "array",
                 "minItems": 2,

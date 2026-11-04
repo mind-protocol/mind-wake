@@ -5,8 +5,12 @@ import { projectWakesCard } from "./project-wakes.js";
 import { initProjects } from "./projects.js";
 import { mountWakePreview } from "./wake-preview.js";
 import { initWorkspaceSync } from "./workspace-sync.js";
+import { initElevenLabs } from "./elevenlabs.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
+import { bindChatImages } from "./chat-images.js";
+import { voiceInput, audioBase64 } from "./voice-input.js";
+import { marcoVoice } from "./marco-voice.js";
 import { mountSecondThread } from "./second-thread.js";
 import { mountForks } from "./forks.js";
 import { mountCoach } from "./coach.js";
@@ -33,6 +37,7 @@ import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } f
 
 interface TauriGlobal {
   readonly core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
+  readonly event?: {listen:(name:string,callback:()=>void)=>Promise<unknown>};
 }
 
 interface CliRun {
@@ -219,6 +224,8 @@ async function refresh(): Promise<void> {
   try {
     const envelope = await invoke("wake_status");
     lastRead = { ok: true, fetchedAt: Date.now(), envelope };
+    const voiceProfile = envelope.data?.["profile"] as {state?:string;emergencyStopLocked?:boolean}|undefined;
+    if(dictation?.active() && (voiceProfile?.emergencyStopLocked || ["paused","stopped","disabled"].includes(voiceProfile?.state??""))) dictation.stop(true);
     renderWakePreview((envelope.data as { wakePreview?: unknown } | undefined)?.wakePreview);
     const input = (envelope.data as { keyboardContext?: { state?: string } } | undefined)
       ?.keyboardContext;
@@ -243,7 +250,7 @@ async function refresh(): Promise<void> {
   window.dispatchEvent(new Event("wake-interface-ready"));
   if (tick % CHART_EVERY === 0) await refreshChart();
   if (tick % CHART_EVERY === 0) await refreshThreads();
-  if (tick % CHART_EVERY === 0 || chatOpen) await refreshChat();
+  if (tick % CHART_EVERY === 0 || chatOpen || dictation.active()) await refreshChat();
   tick += 1;
 }
 
@@ -586,6 +593,7 @@ async function refreshChat(): Promise<void> {
     byId("chat-note").textContent = tr("Messages indisponibles : format inattendu.");
     return;
   }
+  marcoReader.observe(model.items);
   const fresh = model.agentUpdatedAt !== null && model.agentUpdatedAt > chatSeenAt();
   byId("chat-new").hidden = chatOpen || !fresh;
   if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
@@ -730,7 +738,11 @@ async function refreshRecipient():Promise<void> {
       option.textContent=recipientConfigured ? "Auroracle" : tr("Auroracle · non raccordé");
     }
     if(byId<HTMLSelectElement>("chat-recipient").value==="auroracle")byId("chat-recipient-status").textContent=String(status.data?.["detail"] ?? tr("Route indisponible."));
-    else byId("chat-recipient-status").textContent="";
+    else if(byId<HTMLSelectElement>("chat-recipient").value==="all") {
+      const all=await invoke("broadcast_status");
+      const recipients=(all.data?.["recipients"] ?? []) as {label:string;reason?:string}[];
+      byId("chat-recipient-status").textContent=recipients.map(r=>r.label+(r.reason?" · non joignable":"")).join(", ")+". "+String(all.data?.["scope"]??"");
+    } else byId("chat-recipient-status").textContent="";
     if(recipientConfigured && Date.now()-recipientPolledAt>10_000) {
       recipientPolledAt=Date.now();
       const result=await invoke("recipient_poll");
@@ -744,21 +756,120 @@ async function refreshRecipient():Promise<void> {
 }
 const recipientStorage=(()=>{try{return localStorage;}catch{return undefined;}})();
 const saveChatDraft=bindChatDraft(byId<HTMLTextAreaElement>('chat-text'),byId<HTMLSelectElement>('chat-recipient'),recipientStorage);
+let voiceStream:MediaStream|undefined;
+let finishVoiceReading:(()=>void)|undefined;
+const marcoReader=marcoVoice({
+  read:text=>new Promise<void>((resolve,reject)=>{
+    if(!('speechSynthesis' in window)){reject(Error('Lecture vocale indisponible.'));return;}
+    const spoken=plainText(text).replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,'');
+    const utterance=new SpeechSynthesisUtterance(spoken);utterance.lang='fr-FR';
+    const voice=speechSynthesis.getVoices().find(value=>value.localService&&value.lang.startsWith('fr'));
+    if(voice)utterance.voice=voice;
+    const finish=():void=>{finishVoiceReading=undefined;resolve();};
+    finishVoiceReading=finish;utterance.onend=finish;utterance.onerror=finish;
+    speechSynthesis.speak(utterance);
+  }),
+  cancel:()=>{if('speechSynthesis' in window)speechSynthesis.cancel();finishVoiceReading?.();},
+  speaking:value=>{voiceStream?.getAudioTracks().forEach(track=>{track.enabled=!value;});},
+  error:note=>{byId('chat-voice-status').textContent=note;},
+});
+const dictation = voiceInput({
+  microphone:async()=>{
+    if(!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')throw Error('Microphone indisponible dans cette fenêtre.');
+    voiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
+    const acquired=voiceStream;
+    return {stop:()=>{acquired.getTracks().forEach(track=>track.stop());if(voiceStream===acquired)voiceStream=undefined;}};
+  },
+  recorder:()=>new MediaRecorder(voiceStream!),
+  snapshot:async()=>{
+    const envelope=await invoke('voice_input',{action:'snapshot'});
+    if(envelope.ok!==true)throw Error(errorText(envelope));
+    return JSON.stringify(envelope.data);
+  },
+  transcribe:async(audio)=>{
+    const envelope=await invoke('voice_input',{action:'transcribe',audio:await audioBase64(audio)});
+    if(envelope.ok!==true)throw Error(errorText(envelope));
+    return String(envelope.data?.['text']??'');
+  },
+  send:async(text,images)=>{
+    if(!text.trim())return;
+    if(!tauri)throw Error('Dictée disponible dans l’app desktop.');
+    let suffix='';
+    for(const [index,raw] of images.entries()){
+      const label=index===0?'Début':index===images.length-1?'Fin':'Écran';
+      const shot=JSON.parse(raw) as {base64:string;capturedAt:string};
+      const bytes=Uint8Array.from(atob(shot.base64),char=>char.charCodeAt(0));
+      const imported=await tauri.core.invoke('conversation_image_import',{name:'screen.jpeg',bytes:Array.from(bytes)}) as {reference:string};
+      if(dictation.cancelled())return;
+      suffix+=`\n\n![${label} de la dictée · ${shot.capturedAt}](<${imported.reference}>)`;
+    }
+    const size=4000-suffix.length-20;
+    const transcript=text.trim();
+    for(let index=0;index<transcript.length;index+=size){
+      if(dictation.cancelled())return;
+      const body=`[Dictée vocale]\n${transcript.slice(index,index+size)}${suffix}`;
+      const key=`ui-voice-${crypto.randomUUID()}`;
+      await transmitChat(key,body,outgoingBubble(key,body),false);
+    }
+  },
+  state:(recording,note)=>{
+    marcoReader.setEnabled(recording);
+    const button=byId<HTMLButtonElement>('chat-voice');button.setAttribute('aria-pressed',String(recording));
+    button.textContent=recording?'⏹ Stop voice':'🎙 Voice';byId('chat-voice-status').textContent=note;
+  },
+});
+byId('chat-voice').addEventListener('click',()=>{if(dictation.active())dictation.stop();else void dictation.start();});
+void tauri?.event?.listen('voice-stop',()=>dictation.stop(true));
+window.addEventListener('beforeunload',()=>dictation.stop(true));
+const chatImages=bindChatImages({
+  zone:byId('general-conversation'),field:byId<HTMLTextAreaElement>('chat-text'),
+  preview:byId('chat-image-preview'),picker:byId<HTMLInputElement>('chat-image-files'),status:byId('chat-status'),
+  invoke:(command,args)=>{if(!tauri)return Promise.reject(Error(tr('Images locales disponibles dans l’app')));return tauri.core.invoke(command,args);},
+  ...(recipientStorage ? {storage:recipientStorage} : {}),
+});
 window.addEventListener('beforeunload',saveChatDraft);
 const sendRemoteRecipient=recipientSender(invoke,()=>`ui-${crypto.randomUUID()}`,recipientStorage);
+let broadcastBusy=false;
+let broadcastPending: {key:string;text:string}|null=null;
+try {broadcastPending=JSON.parse(recipientStorage?.getItem('mind-wake.broadcast-pending')??'null');}catch{}
 async function sendToAgent(): Promise<void> {
+  if(chatImages.busy()) {byId('chat-status').textContent=tr('Import des images en cours…');return;}
+  if(chatImages.text().length>4000) {byId('chat-status').textContent=tr('Le texte et les images dépassent la taille du message. Raccourcir le texte.');return;}
+  if(byId<HTMLSelectElement>("chat-recipient").value==="all") {
+    const field=byId<HTMLTextAreaElement>("chat-text"),draft=field.value,text=chatImages.text();
+    if(!text.trim()||broadcastBusy)return;
+    broadcastBusy=true;
+    if(broadcastPending?.text!==text)broadcastPending={key:`ui-all-${crypto.randomUUID()}`,text};
+    try {
+      recipientStorage?.setItem('mind-wake.broadcast-pending',JSON.stringify(broadcastPending));
+      const result=await invoke("broadcast_send",{idempotencyKey:broadcastPending.key,text});
+      if(result.ok!==true)throw Error(errorText(result));
+      const recipients=(result.data?.["recipients"]??[]) as {label:string;state:string;detail:string}[];
+      const queued=recipients.filter(r=>r.state==="queued");
+      const missed=recipients.filter(r=>r.state!=="queued");
+      byId("chat-status").textContent=`${queued.length} en file · lecture non attestée`+(missed.length?` ; ${missed.length} non joints : ${missed.map(r=>r.label).join(", ")}`:"");
+      byId("broadcast-receipt").hidden=false;
+      byId("broadcast-receipt-details").textContent=recipients.map(r=>`${r.label} : ${r.detail}`).join("\n");
+      if(recipients.every(r=>r.state!=="failed")) {if(field.value===draft&&chatImages.text()===text){field.value="";chatImages.clear();}broadcastPending=null;recipientStorage?.removeItem('mind-wake.broadcast-pending');}
+      saveChatDraft();void refreshChat();
+    } catch(error){byId("chat-status").textContent=message(error)+" · brouillon conservé";}
+    finally{broadcastBusy=false;}
+    return;
+  }
   if (byId<HTMLSelectElement>("chat-recipient").value === "auroracle") {
+    if(chatImages.count()) {byId('chat-status').textContent=tr('Les images locales peuvent être envoyées aux agents de cette installation. Choisir Mon agent ou Tous.');return;}
     try {byId("chat-status").textContent=await sendRemoteRecipient(byId<HTMLTextAreaElement>("chat-text"));void refreshChat();}
     catch(error){byId("chat-status").textContent=message(error);}
     saveChatDraft();
     return;
   }
   const field = byId<HTMLTextAreaElement>("chat-text");
-  const text = field.value.trim();
+  const text = chatImages.text();
   if (text === "") return;
   const key = `ui-${crypto.randomUUID()}`;
   const bubble = outgoingBubble(key, text);
   field.value = "";
+  chatImages.clear();
   saveChatDraft();
   field.focus();
   await transmitChat(key, text, bubble);
@@ -879,7 +990,7 @@ byId("mode-always").addEventListener(
   () => void control("wake_always_on", tr("Always-on activé.")),
 );
 byId("mode-wake").addEventListener("click", () => void control("wake_now", tr("Réveil demandé.")));
-byId("pause").addEventListener("click", () => void control("wake_pause", tr("Pause appliquée.")));
+byId("pause").addEventListener("click", () => {dictation.stop(true);void control("wake_pause", tr("Pause appliquée."));});
 byId("mode-off").addEventListener("click", () => {
   // Deux clics rapprochés : l'arrêt d'urgence ne se lève que par une action explicite
   // ultérieure de l'humain, une confirmation évite qu'un clic égaré l'impose.
@@ -1096,9 +1207,12 @@ void showAppVersion();
 byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
 if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
+if (tauri) initElevenLabs((command, args) => tauri.core.invoke(command, args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
-if (tauri) initDocuments((command, args) => tauri.core.invoke(command, args));
+if (tauri) {
+  initDocuments((command, args) => tauri.core.invoke(command, args));
+}
 byId("tab-authorizations").addEventListener("click", () => { selectTab("authorizations"); });
 
 byId("tab-projects").addEventListener("click",()=>selectTab("projects"));

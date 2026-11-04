@@ -134,6 +134,8 @@ export async function startLocal(manifestFile, role, options = {}) {
     if (!(await reachable(m.pipe))) throw Error("Hub existant indisponible ; aucun hub lancé.");
   } else await ensureHub(m);
   const env = localRuntimeEnv(m, role, options);
+  const { ensureTelegram } = await import("./telegram-start.mjs");
+  await ensureTelegram(m);
   if (role === "desktop") {
     // Restart only this exact desktop executable. No daemon is stopped.
     const script =
@@ -157,7 +159,8 @@ export async function startLocal(manifestFile, role, options = {}) {
         cwd: env.MIND_WAKE_REPO_DIR,
         detached: true,
         windowsHide: false,
-        stdio: "ignore",
+        // The supervisor already owns local logs; retain native panic diagnostics.
+        stdio: options.supervised ? ["ignore", "inherit", "inherit"] : "ignore",
       });
       child.once("error", reject);
       child.once("spawn", () => {

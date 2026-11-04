@@ -1,6 +1,6 @@
 use std::path::{Component, Path, PathBuf};
 
-fn root(scope: &str) -> Result<PathBuf, String> {
+pub(super) fn root(scope: &str) -> Result<PathBuf, String> {
     let path = match scope {
         "project" => std::env::var_os("MIND_WAKE_REPO_DIR").map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")),
@@ -34,6 +34,30 @@ fn local_app(scope: &str, relative: &str, enabled: Option<&str>) -> Option<serde
     if enabled == Some("1") && scope == "agent" && relative == "artifacts/creations/atelier-dj/index.html" {
         Some(serde_json::json!({"id":"atelier-dj","url":"http://127.0.0.1:8941/"}))
     } else { None }
+}
+
+/// Import bytes explicitly selected/dropped by the human. Never accepts a source path.
+#[tauri::command]
+pub async fn conversation_image_import(name: String, bytes: Vec<u8>) -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let extension = Path::new(&name).extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+        let extension = if extension == "jpg" { "jpeg" } else { extension.as_str() };
+        // Existing bounded raster validation rejects active formats and oversized dimensions.
+        let data_url = crate::conversation_images::raster_data_url(&bytes, extension)?;
+        let base = root("agent")?;
+        let directory = base.join("artifacts/conversation-images");
+        std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+        let directory = directory.canonicalize().map_err(|e| e.to_string())?;
+        if !directory.starts_with(&base) { return Err("Dossier d’images hors de l’espace agent".into()); }
+        static SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?.as_nanos();
+        let sequence = SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let filename = format!("image-{stamp}-{}-{sequence}.{extension}", std::process::id());
+        use std::io::Write;
+        let mut output = std::fs::OpenOptions::new().write(true).create_new(true).open(directory.join(&filename)).map_err(|e| e.to_string())?;
+        output.write_all(&bytes).map_err(|e| e.to_string())?;
+        Ok(serde_json::json!({"reference":format!("artifacts/conversation-images/{filename}"),"dataUrl":data_url}))
+    }).await.map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

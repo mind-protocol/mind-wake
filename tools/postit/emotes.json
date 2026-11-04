@@ -1,0 +1,152 @@
+[
+  {
+    "id": "emote-01",
+    "symbol": "👍",
+    "label": "J'aime"
+  },
+  {
+    "id": "emote-02",
+    "symbol": "✅",
+    "label": "Gardons"
+  },
+  {
+    "id": "emote-03",
+    "symbol": "💥",
+    "label": "Très fort"
+  },
+  {
+    "id": "emote-04",
+    "symbol": "💡",
+    "label": "Clair"
+  },
+  {
+    "id": "emote-05",
+    "symbol": "🧰",
+    "label": "Utile"
+  },
+  {
+    "id": "emote-06",
+    "symbol": "😮",
+    "label": "Surprenant"
+  },
+  {
+    "id": "emote-07",
+    "symbol": "🥹",
+    "label": "Émouvant"
+  },
+  {
+    "id": "emote-08",
+    "symbol": "😂",
+    "label": "Drôle"
+  },
+  {
+    "id": "emote-09",
+    "symbol": "✨",
+    "label": "Inspirant"
+  },
+  {
+    "id": "emote-10",
+    "symbol": "🚀",
+    "label": "Continue"
+  },
+  {
+    "id": "emote-11",
+    "symbol": "🤔",
+    "label": "À creuser"
+  },
+  {
+    "id": "emote-12",
+    "symbol": "🔍",
+    "label": "Précise"
+  },
+  {
+    "id": "emote-13",
+    "symbol": "🎬",
+    "label": "Montre un exemple"
+  },
+  {
+    "id": "emote-14",
+    "symbol": "⚖️",
+    "label": "Compare"
+  },
+  {
+    "id": "emote-15",
+    "symbol": "🧪",
+    "label": "À tester"
+  },
+  {
+    "id": "emote-16",
+    "symbol": "🌱",
+    "label": "Développe"
+  },
+  {
+    "id": "emote-17",
+    "symbol": "✂️",
+    "label": "Raccourcis"
+  },
+  {
+    "id": "emote-18",
+    "symbol": "🐢",
+    "label": "Ralentis"
+  },
+  {
+    "id": "emote-19",
+    "symbol": "🌫️",
+    "label": "Trop flou"
+  },
+  {
+    "id": "emote-20",
+    "symbol": "📦",
+    "label": "Trop chargé"
+  },
+  {
+    "id": "emote-21",
+    "symbol": "🔎",
+    "label": "Illisible"
+  },
+  {
+    "id": "emote-22",
+    "symbol": "👀",
+    "label": "Je ne vois pas"
+  },
+  {
+    "id": "emote-23",
+    "symbol": "🐛",
+    "label": "Bug"
+  },
+  {
+    "id": "emote-24",
+    "symbol": "🙅",
+    "label": "Pas convaincu"
+  },
+  {
+    "id": "emote-25",
+    "symbol": "🧭",
+    "label": "Autre direction"
+  },
+  {
+    "id": "emote-26",
+    "symbol": "↩️",
+    "label": "Revenir"
+  },
+  {
+    "id": "emote-27",
+    "symbol": "❓",
+    "label": "Question"
+  },
+  {
+    "id": "emote-28",
+    "symbol": "🎯",
+    "label": "Priorité"
+  },
+  {
+    "id": "emote-29",
+    "symbol": "💭",
+    "label": "J'y réfléchis"
+  },
+  {
+    "id": "emote-30",
+    "symbol": "☑️",
+    "label": "Validé"
+  }
+]

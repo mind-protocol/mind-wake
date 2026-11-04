@@ -942,6 +942,29 @@ describe("voie abonnement expérimentale (ADR-004) : matrice de refus", () => {
     expect(decideLaunch(store(guard).policies, PROFILE, subFacts()).verdict).toBe("allow");
   });
 
+  it("provider-only leaves admission to the CLI, including a full or unavailable quota gauge", () => {
+    const policies = store({ ...guard, providerLimitsOnly: true, overshootBoundBasisPoints: null }).policies;
+    for (const quotaSnapshots of [[snapshot(10_000)], []]) {
+      expect(decideLaunch(policies, PROFILE, subFacts({ quotaSnapshots })).verdict).toBe("allow");
+    }
+    expect(decideLaunch(policies, PROFILE, subFacts({ backoffExpired: false }))).toMatchObject({
+      verdict: "deny", reason: "backoff_active",
+    });
+    expect(decideLaunch(policies, PROFILE, subFacts({
+      profile: { state: "paused", emergencyStopLocked: false },
+    }))).toMatchObject({ verdict: "deny", reason: "paused" });
+  });
+
+  it("provider-only does not interrupt an accepted turn because a gauge reaches 100 percent", () => {
+    const s = store({ ...guard, providerLimitsOnly: true, overshootBoundBasisPoints: null });
+    const revision = s.policies.listRevisions(PROFILE).at(-1)!;
+    expect(assessActiveSession(s.policies, RUNNING, {
+      profileId: PROFILE, sessionId: SESSION, policyRevisionId: revision.id,
+    }, { ...CHECKS, onSubscription: true, quotaSnapshots: [snapshot(10_000)] })).toMatchObject({
+      interruptSession: false,
+    });
+  });
+
   const matrix: readonly [string, unknown, Partial<LaunchFacts>, string, string][] = [
     ["voie absente", undefined, {}, "permission_not_granted", "subscription.not_enabled"],
     [

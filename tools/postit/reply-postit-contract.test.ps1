@@ -12,7 +12,11 @@ try {
  }
  $parent=New-Object Windows.Forms.Form
  $form=New-ReplyPostit $transport 'own_fixture' $null $parent
+ if($form.Tag.send.Enabled){throw 'Empty message can be sent'}
+ $form.Tag.input.Text='   '
+ if($form.Tag.send.Enabled){throw 'Whitespace message can be sent'}
  $form.Tag.input.Text="L'ete, oui !"
+ if(-not $form.Tag.send.Enabled -or $form.Tag.counter.Text -notmatch '^12 /'){throw 'Input feedback did not update'}
  Send-FreeformPostit $form
  if(-not $form.IsDisposed -or -not $parent.IsDisposed){throw 'Send did not close exactly the reply and its parent'}
  $saved=Get-Content -Raw -LiteralPath $form.Tag.file | ConvertFrom-Json

@@ -722,6 +722,10 @@ main>#view-documents { gap:10px; background:#f8faf6; padding:20px; overflow:auto
 #chat-presence>span[aria-hidden] { display:inline-block; animation:chat-presence-pulse 1.2s ease-in-out infinite; }
 @keyframes chat-presence-pulse { 0%,100% { opacity:.35; transform:translateY(0); } 50% { opacity:1; transform:translateY(-2px); } }
 #chat-form .chat-actions { display:flex; flex-direction:column; align-self:stretch; gap:7px; }
+#chat-voice[aria-pressed="true"] { background:#a82936; color:white; border-color:#a82936; }
+#chat-voice-status { grid-column:1 / -1; margin:0; }
+#chat-form .chat-compose { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:stretch; }
+#chat-recipient-status,#broadcast-receipt,#chat-form .chat-image-picker,#chat-image-preview { grid-column:1 / -1; }
 #chat-bump { background:#f5cc4b; color:#3e3513; border-color:#dab034; }
 #chat-bump:hover:not(:disabled) { background:#ffdb68; }
 @media(prefers-reduced-motion:reduce) { #chat-presence>span[aria-hidden] { animation:none; } }
@@ -944,3 +948,17 @@ main > #view-chat { display:grid; grid-template-rows:auto minmax(0,1fr); overflo
   #coach-messages { padding:16px; }
   #coach-form { padding:12px 16px; }
 }
+#elevenlabs-player:not([hidden]) { position:fixed; right:20px; bottom:18px; z-index:40; display:flex; flex-wrap:wrap; align-items:center; gap:10px; max-width:min(600px,calc(100vw - 40px)); padding:12px 16px; border:1px solid var(--line); border-radius:14px; background:var(--surface); box-shadow:0 8px 30px #0002; }
+#elevenlabs-playing { flex:1 1 100%; max-height:4.5em; overflow:auto; font-size:13px; white-space:pre-wrap; }
+#elevenlabs-audio { max-width:100%; height:36px; }
+#elevenlabs-form select, #elevenlabs-test { width:100%; }
+/* Dropped images join the draft; they never send a message on their own. */
+.chat-image-drop { outline: 3px dashed var(--accent, #18765b); outline-offset: -5px; }
+.chat-image-picker { font-size: .85rem; display: block; margin-top: .4rem; }
+.chat-image-picker input { display: block; max-width: 100%; margin-top: .25rem; }
+.chat-image-preview { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: .6rem; }
+.chat-image-preview[hidden] { display: none; }
+.chat-image-preview figure { margin: 0; width: 105px; }
+.chat-image-preview img { width: 105px; height: 78px; object-fit: contain; border-radius: 5px; background: #e8eeeb; }
+.chat-image-preview figcaption { font-size: .75rem; overflow-wrap: anywhere; }
+.chat-image-preview button { font-size: .75rem; padding: .2rem .4rem; }

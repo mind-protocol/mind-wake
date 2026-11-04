@@ -382,6 +382,9 @@ function subscriptionLaunchDenial(
 ): PolicyDecision | null {
   const guard = enabledGuard(groups);
   if (guard === null) return deny(id, "permission_not_granted", "subscription.not_enabled");
+  // In provider-only mode the official CLI decides whether a turn is accepted.
+  // A percentage snapshot is informational, not a local spending limit.
+  if (guard.providerLimitsOnly === true) return null;
   const overshoot = guard.overshootBoundBasisPoints;
   if (
     guard.providerLimitsOnly !== true &&
@@ -421,6 +424,7 @@ function quotaDenial(
   phase: "start" | "stop",
   estimates?: readonly PacingEstimate[],
 ): PolicyDecision | null {
+  if (guard.providerLimitsOnly === true) return null;
   if (snapshots === undefined || snapshots.length === 0) {
     return deny(id, "budget_unknown", "subscription.quota_unknown");
   }

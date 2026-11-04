@@ -1,0 +1,1 @@
+{"identifier":"paint","description":"Surcouche de dessin locale sans accès fichier ni commandes du panneau.","windows":["paint"],"permissions":["core:event:allow-listen","core:event:allow-unlisten"]}

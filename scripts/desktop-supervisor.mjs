@@ -93,6 +93,14 @@ export function startScheduled(m) {
     fs.closeSync(log);
   }
 }
+/** A process can exit between spawn resolving and the owner subscribing. */
+export function waitForDesktopExit(child) {
+  if (child.exitCode != null || child.signalCode != null)
+    return Promise.resolve({ code: child.exitCode, signal: child.signalCode });
+  return new Promise((resolve) =>
+    child.once("exit", (code, signal) => resolve({ code, signal })),
+  );
+}
 export async function supervise(manifestFile, startup, launch = startLocal) {
   const log = (message) =>
     fs.appendFileSync(
@@ -117,9 +125,8 @@ export async function supervise(manifestFile, startup, launch = startLocal) {
     let delay;
     try {
       const child = await launch(manifestFile, "desktop", { restart: false, supervised: true });
-      const { code, signal } = await new Promise((resolve) =>
-        child.once("exit", (code, signal) => resolve({ code, signal })),
-      );
+      log(`desktop started (${child.pid ?? "unknown"})`);
+      const { code, signal } = await waitForDesktopExit(child);
       if (Date.now() - started > 60000) failures = 0;
       delay = restartDelay(code, signal, failures++);
       if (delay === null) return;

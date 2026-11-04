@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title data-i18n="Que fait mon agent ? — MIND Wake">Que fait mon agent ? — MIND Wake</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="series-assembly.css" />
+    <link rel="stylesheet" href="series-director-notes.css" />
     <link rel="stylesheet" href="loading.css" />
     <script defer src="loading.js"></script>
     <script type="module" src="build/i18n-dom.js"></script>
+    <script type="module" src="build/series-assembly-boot.js"></script>
     <script type="module" src="build/main.js"></script>
   </head>
   <body>
@@ -26,6 +29,11 @@
       <footer class="wake-loading-footer"><span data-i18n="La curiosité continue."><b aria-hidden="true"></b> La curiosité continue.</span><span data-i18n="EXPLORER · CRÉER · REPRENDRE">EXPLORER · CRÉER · REPRENDRE</span></footer>
     </section>
     <main>
+      <aside id="elevenlabs-player" hidden aria-label="Voix de l’agent">
+        <span id="elevenlabs-playing" role="status"></span>
+        <audio id="elevenlabs-audio" controls preload="none"></audio>
+        <button id="elevenlabs-skip" type="button">Arrêter / passer</button>
+      </aside>
       <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span>
       <div class="app-controls" role="group" aria-label="Application">
         <button id="app-restart" type="button" data-i18n="Redémarrer l’app">Redémarrer l’app</button>
@@ -150,6 +158,25 @@
       </aside>
 
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <section aria-labelledby="h-elevenlabs">
+          <h2 id="h-elevenlabs">Voix · ElevenLabs</h2>
+          <form id="elevenlabs-form" class="workspace-sync-form">
+            <label for="elevenlabs-key">Clé API ElevenLabs</label>
+            <input id="elevenlabs-key" type="password" autocomplete="new-password" placeholder="Nouvelle clé (vide pour conserver la clé enregistrée)" />
+            <p id="elevenlabs-key-state" class="hint"></p>
+            <button id="elevenlabs-load" type="button">Charger les voix du compte</button>
+            <label for="elevenlabs-voice">Voix par défaut</label>
+            <select id="elevenlabs-voice"><option value="">Choisir une voix</option></select>
+            <label><input id="elevenlabs-enabled" type="checkbox" /> Autoriser la génération vocale avec les crédits de mon compte ElevenLabs</label>
+            <label><input id="elevenlabs-autoplay" type="checkbox" checked /> Lire automatiquement les voix reçues dans le desktop</label>
+            <button type="submit">Enregistrer</button>
+          </form>
+          <p class="hint">Le texte est transmis à ElevenLabs. La clé reste dans les données locales du profil. Les MP3 sont conservés localement.</p>
+          <label for="elevenlabs-test">Texte à écouter</label>
+          <textarea id="elevenlabs-test" rows="2" maxlength="5000">Bonjour ! Je suis là, et ma voix fonctionne.</textarea>
+          <button id="elevenlabs-generate" type="button">Générer et écouter</button>
+          <p id="elevenlabs-feedback" role="status"></p>
+        </section>
         <h1 data-i18n="Réglages">Réglages</h1>
         <section aria-labelledby="h-language">
           <h2 id="h-language" data-i18n="Langue">Langue</h2>
@@ -311,10 +338,13 @@
         <form id="chat-form">
             <label for="chat-recipient" data-i18n="Destinataire">Destinataire</label>
             <select id="chat-recipient" aria-describedby="chat-recipient-status">
-              <option value="owner" data-i18n="Mon agent">Mon agent</option>
+              <option value="all">Tous · agents actifs</option>
+              <option value="owner" selected data-i18n="Mon agent">Mon agent</option>
               <option value="auroracle" hidden disabled data-i18n="Correspondant non configuré">Correspondant non configuré</option>
             </select>
             <p id="chat-recipient-status" class="hint" role="status"></p>
+            <details id="broadcast-receipt" hidden><summary>Détail des destinataires</summary><pre id="broadcast-receipt-details"></pre></details>
+          <div class="chat-compose">
           <textarea
             id="chat-text"
             rows="3"
@@ -323,7 +353,11 @@
             aria-label="Message à ton agent"
             placeholder="Écris à ton agent…"
            data-i18n-aria-label="Message à ton agent" data-i18n-placeholder="Écris à ton agent…"></textarea>
-          <div class="chat-actions"><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
+          <div class="chat-actions"><button id="chat-voice" type="button" aria-pressed="false" title="Dicter à mon agent : transcription toutes les 20 secondes avec capture de l’écran au début">🎙 Voice</button><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
+          </div>
+          <p id="chat-voice-status" class="hint" role="status"></p>
+          <label class="chat-image-picker">Joindre des images<input id="chat-image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label>
+          <div id="chat-image-preview" class="chat-image-preview" aria-label="Images du brouillon" hidden></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>
         </div>

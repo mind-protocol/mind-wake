@@ -22,6 +22,7 @@ import { registerWakeManagerTools } from "./wake-manager-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
 import { registerRedditTools } from "./reddit-tools.js";
 import { registerColonyTools } from "./colony-tools.js";
+import { registerElevenLabsTools } from "./elevenlabs-tools.js";
 import { registerSocietyTools } from "./1f916-tools.js";
 import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
@@ -536,6 +537,7 @@ registerWakeManagerTools(server, process.env);
 registerRepoTools(server, process.env);
 registerRedditTools(server, process.env);
 registerColonyTools(server, process.env);
+registerElevenLabsTools(server, process.env);
 registerSocietyTools(server, process.env);
 registerPeerTaskLocalTools(server, process.env, async () => {
   if (hub === null) throw Error("Authenticated local hub required for peer decisions");

@@ -33,6 +33,7 @@ interface State {
   eligible_until: number;
   claim: string | null;
   claimed_at: number | null;
+  reminded: number;
 }
 function open(dataDir: string, create = false): Database.Database | null {
   const file = path.join(dataDir, "duo-runtime.sqlite");
@@ -43,6 +44,10 @@ function open(dataDir: string, create = false): Database.Database | null {
     db.exec(
       "CREATE TABLE IF NOT EXISTS duo (id INTEGER PRIMARY KEY CHECK(id=1), fingerprint TEXT NOT NULL, since REAL NOT NULL, last_sent REAL NOT NULL, eligible_until REAL NOT NULL, claim TEXT, claimed_at REAL)",
     );
+  // Older live profiles predate the one-reminder-per-stall acknowledgement.
+  const columns = db.prepare("PRAGMA table_info(duo)").all() as { name: string }[];
+  if (columns.length && !columns.some((column) => column.name === "reminded"))
+    db.exec("ALTER TABLE duo ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0");
   return db;
 }
 /** Daemon-owned monitor; no screenshots, no model sessions, no historical human messages. */
@@ -85,7 +90,7 @@ export class DuoMonitor {
           fingerprint ??= row?.fingerprint ?? "none";
           if (!row || row.fingerprint !== fingerprint)
             this.db
-              .prepare("INSERT OR REPLACE INTO duo VALUES(1,?,?,?, ?,NULL,NULL)")
+              .prepare("INSERT OR REPLACE INTO duo (id,fingerprint,since,last_sent,eligible_until,claim,claimed_at,reminded) VALUES(1,?,?,?, ?,NULL,NULL,0)")
               .run(fingerprint, now, now, now + 2000);
           else this.db.prepare("UPDATE duo SET eligible_until=? WHERE id=1").run(now + 2000);
         })
@@ -112,6 +117,7 @@ export function claimDuoReminder(dataDir: string, claim: string, now = Date.now(
         const row = db.prepare("SELECT * FROM duo WHERE id=1").get() as State | undefined;
         if (
           !row ||
+          row.reminded === 1 ||
           row.eligible_until < now ||
           now - row.since < 30_000 ||
           now - row.last_sent < 30_000 ||
@@ -137,8 +143,8 @@ export function finishDuoReminder(
   if (!db) return;
   try {
     db.prepare(
-      "UPDATE duo SET last_sent=CASE WHEN ? THEN ? ELSE last_sent END,claim=NULL,claimed_at=NULL WHERE claim=?",
-    ).run(accepted ? 1 : 0, now, claim);
+      "UPDATE duo SET last_sent=CASE WHEN ? THEN ? ELSE last_sent END,reminded=CASE WHEN ? THEN 1 ELSE reminded END,claim=NULL,claimed_at=NULL WHERE claim=?",
+    ).run(accepted ? 1 : 0, now, accepted ? 1 : 0, claim);
   } finally {
     db.close();
   }

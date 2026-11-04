@@ -6,11 +6,15 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+mod runtime_paths;
 mod quick_input;
+mod paint;
 mod windows_startup;
 mod updates;
 mod startup_receipt;
 mod documents;
+mod series_assembly;
+mod series_assembly_data;
 mod conversation_images;
 mod external_urls;
 mod authorizations;
@@ -18,11 +22,10 @@ mod i18n;
 
 use cli::{CliRun, OwnerRequest, Verb};
 use std::time::Duration;
-use std::sync::atomic::Ordering;
 use tauri::image::Image;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Wry, WindowEvent, Listener};
+use tauri::{AppHandle, Manager, Wry, WindowEvent, Listener, Emitter};
 
 /// Intervalle du voyant de l'icône, indépendant du panneau (qui relit toutes les 2 s).
 const LIGHT_POLL: Duration = Duration::from_secs(3);
@@ -135,6 +138,11 @@ async fn workspace_sync_status() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    blocking(move || cli::elevenlabs(action, payload)).await
+}
+
+#[tauri::command]
 async fn workspace_sync_configure(workspace_dir: String, github_url: String, enabled: bool) -> Result<CliRun, String> {
     blocking(move || cli::workspace_sync("configure", Some((workspace_dir, github_url, enabled)))).await
 }
@@ -162,51 +170,21 @@ async fn wake_reply(idempotency_key: String, text: String) -> Result<CliRun, Str
 }
 
 #[tauri::command]
+async fn voice_input(action: String, audio: Option<String>) -> Result<CliRun, String> {
+    blocking(move || cli::voice_input(action, audio)).await
+}
+
+#[tauri::command]
+async fn broadcast_status() -> Result<CliRun,String> { blocking(||cli::broadcast("status",None,None)).await }
+#[tauri::command]
+async fn broadcast_send(idempotency_key:String,text:String) -> Result<CliRun,String> { blocking(move||cli::broadcast("send",Some(idempotency_key),Some(text))).await }
+
+#[tauri::command]
 async fn recipient_status() -> Result<CliRun, String> { blocking(|| cli::recipient("status",None,None)).await }
 #[tauri::command]
 async fn recipient_poll() -> Result<CliRun, String> { blocking(|| cli::recipient("poll",None,None)).await }
 #[tauri::command]
 async fn recipient_send(idempotency_key:String,text:String) -> Result<CliRun,String> { blocking(move || cli::recipient("send",Some(idempotency_key),Some(text))).await }
-
-#[tauri::command]
-fn quick_input_close(window: tauri::WebviewWindow) -> Result<(), String> {
-    if window.label() != "quick-input" { return Err("Fenêtre invalide".into()); }
-    quick_input::dismiss(&window)
-}
-
-#[tauri::command]
-async fn quick_input_send(window: tauri::WebviewWindow, idempotency_key: String, text: String, click_id: u64) -> Result<(), String> {
-    if window.label() != "quick-input" { return Err("Fenêtre invalide".into()); }
-    let point = quick_input::click_point(click_id)?;
-    let targeted_bump = idempotency_key.starts_with("ui-bumpe-");
-    if quick_input::SENDING.swap(true, Ordering::SeqCst) { return Err("Envoi déjà en cours".into()); }
-    if targeted_bump { quick_input::mark_unconfirmed(point); }
-    // Remove our menu from the image of the actual selected point.
-    let result = match window.hide() {
-        Ok(()) => blocking(move || cli::quick_reply(idempotency_key, text, Some(point))).await,
-        Err(error) => Err(format!("Menu impossible à masquer ; aucun message envoyé : {error}")),
-    };
-    // Confirm persistence before success; errors restore the hidden menu and keep its draft.
-    let result = result.and_then(|run| {
-        if run.exit_code != 0 {
-            let value = serde_json::from_str::<serde_json::Value>(&run.stdout).ok();
-            let detail = value.as_ref().and_then(|v| v["data"]["detail"].as_str().map(str::to_owned));
-            if targeted_bump && value.as_ref().is_some_and(|v| v["data"]["status"].as_str() == Some("refused")) {
-                quick_input::finish_point(click_id,true);
-                return Err(format!("POINT_REFRESH_REQUIRED: {} Refaire un clic droit pour choisir le contexte actuel.",detail.unwrap_or_else(|| "Aucun message envoyé.".into())));
-            }
-            return Err(detail.unwrap_or_else(|| "Envoi non confirmé ; réessayer pour vérifier le même envoi, sans nouvelle capture si déjà enregistré.".into()));
-        }
-        if targeted_bump { quick_input::finish_point(click_id,false); }
-        let _ = window.hide();
-        // Bumpe follows Bump's queue semantics. Preserve ordinary quick-message wake.
-        if !targeted_bump { tauri::async_runtime::spawn_blocking(cli::wake_after_quick_reply); }
-        Ok(())
-    });
-    if result.is_err() && !quick_input::DISMISSED.load(Ordering::SeqCst) { quick_input::show_without_focus(&window); }
-    quick_input::SENDING.store(false, Ordering::SeqCst);
-    result
-}
 
 #[tauri::command]
 async fn helpers_answers() -> Result<CliRun, String> {
@@ -339,7 +317,15 @@ fn menu_action(app: &AppHandle, verb: Verb) {
 }
 
 fn main() {
+    runtime_paths::load();
     tauri::Builder::default()
+        .on_page_load(|_webview, payload| {
+            if let Some(file) = std::env::var_os("MIND_WAKE_STARTUP_RECEIPT") {
+                let file = std::path::PathBuf::from(file).with_extension("page.json");
+                let receipt = serde_json::json!({"pid":std::process::id(),"url":payload.url().as_str(),"event":format!("{:?}",payload.event())});
+                let _ = std::fs::write(file,receipt.to_string());
+            }
+        })
         // Un seul panneau : relancer l'application (menu Démarrer) rouvre le panneau existant.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_panel(app)))
         .invoke_handler(tauri::generate_handler![
@@ -347,7 +333,9 @@ fn main() {
             wake_restart,
             app_fullscreen,
             documents::document_browse,
+            series_assembly::series_assembly,
             documents::conversation_image,
+            documents::conversation_image_import,
             authorizations::authorizations_read,
             authorizations::authorizations_save,
             updates::app_update,
@@ -362,37 +350,33 @@ fn main() {
             wake_now,
             wake_on,
             wake_always_on,
-            wake_messages,            wake_history,
+            wake_messages,
+            wake_history,
             wake_order,
             second_thread,
             wake_coach,
             wake_forks,
             workspace_sync_status,
             workspace_sync_configure,
+            elevenlabs,
             workspace_sync_now,
             wake_open_location,
             open_external_url,
             wake_reply,
-            quick_input_close,
-            quick_input_send,
+            voice_input,
             helpers_answers,
             owner_threads,
             recipient_status,
             recipient_poll,
             recipient_send,
             owner_thread,
+            broadcast_status,
+            broadcast_send,
             owner_reply
         ])
         .setup(|app| {
-            tauri::WebviewWindowBuilder::new(app, "quick-input", tauri::WebviewUrl::App("quick-input.html".into()))
-                .title(i18n::text("Parler à Wake", "Talk to Wake")).inner_size(460.0, 240.0).resizable(false)
-                .decorations(false).always_on_top(true).skip_taskbar(true).visible(false).build()?;
-            let quick = CheckMenuItem::with_id(app, "quick_input", i18n::text("Clic droit — saisie rapide", "Right click — quick input"), true, true, None::<&str>)?;
-            if quick_input::start(app.handle().clone()).is_err() {
-                quick.set_checked(false)?;
-                quick.set_enabled(false)?;
-                quick.set_text(i18n::text("Clic droit — indisponible", "Right click — unavailable"))?;
-            }
+            if let Err(error)=paint::start(app.handle()) {eprintln!("Paint : {error}");}
+            // Legacy right-click WebView retired; the supervised post-it observer owns this interaction.
             let open = MenuItem::with_id(app, "open", i18n::text("Ouvrir le panneau", "Open panel"), true, None::<&str>)?;
             let startup = CheckMenuItem::with_id(app, "windows_startup", i18n::text("Démarrer avec Windows", "Start with Windows"), false, false, None::<&str>)?;
             let on = CheckMenuItem::with_id(app, "mode_on", i18n::text("On — réveils autorisés", "On — wakes allowed"), true, false, None::<&str>)?;
@@ -405,7 +389,6 @@ fn main() {
                 app,
                 &[
                     &open,
-                    &quick,
                     &startup,
                     &PredefinedMenuItem::separator(app)?,
                     &on,
@@ -425,13 +408,6 @@ fn main() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_panel(app),
                     "windows_startup" => windows_startup::refresh(app, true),
-                    "quick_input" => {
-                        let enabled = !quick_input::ENABLED.load(Ordering::Relaxed);
-                        quick_input::ENABLED.store(enabled, Ordering::Relaxed);
-                        if !enabled && !quick_input::SENDING.load(Ordering::Relaxed) {
-                            if let Some(window) = app.get_webview_window("quick-input") { let _=window.hide(); }
-                        }
-                    }
                     // « On » lève une pause ; la CLI refuse après un arrêt d'urgence.
                     "mode_on" => menu_action(app, Verb::On),
                     "mode_always" => menu_action(app, Verb::AlwaysOn),
@@ -455,7 +431,6 @@ fn main() {
                     }
                 })
                 .build(app)?;
-            let language_app = app.handle().clone();
             let language_on = on.clone();
             let language_wake = wake.clone();
             let language_always = always.clone();
@@ -467,14 +442,11 @@ fn main() {
                 i18n::set_language(&language);
                 let _ = open.set_text(i18n::text("Ouvrir le panneau", "Open panel"));
                 let _ = quit.set_text(i18n::text("Quitter le panneau (Wake continue)", "Quit panel (Wake continues)"));
-                let available = quick.is_enabled().unwrap_or(false);
-                let _ = quick.set_text(if available { i18n::text("Clic droit — saisie rapide", "Right click — quick input") } else { i18n::text("Clic droit — indisponible", "Right click — unavailable") });
                 let _ = language_startup.set_text(i18n::text("Démarrer avec Windows", "Start with Windows"));
                 let _ = language_on.set_text(i18n::text("On — réveils autorisés", "On — wakes allowed"));
                 let _ = language_wake.set_text(i18n::text("Réveil — maintenant", "Wake — now"));
                 let _ = language_always.set_text(i18n::text("Always-on — enchaîner les réponses", "Always-on — continue after each response"));
                 let _ = language_off.set_text(i18n::text("Force-off — arrêt d'urgence", "Force-off — emergency stop"));
-                if let Some(window) = language_app.get_webview_window("quick-input") { let _ = window.set_title(i18n::text("Parler à Wake", "Talk to Wake")); }
             });
             app.manage(Switch { on, wake, always, off });
             app.manage(windows_startup::StartupMenu(startup));
@@ -492,16 +464,10 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "quick-input" && matches!(event, WindowEvent::Focused(false)) {
-                if let Some(input) = window.get_webview_window("quick-input") { let _ = quick_input::dismiss(&input); }
-            }
             // Fermer la fenêtre masque le panneau ; l'icône reste et Wake n'est pas affecté.
             if let WindowEvent::CloseRequested { api, .. } = event {
+                let _ = window.emit("voice-stop", ());
                 api.prevent_close();
-                if window.label() == "quick-input" {
-                    if let Some(input) = window.get_webview_window("quick-input") { let _ = quick_input::dismiss(&input); }
-                    return;
-                }
                 let _ = window.hide();
             }
         })

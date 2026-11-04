@@ -220,13 +220,15 @@ export async function reply(
   idempotencyKey: string | undefined,
   captureScreen = false,
   capture: typeof captureWakeScreenshot = captureWakeScreenshot,
+  preserveText = false,
 ): Promise<CommandResult<ReplyData>> {
   if (!profileExists(ctx, dataDir)) return refused(NO_PROFILE_HINT);
   if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(idempotencyKey)) {
     return refused("--idempotency-key invalide (8 à 128 caractères [A-Za-z0-9_.:-])", EXIT_USAGE);
   }
   if (ctx.readStdin === undefined) return refused("entrée standard indisponible", EXIT_USAGE);
-  const inputText = (await ctx.readStdin()).replace(/\r\n/g, "\n").trim();
+  const rawText = await ctx.readStdin();
+  const inputText = preserveText ? rawText : rawText.replace(/\r\n/g, "\n").trim();
   if (inputText === "") return refused("texte vide sur l'entrée standard", EXIT_USAGE);
   const targetedBump = captureScreen && idempotencyKey?.startsWith("ui-bumpe-") === true;
   if (targetedBump && captureClickPoint(ctx.env) === undefined) return refused("Point du clic absent : aucun message envoyé. Refaire un clic droit.");

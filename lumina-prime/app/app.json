@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "MIND · Lumina",
+    "slug": "mind-lumina-companion",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Autoriser MIND à enregistrer un message vocal quand vous appuyez sur le micro.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "scheme": "mindlumina"
+  }
+}

@@ -10,6 +10,7 @@ try {
   $prefix = $source.Substring(0,$source.IndexOf('$questionIds = @(')).Replace(". (Join-Path `$PSScriptRoot 'reply-postit.ps1') -Library", '').Replace(". (Join-Path `$PSScriptRoot 'content-state.ps1')", '')
   . (Join-Path $PSScriptRoot 'reply-postit.ps1') -Library
   . (Join-Path $PSScriptRoot 'content-state.ps1')
+  $prefix=$prefix.Replace("(Join-Path `$PSScriptRoot 'emotes.json')", "'"+(Join-Path $PSScriptRoot 'emotes.json').Replace("'","''")+"'")
   . ([scriptblock]::Create($prefix)) -Marks $fixture
   $script:stubCalls = 0
   function Start-PostitReply($form) {
@@ -37,13 +38,18 @@ try {
   }
   $conversation=New-Sticky ([pscustomobject]@{kind='sticky';x=20;y=20;text='Conversation fixture';reply_to='own_fixture'})
   if(-not $conversation.Tag.replyButton -or -not $conversation.Tag.emoteButton){throw 'Missing conversation controls'}
-  $emotes=New-PostitEmoteMenu $conversation.Tag.emoteButton.Tag
-  if($emotes.Items.Count -ne 4){throw 'Missing emote options'}
-  # Invoke an unshown fixture item, no real screen input and no inbox.
-  $emotes.Items[1].PerformClick()
+  $dismissed=New-PostitReactionPicker $conversation.Tag.emoteButton.Tag
+  $dismissed.Close()
+  if($conversation.IsDisposed -or $script:freeformCalls -ne 0){throw 'Closing reactions sent content or closed the note'}
+  $emotes=New-PostitReactionPicker $conversation.Tag.emoteButton.Tag
+  if($emotes.Tag.buttons.Count -ne 30){throw 'Missing reaction tiles'}
+  if($emotes.Tag.buttons[0].Bounds.IntersectsWith($emotes.Tag.buttons[1].Bounds)){throw 'Reaction tiles overlap'}
+  # Invoke an unshown fixture tile, no real screen input and no inbox.
+  $onClick.Invoke($emotes.Tag.buttons[1],@([EventArgs]::Empty))
+  if(-not $emotes.IsDisposed){throw 'Reaction picker did not close'}
   if(-not $conversation.IsDisposed -or $script:freeformCalls -ne 1){throw 'Reaction did not save/send/close once'}
   $reaction=@(Get-ChildItem -LiteralPath $testDir -Filter 'postit-*.json' | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName | ConvertFrom-Json })
-  if($reaction.Count -ne 1 -or $reaction[0].capture -or $reaction[0].reply_to -ne 'own_fixture' -or $reaction[0].text -notmatch 'adore'){throw 'Reaction source or capture incorrect'}
+  if($reaction.Count -ne 1 -or $reaction[0].capture -or $reaction[0].reply_to -ne 'own_fixture' -or $reaction[0].text -notmatch 'Gardons'){throw 'Reaction source or capture incorrect'}
   $emotes.Dispose()
   'PASS: opaque buttons, save then transport, immediate close, other note preserved, retry retains choice, no automatic resend'
 } finally {

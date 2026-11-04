@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-series-assembly"
+description = "Enables the series_assembly command without any pre-configured scope."
+commands.allow = ["series_assembly"]
+
+[[permission]]
+identifier = "deny-series-assembly"
+description = "Denies the series_assembly command without any pre-configured scope."
+commands.deny = ["series_assembly"]

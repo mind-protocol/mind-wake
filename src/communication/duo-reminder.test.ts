@@ -50,7 +50,7 @@ function fixture() {
   };
 }
 describe("Mode Duo", () => {
-  it("defaults off, persists choice and repeats at most every 30 seconds until semantic change", () => {
+  it("defaults off, retries failed delivery and sends once per visual stall", () => {
     const h = fixture();
     try {
       expect(duoEnabled(h.dir)).toBe(false);
@@ -71,6 +71,8 @@ describe("Mode Duo", () => {
       h.advance(1);
       expect(h.claim("b")).not.toBeNull();
       h.ack("b");
+      h.advance(300_000);
+      expect(h.claim("no-flood")).toBeNull();
       fs.writeFileSync(h.content, JSON.stringify({ fingerprint: "a".repeat(64) }));
       h.advance(20_000);
       h.advance(29_999);
@@ -78,11 +80,10 @@ describe("Mode Duo", () => {
       h.advance(1);
       expect(h.claim("c")).not.toBeNull();
       h.ack("c");
-      // Rewriting the exact same semantic content does not postpone the reminder.
+      // Rewriting the same content must not rearm an acknowledged reminder.
       fs.writeFileSync(h.content, JSON.stringify({ fingerprint: "a".repeat(64) }));
       h.advance(30_000);
-      expect(h.claim("d")).not.toBeNull();
-      h.ack("d");
+      expect(h.claim("d")).toBeNull();
       configureDuo(h.dir, false);
       expect(h.claim("e")).toBeNull();
       h.advance(0);
@@ -108,7 +109,10 @@ describe("Mode Duo", () => {
         ownerInboxHook(h.dir, "s", { session_id: "s", hook_event_name: "PostToolUse" }),
       ).toBeNull();
       h.advance(30_000);
-      // A fresh monitor interval permits the next runtime delivery, with acknowledged turn ID.
+      // A changed visual rearms delivery, with acknowledged turn ID.
+      fs.writeFileSync(h.content, JSON.stringify({ fingerprint: "b".repeat(64) }));
+      h.advance(0);
+      h.advance(30_000);
       const calls: unknown[] = [];
       const steering = new CodexOwnerSteering(
         h.dir,

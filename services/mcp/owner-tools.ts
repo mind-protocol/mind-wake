@@ -1,4 +1,6 @@
 import { queueOwnerToast } from "./owner-toast.js";
+import { generatedImageMessage, saveGeneratedImage, ImagePublicationError } from "../../src/communication/generated-images.js";
+import { workspaceDirFor } from "../../src/daemon/paths.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import {
@@ -85,9 +87,9 @@ export function registerOwnerTools(
             type: "text" as const,
             text: JSON.stringify({
               schema: "mind.mcp/error",
-              error: e instanceof OwnerMessageError ? e.code : "internal",
+              error: e instanceof OwnerMessageError ? e.code : e instanceof ImagePublicationError ? "invalid_image" : "internal",
               message:
-                e instanceof OwnerMessageError
+                e instanceof OwnerMessageError || e instanceof ImagePublicationError
                   ? e.message
                   : "Local owner-channel operation failed.",
             }),
@@ -128,6 +130,27 @@ export function registerOwnerTools(
         const message=store.publish(args.text,args.idempotency_key);
         return {message,...(args.toast===undefined?{}:{toast:queueOwnerToast(dir!,message.id,args.toast)})};
       }),
+  );
+  server.registerTool(
+    "publish_image",
+    {
+      description: "Save a generated image permanently and publish its clickable preview in your human's Wake conversation. Generate it first with your native image-generation tool, then place the output inside your authorized workspace. This tool does not generate images or call a paid API. source_path is local to the workspace. Reuse idempotency_key for retries; do not publish the same image again via message_owner.",
+      inputSchema: z.strictObject({
+        source_path: z.string().min(1).max(4096),
+        title: z.string().trim().min(1).max(240),
+        prompt: z.string().max(12000).optional(),
+        idempotency_key: z.string().min(8).max(128),
+      }),
+      annotations: { openWorldHint: false },
+    },
+    (args) => call("publish_image", (store) => {
+      const saved = saveGeneratedImage(workspaceDirFor(dir!), {
+        sourcePath: args.source_path, title: args.title, requestKey: args.idempotency_key,
+        ...(args.prompt === undefined ? {} : { prompt: args.prompt }),
+      });
+      const message = store.publish(generatedImageMessage(args.title, saved.reference), args.idempotency_key);
+      return { message, image: saved };
+    }),
   );
   server.registerTool(
     "edit_owner_message",

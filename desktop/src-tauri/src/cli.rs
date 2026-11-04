@@ -58,7 +58,7 @@ fn env_path(name: &str) -> Option<PathBuf> {
 
 fn repo() -> PathBuf {
     env_path("MIND_WAKE_REPO_DIR")
-        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."))
+        .unwrap_or_else(|| std::env::current_exe().ok().and_then(|exe|exe.ancestors().find(|p|p.join("dist/cli/main.js").is_file()).map(std::path::Path::to_path_buf)).unwrap_or_else(||PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")))
 }
 
 /// `MIND_WAKE_NODE` (chemin absolu de node.exe) sinon `node` du PATH.
@@ -95,6 +95,27 @@ pub fn helpers_answers() -> Result<CliRun, String> {
     args.push(repo().join("services/helpers/helpers-main.ts").into());
     args.push("answers".into());
     run(args, None)
+}
+
+pub fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "status" | "configure" | "voices" | "pending" | "audio" | "ack" | "generate") {
+        return Err("Action ElevenLabs inconnue".into());
+    }
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/elevenlabs/desktop-main.ts").into());
+    let input = serde_json::json!({"action": action, "payload": payload}).to_string();
+    run_with_timeout(args, Some(input), Duration::from_secs(75))
+}
+
+pub fn voice_input(action: String, audio: Option<String>) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "snapshot" | "transcribe") { return Err("Action vocale inconnue".into()); }
+    if audio.as_ref().is_some_and(|value| value.len() > 5_500_000) { return Err("Audio trop volumineux".into()); }
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/voice/desktop-main.mjs").into());
+    let input = serde_json::json!({"action": action, "audio": audio}).to_string();
+    run_with_timeout(args, Some(input), Duration::from_secs(135))
 }
 
 fn wake_args(verb_args: &[&str]) -> Result<Vec<OsString>, String> {
@@ -395,6 +416,13 @@ pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
     let mut args = wake_args(&["reply", "--idempotency-key"])?;
     args.push(key.into());
     run(args, Some(text))
+}
+
+pub fn broadcast(action: &str, key: Option<String>, text: Option<String>) -> Result<CliRun, String> {
+    let verb=match action {"status"=>"broadcast-status","send"=>"broadcast-send",_=>return Err("Action inconnue".into())};
+    let mut args=wake_args(&[verb])?;
+    if action=="send" { let key=key.ok_or("Clé manquante")?; if !idempotency_key(&key){return Err("Clé invalide".into());} args.extend(["--idempotency-key".into(),key.into()]); }
+    run(args,text)
 }
 
 /// Fixed recipient alias only. No endpoint or credential is accepted from the webview.

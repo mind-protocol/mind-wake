@@ -37,6 +37,16 @@ un seul choix). Les boutons restent cliquables sans activation de la fenêtre. L
 texte du sticky est la question envoyée ; chaque question et chaque option ont un
 identifiant stable. Ne jamais réutiliser un identifiant pour une autre question.
 
+**Autre…** est proposé par défaut pour Oui/Non et les choix multiples. Il ouvre
+une saisie libre liée à la question ; cliquer dessus, laisser le champ vide ou
+annuler ne transmet rien. Envoyer conserve l’identifiant et le texte de la
+question avec la réponse exacte, puis ferme cette question et son éditeur.
+Le choix libre utilise le même fichier et la même clé d’envoi que les boutons :
+le premier choix enregistré reste celui repris en cas de doublon ou de reprise.
+Pour une question volontairement fermée, préciser `"allow_other": false`.
+Une question déjà affichée garde son ancien rendu ; les prochains lancements
+utilisent automatiquement le nouveau bouton.
+
 Le document doit préciser `reply_transport`, avec les chemins **absolus** `cli`
 (le `dist/cli/main.js` de Wake), `data_dir` (l'instance du propriétaire visé) et
 `response_dir` (le dossier local des choix et reçus). Il faut Node et une CLI Wake
@@ -73,10 +83,15 @@ réception : `powershell -NoProfile -STA -File tools/postit/postit-ui-contract.t
 ### Répondre et réagir
 
 Un sticky avec `reply_to: "own_identifiant-du-message"` et le même
-`reply_transport` affiche **Répondre** et **Émote**. Répondre ouvre une saisie
-libre (4000 caractères maximum, référence incluse). Émote propose 👍 J'aime,
-❤️ J'adore, 😂 Drôle, 🤔 À creuser. Chaque envoi conserve la référence au
+`reply_transport` affiche **Répondre** et **Réagir**. Répondre ouvre une saisie
+libre (4000 caractères maximum, référence incluse). Réagir ouvre une carte de
+30 réactions dans une palette défilante compacte, catalogue `emotes.json`. Les premières sont immédiatement accessibles. Les libellés expriment un retour humain ; aucune commande de runtime n’est déclenchée. Chaque envoi conserve la référence au
 post-it source. Aucune capture pour ces réponses ou réactions.
+
+Chaque tuile affiche son pictogramme et son libellé. Un clic envoie puis ferme
+la carte et le post-it concerné. La croix ou Échap ferme seulement la carte,
+sans envoyer. Tab permet de parcourir les réactions ; Entrée ou Espace active
+la tuile choisie. La carte garde le post-it source vivant pendant le choix.
 
 Le formulaire ne prend pas le focus à son apparition ; un clic humain dans la
 saisie permet de taper. Entrée envoie, Maj+Entrée ajoute une ligne, Échap ou la
@@ -84,6 +99,12 @@ croix ferme sans envoyer. Le post-it source reste ouvert pendant la saisie ;
 son expiration est suspendue. Envoyer sauvegarde puis lance le transport avant
 de fermer la saisie et ce seul post-it. Les fichiers `postit-*.json` et leurs
 reçus `.delivery.json` permettent de distinguer contenu sauvegardé et livraison.
+
+La carte de saisie distingue le contexte, le champ et les actions. Le compteur
+indique la longueur du texte ; **Envoyer** reste désactivé pour un message vide.
+L'aide précise si une capture accompagne l'envoi. **Bumpe** conserve le brouillon
+et utilise l'invitation au point du clic. Les erreurs de démarrage du transport
+restent visibles dans le formulaire avec le message conservé.
 
 ### Remplacement du clic droit
 

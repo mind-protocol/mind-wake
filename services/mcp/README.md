@@ -2,6 +2,8 @@
 
 Serveur MCP pour **l'envoi de messages, la demande d'aide et la mise en relation** entre agents et humains, et la **consultation de Wake en lecture seule**. Le parcours personnel `server-main`/`hub-main` reste sur la machine : aucun envoi vers e-mail, Telegram, WhatsApp ou Internet, aucun port réseau, aucune publication. Les séances de conseil utilisent des **unités fictives** (G1, `../advice/session/`) : aucun wallet, aucun argent réel.
 
+Une passerelle propriétaire optionnelle et séparée relie le fil desktop à un bot Telegram, avec transcription locale des vocaux entrants et lecture audio des messages sortants. Elle exige sa configuration et son destinataire autorisés ; voir [Telegram](../../docs/TELEGRAM.md).
+
 Une voie optionnelle séparée, `shared-server-main.ts`/`shared-hub-main.ts`, prépare un **hub commun HTTPS de messages pour deux agents**, avec MCP stdio local dédié. Elle réutilise Hub/SQLite sans exposer les helpers ni le pipe personnel. Aucun endpoint n'est activé par défaut ; voir [configuration et limites du pilote](../../docs/SHARED-AGENT-MCP.md).
 
 ## Architecture
@@ -30,6 +32,11 @@ server-main.ts ── lecture seule ── src/cli/commands/{status,journal}.ts,
 - `server-main.ts` : adaptateur MCP stdio mince ; la clé de liaison reste dans son environnement et n'apparaît dans aucune sortie.
 
 ## Outils locaux complémentaires
+
+ElevenLabs ajoute `elevenlabs_list_voices` et `elevenlabs_generate_speech` aux
+profils locaux. Le choix de voix et l’activation se font dans les Réglages desktop ;
+les résultats MP3 y sont lus à leur réception. Ces appels Internet transmettent
+le texte et consomment les crédits du compte. Voir [ELEVENLABS.md](../../docs/ELEVENLABS.md).
 
 Une intégration Reddit optionnelle ajoute les lectures et, si explicitement
 activées, les publications via OAuth dans ce même serveur. Elle est désactivée
@@ -236,6 +243,8 @@ Les formats ci-dessus suivent les documentations publiques de chaque client à l
 - Matching lexical simple : pas de synonymes ni de traduction ; un sujet formulé autrement peut ne trouver aucun guide.
 
 ## Messages locaux à son humain : publication, modification, suppression
+
+`publish_image` conserve un raster PNG, JPEG ou WebP déjà généré dans `artifacts/generated-images/`, avec son prompt et son titre dans un fichier JSON adjacent, puis publie son aperçu dans le fil humain. L'image s'agrandit au clic ; son fichier reste présent après suppression de la source ou redémarrage. Arguments : `source_path` dans l'espace de travail, `title`, `prompt` optionnel et `idempotency_key`. Les reprises avec la même clé sont idempotentes ; un contenu différent est refusé. La génération elle-même utilise l'outil natif du runtime, sans bascule implicite vers une API payante. La limite de publication est celle du lecteur : 8 Mo et 32 mégapixels. Cette fonctionnalité est un outil pour l'agent, sans bouton supplémentaire dans l'application.
 
 Avec `MIND_WAKE_OWNER_MESSAGES=1` et un `MIND_WAKE_DATA_DIR` contenant une policy active, le runtime reçoit `message_owner`, `list_owner_messages`, `edit_owner_message` et `delete_owner_message`. Ces outils agissent uniquement sur le fil local de l’app, sans hub ni envoi externe. Publication idempotente ; édition par ID et version ; suppression des seuls messages de cet agent. Un conflit de version demande de relire le message. Les réponses humaines sont conservées séparément et ne sont jamais modifiées par ces outils.
 
