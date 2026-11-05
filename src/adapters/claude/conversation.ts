@@ -118,6 +118,14 @@ export class FileConversationStore implements ClaudeConversationStore {
       generation: record.generation,
       started: record.started,
       promptDigest: typeof record.promptDigest === "string" ? record.promptDigest : null,
+      // Relus aussi : sans eux, l'auto-compaction ne voit ni la consommation du réveil
+      // précédent ni la dernière demande servie (et la renverrait à chaque réveil).
+      ...(typeof record.lastWakeTokens === "number" && Number.isFinite(record.lastWakeTokens)
+        ? { lastWakeTokens: record.lastWakeTokens }
+        : {}),
+      ...(typeof record.lastCompactRequest === "string"
+        ? { lastCompactRequest: record.lastCompactRequest }
+        : {}),
     };
   }
 

@@ -635,9 +635,12 @@ describe("adapter Claude Code : session", () => {
     expect(second.filter((e) => e.type === "usage")).toHaveLength(1);
     expect(second.find((e) => e.type === "usage")).toMatchObject({ quantity: { amount: 200 } });
     expect(second.at(-1)).toMatchObject({ type: "ended", exitReason: "result:completed" });
-    expect(flagValue(invocations()[1]?.argv ?? [], "--resume")).toBe(
-      claudeSessionUuid("experience-1", 0),
-    );
+    // Compaction dans un processus à part, avant le réveil : même conversation, MCP strict.
+    const calls = invocations();
+    expect(calls).toHaveLength(3);
+    expect(calls[1]?.argv).toContain("--strict-mcp-config");
+    expect(flagValue(calls[1]?.argv ?? [], "--resume")).toBe(claudeSessionUuid("experience-1", 0));
+    expect(flagValue(calls[2]?.argv ?? [], "--resume")).toBe(claudeSessionUuid("experience-1", 0));
   });
 
   it("auto-compaction : jamais sous le seuil, ni sur une conversation neuve, ni si désactivée", async () => {

@@ -38,6 +38,7 @@ import {
   claudeEnvironment,
   hostProfileEnv,
   claudeRunArgs,
+  claudeCompactArgs,
   claudeUsageArgs,
   DEFAULT_CLAUDE_MODEL,
   DEFAULT_CLAUDE_TOOLS,
@@ -76,6 +77,8 @@ const EXECUTION_MECHANISM =
 
 /** Délai de terminaison forcée, en dernier recours. */
 const AFTER_RESULT_TERMINATION_MS = 1_000 as DurationMs;
+/** Délai maximal d'une auto-compaction avant réveil (grande conversation : quelques minutes). */
+const COMPACT_TIMEOUT_MS = 300_000;
 
 /**
  * Après `result`, entrée fermée : délai laissé au CLI pour sortir de lui-même (code 0)
@@ -231,6 +234,8 @@ interface ClaudeSession {
   readonly process: ClaudeProcess;
   readonly claudeSessionId: string;
   readonly promptChanged: boolean;
+  /** Résultat de l'auto-compaction faite avant le réveil, annoncé au début des événements. */
+  readonly compactionNote: string | null;
   /** Sans approbation sur l'hôte (ADR-006) : signalé dans les événements. */
   readonly unsandboxed: boolean;
   readonly promptDigest: string;
@@ -504,6 +509,37 @@ export class ClaudeAdapter implements RuntimeAdapter {
       ...(o.maxTurns === undefined ? {} : { maxTurns: o.maxTurns }),
     });
 
+    // Auto-compaction : une conversation trop lourde est compactée dans un processus à part,
+    // avant le réveil (avec `--strict-mcp-config`, que le mode capacités natives retire).
+    const pilot = o.agentPilot?.() ?? null;
+    const threshold = pilot?.compactAboveTokens ?? o.compactAboveTokens ?? 0;
+    const requested =
+      pilot?.compactRequest !== undefined && pilot.compactRequest !== record.lastCompactRequest;
+    const compact =
+      record.started && (requested || (threshold > 0 && (record.lastWakeTokens ?? 0) > threshold));
+    let compactionNote: string | null = null;
+    if (compact) {
+      if (requested) {
+        // Demande servie une seule fois, même si la compaction échoue.
+        record = { ...record, lastCompactRequest: pilot.compactRequest };
+        this.#conversations.put(record);
+      }
+      compactionNote = await this.#compactConversation(
+        claudeSessionId,
+        o.model ?? DEFAULT_CLAUDE_MODEL,
+        o.workspaceFor(sessionId),
+      );
+      // Trace hors session : les activités du réveil ne sont pas journalisées par le runner.
+      try {
+        fs.appendFileSync(
+          path.join(path.dirname(o.promptDir), "compaction.log"),
+          `${this.#at()} ${claudeSessionId} ${compactionNote}\n`,
+        );
+      } catch {
+        // Trace facultative : un échec d'écriture n'empêche pas le réveil.
+      }
+    }
+
     const grant = await this.#openNetwork(o.launcher, sessionId);
     let process_: ClaudeProcess;
     try {
@@ -522,22 +558,8 @@ export class ClaudeAdapter implements RuntimeAdapter {
       throw error;
     }
     // L'entrée reste ouverte (le lanceur la tient) : le message passe en `stream-json`.
-    // Auto-compaction : la reprise d'une conversation trop lourde commence par `/compact`.
-    const pilot = o.agentPilot?.() ?? null;
-    const threshold = pilot?.compactAboveTokens ?? o.compactAboveTokens ?? 0;
-    const requested =
-      pilot?.compactRequest !== undefined && pilot.compactRequest !== record.lastCompactRequest;
-    const compact =
-      record.started && (requested || (threshold > 0 && (record.lastWakeTokens ?? 0) > threshold));
-    if (compact && requested && pilot.compactRequest !== undefined) {
-      // Demande servie une seule fois, même si le réveil échoue ensuite.
-      record = { ...record, lastCompactRequest: pilot.compactRequest };
-      this.#conversations.put(record);
-    }
     const projectStart = readCurrentProject(o.workspaceFor(sessionId));
-    process_.send(
-      compact ? userMessageLine("/compact") : userMessageLine(request.context, request.wakeImage),
-    );
+    process_.send(userMessageLine(request.context, request.wakeImage));
     const inboxDir = o.ownerInboxDir;
     const inboxClaims = new Set<string>();
     if (inboxDir !== undefined) releaseOwnerClaims(inboxDir);
@@ -593,15 +615,14 @@ export class ClaudeAdapter implements RuntimeAdapter {
       process: process_,
       claudeSessionId,
       promptChanged: record.promptDigest !== null && record.promptDigest !== digest,
+      compactionNote,
       unsandboxed: permission === "skip_permissions_unsandboxed",
       promptDigest: digest,
       record,
       networkOpen: grant !== null,
       initSeen: false,
       result: null,
-      compacting: compact
-        ? { context: request.context, image: request.wakeImage, done: false }
-        : null,
+      compacting: null,
     });
     return { adapterId: CLAUDE_ADAPTER_ID, sessionId, startedAt: this.#at() };
   }
@@ -651,6 +672,9 @@ export class ClaudeAdapter implements RuntimeAdapter {
         summary:
           "mode NON ISOLÉ : --dangerously-skip-permissions sur le poste hôte, consentement distinct (ADR-006)",
       };
+    }
+    if (session.compactionNote !== null) {
+      yield { type: "activity", sessionId, at: this.#at(), summary: session.compactionNote };
     }
     if (session.promptChanged) {
       yield {
@@ -1215,6 +1239,71 @@ export class ClaudeAdapter implements RuntimeAdapter {
       return snapshots.length > 0 ? snapshots : this.#lastQuota;
     } catch {
       return this.#lastQuota;
+    }
+  }
+
+  /**
+   * Auto-compaction : `/compact` sur la conversation du réveil, dans un processus séparé
+   * (`quotaLauncher`, hors du Job Object de la session) et dans le dossier de travail du
+   * réveil, où le CLI range la conversation. Rend le résumé à annoncer ; ne lève jamais :
+   * un échec laisse le réveil se faire sur le contexte complet.
+   */
+  async #compactConversation(claudeSessionId: string, model: string, cwd: string): Promise<string> {
+    const launcher = this.#options.quotaLauncher ?? this.#options.launcher;
+    const sessionId = `claude-compact-${randomBytes(6).toString("hex")}` as SessionId;
+    const deadline = new Date(
+      this.#now().getTime() + COMPACT_TIMEOUT_MS,
+    ).toISOString() as UtcTimestamp;
+    let process_: ClaudeProcess | null = null;
+    let grant: ClaudeNetworkGrant | null = null;
+    try {
+      grant = await this.#openNetwork(launcher, sessionId);
+      process_ = this.#launch(
+        launcher,
+        sessionId,
+        claudeCompactArgs(claudeSessionId, model),
+        grant,
+        cwd,
+        deadline,
+        { quotaRead: true, unattended: false },
+      );
+      await process_.started();
+      process_.send(userMessageLine("/compact"));
+      const proc = process_;
+      const outcome = await Promise.race([
+        (async (): Promise<string> => {
+          let boundary: string | null = null;
+          for (;;) {
+            const line = await proc.readLine();
+            if (line === null)
+              return boundary ?? "auto-compaction interrompue : réveil sur le contexte complet";
+            const item = parseStreamLine(line);
+            if (item.kind === "compacted") {
+              boundary = `conversation compactée : ${String(item.preTokens ?? "?")} → ${String(item.postTokens ?? "?")} tokens de contexte`;
+            }
+            if (item.kind === "result") {
+              return (
+                boundary ??
+                "auto-compaction sans effet (aucune frontière de compaction) : réveil sur le contexte complet"
+              );
+            }
+          }
+        })(),
+        new Promise<string>((resolve) =>
+          setTimeout(() => {
+            resolve("auto-compaction trop longue : réveil sur le contexte complet");
+          }, COMPACT_TIMEOUT_MS).unref(),
+        ),
+      ]);
+      return outcome;
+    } catch {
+      return "auto-compaction impossible à lancer : réveil sur le contexte complet";
+    } finally {
+      if (process_ !== null && !process_.hasExited) {
+        process_.closeInput?.();
+        await process_.terminateTree(AFTER_RESULT_TERMINATION_MS);
+      }
+      if (grant !== null) await this.#closeNetwork(sessionId);
     }
   }
 

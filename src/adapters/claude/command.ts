@@ -149,6 +149,35 @@ export function claudeUsageArgs(): string[] {
   ];
 }
 
+/**
+ * Arguments de l'auto-compaction : `/compact` sur la conversation du réveil, dans un
+ * processus à part, avant le réveil. `--strict-mcp-config` est indispensable (mesuré avec
+ * 2.1.308 : sans lui, `/compact` échoue sans rien signaler), aucun outil, session conservée.
+ */
+export function claudeCompactArgs(sessionUuid: string, model: string): string[] {
+  return [
+    "-p",
+    "--input-format",
+    "stream-json",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--model",
+    model,
+    "--tools",
+    "",
+    "--setting-sources",
+    "user",
+    "--settings",
+    CLAUDE_SESSION_SETTINGS,
+    "--strict-mcp-config",
+    "--permission-mode",
+    "dontAsk",
+    "--resume",
+    sessionUuid,
+  ];
+}
+
 /** Message utilisateur au format `--input-format stream-json` (une ligne). */
 export function userMessageLine(content: string, image?: WakeImage): string {
   return JSON.stringify({
