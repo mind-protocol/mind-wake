@@ -11,6 +11,8 @@ export function restartDelay(code, signal, failures) {
   if (code === 75 && !signal) return 0; // Explicit app restart, not a crash.
   return code === 0 && !signal ? null : Math.min(60000, 1000 * 2 ** Math.min(failures, 6));
 }
+/** Intervalle de la veille du moteur. */
+export const ENGINE_WATCH_MS = 60_000;
 export function canStartScheduled(status) {
   return (
     status?.ok === true &&
@@ -64,6 +66,35 @@ export function startScheduled(m) {
   if (status.status !== 0 || !canStartScheduled(JSON.parse(status.stdout))) return;
   const on = command("on");
   if (on.status !== 0) throw Error("Scheduled startup refused");
+  spawnEngine(m, env);
+}
+/**
+ * Moteur arrêté brutalement (exécution sans fin enregistrée) : on le relance, sans changer
+ * de mode. Une session restée ouverte ne bloque pas : le daemon la clôt au démarrage
+ * (orpheline, rien n'est rejoué). Un arrêt propre ou d'urgence n'est jamais relancé ici.
+ */
+export function canRestartCrashed(status) {
+  return (
+    status?.ok === true &&
+    status.data?.daemon?.state === "crashed" &&
+    !status.data?.profile?.emergencyStopLocked &&
+    ["ready", "hibernating", "running", "checkpointing"].includes(status.data?.profile?.state)
+  );
+}
+export function restartCrashedEngine(m) {
+  const env = { ...process.env, ...codexRuntimeEnv(m), MIND_WAKE_DATA_DIR: m.dataDir };
+  const status = spawnSync(m.node, [path.join(m.repoDir, "dist/cli/main.js"), "status", "--json"], {
+    env,
+    cwd: m.repoDir,
+    windowsHide: true,
+    encoding: "utf8",
+    timeout: 15000,
+  });
+  if (status.status !== 0 || !canRestartCrashed(JSON.parse(status.stdout))) return false;
+  spawnEngine(m, env);
+  return true;
+}
+function spawnEngine(m, env) {
   const log = fs.openSync(path.join(m.dataDir, "daemon.log"), "a");
   try {
     const daemon = spawn(
@@ -115,6 +146,16 @@ export async function supervise(manifestFile, startup, launch = startLocal) {
     }
   }
   const configured = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+  // Veille du moteur : relance seulement après un arrêt brutal (voir canRestartCrashed).
+  if (configured.repoDir !== undefined) {
+    setInterval(() => {
+      try {
+        if (restartCrashedEngine(configured)) log("engine crashed; restarted");
+      } catch (error) {
+        log(`engine watch: ${error.message}`);
+      }
+    }, ENGINE_WATCH_MS).unref();
+  }
   if (configured.maintenance) {
     const { superviseDesktopMaintenance } = await import("./desktop-maintenance.mjs");
     return superviseDesktopMaintenance(manifestFile, launch);
