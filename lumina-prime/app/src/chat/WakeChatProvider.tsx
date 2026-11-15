@@ -17,17 +17,23 @@ export type WakeChatContextValue = {
 const Context = createContext<WakeChatContextValue|null>(null);
 export function useWakeChat() { const value=useContext(Context); if(!value) throw new Error('WakeChatProvider missing'); return value; }
 type Outgoing = { id: string; text: string; state: 'sending' | 'queued' | 'failed'; error?: string };
+const defaultChatUrl=process.env.EXPO_PUBLIC_MIND_CHAT_URL ?? 'http://127.0.0.1:8789';
 export function WakeChatProvider({ children }: { children: React.ReactNode }) {
-  const [url, setUrl] = useState(process.env.EXPO_PUBLIC_MIND_CHAT_URL ?? 'http://127.0.0.1:8789');
+  const [url, setUrl] = useState(defaultChatUrl);
   const [code, setCode] = useState(''); const [session, setSession] = useState<ChatSession | null>(null);
   const [pairing, setPairing] = useState(false); const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]); const [text, setText] = useState('');
   const [outgoing, setOutgoing] = useState<Outgoing[]>([]); const [online, setOnline] = useState(false);
   const [restoring, setRestoring] = useState(true);
-  const [voiceOptions,setVoiceOptions]=useState(false);
+  const [voiceOptions,setVoiceOptions]=useState(true);
+  const [voiceConversation,setVoiceConversation]=useState(false);
 
-  useEffect(() => { let active = true; void loadChatSession().then(value => {
+  useEffect(() => { let active = true; void loadChatSession().then(async value => {
     if (active) { setSession(value); setRestoring(false); }
+    if (!value && active) {
+      try { const local = await pairChat(defaultChatUrl, ''); await saveChatSession(local); if(active)setSession(local); }
+      catch(reason) { if(active)setError(chatErrorMessage(reason)); }
+    }
   }); return () => { active = false; }; }, []);
   useEffect(() => {
     if (!session) return;
@@ -44,7 +50,9 @@ export function WakeChatProvider({ children }: { children: React.ReactNode }) {
         if (!active) return;
         setOnline(false); setError(chatErrorMessage(reason));
         if (reason instanceof ChatClientError && reason.status === 401) {
-          void clearChatSession(); setSession(null); return;
+          void clearChatSession(); setSession(null);
+          void pairChat(session.url,'').then(async value=>{await saveChatSession(value);if(active)setSession(value);})
+            .catch(reason=>{if(active)setError(chatErrorMessage(reason));});return;
         }
         timer = setTimeout(() => { void listen(); }, backoff); backoff = Math.min(backoff * 2, 8000);
       }
@@ -78,11 +86,15 @@ export function WakeChatProvider({ children }: { children: React.ReactNode }) {
   return <Context.Provider value={{url,setUrl,code,setCode,session,pairing,error,messages,text,setText,outgoing,online,restoring,pair,submit,disconnect,sendDraft}}>
     {children}
     {session ? <>
-      <DeviceVoice onTranscript={value=>setText(previous=>[previous.trim(),value].filter(Boolean).join('\n'))} />
+      <DeviceVoice session={session} onTranscript={value=>{
+        if(voiceConversation && online) void submit({id:`chat-${Crypto.randomUUID()}`,text:value,state:'sending'});
+        else setText(previous=>[previous.trim(),value].filter(Boolean).join('\n'));
+      }} />
+      <Text style={[s.small,{paddingHorizontal:10}]}>{voiceConversation?'Conversation vocale : transcriptions envoyées automatiquement. Pause micro pour arrêter.':'Dictée : transcriptions dans le brouillon. Active la conversation vocale pour l’envoi automatique.'}</Text>
       <View style={{backgroundColor:colors.paper,paddingHorizontal:10}}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:voiceOptions}} onPress={()=>setVoiceOptions(value=>!value)}
           style={{minHeight:44,justifyContent:'center'}}><Text style={s.small}>{voiceOptions?'Masquer les options voix ▴':'Voix des réponses / Essayer ▾'}</Text></Pressable>
-        <View style={{display:voiceOptions?'flex':'none',paddingVertical:6}}><VoiceReplies messages={messages} connected={!!session&&online} session={session} onSpeakingChange={setCaptureSpeaking}/></View>
+        <View style={{display:voiceOptions?'flex':'none',paddingVertical:6}}><VoiceReplies messages={messages} connected={!!session&&online} session={session} onSpeakingChange={setCaptureSpeaking} onEnabledChange={setVoiceConversation}/></View>
       </View>
     </> : null}
   </Context.Provider>;

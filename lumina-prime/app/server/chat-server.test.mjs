@@ -24,6 +24,24 @@ async function setup(t, options = {}) {
       ...(origin ? { Origin: origin } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   return { service, messages, url, request, sends: () => sends };
 }
+test('private USB connection requires explicit opt-in and trusted loopback origin; sessions survive restart and revocation', async t => {
+  let saved=[];
+  const store={load:()=>saved,save:entries=>{saved=structuredClone(entries);}};
+  const off=await setup(t);
+  assert.equal((await off.request('/chat/connect-local',{method:'POST',origin:'http://localhost:8081',body:{}})).status,403);
+  const first=await setup(t,{localConnect:true,sessionStore:store});
+  assert.equal((await first.request('/chat/connect-local',{method:'POST',body:{}})).status,403);
+  assert.equal((await first.request('/chat/connect-local',{method:'POST',origin:'https://attacker.invalid',body:{}})).status,403);
+  const response=await first.request('/chat/connect-local',{method:'POST',origin:'http://localhost:8081',body:{}});
+  assert.equal(response.status,200);const session=await response.json();
+  assert.equal(JSON.stringify(saved).includes(session.token),false);
+  const second=await setup(t,{localConnect:true,sessionStore:store});
+  assert.equal((await second.request('/chat/messages',{token:session.token})).status,200);
+  assert.equal((await second.request('/chat/logout',{method:'POST',token:session.token})).status,200);
+  const third=await setup(t,{localConnect:true,sessionStore:store});
+  assert.equal((await third.request('/chat/messages',{token:session.token})).status,401);
+});
+
 test('owner history requires bearer, rejects untrusted Origin and Host, never reflects wildcard CORS', async t => {
   const h = await setup(t);
   assert.equal((await h.request('/chat/messages')).status, 401);

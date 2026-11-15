@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createPresenceRegistry, PresenceError } from './presence-registry.mjs';
+import { ReportError, validateReport } from './chat-reports.mjs';
 
 export class ChatError extends Error {
   constructor(code, status = 400) { super(code); this.code = code; this.status = status; }
@@ -14,12 +15,20 @@ const keys = (value, allowed) => value && typeof value === 'object' && !Array.is
 /** One existing owner's conversation. Pairing is not a social login or financial mandate. */
 export function createChatServer({ bridge, transcribe = null, pairingCode = randomBytes(12).toString('hex'),
   now = Date.now, pairTtlMs = 300_000, sessionTtlMs = 12 * 60 * 60_000,
-  origins = [], hosts = ['127.0.0.1', 'localhost'], pollIntervalMs = 500, maxWaitMs = 25_000 } = {}) {
+  origins = [], hosts = ['127.0.0.1', 'localhost'], pollIntervalMs = 500, maxWaitMs = 25_000,
+  localConnect = false, sessionStore = null, reportStore = null } = {}) {
   if (!bridge?.snapshot || !bridge?.send || typeof pairingCode !== 'string' || pairingCode.length < 12)
     throw new Error('A fixed owner bridge and strong pairing code are required');
   let pairUsed = false;
   const pairExpiresAt = now() + pairTtlMs;
-  const sessions = new Map();
+  const sessions = new Map(sessionStore?.load() ?? []);
+  const persist = () => sessionStore?.save([...sessions]);
+  function issueSession(origin, res) {
+    const token = randomBytes(32).toString('hex');
+    const session = { expiresAt: now() + sessionTtlMs };
+    sessions.set(digest(token).toString('hex'), session); persist();
+    send(res, 200, { schema: 'mind.chat.session.v1', token, expiresAt: session.expiresAt }, origin);
+  }
   const presence = createPresenceRegistry({ now, ttlMs: 45000 });
   const failures = new Map();
   const pending = new Map();
@@ -42,12 +51,12 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
       ...(origin ? { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' } : {}) });
     res.end(JSON.stringify(body));
   }
-  async function body(req) {
+  async function body(req, limit = 20_000) {
     if (!String(req.headers['content-type'] ?? '').startsWith('application/json')) throw new ChatError('json_required', 415);
     let bytes = 0; const chunks = [];
     for await (const chunk of req) {
       bytes += chunk.length;
-      if (bytes > 20_000) throw new ChatError('body_too_large', 413);
+      if (bytes > limit) throw new ChatError('body_too_large', 413);
       chunks.push(chunk);
     }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
@@ -76,6 +85,15 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type',
           'Cache-Control': 'no-store' }); res.end(); return;
       }
+      if (req.method === 'POST' && url.pathname === '/chat/connect-local') {
+        const loopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+        const loopbackOrigin = origin && ['localhost', '127.0.0.1'].includes(new URL(origin).hostname);
+        if (!localConnect || !loopback || !loopbackOrigin || !['localhost', '127.0.0.1'].includes(host))
+          throw new ChatError('local_connection_forbidden', 403);
+        if (url.search || !keys(await body(req), [])) throw new ChatError('invalid_request');
+        if (sessions.size >= 100) throw new ChatError('too_many_connections', 429);
+        issueSession(origin, res); return;
+      }
       if (req.method === 'POST' && url.pathname === '/chat/pair') {
         if (url.search) throw new ChatError('invalid_request');
         const input = await body(req);
@@ -88,12 +106,25 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
           throw new ChatError('pairing_invalid', 401);
         }
         pairUsed = true;
-        const token = randomBytes(32).toString('hex');
-        const session = { expiresAt: now() + sessionTtlMs };
-        sessions.set(digest(token).toString('hex'), session);
-        send(res, 200, { schema: 'mind.chat.session.v1', token, expiresAt: session.expiresAt }, origin); return;
+        issueSession(origin, res); return;
       }
       const session = sessionFor(req);
+      if (req.method === 'POST' && url.pathname === '/chat/reports') {
+        if (url.search) throw new ChatError('invalid_request');
+        if (!reportStore) throw new ReportError('reports_unavailable', 503);
+        const input = validateReport(await body(req, 80_000));
+        let receipt = reportStore.existing(input);
+        if (!receipt) {
+          const messages = await bridge.snapshot();
+          if (!Array.isArray(messages)) throw new ChatError('wake_unavailable', 503);
+          if (!messages.some(m => m.role === 'agent' && m.status === 'published'
+            && m.id === input.messageId && m.version === input.version && m.text.slice(0, 12000) === input.text))
+            throw new ReportError('report_message_changed', 409);
+          if (!sessions.has(session.key) || session.expiresAt <= now()) throw new ChatError('unauthorized', 401);
+          receipt = reportStore.record(input);
+        }
+        send(res, 200, receipt, origin); return;
+      }
       if (req.method === 'POST' && url.pathname === '/chat/presence') {
         if (url.search) throw new ChatError('invalid_request');
         const receipt = presence.update(session.key, await body(req));
@@ -121,7 +152,7 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         return;
       }
       if (req.method === 'POST' && url.pathname === '/chat/logout') {
-        sessions.delete(session.key); send(res, 200, { status: 'revoked' }, origin); return;
+        sessions.delete(session.key); persist(); send(res, 200, { status: 'revoked' }, origin); return;
       }
       if (req.method === 'POST' && url.pathname === '/chat/messages') {
         if (url.search) throw new ChatError('invalid_request');
@@ -170,8 +201,8 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
       }
       throw new ChatError('not_found', 404);
     } catch (error) {
-      send(res, error instanceof ChatError || error instanceof PresenceError ? error.status : 503,
-        { error: error instanceof ChatError || error instanceof PresenceError ? error.code : 'wake_unavailable' }, origin);
+      send(res, error instanceof ChatError || error instanceof PresenceError || error instanceof ReportError ? error.status : 503,
+        { error: error instanceof ChatError || error instanceof PresenceError || error instanceof ReportError ? error.code : 'wake_unavailable' }, origin);
     }
   });
   server.requestTimeout = 30_000;

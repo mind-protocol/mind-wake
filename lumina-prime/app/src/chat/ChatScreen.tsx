@@ -1,13 +1,27 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card } from '../ui/Primitives';
 import { colors, styles as s } from '../ui/theme';
 import type { ChatMessage } from './client.ts';
 import { useWakeChat } from './WakeChatProvider';
+import { ReportDialog } from './ReportDialog';
+import { createScrollFollow } from './scroll-follow';
+import { createWebScrollFollow } from './scroll-follow-web';
 export default function WakeChatScreen() {
-  const {url,setUrl,code,setCode,session,pairing,error,messages,text,setText,outgoing,online,restoring,pair,submit,disconnect,sendDraft}=useWakeChat();
+  const {url,setUrl,session,pairing,error,messages,text,setText,outgoing,online,restoring,pair,submit,disconnect,sendDraft}=useWakeChat();
   const list=useRef<FlatList<ChatMessage>>(null);
+  const [following, setFollowing] = useState(true);
+  const [scrollFollow] = useState(() => createScrollFollow(() => {}, setFollowing));
+  const [webFollow] = useState(() => createWebScrollFollow(scrollFollow));
+  const web = Platform.OS === 'web';
+  useLayoutEffect(() => {
+    scrollFollow.setScrollToEnd(() => list.current?.scrollToEnd({ animated: false }));
+  }, [scrollFollow]);
+  useEffect(() => { if (!session) scrollFollow.reset(); }, [session, scrollFollow]);
+  useLayoutEffect(() => { scrollFollow.contentChanged(); webFollow.invalidate(); }, [messages, outgoing, scrollFollow, webFollow]);
+  const [reported, setReported] = useState<{ message: ChatMessage; url: string } | null>(null);
+  const [reportVisible, setReportVisible] = useState(false);
   const lastHuman = messages.filter(message => message.role === 'human').at(-1);
   const lastAgent = messages.filter(message => message.role === 'agent').at(-1);
   const awaiting = lastHuman && (!lastAgent || lastHuman.at > lastAgent.at);
@@ -18,20 +32,38 @@ export default function WakeChatScreen() {
         {session ? <Pressable accessibilityRole="button" accessibilityLabel="Déconnecter cet appareil" hitSlop={10} onPress={() => { void disconnect(); }} style={{ minHeight:44,justifyContent:'center' }}><Text style={s.small}>Déconnecter</Text></Pressable> : null}
       </View>
       {!session ? <View style={{ padding: 20, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center' }}>
-        <Card><Text style={s.body}>Retrouve ici les réponses de ton agent Wake. L’appairage donne accès à ton fil personnel ; la connexion X ou Telegram ne le remplace pas.</Text>
-          <Text style={s.small}>Sur le téléphone, utilise l’adresse locale du PC et le code temporaire fourni dans Wake. Ce parcours n’autorise aucun paiement.</Text>
+        <Card><Text style={s.body}>Retrouve ici les réponses de ton agent Wake. La connexion privée retrouve ton fil personnel après un rechargement.</Text>
+          <Text style={s.small}>La liaison USB privée permet de reconnecter ce téléphone sans code.</Text>
           <TextInput accessibilityLabel="Adresse de la passerelle Wake" style={s.input} autoCapitalize="none" autoCorrect={false} value={url} onChangeText={setUrl} keyboardType="url" />
-          <TextInput accessibilityLabel="Code temporaire d’appairage" secureTextEntry style={s.input} autoCapitalize="none" autoCorrect={false} value={code} onChangeText={setCode} />
-          <Button title={pairing ? 'Appairage…' : 'Relier mon Wake'} disabled={pairing || restoring || !code.trim()} onPress={() => { void pair(); }} />
+          <Button title={pairing ? 'Appairage…' : 'Reconnecter mon Wake'} disabled={pairing || restoring} onPress={() => { void pair(); }} />
         </Card>
         {error ? <Text accessibilityRole="alert" style={{ color: colors.danger }}>{error}</Text> : null}
       </View> : <>
+        <View style={{ flex: 1 }} {...(web ? webFollow.inputHandlers : {})}>
         <FlatList ref={list} data={messages} keyExtractor={item => item.id} style={{ flex: 1 }}
           contentContainerStyle={{ gap: 8, padding: 12, width: '100%', maxWidth: 860, alignSelf: 'center' }}
-          onContentSizeChange={() => list.current?.scrollToEnd({ animated: false })}
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          onLayout={event => { webFollow.invalidate(); scrollFollow.onLayout(event); }}
+          onContentSizeChange={(width, height) => { webFollow.invalidate(); scrollFollow.onContentSizeChange(width, height); }}
+          onScroll={web ? webFollow.onScroll : undefined}
+          scrollEventThrottle={web ? 16 : undefined}
+          onScrollBeginDrag={scrollFollow.onScrollBeginDrag}
+          onScrollEndDrag={scrollFollow.onScrollEndDrag}
+          onMomentumScrollEnd={scrollFollow.onMomentumScrollEnd}
+          onScrollToTop={scrollFollow.suspend}
           renderItem={({ item }) => <View style={{ alignSelf: item.role === 'human' ? 'flex-end' : 'flex-start', maxWidth: '95%',
             padding: 12, borderRadius: 16, gap: 3, backgroundColor: item.role === 'human' ? colors.green : colors.paper }}>
             <Text style={s.strong}>{item.role === 'agent' ? 'Marco' : 'Toi'}</Text><Text selectable style={s.body}>{item.text}</Text>
+            {item.role === 'agent' ? <>
+              <Button secondary title="Signaler cette réponse"
+                onPress={() => {
+                  webFollow.invalidate();
+                  scrollFollow.suspend();
+                  if (!reported || reported.message.id !== item.id || reported.message.version !== item.version || reported.url !== session.url)
+                    setReported({ message: { ...item }, url: session.url });
+                  setReportVisible(true);
+                }} />
+            </> : null}
             <Text style={[s.small, { fontSize: 10 }]}>{new Date(item.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               {item.role === 'human' ? item.status === 'delivered' ? ' · Transmis à la session Wake' : ' · Enregistré dans la file Wake' : ''}</Text>
           </View>}
@@ -40,6 +72,10 @@ export default function WakeChatScreen() {
             <Text style={s.body}>{item.text}</Text><Text accessibilityLiveRegion="polite" style={s.small}>{item.state === 'sending' ? 'Envoi…' : item.state === 'queued' ? 'Enregistré dans la file Wake' : item.error}</Text>
             {item.state === 'failed' ? <Button secondary title="Réessayer le même message" onPress={() => { void submit(item); }} /> : null}
           </View>)}{awaiting ? <Text style={s.small}>En attente de Marco.</Text> : null}</View>} />
+        {!following ? <View style={{ position: 'absolute', bottom: 8, alignSelf: 'center' }}>
+          <Button secondary title="Messages récents ↓" onPress={() => { webFollow.invalidate(); scrollFollow.recent(); }} />
+        </View> : null}
+        </View>
         <View style={{ paddingHorizontal: 10, paddingVertical: 4, gap: 3, width: '100%', maxWidth: 860, alignSelf: 'center', borderTopWidth: 1, borderColor: colors.line }}>
           {error ? <Text accessibilityLiveRegion="polite" style={{ color: colors.danger }}>{error}</Text> : null}
           <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
@@ -54,6 +90,9 @@ export default function WakeChatScreen() {
           {text.length > 4000 ? <Text accessibilityLiveRegion="polite" style={{color:colors.danger}}>Brouillon trop long : tes mots sont conservés. Raccourcis avant l’envoi.</Text> : null}
         </View>
       </>}
+      {reported ? <ReportDialog key={reported.message.id + ':' + reported.message.version + reported.url}
+        message={reported.message} session={session?.url === reported.url ? session : null}
+        visible={reportVisible} onClose={() => setReportVisible(false)} /> : null}
     </KeyboardAvoidingView>
   </SafeAreaView>;
 }

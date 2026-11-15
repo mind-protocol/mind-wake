@@ -32,7 +32,7 @@ export function parseChatSnapshot(value: unknown): ChatSnapshot {
   }
   return input as ChatSnapshot;
 }
-async function call(url: string, path: string, options: RequestInit, fetchImpl = fetch): Promise<unknown> {
+export async function call(url: string, path: string, options: RequestInit, fetchImpl = fetch): Promise<unknown> {
   const controller = new AbortController();
   const abort = () => controller.abort();
   if (options.signal?.aborted) controller.abort();
@@ -51,8 +51,8 @@ async function call(url: string, path: string, options: RequestInit, fetchImpl =
 }
 export async function pairChat(url: string, code: string, signal?: AbortSignal, fetchImpl = fetch): Promise<ChatSession> {
   url = chatUrl(url);
-  const value = await call(url, '/chat/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: code.trim().toLowerCase() }), signal }, fetchImpl) as { schema?: unknown; token?: unknown; expiresAt?: unknown };
+  const value = await call(url, code ? '/chat/pair' : '/chat/connect-local', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(code ? { code: code.trim().toLowerCase() } : {}), signal }, fetchImpl) as { schema?: unknown; token?: unknown; expiresAt?: unknown };
   if (value?.schema !== 'mind.chat.session.v1' || typeof value.token !== 'string' || !/^[a-f0-9]{64}$/.test(value.token)
     || typeof value.expiresAt !== 'number' || value.expiresAt <= Date.now()) throw new ChatClientError('invalid_response');
   return { url, token: value.token, expiresAt: value.expiresAt };
