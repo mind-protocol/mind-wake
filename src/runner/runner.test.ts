@@ -456,7 +456,7 @@ describe("crash du daemon et réconciliation au démarrage", () => {
       expect(startup.orphans[0]?.reservationStatus).toBe("uncertain");
       expect(bench.uow.sessions.get(grant.sessionId)).toMatchObject({ outcome: "orphaned" });
       expect(bench.uow.ledger.getReservation(grant.reservationId)?.status).toBe("uncertain");
-      expect(bench.uow.profiles.get(PROFILE)?.state).toBe("blocked");
+      expect(bench.uow.profiles.get(PROFILE)?.state).toBe("hibernating");
       expect(events(bench.uow, "orphan_reconciled")[0]?.metadata["replayed"]).toBe(false);
       expect(events(bench.uow, "session_started")).toHaveLength(1);
       expect(restarted.activeSessionId).toBeNull();

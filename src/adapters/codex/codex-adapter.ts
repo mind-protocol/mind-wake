@@ -18,6 +18,7 @@ import {
   ownerMessagePending,
 } from "../../communication/owner-inbox.js";
 import { CodexOwnerSteering } from "./owner-steering.js";
+import { clusterStatus } from "../../communication/cluster-status.js";
 import { claimProgressReminder, finishProgressReminder } from "../../communication/owner-progress-reminder.js";
 /**
  * Adapter Codex (ADR-002, ADR-004, ADR-005) : une session Wake = un processus
@@ -95,6 +96,7 @@ export interface CodexAdapterOptions {
   readonly delegationReminder?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
+  readonly onClusterStatus?: (text: string) => void;
   readonly executable: CodexExecutable;
   /** Dossier Codex propre à Wake (configuration, connexion officielle). */
   readonly codexHome: string;
@@ -963,9 +965,16 @@ export class CodexAdapter implements RuntimeAdapter {
         }
         break;
       }
-      case "item/completed":
-        this.#onItemCompleted(session, asRecord(params["item"]), params["turnId"]);
+      case "item/completed": {
+        const item = asRecord(params["item"]);
+        const status = !session.planning && session.turn === "inProgress" &&
+          session.turnId !== null && params["turnId"] === session.turnId && session.threadId !== null &&
+          params["threadId"] === session.threadId && this.#options.onClusterStatus
+          ? clusterStatus(item) : undefined;
+        if (status) this.#options.onClusterStatus?.(status);
+        this.#onItemCompleted(session, item, params["turnId"]);
         break;
+      }
       case "thread/tokenUsage/updated":
         this.#onTokenUsage(session, params);
         break;

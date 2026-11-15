@@ -1,5 +1,6 @@
 import type { WakeImage } from "../../contracts/wake-image.js";
 import { claudeWakeContent } from "../wake-image.js";
+import path from "node:path";
 /**
  * Ligne de commande et environnement de `claude -p`, à partir des seules options documentées
  * dans la référence CLI officielle (code.claude.com/docs/en/cli-reference, vérifiée le
@@ -20,7 +21,10 @@ export const DEFAULT_CLAUDE_TOOLS = ["Bash", "Read", "Edit", "Write", "Glob", "G
  * Réglages passés par `--settings` : pas de hooks (un hook écrit par l'agent dans son
  * espace ne doit rien exécuter hors de son tour), pas de co-signature imposée.
  */
-export const CLAUDE_SESSION_SETTINGS = JSON.stringify({ disableAllHooks: true });
+export const CLAUDE_SESSION_SETTINGS = JSON.stringify({
+  disableAllHooks: true,
+  bashEditDiffEnabled: false,
+});
 
 export type ClaudePermissionStance =
   /** Sandbox AppContainer avec autotest réussi : mode sans approbation (ADR-005). */
@@ -29,6 +33,16 @@ export type ClaudePermissionStance =
   | "skip_permissions_unsandboxed"
   /** Hors sandbox : `dontAsk`, seuls les outils listés passent, sans demande. */
   | "allowlist_only";
+
+/** Trusted Bash hook shipped next to the owner inbox hook (same build directory). */
+export function interruptibleBashScript(ownerInboxScript: string): string {
+  return path.join(
+    path.dirname(path.dirname(ownerInboxScript)),
+    "communication",
+    // Même extension que le hook : `.js` compilé, `.ts` hors compilation.
+    `interruptible-bash${path.extname(ownerInboxScript) || ".js"}`,
+  );
+}
 
 export interface ClaudeRunArgs {
   readonly model: string;
@@ -42,9 +56,13 @@ export interface ClaudeRunArgs {
     readonly script: string;
     readonly dataDir: string;
     readonly node: string;
+    /** Options Node avant le script (chargeur TypeScript quand le moteur tourne depuis src). */
+    readonly nodeArgs?: readonly string[];
   };
   /** Configuration MCP explicitement fournie par le lanceur de confiance. */
   readonly mcpConfigFile?: string;
+  /** Journal de débogage du CLI (`--debug-file`), activé par l'administrateur du poste. */
+  readonly debugFile?: string;
   readonly permission: ClaudePermissionStance;
   /** `--session-id` pour une conversation neuve, `--resume` pour la suite. */
   readonly session: { readonly mode: "new" | "resume"; readonly id: string };
@@ -83,8 +101,33 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
           "--settings",
           JSON.stringify({
             disableAllHooks: false,
-            hooks: Object.fromEntries(
-              ["SessionStart", "PostToolUse", "PostToolUseFailure", "Stop"].map((event) => [
+            // Diff git avant chaque Bash : plusieurs minutes dans un espace de 57 000 fichiers
+            // (6 novembre 2026, session principale bloquée). Inutile à un agent autonome.
+            bashEditDiffEnabled: false,
+            hooks: Object.fromEntries([
+              // Bash calls yield to a newly arrived human message (interruptible-bash.ts).
+              [
+                "PreToolUse",
+                [
+                  {
+                    matcher: "Bash",
+                    hooks: [
+                      {
+                        type: "command",
+                        command: options.ownerInboxHook.node,
+                        args: [
+                          ...(options.ownerInboxHook.nodeArgs ?? []),
+                          interruptibleBashScript(options.ownerInboxHook.script),
+                          "--rewrite-bash",
+                          options.ownerInboxHook.dataDir,
+                          options.session.id,
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              ],
+              ...["SessionStart", "PostToolUse", "PostToolUseFailure", "Stop"].map((event) => [
                 event,
                 [
                   {
@@ -93,6 +136,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
                         type: "command",
                         command: options.ownerInboxHook!.node,
                         args: [
+                          ...(options.ownerInboxHook!.nodeArgs ?? []),
                           options.ownerInboxHook!.script,
                           "--deliver-owner-inbox",
                           options.ownerInboxHook!.dataDir,
@@ -103,7 +147,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
                   },
                 ],
               ]),
-            ),
+            ]),
           }),
         ]),
     options.session.mode === "new" ? "--session-id" : "--resume",
@@ -119,6 +163,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     if (options.tools.length > 0) args.push("--allowedTools", options.tools.join(","));
   }
   if (options.mcpConfigFile !== undefined) args.push("--mcp-config", options.mcpConfigFile);
+  if (options.debugFile !== undefined) args.push("--debug-file", options.debugFile);
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
   if (options.ownerInboxHook !== undefined) args.push("--replay-user-messages");
   return args;

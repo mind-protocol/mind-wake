@@ -438,6 +438,7 @@ describe("adapter Claude Code : mode non isolé sur l'hôte (ADR-006)", () => {
     expect(argv).not.toContain("--setting-sources");
     expect(h.launches[0]?.env).not.toHaveProperty("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC");
     expect(h.launches[0]?.env).toHaveProperty("CLAUDE_CODE_ENABLE_TODO_TOOLS", "1");
+    expect(h.launches[0]?.env).toHaveProperty("BASH_DEFAULT_TIMEOUT_MS", "15000");
   });
 
   const hostSource = {
@@ -518,6 +519,15 @@ describe("adapter Claude Code : session", () => {
     const argv = invocations()[0]?.argv ?? [];
     expect(argv).toContain("--strict-mcp-config");
     expect(flagValue(argv, "--mcp-config")).toBe(path.join(h.configDir, "mind-mcp.json"));
+  });
+
+  it("écrit un journal de débogage par session quand le poste l'active", async () => {
+    await run(adapter({ debugDir: path.join(h.configDir, "debug") }), "s-debug");
+    expect(flagValue(invocations()[0]?.argv ?? [], "--debug-file")).toBe(
+      path.join(h.configDir, "debug", "s-debug.log"),
+    );
+    await run(adapter({}), "s-nodebug");
+    expect(invocations()[1]?.argv).not.toContain("--debug-file");
   });
 
   it("lance dans la sandbox avec session fixée, outils listés et environnement minimal", async () => {

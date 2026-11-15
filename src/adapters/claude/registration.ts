@@ -75,6 +75,8 @@ export interface ClaudeRegistrationConfig {
   readonly systemPrompt?: string;
   /** Configuration MCP administrée hors de l’espace de l’agent (mode hôte). */
   readonly mcpConfigFile?: string;
+  /** Journaux de débogage du CLI, un par session (`MIND_WAKE_CLAUDE_DEBUG_DIR`). */
+  readonly debugDir?: string;
   /** Variables supplémentaires sans nom de secret (bancs de test). */
   readonly extraEnv?: Readonly<Record<string, string>>;
   /** Dossier des superviseurs de jauge ; défaut : `runtime/` du dossier de données. */
@@ -101,6 +103,7 @@ export function defaultClaudeConfig(
 ): ClaudeRegistrationConfig {
   const configDir = env["MIND_WAKE_CLAUDE_CONFIG_DIR"];
   const mcpConfigFile = env["MIND_WAKE_CLAUDE_MCP_CONFIG"];
+  const debugDir = env["MIND_WAKE_CLAUDE_DEBUG_DIR"];
   const gitBashPath = env["CLAUDE_CODE_GIT_BASH_PATH"];
   const compact = Number(env["MIND_WAKE_CLAUDE_COMPACT_TOKENS"] ?? DEFAULT_COMPACT_ABOVE_TOKENS);
   return {
@@ -112,6 +115,7 @@ export function defaultClaudeConfig(
     ...(configDir === undefined ? {} : { configDir }),
     ...(gitBashPath === undefined ? {} : { gitBashPath }),
     ...(mcpConfigFile === undefined ? {} : { mcpConfigFile }),
+    ...(debugDir === undefined ? {} : { debugDir }),
   };
 }
 
@@ -187,6 +191,9 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
           );
         },
         ...(config.mcpConfigFile === undefined ? {} : { mcpConfigFile: config.mcpConfigFile }),
+        ...(config.debugDir === undefined
+          ? {}
+          : { debugDir: (fs.mkdirSync(config.debugDir, { recursive: true }), config.debugDir) }),
         workspaceFor: () => context.workspaceDir,
         conversationKeyFor: (sessionId) =>
           wakeConversationKey(dir, context.experimentFor(sessionId)),
