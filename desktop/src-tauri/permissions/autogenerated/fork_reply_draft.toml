@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-fork-reply-draft"
+description = "Enables the fork_reply_draft command without any pre-configured scope."
+commands.allow = ["fork_reply_draft"]
+
+[[permission]]
+identifier = "deny-fork-reply-draft"
+description = "Denies the fork_reply_draft command without any pre-configured scope."
+commands.deny = ["fork_reply_draft"]
