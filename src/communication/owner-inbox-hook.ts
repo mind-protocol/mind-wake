@@ -1,6 +1,6 @@
 import { claimDuoReminder, finishDuoReminder } from "./duo-reminder.js";
 /** Trusted Claude command hook. Paths/session come from launcher args, never tool input. */
-import { takeOwnerMessages } from "./owner-inbox.js";
+import { heldForFastReply, takeOwnerMessagesForHook } from "./owner-inbox.js";
 import { ownerMessageText } from "./owner-content.js";
 import { randomUUID } from "node:crypto";
 import { claimProgressReminder, finishProgressReminder } from "./owner-progress-reminder.js";
@@ -21,14 +21,20 @@ export function ownerInboxHook(
     name !== "Stop"
   )
     return null;
-  const messages = takeOwnerMessages(dataDir, expectedSession);
+  // The inbox itself holds messages while a fast reply is being written (every runtime);
+  // no reminder replaces them meanwhile. The fast reply arrives as an inbox message.
+  if (name !== "Stop" && heldForFastReply(dataDir)) return null;
+  const batch = takeOwnerMessagesForHook(dataDir, expectedSession);
+  const messages = batch.messages;
   const claim = randomUUID();
   const duo = messages.length ? null : claimDuoReminder(dataDir, claim);
   const reminder = duo ?? (messages.length ? null : claimProgressReminder(dataDir, expectedSession, claim));
-  if (messages.length === 0 && reminder === null) return null;
-  const context =
-    reminder ??
-    messages.map(({ image: _image, ...message }) => ownerMessageText(message)).join("\n\n");
+  if (messages.length === 0 && reminder === null && batch.deferred === 0) return null;
+  const context = [
+    ...(reminder === null ? [] : [reminder]),
+    messages.map(({ image: _image, ...message }) => ownerMessageText(message)).join("\n\n"),
+    ...(batch.deferred > 0 ? [`+${String(batch.deferred)} autres messages en attente`] : []),
+  ].filter(Boolean).join("\n\n");
   if (duo) finishDuoReminder(dataDir, claim, true);
   else if (reminder) finishProgressReminder(dataDir, expectedSession, claim, true);
   return name === "Stop"

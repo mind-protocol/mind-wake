@@ -165,7 +165,8 @@ export function readReceivedMessages(
       state: deliveredAt ? "delivered" : "stored",
       source: {
         channel: channel === "mind-shared-hub" || channel === "mind-local-hub" || channel === "repo-session" ? channel : "local-inbox",
-        kind: origin?.channel === "reddit" ? "reddit" : origin?.channel === "thecolony" ? "thecolony" : origin?.kind === "context_copy" ? "contexte" : origin ? "pair" : "unknown",
+        kind: origin?.channel === "cluster-status" && origin.kind === "peer_message"
+          ? "cluster-status" : origin?.channel === "reddit" ? "reddit" : origin?.channel === "thecolony" ? "thecolony" : origin?.kind === "context_copy" ? "contexte" : origin ? "pair" : "unknown",
         ref: origin?.senderRef ?? m.id,
         name: origin?.author ?? "Relais local · expéditeur non attesté",
         assurance: "channel_record",
