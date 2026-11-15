@@ -157,6 +157,11 @@ async fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Resul
 }
 
 #[tauri::command]
+async fn fast_reply_status() -> Result<CliRun, String> { blocking(|| cli::fast_reply("status")).await }
+#[tauri::command]
+async fn fast_reply_set(enabled: bool) -> Result<CliRun, String> { blocking(move || cli::fast_reply(if enabled { "on" } else { "off" })).await }
+
+#[tauri::command]
 async fn workspace_sync_configure(workspace_dir: String, github_url: String, enabled: bool) -> Result<CliRun, String> {
     blocking(move || cli::workspace_sync("configure", Some((workspace_dir, github_url, enabled)))).await
 }
@@ -386,6 +391,8 @@ fn main() {
             workspace_sync_status,
             workspace_sync_configure,
             elevenlabs,
+            fast_reply_status,
+            fast_reply_set,
             workspace_sync_now,
             wake_open_location,
             open_external_url,

@@ -23,6 +23,8 @@
     "allow-workspace-sync-configure",
     "allow-workspace-sync-now",
     "allow-elevenlabs",
+    "allow-fast-reply-status",
+    "allow-fast-reply-set",
     "allow-wake-journal",
     "allow-wake-pause",
     "allow-wake-resume",

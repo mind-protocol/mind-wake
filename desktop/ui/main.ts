@@ -15,6 +15,7 @@ import { initWorkspaceSync } from "./workspace-sync.js";
 import {voiceCaptureSelection,voiceThreadSettings,isVoiceThreadId} from "./voice-conversations.js";
 import {deliverVoiceTranscript} from "./deliver-voice.js";
 import { initElevenLabs } from "./elevenlabs.js";
+import { mountFastReply } from "./fast-reply.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
 import { bindChatImages } from "./chat-images.js";
@@ -1362,6 +1363,7 @@ if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
 if (tauri) {const voicePlayer=initElevenLabs((command, args) => tauri.core.invoke(command, args), voiceChatPlayback,clip=>{voiceCapture.played(clip);voiceRouteStatus.textContent=" · Dernier vocal : "+(threadSettings.get().find(t=>t.id===clip.threadId)?.label??"non attribué")+" · tes prochains messages vont aux destinataires choisis";},event=>voiceCycle.event(event));
   voiceChatBargeIn({enabled:()=>bargeInSetting.enabled(),interrupt:()=>{if(bargeInSetting.enabled())voicePlayer.interrupt();}});}
+if (tauri) mountFastReply((command,args)=>tauri.core.invoke(command,args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
 if (tauri) {

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-fast-reply-status"
+description = "Enables the fast_reply_status command without any pre-configured scope."
+commands.allow = ["fast_reply_status"]
+
+[[permission]]
+identifier = "deny-fast-reply-status"
+description = "Denies the fast_reply_status command without any pre-configured scope."
+commands.deny = ["fast_reply_status"]

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-fast-reply-set"
+description = "Enables the fast_reply_set command without any pre-configured scope."
+commands.allow = ["fast_reply_set"]
+
+[[permission]]
+identifier = "deny-fast-reply-set"
+description = "Denies the fast_reply_set command without any pre-configured scope."
+commands.deny = ["fast_reply_set"]

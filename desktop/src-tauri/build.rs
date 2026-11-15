@@ -37,6 +37,8 @@ fn main() {
             "workspace_sync_configure",
             "workspace_sync_now",
             "elevenlabs",
+            "fast_reply_status",
+            "fast_reply_set",
             "wake_journal",
             "wake_pause",
             "wake_resume",

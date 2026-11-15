@@ -198,6 +198,7 @@
             <label for="elevenlabs-voice">Voix par défaut</label>
             <select id="elevenlabs-voice"><option value="">Choisir une voix</option></select>
             <label><input id="elevenlabs-enabled" type="checkbox" /> Autoriser la génération vocale avec les crédits de mon compte ElevenLabs</label>
+            <label><input id="fast-reply-enabled" type="checkbox" /> Réponse rapide ⚡ <span id="fast-reply-state" class="hint" role="status"></span></label>
             <label><input id="elevenlabs-autoplay" type="checkbox" checked /> Lire automatiquement les voix reçues dans le desktop</label>
             <button type="submit">Enregistrer</button>
           </form>
@@ -359,6 +360,7 @@
           </div>
         </div>
         <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
+        <p id="fast-reply-indicator" class="hint" role="status" hidden>⚡ coupée · l’agent principal continue de répondre</p>
         <p class="hint conversation-description" data-i18n="Votre conversation, au fil des réveils.">Votre conversation, au fil des réveils.</p>
         <button id="chat-older" class="link" type="button" hidden data-i18n="Afficher les messages précédents">Afficher les messages précédents</button>
         <ol id="chat" class="messages" aria-live="polite"></ol>

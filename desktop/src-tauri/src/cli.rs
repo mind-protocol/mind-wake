@@ -108,6 +108,11 @@ pub fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<
     run_with_timeout(args, Some(input), Duration::from_secs(75))
 }
 
+pub fn fast_reply(action: &str) -> Result<CliRun, String> {
+    let verb = match action { "status" => "status", "on" => "on", "off" => "off", _ => return Err("Action réponse rapide inconnue".into()) };
+    run(wake_args(&["fast-reply", verb])?, None)
+}
+
 /// Fixed read-only projection. No action/path comes from the webview.
 pub fn voice_graph() -> Result<CliRun, String> {
     run_with_timeout(vec![repo().join("services/voice-graph/desktop-main.mjs").into()], None, Duration::from_secs(75))
