@@ -66,6 +66,22 @@ class FakeDocument {
 }
 afterEach(() => vi.unstubAllGlobals());
 
+it('keeps dictation text first with compact context frames and the complete image still available', () => {
+  const {doc, body, original} = bubble();
+  original.textContent = 'Ma réponse transcrite';
+  appendMessageImages(body as unknown as HTMLElement,
+    '[Dictée vocale]\nMa réponse transcrite\n![Début de la dictée · 2026-11-04](https://example.com/start.jpg)\n![Écran de la dictée · 2026-11-04](https://example.com/middle.jpg)\n![Fin de la dictée · 2026-11-04](https://example.com/end.jpg)',
+    async () => null);
+  expect(body.children[0]).toBe(original);
+  const gallery = body.children[1]!;
+  expect(gallery.className).toBe('message-images message-images-dictation');
+  expect(gallery.children.map(figure => figure.querySelector('figcaption')!.textContent)).toEqual(['Début', 'Écran', 'Fin']);
+  const image = gallery.children[0]!.querySelector('img')!;
+  expect(image.src).toBe('https://example.com/start.jpg');
+  image.fire('load'); gallery.children[0]!.querySelector('button')!.fire('click');
+  expect(doc.body.querySelector('dialog')!.querySelector('img')!.src).toBe(image.src);
+});
+
 function bubble(): {doc: FakeDocument; body: Node; original: Node} {
   const doc = new FakeDocument(); vi.stubGlobal('document', doc); vi.stubGlobal('IntersectionObserver', undefined);
   const li = doc.createElement('li'), meta = doc.createElement('small'), body = doc.createElement('div'), original = doc.createElement('p');

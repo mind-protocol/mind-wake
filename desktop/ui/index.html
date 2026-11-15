@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title data-i18n="Que fait mon agent ? — MIND Wake">Que fait mon agent ? — MIND Wake</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="voice-graph.css" />
     <link rel="stylesheet" href="series-assembly.css" />
     <link rel="stylesheet" href="series-director-notes.css" />
     <link rel="stylesheet" href="loading.css" />
@@ -34,7 +35,7 @@
         <audio id="elevenlabs-audio" controls preload="none"></audio>
         <button id="elevenlabs-skip" type="button">Arrêter / passer</button>
       </aside>
-      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span>
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span><span id="voice-interlocutors" class="count" aria-label="Interlocuteurs vocaux raccordés">0</span>
       <div class="app-controls" role="group" aria-label="Application">
         <button id="app-restart" type="button" data-i18n="Redémarrer l’app">Redémarrer l’app</button>
         <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter" data-i18n-title="F11 pour basculer, Échap pour quitter" data-i18n="Plein écran">Plein écran</button>
@@ -91,6 +92,7 @@
          data-i18n="Rencontres">
           Rencontres <span id="unread" class="count" hidden></span>
         </button>
+        <button id="tab-voice" role="tab" type="button" aria-selected="false" aria-controls="view-voice">Voice</button>
         <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history" data-i18n="Réveils">Réveils</button>
         <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents" data-i18n="Conseils">Conseils <span id="agents-count" class="count" hidden></span></button>
         <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects" data-i18n="Projets et tâches">Projets et tâches</button>
@@ -100,6 +102,28 @@
         </div>
       </nav>
 
+      <section id="view-voice" role="tabpanel" aria-labelledby="tab-voice" hidden>
+        <div class="voice-mode-controls"><button id="voice-mode-toggle" type="button" aria-pressed="false">Play</button><span id="voice-mode-status" role="status">Voice Mode en pause</span></div>
+        <div id="voice-graph" aria-label="Graphe des sessions et messages"></div>
+        <div class="voice-mode-canvas" hidden aria-hidden="true">
+          <div id="voice-marker-fil1" class="voice-mode-marker">1</div><div id="voice-marker-fil2" class="voice-mode-marker">2</div><div id="voice-marker-fil3" class="voice-mode-marker">3</div>
+        </div>
+      <label class="voice-screenshots-setting" title="Pendant Voice, échantillonne l’écran principal environ cinq fois par seconde et joint les zones inédites à la dictée."><input id="voice-screenshots" type="checkbox"> Joindre les changements d’écran (fenêtres de 30 s)</label>
+<details id="voice-advanced"><summary>Réglages avancés</summary><div id="voice-advanced-controls">            <label for="chat-recipient" data-i18n="Destinataire">Destinataire</label>
+            <select id="chat-recipient" aria-describedby="chat-recipient-status">
+              <option value="all">Tous · agents actifs</option>
+              <option value="owner" selected data-i18n="Mon agent">Mon agent</option>
+              <option value="auroracle" hidden disabled data-i18n="Correspondant non configuré">Correspondant non configuré</option>
+            </select>
+            <p id="chat-recipient-status" class="hint" role="status"></p>
+            <details id="broadcast-receipt" hidden><summary>Détail des destinataires</summary><pre id="broadcast-receipt-details"></pre></details>
+          <label class="chat-transcription-provider">Transcription
+            <select id="chat-transcription-provider" aria-describedby="chat-voice-status">
+              <option value="current" selected>Dictée actuelle</option>
+              <option value="elevenlabs">ElevenLabs · sous-titres en direct</option>
+            </select>
+          </label>
+<p id="voice-processing-status" class="hint" role="status"></p><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button></div></details></section>
       <div id="view-projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
         <div class="projects-toolbar"><h1 data-i18n="Projets et tâches">Projets et tâches</h1><button id="projects-refresh" type="button" data-i18n="Actualiser">Actualiser</button></div>
         <p id="projects-status" role="status" class="hint"></p>
@@ -158,6 +182,12 @@
       </aside>
 
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <section aria-labelledby="h-voice-switch">
+          <h2 id="h-voice-switch">Voice</h2>
+          <div class="fork-control"><button id="voice-switch" type="button" role="switch" aria-checked="false" aria-labelledby="h-voice-switch" aria-describedby="voice-switch-hint voice-switch-note">Off</button>
+          <small id="voice-switch-hint">Micro et lecture vocale. Off coupe tout de suite.</small></div>
+          <p id="voice-switch-note" class="hint" role="status"></p>
+        </section>
         <section aria-labelledby="h-elevenlabs">
           <h2 id="h-elevenlabs">Voix · ElevenLabs</h2>
           <form id="elevenlabs-form" class="workspace-sync-form">
@@ -336,14 +366,6 @@
         <div id="chat-progress-reminder" role="status" hidden></div>
         <p id="chat-note" class="hint"></p>
         <form id="chat-form">
-            <label for="chat-recipient" data-i18n="Destinataire">Destinataire</label>
-            <select id="chat-recipient" aria-describedby="chat-recipient-status">
-              <option value="all">Tous · agents actifs</option>
-              <option value="owner" selected data-i18n="Mon agent">Mon agent</option>
-              <option value="auroracle" hidden disabled data-i18n="Correspondant non configuré">Correspondant non configuré</option>
-            </select>
-            <p id="chat-recipient-status" class="hint" role="status"></p>
-            <details id="broadcast-receipt" hidden><summary>Détail des destinataires</summary><pre id="broadcast-receipt-details"></pre></details>
           <div class="chat-compose">
           <textarea
             id="chat-text"
@@ -353,9 +375,9 @@
             aria-label="Message à ton agent"
             placeholder="Écris à ton agent…"
            data-i18n-aria-label="Message à ton agent" data-i18n-placeholder="Écris à ton agent…"></textarea>
-          <div class="chat-actions"><button id="chat-voice" type="button" aria-pressed="false" title="Dicter à mon agent : transcription toutes les 20 secondes avec capture de l’écran au début">🎙 Voice</button><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Force-off" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Force-off">Bump</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
+          <div class="chat-actions"><button id="chat-voice" type="button" aria-pressed="false" title="Extrait toutes les 30 secondes, fenêtre audio de 35 secondes ; transcription ensuite ; capture de l’écran au début si activée.">🎙 Voice</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
           </div>
-          <p id="chat-voice-status" class="hint" role="status"></p>
+          <p id="chat-voice-status" class="hint" role="status">Dictée actuelle · prête. ElevenLabs reste un choix explicite.</p>
           <label class="chat-image-picker">Joindre des images<input id="chat-image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label>
           <div id="chat-image-preview" class="chat-image-preview" aria-label="Images du brouillon" hidden></div>
           <p id="chat-status" class="hint" role="status"></p>

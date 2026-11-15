@@ -1,0 +1,139 @@
+#voice-graph {
+  min-width: 0;
+  margin-top: 16px;
+  color: #18372d;
+}
+#voice-graph > div:first-child,
+.vg-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+#voice-graph input {
+  min-width: 0;
+  flex: 1;
+}
+.vg-tabs button[aria-selected="true"],
+.vg-messages button[aria-pressed="true"] {
+  outline: 2px solid #23745b;
+  outline-offset: -2px;
+  background: #e3f2eb;
+  color: #18372d;
+}
+.vg-tabs button:focus-visible,
+.vg-messages button:focus-visible {
+  outline: 3px solid #80591f;
+}
+.vg-overview {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  max-height: 235px;
+  padding: 4px;
+  border: 1px solid #a9beb3;
+}
+.vg-node {
+  flex: 0 0 205px;
+  padding: 10px;
+  border: 1px solid #a9beb3;
+  border-radius: 8px;
+  background: #f5faf7;
+  overflow-wrap: anywhere;
+}
+.vg-node > * {
+  display: block;
+  margin-bottom: 5px;
+}
+.vg-node small {
+  font-size: 12px;
+}
+#voice-graph-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+#voice-graph-panel > p {
+  grid-column: 1 / -1;
+}
+.vg-messages,
+.vg-inspector {
+  overflow: auto;
+  max-height: 58vh;
+  min-height: 240px;
+  border: 1px solid #a9beb3;
+  border-radius: 8px;
+  padding: 8px;
+  overflow-anchor: none;
+}
+.vg-messages button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  background: #fff;
+  color: #18372d;
+  border: 1px solid #ccd9d1;
+  margin-bottom: 8px;
+  padding: 10px;
+}
+.vg-messages button > * {
+  display: block;
+  margin-bottom: 5px;
+}
+.vg-inspector pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  user-select: text;
+}
+.vg-inspector dd {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.vg-inspector dt {
+  font-weight: 700;
+}
+#voice-graph details {
+  margin: 12px 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  #voice-graph-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vg-messages {
+    max-height: 35vh;
+  }
+  .vg-inspector {
+    max-height: 45vh;
+  }
+}
+.vg-diagram {
+  grid-column: 1 / -1;
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid #ccd9d1;
+  background: #f5faf7;
+}
+.vg-diagram svg {
+  display: block;
+  width: 100%;
+  min-width: 700px;
+}
+.vg-diagram text {
+  font-size: 12px;
+  fill: #18372d;
+  paint-order: stroke;
+  stroke: #f5faf7;
+  stroke-width: 3px;
+}
+.vg-diagram path {
+  cursor: pointer;
+}
+.voice-mode-canvas[hidden] {
+  display: none !important;
+}

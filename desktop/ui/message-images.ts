@@ -160,14 +160,16 @@ export function openMessageImage(source: string, label: string, provenance: stri
 export function appendMessageImages(body: HTMLElement, text: string, invoke: Invoke): void {
   const references = messageImages(text);
   if (!references.length) return;
-  const gallery = document.createElement('div'); gallery.className = 'message-images';
+  const dictation = /^\s*\[Dictée vocale\]/u.test(text);
+  const gallery = document.createElement('div'); gallery.className = dictation ? 'message-images message-images-dictation' : 'message-images';
   for (const entry of references) {
     const figure = document.createElement('figure'), button = document.createElement('button'), image = document.createElement('img');
     const caption = document.createElement('figcaption'), status = document.createElement('span');
     button.type = 'button'; button.disabled = true; button.setAttribute('aria-label', tr("Agrandir : ") + entry.label);
     button.setAttribute('data-message-image', entry.reference);
     image.alt = entry.label; image.loading = 'lazy'; image.decoding = 'async'; image.referrerPolicy = 'no-referrer';
-    caption.textContent = entry.label; status.className = 'message-image-status'; status.textContent = tr("Chargement de l’image…");
+    caption.textContent = dictation ? (/^(Début|Écran|Fin) de la dictée(?:\s|$)/u.exec(entry.label)?.[1] ?? entry.label) : entry.label;
+    caption.title = entry.label; status.className = 'message-image-status'; status.textContent = tr("Chargement de l’image…");
     const unavailable = (): void => {image.removeAttribute('src'); image.hidden = true; button.disabled = true; status.textContent = tr("Image indisponible");};
     image.addEventListener('error', unavailable, {once: true});
     image.addEventListener('load', () => {

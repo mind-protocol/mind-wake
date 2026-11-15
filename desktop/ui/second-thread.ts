@@ -14,6 +14,17 @@ export interface SecondThreadEntryView {
   readonly text: string;
   readonly projectId: string | null;
   readonly delivered: boolean;
+  /** Notice runtime (ex. réponse rapide d'un autre fil) : pas un message de toi. */
+  readonly notice?: { readonly label: string; readonly hidden: boolean };
+}
+function noticeOf(raw: unknown): { label: string; hidden: boolean } | undefined {
+  if (raw === null || typeof raw !== "object") return undefined;
+  const n = raw as Record<string, unknown>;
+  return typeof n["label"] === "string" ? { label: n["label"], hidden: n["hidden"] === true } : undefined;
+}
+function withNotice(raw: unknown): { notice?: { label: string; hidden: boolean } } {
+  const notice = noticeOf(raw);
+  return notice ? { notice } : {};
 }
 export interface SecondThreadModel {
   readonly projectWakes?: unknown;
@@ -54,6 +65,7 @@ export function secondThreadModel(data: unknown): SecondThreadModel | null {
             text: e["text"],
             projectId: typeof e["projectId"] === "string" ? e["projectId"] : null,
             delivered: e["delivered"] !== false,
+            ...withNotice(e["notice"]),
           },
         ];
       })
@@ -142,11 +154,12 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
       ...model.entries.map((e) => {
         const li = document.createElement("li"),
           meta = document.createElement("small");
-        li.dataset["self"] = String(e.role === "human");
+        li.dataset["self"] = String(e.role === "human" && e.notice === undefined);
         li.dataset["from"] =
-          e.role === "event" ? "session" : e.role === "human" ? "owner" : "agent";
-        const who =
-          e.role === "human"
+          e.role === "event" ? "session" : e.notice ? "received" : e.role === "human" ? "owner" : "agent";
+        const who = e.notice
+          ? e.notice.label
+          : e.role === "human"
             ? tr("Toi{0}", [e.delivered ? "" : tr(" · en attente du prochain tour")])
             : e.role === "event"
               ? tr("État du second fil")
