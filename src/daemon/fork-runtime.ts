@@ -1,4 +1,6 @@
 import { DuoSteering } from "../communication/duo-steering.js";
+import { clusterStatus } from "../communication/cluster-status.js";
+import { voiceScreenBlock } from "../communication/voice-screen-images.js";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +14,9 @@ import { asRecord, classifyCodexError } from "../adapters/codex/protocol.js";
 import { ProcessTreeSupervisor } from "../runner/process-tree.js";
 import type { ProfileId, SessionId } from "../contracts/index.js";
 import type { SecondThreadControl } from "./second-thread.js";
+import { publishReplyDraft, replyDraft, unwrapUserReply } from "./fork-reply-live.js";
+
+import { interfilPublisher, interfilStream, type InterfilMessage } from "./fork-interfil.js";
 
 export interface ForkTurnInput {
   dataDir: string;
@@ -20,10 +25,15 @@ export interface ForkTurnInput {
   threadId: string | null;
   instructions: string;
   message: string;
+  screen?: readonly string[];
   model?: string;
   control: () => SecondThreadControl;
   onThread: (threadId: string) => void;
   planningSession?: string;
+  liveReply?: boolean;
+  interfilAllowed?: (to: number) => boolean;
+  flushInbox?: (steer: (text: string, screen?: readonly string[]) => Promise<boolean>) => Promise<boolean>;
+  onStatus?: (text: string) => void;
   /** Coaching reads public messages from the last completed principal turn. */
   sourceThreadId?: string;
   onSourceTurn?: (turnId: string) => boolean;
@@ -76,6 +86,7 @@ export function coachRuntimeConfig(
 class NoSourceTurn extends Error {}
 
 export interface ForkTurnResult {
+  interfil?: InterfilMessage;
   outcome: "completed" | "interrupted" | "rate_limited" | "error";
   text: string;
   tokens: number | null;
@@ -137,15 +148,23 @@ export async function runForkTurn(
     retryAtMs: null,
   };
   let threadId = input.threadId;
+  let live: ReturnType<typeof replyDraft> | undefined;
+  const draft = input.liveReply ? publishReplyDraft(input.dataDir, input.id, randomUUID()) : undefined;
+  let interfil: ReturnType<typeof interfilStream> | undefined;
+  const interfilDraft = input.interfilAllowed ? interfilPublisher(input.dataDir, input.id) : undefined;
   const rpc = new RpcClient(child, {
     requestTimeoutMs: 30_000,
     onClose: finish,
     onNotification: (method, params) => {
       if (typeof params["threadId"] === "string" && params["threadId"] !== threadId) return;
+      live?.(method, params);
+      interfil?.event(method, params);
       if (method === "item/completed") {
         const item = asRecord(params["item"]);
+        const status = params["threadId"] === threadId && input.onStatus ? clusterStatus(item) : undefined;
+        if (status && input.control() === "run") input.onStatus?.(status);
         if (item?.["type"] === "agentMessage" && typeof item["text"] === "string")
-          result.text = item["text"];
+          result.text = draft && item["phase"] === "final_answer" ? unwrapUserReply(item["text"]) : item["text"];
       }
       if (method === "thread/tokenUsage/updated") {
         const usage = asRecord(asRecord(params["tokenUsage"])?.["last"]);
@@ -178,6 +197,8 @@ export async function runForkTurn(
     },
   });
   let duoSteering: DuoSteering | undefined;
+  let inboxTimer: NodeJS.Timeout | undefined;
+  let inboxInFlight: Promise<void> | undefined;
   let terminating = false;
   const watch = setInterval(() => {
     if (input.control() !== "run" && !terminating) {
@@ -260,6 +281,9 @@ export async function runForkTurn(
     if (typeof id !== "string") throw Error("Codex n'a pas retourné l'identifiant du fork.");
     threadId = id;
     input.onThread(id);
+    if (draft) live = replyDraft(id, draft.update);
+    if (interfilDraft && input.interfilAllowed)
+      interfil = interfilStream(input.id, id, input.interfilAllowed, interfilDraft.show);
     if (input.control() !== "run") {
       result.outcome = "interrupted";
     } else {
@@ -275,17 +299,30 @@ export async function runForkTurn(
               .filter(Boolean)
               .join("\n\n"),
           },
+          ...(input.screen ?? []).map(base64 => voiceScreenBlock(base64, "codex")),
         ],
       });
       result.accepted = true;
       const turnId = asRecord(started["turn"])?.["id"];
-      if (input.coachSession && typeof turnId === "string") {
-        duoSteering = new DuoSteering(input.dataDir, () => input.control() === "run" && !terminating,
-          async text => {
-            const accepted = await rpc.request("turn/steer", { threadId, expectedTurnId: turnId,
-              input: [{ type: "text", text }] });
-            return accepted["turnId"] === turnId;
-          });
+      if (typeof turnId === "string") {
+        const isActive = () => input.control() === "run" && !terminating;
+        const steer = async (text: string, screen: readonly string[] = []): Promise<boolean> => {
+          if (!isActive()) return false;
+          const accepted = await rpc.request("turn/steer", { threadId, expectedTurnId: turnId,
+            input: [{ type: "text", text }, ...screen.map(base64 => voiceScreenBlock(base64, "codex"))] });
+          return accepted["turnId"] === turnId;
+        };
+        if (input.coachSession) duoSteering = new DuoSteering(input.dataDir, isActive, steer);
+        const flush = input.flushInbox;
+        if (flush) {
+          const stopPolling = () => clearInterval(inboxTimer);
+          inboxTimer = setInterval(() => {
+            if (inboxInFlight || !isActive()) return;
+            inboxInFlight = flush(steer).then(keepPolling => {
+              if (!keepPolling) stopPolling();
+            }).catch(stopPolling).finally(() => { inboxInFlight = undefined; });
+          }, 250);
+        }
       }
       await done;
     }
@@ -297,7 +334,10 @@ export async function runForkTurn(
         classifyCodexError(null, result.detail).kind === "rate_limited" ? "rate_limited" : "error";
     }
   } finally {
+    draft?.close(result.outcome === "completed");
+    interfilDraft?.close();
     duoSteering?.stop();
+    clearInterval(inboxTimer);
     clearInterval(watch);
   }
   const termination = await child.terminateTree();
@@ -306,5 +346,8 @@ export async function runForkTurn(
       termination.detail ?? "Arrêt du fork non confirmé ; worker suspendu.",
     );
   await rpc.done;
+  await inboxInFlight;
+  const message = result.outcome === "completed" ? interfil?.final() : undefined;
+  if (message) result.interfil = message;
   return result;
 }
