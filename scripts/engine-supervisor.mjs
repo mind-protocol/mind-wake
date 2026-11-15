@@ -7,17 +7,42 @@ import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 import { OwnedRuntime } from "./owned-runtime.mjs";
 import { codexRuntimeEnv } from "./installation.mjs";
+
+/**
+ * Point d'entrée du moteur. `engineFromSource: true` dans le manifeste (installation de
+ * développement) : le moteur tourne depuis src/ avec le chargeur TypeScript des services,
+ * sans `npm run build` ; une modification de la logique de réveil demande seulement un
+ * redémarrage du moteur. Sinon, le JS compilé de dist/.
+ */
+export function engineEntry(m) {
+  const source = path.join(m.repoDir, "src/cli/main.ts");
+  if (m.engineFromSource === true && fs.existsSync(source)) {
+    const hooks = path.join(m.repoDir, "test/fixtures/store-ledger/ts-hooks.ts");
+    return {
+      entry: source,
+      args: [
+        "--experimental-transform-types",
+        "--disable-warning=ExperimentalWarning",
+        "--import",
+        pathToFileURL(hooks).href,
+        source,
+      ],
+    };
+  }
+  const entry = path.join(m.repoDir, "dist/cli/main.js");
+  return { entry, args: [entry] };
+}
 export function createEngineOwner(manifestFile, { daemonArgs = [] } = {}) {
   const owner = new OwnedRuntime(manifestFile, "daemon", async ({ file, instance }) => {
     const m = JSON.parse(fs.readFileSync(manifestFile, "utf8")),
-      entry = path.join(m.repoDir, "dist/cli/main.js");
+      { entry, args: entryArgs } = engineEntry(m);
     const { ProcessTreeSupervisor } = await import(
       pathToFileURL(path.join(m.repoDir, "dist/runner/process-tree.js")).href
     );
     const tree = new ProcessTreeSupervisor(path.join(m.dataDir, "engine-runtime"));
     const processTree = tree.spawn("owned-engine", randomUUID(), {
       executable: m.node,
-      args: [entry, "daemon", "run", ...daemonArgs],
+      args: [...entryArgs, "daemon", "run", ...daemonArgs],
       cwd: m.repoDir,
       env: {
         ...Object.fromEntries(
@@ -26,6 +51,14 @@ export function createEngineOwner(manifestFile, { daemonArgs = [] } = {}) {
           ),
         ),
         ...codexRuntimeEnv(m),
+        // Claude sessions receive the MIND MCP (message_owner…) written by the installation.
+        ...(fs.existsSync(path.join(path.dirname(manifestFile), "claude-mcp.json"))
+          ? {
+              MIND_WAKE_CLAUDE_MCP_CONFIG: path.join(path.dirname(manifestFile), "claude-mcp.json"),
+            }
+          : {}),
+        // Debug logs of the Claude CLI, one per session, to diagnose tool stalls.
+        MIND_WAKE_CLAUDE_DEBUG_DIR: path.join(m.dataDir, "runtimes", "claude", "debug"),
         MIND_WAKE_DATA_DIR: m.dataDir,
         MIND_WAKE_REPO_DIR: m.repoDir,
         MIND_WAKE_OWNED_RECEIPT: file,
