@@ -1,0 +1,4005 @@
+{
+  "agent": 6,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-06",
+  "cuts": [
+    {
+      "cut_id": "N60-Q04-C06",
+      "scene_id": "N60-Q04",
+      "episode_id": "lc-e001",
+      "order": 73,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q04.json",
+        "scene_sha256": "3e95c8191517e7cbb728faaf972f5580fcd8ad1b4e7eb0dee92ede4adb068d77",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "703a9bc62506ccb517546d95eab0a2ea1e8d6cba5888946ba5e58ef80a2447a1"
+      },
+      "source_block_ids": [
+        "N60-Q04-B024",
+        "N60-Q04-B025",
+        "N60-Q04-B026"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q04-B024",
+          "text_sha256": "7971065d3cd153ace0ef070063f8127d3e172c72afa9698f18fb18537f750974"
+        },
+        {
+          "id": "N60-Q04-B025",
+          "text_sha256": "97326ac4d7632b8b17788d9fb55148f95cc8fdd430e8a7710c3d1c16de906172"
+        },
+        {
+          "id": "N60-Q04-B026",
+          "text_sha256": "5d64cdc1727a3f11dc0857cbbe64876f1118ee23532697341054b8e74de9fe0d"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "aldon-hask",
+        "jacaerys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/jacaerys.webp",
+          "sha256": "eebd8d7d6c3cea76a056a39ee444726f6245c475f8e6ab240ab4abd1b01c97ba",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "jacaerys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Adolescent brun bouclé, visage plus allongé que Lucerys, pourpoint noir ; ne pas adultifier.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/jacaerys.svg",
+          "source_svg_sha256": "e2a42b644e46bdf0165d8068e0f15f226dc9e46af231988315f3fe4f9a5c03e8",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\jacaerys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        },
+        {
+          "character_id": "jacaerys",
+          "state": "pourpoint noir, fermail argent"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q04-C05",
+        "next_cut_id": "N60-Q04-C07",
+        "entry": "Raccord N60-Q04-C05 : Jacaerys s’arrête devant la reine, aucun seigneur acquiesçant représenté",
+        "exit": "État à conserver : Hask reconnaît la correction du prince ; caisse close",
+        "axis": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue."
+      },
+      "intention": "Hask retire sa recommandation sans recette déjà perçue",
+      "cadrage": "Plan moyen Hask et prince",
+      "action_visible": "Hask s’adresse au prince à hauteur de table, mains éloignées de la caisse close. La reine écoute en amorce, aucun argent n’est versé.",
+      "light": "Jour de conseil ; après ellipse lumière latérale plus basse proposée, sans fausse simultanéité.",
+      "location": "Peyredragon, conseil puis table de travail",
+      "prompt_image": "Plan moyen Hask et prince. Hask s’adresse au prince à hauteur de table, mains éloignées de la caisse close. La reine écoute en amorce, aucun argent n’est versé. Peyredragon, salle de travail. Jour de conseil rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. jacaerys : 15 ans, visage adolescent allongé, yeux noisette, cheveux bruns bouclés courts, silhouette adolescent élancé. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; aldon-hask — veste laine gris-brun propre, manche lustrée ; jacaerys — pourpoint noir, fermail argent. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q04-B024",
+          "source_block_id": "N60-Q04-B024",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "aldon-hask",
+          "locuteur": "HASK",
+          "texte": "Votre Grâce — **je retire ma recommandation principale de ce matin, devant la table, et c'est le prince qui m'a corrigé.**",
+          "intention": "Hask retire sa recommandation sans recette déjà perçue",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6408,
+            "char_start": 0,
+            "char_end": 122,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1264
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "d2bd01fc55d78ec05c6b98e771b910a0bd70aba564eeaecb1b180924ec0a60f9",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q04-B025",
+          "source_block_id": "N60-Q04-B025",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "aldon-hask",
+          "locuteur": "HASK",
+          "texte": "Alors je le pose comme un comptable et pas comme un courtisan. **Nous n'avons pas besoin des cent vingt mille.** Tout ce qui se fait avant l'entrée tient sous deux mille dragons. Ce qui a besoin d'or, c'est l'APRÈS",
+          "intention": "Hask retire sa recommandation sans recette déjà perçue",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6408,
+            "char_start": 1007,
+            "char_end": 1221,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1264
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "ec158cf43d826a156f5ac0faeb618781ec681685a7215c8ecbbddddfe600d13a",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q04-B026",
+          "source_block_id": "N60-Q04-B026",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "aldon-hask",
+          "locuteur": "HASK",
+          "texte": "et l'après se gage sur les douanes de Port-Réal, qui seront à nous. **On ne vend pas la droite de la reine pour de l'argent dont on n'a pas encore l'usage.**",
+          "intention": "Hask retire sa recommandation sans recette déjà perçue",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6408,
+            "char_start": 1224,
+            "char_end": 1381,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1264
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "5edc50af25002fd1b751f69ab02c61159436ac66c916d29f71da99bd0e5ad25a",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 43.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 40.4,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "48b1bcc9011c26f83de2d342cf3c00942fb6c08bc5824f2210f8ed14b1fb7822",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:jacaerys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "aldon-hask",
+        "jacaerys"
+      ],
+      "speaker_ids": [
+        "aldon-hask"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q04-B024",
+          "source_block_id": "N60-Q04-B024",
+          "speaker_id": "aldon-hask",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "aldon-hask",
+            "jacaerys"
+          ],
+          "text_unchanged": "Votre Grâce — **je retire ma recommandation principale de ce matin, devant la table, et c'est le prince qui m'a corrigé.**"
+        },
+        {
+          "line_id": "N60-Q04-B025",
+          "source_block_id": "N60-Q04-B025",
+          "speaker_id": "aldon-hask",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "aldon-hask",
+            "jacaerys"
+          ],
+          "text_unchanged": "Alors je le pose comme un comptable et pas comme un courtisan. **Nous n'avons pas besoin des cent vingt mille.** Tout ce qui se fait avant l'entrée tient sous deux mille dragons. Ce qui a besoin d'or, c'est l'APRÈS"
+        },
+        {
+          "line_id": "N60-Q04-B026",
+          "source_block_id": "N60-Q04-B026",
+          "speaker_id": "aldon-hask",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "aldon-hask",
+            "jacaerys"
+          ],
+          "text_unchanged": "et l'après se gage sur les douanes de Port-Réal, qui seront à nous. **On ne vend pas la droite de la reine pour de l'argent dont on n'a pas encore l'usage.**"
+        }
+      ],
+      "static_framing": "Plan moyen Hask et prince",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux temps distincts ; archive129.3.26soir puis ligne6740àdateconservée auJSON",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q04-C07",
+      "scene_id": "N60-Q04",
+      "episode_id": "lc-e001",
+      "order": 74,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q04.json",
+        "scene_sha256": "3e95c8191517e7cbb728faaf972f5580fcd8ad1b4e7eb0dee92ede4adb068d77",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "889c1399b9a7c2f9148c58ff8f3c00141a15b7c0e726220f6ea7c7c6a7b413e9"
+      },
+      "source_block_ids": [
+        "N60-Q04-B027",
+        "N60-Q04-B028",
+        "N60-Q04-B028A",
+        "N60-Q04-B029",
+        "N60-Q04-B030"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q04-B027",
+          "text_sha256": "1da33e8b4fd93cf28059213d1154dab454c3d69982c29c51f01f1021e36d075d"
+        },
+        {
+          "id": "N60-Q04-B028",
+          "text_sha256": "56622ebb145330594c037d1b0a2bdeffd4279081d991ea64bf7b9c9e91a3e9d5"
+        },
+        {
+          "id": "N60-Q04-B028A",
+          "text_sha256": "86b557a5b41284c5e2ae59ff7dca0779b7002c14f3d49730cb9ae328857708b3"
+        },
+        {
+          "id": "N60-Q04-B029",
+          "text_sha256": "e77b08228d4329c004c34c67cf0b3c2dd2ca6fd45177fea609740603c59a89e9"
+        },
+        {
+          "id": "N60-Q04-B030",
+          "text_sha256": "d55bfef1baa98421dd7d40ed1b6ddb6056a9db82db47a68cd0b1604fd0f0ab1e"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "aldon-hask",
+        "jacaerys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/jacaerys.webp",
+          "sha256": "eebd8d7d6c3cea76a056a39ee444726f6245c475f8e6ab240ab4abd1b01c97ba",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "jacaerys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Adolescent brun bouclé, visage plus allongé que Lucerys, pourpoint noir ; ne pas adultifier.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/jacaerys.svg",
+          "source_svg_sha256": "e2a42b644e46bdf0165d8068e0f15f226dc9e46af231988315f3fe4f9a5c03e8",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\jacaerys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        },
+        {
+          "character_id": "jacaerys",
+          "state": "pourpoint noir, fermail argent"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q04-C06",
+        "next_cut_id": "N60-Q04-C08",
+        "entry": "Raccord N60-Q04-C06 : Hask reconnaît la correction du prince ; caisse close",
+        "exit": "État à conserver : AUTRE MOMENT : table plus dégagée, reine debout sur une feuille vierge",
+        "axis": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue."
+      },
+      "intention": "Ellipse vers la décision, sans réponse des maisons",
+      "cadrage": "Plan à hauteur de la reine écrivant debout",
+      "action_visible": "La reine seule debout devant une table dégagée tient la plume sur un feuillet vierge. Le grand livre est fermé à côté ; aucun émissaire présent.",
+      "light": "Jour de conseil ; après ellipse lumière latérale plus basse proposée, sans fausse simultanéité.",
+      "location": "Peyredragon, conseil puis table de travail",
+      "prompt_image": "Plan à hauteur de la reine écrivant debout. La reine seule debout devant une table dégagée tient la plume sur un feuillet vierge. Le grand livre est fermé à côté ; aucun émissaire présent. Peyredragon, salle de travail. Jour de conseil rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q04-B028",
+          "source_block_id": "N60-Q04-B028",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "**Lord Gunthor Darklyn marche en tête le jour de l'entrée, et sa bannière avec.**",
+          "intention": "Ellipse vers la décision, sans réponse des maisons",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6740,
+            "char_start": 95,
+            "char_end": 176,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 27,
+              "minute": 1228
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "842be3db36aba190537ced920d9e62276e53a57c5c59f0d1a49e0aafe459d6db",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q04-B029",
+          "source_block_id": "N60-Q04-B029",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Et l'autre, en dessous : **lord Celtigar aura la droite à la cour.** Deux rangs, deux salles, comme le prince l'a proposé.",
+          "intention": "Ellipse vers la décision, sans réponse des maisons",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6740,
+            "char_start": 249,
+            "char_end": 371,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 27,
+              "minute": 1228
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "f62c335b0b67d0ac625dc3993311ae63a78c083bf62b3a7ff0805e1f90bb6927",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q04-B030",
+          "source_block_id": "N60-Q04-B030",
+          "scene_id": "N60-Q04",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "**Aucun des deux ne l'apprend avant l'autre.** Ils partent ensemble ou ils ne partent pas.",
+          "intention": "Ellipse vers la décision, sans réponse des maisons",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6740,
+            "char_start": 375,
+            "char_end": 465,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 27,
+              "minute": 1228
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "c1d885ef79a8ff2a1b473100a0c4b726bb532c908f08e40a1e7c6842a143b51d",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 26.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 22.7,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "39026aac173b1262ea3339bbc5513688693148f097163d1c260fbba8f074a7d9",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:jacaerys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q04-B028",
+          "source_block_id": "N60-Q04-B028",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra"
+          ],
+          "text_unchanged": "**Lord Gunthor Darklyn marche en tête le jour de l'entrée, et sa bannière avec.**"
+        },
+        {
+          "line_id": "N60-Q04-B029",
+          "source_block_id": "N60-Q04-B029",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra"
+          ],
+          "text_unchanged": "Et l'autre, en dessous : **lord Celtigar aura la droite à la cour.** Deux rangs, deux salles, comme le prince l'a proposé."
+        },
+        {
+          "line_id": "N60-Q04-B030",
+          "source_block_id": "N60-Q04-B030",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra"
+          ],
+          "text_unchanged": "**Aucun des deux ne l'apprend avant l'autre.** Ils partent ensemble ou ils ne partent pas."
+        }
+      ],
+      "static_framing": "Plan à hauteur de la reine écrivant debout",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux temps distincts ; archive129.3.26soir puis ligne6740àdateconservée auJSON",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q04-C08",
+      "scene_id": "N60-Q04",
+      "episode_id": "lc-e001",
+      "order": 75,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q04.json",
+        "scene_sha256": "3e95c8191517e7cbb728faaf972f5580fcd8ad1b4e7eb0dee92ede4adb068d77",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "d5881ed4d164108b3ff477556b0eaec89c1628cbb0b0d30cb3acc30cfdfdb9d2"
+      },
+      "source_block_ids": [
+        "N60-Q04-B031",
+        "N60-Q04-B032"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q04-B031",
+          "text_sha256": "8d9da300a4fb786e7850426e5263eb9de8131625bf8e95a171310780b69afa54"
+        },
+        {
+          "id": "N60-Q04-B032",
+          "text_sha256": "7c2ec2e88fd58fd371c231771949727eb3984dcdc5dbf7efd8ce8593c5c5b9aa"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "aldon-hask",
+        "jacaerys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/jacaerys.webp",
+          "sha256": "eebd8d7d6c3cea76a056a39ee444726f6245c475f8e6ab240ab4abd1b01c97ba",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "jacaerys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Adolescent brun bouclé, visage plus allongé que Lucerys, pourpoint noir ; ne pas adultifier.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/jacaerys.svg",
+          "source_svg_sha256": "e2a42b644e46bdf0165d8068e0f15f226dc9e46af231988315f3fe4f9a5c03e8",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\jacaerys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        },
+        {
+          "character_id": "jacaerys",
+          "state": "pourpoint noir, fermail argent"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q04-C07",
+        "next_cut_id": "VER01-C01",
+        "entry": "Raccord N60-Q04-C07 : AUTRE MOMENT : table plus dégagée, reine debout sur une feuille vierge",
+        "exit": "Sortie : Feuillet plié posé sur le grand livre, personne ne vient le prendre ; aucun résultat au-delà du texte adopté.",
+        "axis": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue."
+      },
+      "intention": "Le pli attend au livre, sans réveil du destinataire",
+      "cadrage": "Plan rapproché mains puis table laissée vide",
+      "action_visible": "Un feuillet plié repose sur le grand livre dans une chambre vide de messager. La main de la reine est retirée du pli ; pas de mots lisibles.",
+      "light": "Jour de conseil ; après ellipse lumière latérale plus basse proposée, sans fausse simultanéité.",
+      "location": "Peyredragon, conseil puis table de travail",
+      "prompt_image": "Plan rapproché mains. Un feuillet plié repose sur le grand livre dans une chambre vide de messager. La main de la reine est retirée du pli ; pas de mots lisibles. Peyredragon, salle de travail. Jour de conseil rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 5,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "2beae1447317d2aa96545872a2b06248a68a50157d649f9ca0252b14b97c45f6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:jacaerys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan rapproché mains",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux temps distincts ; archive129.3.26soir puis ligne6740àdateconservée auJSON",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Table entre reine, Quince, Hask et Jacaerys ; après ellipse reine seule devant feuille puis pli sur grand livre, aucune réponse reçue.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C01",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 76,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "f47014c608971add134ddb8dec8afb26f8bc7292d9ba17903251ad07e6186e7f"
+      },
+      "source_block_ids": [
+        "VER01-B002",
+        "VER01-B003",
+        "VER01-B004",
+        "VER01-B005",
+        "VER01-B006",
+        "VER01-B007",
+        "VER01-B008",
+        "VER01-B009"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B002",
+          "text_sha256": "d307f8c8e4666bac73b1ffa26c3b8f9af11bf0fd5bd812172e5623901d420c9d"
+        },
+        {
+          "id": "VER01-B003",
+          "text_sha256": "7822b9e603f5802edd9d95e897d0fce376e23c3836ee0fc0612397f4ba8b6bd1"
+        },
+        {
+          "id": "VER01-B004",
+          "text_sha256": "79bf8fbec959d2baeb430d0791e389234cfed1496f70a21f4e5f6ff07cb0d217"
+        },
+        {
+          "id": "VER01-B005",
+          "text_sha256": "69203908d803120df8fb7c26bc35c19dfb1d5996db73cb107a4ba8cb953f6d5e"
+        },
+        {
+          "id": "VER01-B006",
+          "text_sha256": "f5689d1ec5d20e7cdec265c7e034b2c55e4f39080b16c4909400e77ed7387e97"
+        },
+        {
+          "id": "VER01-B007",
+          "text_sha256": "5717bc1cc62de5b77f853e68c5c8b3debbcadbe33386c682e8de9022d7425955"
+        },
+        {
+          "id": "VER01-B008",
+          "text_sha256": "482325a7c4598cdf5221928b5d4b8dfd6c85647b255496ae0979cce00634d3f1"
+        },
+        {
+          "id": "VER01-B009",
+          "text_sha256": "c18178ebad7602ab8e67af9c7f5afb604578d7399e148561b299449fd76a8408"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q04-C08",
+        "next_cut_id": "VER01-C02",
+        "entry": "Entrée de scène : Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "exit": "État à conserver : Aegon arrive et attend ; deux feuillets superposés devant lui",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+      "cadrage": "Plan moyen de table, trois conseillers dans la profondeur",
+      "action_visible": "Aegon debout près de sa chaise tient sa manche encore déboutonnée ; deux feuillets superposés l’attendent. Orwyle à droite, Otto à gauche, Criston côté porte.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Plan moyen de table, trois conseillers dans la profondeur. Aegon debout près de sa chaise tient sa manche encore déboutonnée ; deux feuillets superposés l’attendent. Orwyle à droite, Otto à gauche, Criston côté porte. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B003",
+          "source_block_id": "VER01-B003",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Combien ?",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B003",
+            "text_sha256": "711c85fc7514c7ab2205bc42e1ba605d59f00f577280a20416d68c47a07d0847"
+          }
+        },
+        {
+          "line_id": "VER01-B004",
+          "source_block_id": "VER01-B004",
+          "scene_id": "VER01",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Il n’y a pas de compte des morts.",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B004",
+            "text_sha256": "fa79c4fdcd94e2b2934c8d951f800be60db16ab4a68e13bf19a6753b7687b867"
+          }
+        },
+        {
+          "line_id": "VER01-B005",
+          "source_block_id": "VER01-B005",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je demande combien d’hommes elle a brûlés.",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B005",
+            "text_sha256": "f9755902958f0e1baf8bcb87d003fa034bdfac501c15d8d473d6cbe9ca250a5a"
+          }
+        },
+        {
+          "line_id": "VER01-B006",
+          "source_block_id": "VER01-B006",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Le premier courrier parle d’une colonne rompue. Les hommes qui ont quitté la route ne sont pas tous revenus au même endroit.",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B006",
+            "text_sha256": "72c221f47ca1efcd2a09f36bfdb4001cc38565a7b38f1f246dc006be71f7f3cf"
+          }
+        },
+        {
+          "line_id": "VER01-B007",
+          "source_block_id": "VER01-B007",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Alors comptez ceux qui restent dessus.",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B007",
+            "text_sha256": "1fca51bd4975e1769100cb0c3262cb6aaa6d82d753a2d42ef84601c67f6865f4"
+          }
+        },
+        {
+          "line_id": "VER01-B008",
+          "source_block_id": "VER01-B008",
+          "scene_id": "VER01",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "On ne les distingue pas tous.",
+          "intention": "Un siège vide devient place occupée par le roi, sans compte des morts assuré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B008",
+            "text_sha256": "b0cc87a885246c3bb9bcbbc06595aceb8d0f35c9a384d70c63c5874af26e3b36"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 26.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 22.7,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d2b43f659e942718fe8b0496311dc817bd7d9afbe624a17356d41a1538ed6ce3",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B003",
+          "source_block_id": "VER01-B003",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Combien ?"
+        },
+        {
+          "line_id": "VER01-B004",
+          "source_block_id": "VER01-B004",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Il n’y a pas de compte des morts."
+        },
+        {
+          "line_id": "VER01-B005",
+          "source_block_id": "VER01-B005",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Je demande combien d’hommes elle a brûlés."
+        },
+        {
+          "line_id": "VER01-B006",
+          "source_block_id": "VER01-B006",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Le premier courrier parle d’une colonne rompue. Les hommes qui ont quitté la route ne sont pas tous revenus au même endroit."
+        },
+        {
+          "line_id": "VER01-B007",
+          "source_block_id": "VER01-B007",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Alors comptez ceux qui restent dessus."
+        },
+        {
+          "line_id": "VER01-B008",
+          "source_block_id": "VER01-B008",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "On ne les distingue pas tous."
+        }
+      ],
+      "static_framing": "Plan moyen de table, trois conseillers dans la profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C02",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 77,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e94103fe1cf0bed1c7c726b784b252d0789d6a8d1a9e52c410c86929351af0d4"
+      },
+      "source_block_ids": [
+        "VER01-B010",
+        "VER01-B011",
+        "VER01-B012",
+        "VER01-B013",
+        "VER01-B014",
+        "VER01-B015",
+        "VER01-B016",
+        "VER01-B017"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B010",
+          "text_sha256": "1fc5d05583a0cda98efa19037e0255fdaa7fd4d824cd44189d6be066f2673922"
+        },
+        {
+          "id": "VER01-B011",
+          "text_sha256": "4a45615d5b80c245261773f3b3688fa6245e5e501b9f2c54a30af1239e4b93ff"
+        },
+        {
+          "id": "VER01-B012",
+          "text_sha256": "ae72f3447461715a9e499c63f3e476c85254b350673d297e3279bbfa5e4d269e"
+        },
+        {
+          "id": "VER01-B013",
+          "text_sha256": "1395cc3d377ed5859c9ad16e5ff0bbd55c9644c92d95e3e4f4527e4e8098cdf2"
+        },
+        {
+          "id": "VER01-B014",
+          "text_sha256": "3b8118345d5737250da500c9735651aae586275e09f8e2b0b2a648be0f7db44b"
+        },
+        {
+          "id": "VER01-B015",
+          "text_sha256": "106d1cf37c934f3c348277bfe0a4c8b698118ddc81a7b0a8b77d3e956fe07ea8"
+        },
+        {
+          "id": "VER01-B016",
+          "text_sha256": "aee678dccd9ee95fc3ee0d37cf9c4d6bbe1951217a66fe018104de0660fb0671"
+        },
+        {
+          "id": "VER01-B017",
+          "text_sha256": "0a7821bb0644763673e5d4e7a39bf41b55d82b2588c03e5be683884c69ba2b9a"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C01",
+        "next_cut_id": "VER01-C03",
+        "entry": "Raccord VER01-C01 : Aegon arrive et attend ; deux feuillets superposés devant lui",
+        "exit": "État à conserver : Deux doigts d’Orwyle retiennent le feuillet ; Criston demeure à côté de la table",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "Distinguer savoir après coup et présence sur la route",
+      "cadrage": "Champ rapproché du mestre, main du roi en amorce",
+      "action_visible": "Deux doigts d’Orwyle retiennent le feuillet au bord de table, main d’Aegon en amorce. Criston reste debout à côté, sans reprendre le papier.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Champ rapproché du mestre, main du roi en amorce. Deux doigts d’Orwyle retiennent le feuillet au bord de table, main d’Aegon en amorce. Criston reste debout à côté, sans reprendre le papier. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B010",
+          "source_block_id": "VER01-B010",
+          "scene_id": "VER01",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Elle était sur le dragon.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B010",
+            "text_sha256": "863d9187d369a2a587dceacb27c905ae9f9486618cfd8c7d5708e3663eaab44e"
+          }
+        },
+        {
+          "line_id": "VER01-B011",
+          "source_block_id": "VER01-B011",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "C’est ce qu’on rapporte.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B011",
+            "text_sha256": "c439ceaa920dcd2923e370ceafefccf143ab7f0f178622964400155227b61751"
+          }
+        },
+        {
+          "line_id": "VER01-B012",
+          "source_block_id": "VER01-B012",
+          "scene_id": "VER01",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "C’est ce que le Grand Mestre a entendu sur l’île.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B012",
+            "text_sha256": "87d01eda10ba175c952cf1d5d008ad528d856c268602924a08de20114ae05ea3"
+          }
+        },
+        {
+          "line_id": "VER01-B014",
+          "source_block_id": "VER01-B014",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Vous y étiez ?",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B014",
+            "text_sha256": "43419ecc7ac3abba027fcd1043cee9a0d2cab3a5eed9ec0d7491a3bf2a92763e"
+          }
+        },
+        {
+          "line_id": "VER01-B015",
+          "source_block_id": "VER01-B015",
+          "scene_id": "VER01",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "À Peyredragon. Après.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B015",
+            "text_sha256": "eb8b194f0e897ba21f9aafb20b9686c09323a026899c2b400e27761ad2bb0fad"
+          }
+        },
+        {
+          "line_id": "VER01-B016",
+          "source_block_id": "VER01-B016",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Et vous avez commencé par me parler de ceux qu’on ne pouvait pas compter.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B016",
+            "text_sha256": "7be29fca2522dd366dca6c1c493fce5bfc0a0ea5f62ce083cb01bb3e4ace8580"
+          }
+        },
+        {
+          "line_id": "VER01-B017",
+          "source_block_id": "VER01-B017",
+          "scene_id": "VER01",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Pour que Votre Grâce n’annonce pas un nombre qu’un survivant pourrait démentir demain.",
+          "intention": "Distinguer savoir après coup et présence sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B017",
+            "text_sha256": "73490792b4d6fd42ce18be7789c2fefa28616f196c5181ea8f77803019df29b6"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 26.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 23.6,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "f11bbf595cef7f5761538509611ff2110f0ce3fb0d6e044f2dc954a82dfaebf6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "criston",
+        "otto",
+        "aegon-ii",
+        "orwyle"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B010",
+          "source_block_id": "VER01-B010",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Elle était sur le dragon."
+        },
+        {
+          "line_id": "VER01-B011",
+          "source_block_id": "VER01-B011",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "C’est ce qu’on rapporte."
+        },
+        {
+          "line_id": "VER01-B012",
+          "source_block_id": "VER01-B012",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "C’est ce que le Grand Mestre a entendu sur l’île."
+        },
+        {
+          "line_id": "VER01-B014",
+          "source_block_id": "VER01-B014",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Vous y étiez ?"
+        },
+        {
+          "line_id": "VER01-B015",
+          "source_block_id": "VER01-B015",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "À Peyredragon. Après."
+        },
+        {
+          "line_id": "VER01-B016",
+          "source_block_id": "VER01-B016",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Et vous avez commencé par me parler de ceux qu’on ne pouvait pas compter."
+        },
+        {
+          "line_id": "VER01-B017",
+          "source_block_id": "VER01-B017",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Pour que Votre Grâce n’annonce pas un nombre qu’un survivant pourrait démentir demain."
+        }
+      ],
+      "static_framing": "Champ rapproché du mestre, main du roi en amorce",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C03",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 78,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "d37f7385f7409ed298c71b6358a60d78454e74bf0c33d5c65c5c08d7b9f67435"
+      },
+      "source_block_ids": [
+        "VER01-B018",
+        "VER01-B019",
+        "VER01-B020",
+        "VER01-B021",
+        "VER01-B022",
+        "VER01-B023",
+        "VER01-B024"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B018",
+          "text_sha256": "fe130669f0b9590fdaa7b34bb5c9d12a73dc3f4f025868be17ad2dee5ffadaa1"
+        },
+        {
+          "id": "VER01-B019",
+          "text_sha256": "ccad71ad2bb639fefd4870b4c289ed60a49b5152c35127c76d61f9ec46619162"
+        },
+        {
+          "id": "VER01-B020",
+          "text_sha256": "dd2b30098f99c7bb5e4c84e0ff0115e665c0577303a855427ac376a84d6c5a02"
+        },
+        {
+          "id": "VER01-B021",
+          "text_sha256": "d5396034441f686c35440a5240e5fc2ab6eee7214af56bb268e7710b8bfc75b0"
+        },
+        {
+          "id": "VER01-B022",
+          "text_sha256": "d9f51742870432d353d5ded13cb5ad9cd758a985add0eb5eec1410a3c193aa10"
+        },
+        {
+          "id": "VER01-B023",
+          "text_sha256": "f5a17732cc7c28a14c110452e8353d24fc97a99f6c328ed396f8147d68fd420a"
+        },
+        {
+          "id": "VER01-B024",
+          "text_sha256": "462d020898a66ba1a62394ff9f31a1e4ee62450721b58066c78cc736a8aab223"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C02",
+        "next_cut_id": "VER01-C04",
+        "entry": "Raccord VER01-C02 : Deux doigts d’Orwyle retiennent le feuillet ; Criston demeure à côté de la table",
+        "exit": "État à conserver : Aegon recompte sur ses doigts ; Otto le regarde sans l’aider",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+      "cadrage": "Plan rapproché du roi lisant, mains sous bord de table",
+      "action_visible": "Aegon regarde le feuillet visible ; sous le bord de table ses doigts sont écartés pour compter. Otto le regarde sans geste d’aide.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Plan rapproché du roi lisant, mains sous bord de table. Aegon regarde le feuillet visible ; sous le bord de table ses doigts sont écartés pour compter. Otto le regarde sans geste d’aide. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B019",
+          "source_block_id": "VER01-B019",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Trois mille cinq cents.",
+          "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B019",
+            "text_sha256": "e1cbcfe3a5c1dbfd9d8bae5d302232336d5175ee0b6affacaade247128eb055f"
+          }
+        },
+        {
+          "line_id": "VER01-B020",
+          "source_block_id": "VER01-B020",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Au rôle, non sur cette route.",
+          "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B020",
+            "text_sha256": "ef6cc887f3921096b7c960e788c91370f188fe2f9a7692a6c6c9c2b0627a3c0d"
+          }
+        },
+        {
+          "line_id": "VER01-B021",
+          "source_block_id": "VER01-B021",
+          "scene_id": "VER01",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Quatre cents de Strong sont à Harrenhal. Avec Daemon. Ils ne viendront pas au roi.",
+          "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B021",
+            "text_sha256": "d9f3ba4524d8c1bddbe8819c0d8f6e4105a1c46d48b6df5dbc45b18f5989e86e"
+          }
+        },
+        {
+          "line_id": "VER01-B023",
+          "source_block_id": "VER01-B023",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Trois mille cent.",
+          "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B023",
+            "text_sha256": "fa7a366ff0879f1f8aba6274836bdc7ce6f55a180dc5caed023f4a9eb99baac0"
+          }
+        },
+        {
+          "line_id": "VER01-B024",
+          "source_block_id": "VER01-B024",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Au plus.",
+          "intention": "Compter les hommes disponibles révèle la facilité trompeuse du chiffre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B024",
+            "text_sha256": "e6f52d5fb56fbae4a7593918c91b55c9e91bf5b96436665db988546b9b67b361"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 17.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 13.3,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "b8af1d6680002db2fa62085214329864ec98123cf572362b3c0b8ca8cdbd9e31",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "otto",
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B019",
+          "source_block_id": "VER01-B019",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Trois mille cinq cents."
+        },
+        {
+          "line_id": "VER01-B020",
+          "source_block_id": "VER01-B020",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Au rôle, non sur cette route."
+        },
+        {
+          "line_id": "VER01-B021",
+          "source_block_id": "VER01-B021",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Quatre cents de Strong sont à Harrenhal. Avec Daemon. Ils ne viendront pas au roi."
+        },
+        {
+          "line_id": "VER01-B023",
+          "source_block_id": "VER01-B023",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Trois mille cent."
+        },
+        {
+          "line_id": "VER01-B024",
+          "source_block_id": "VER01-B024",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Au plus."
+        }
+      ],
+      "static_framing": "Plan rapproché du roi lisant, mains sous bord de table",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C04",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 79,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "dff705ef91c1bb1683c34f3fbe3ef130a1de4704f5a5690a3a521ba2efdbc3c9"
+      },
+      "source_block_ids": [
+        "VER01-B025",
+        "VER01-B026",
+        "VER01-B027",
+        "VER01-B028",
+        "VER01-B029",
+        "VER01-B030"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B025",
+          "text_sha256": "b4dd2a6cb85f8313572b4b4e9a14f15323779316db336278b2f8c1765b8391d8"
+        },
+        {
+          "id": "VER01-B026",
+          "text_sha256": "9ffd3819244c564e84d9f6ce5ccd48d05870aeef9976d66f569f2d7f21a7d1d0"
+        },
+        {
+          "id": "VER01-B027",
+          "text_sha256": "22d6ae7723272d16abc61082328bf63760ac176edb31f247f21a1f16f8459e51"
+        },
+        {
+          "id": "VER01-B028",
+          "text_sha256": "bb7deb504bb0cb6c01b70d030b1e8aa8eae109679b8eb4f3a4a7132ef659a595"
+        },
+        {
+          "id": "VER01-B029",
+          "text_sha256": "e13fba2b1ff994dfd726c20e371b9415ca88ab8fce6c28ae4ff8d7248ddc7d7f"
+        },
+        {
+          "id": "VER01-B030",
+          "text_sha256": "6c745d771326d9c074557e64ac12f52362b085a571ccb43038c64111e9d054ef"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C03",
+        "next_cut_id": "VER01-C05",
+        "entry": "Raccord VER01-C03 : Aegon recompte sur ses doigts ; Otto le regarde sans l’aider",
+        "exit": "État à conserver : Le roi garde le papier que Criston a voulu reprendre",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+      "cadrage": "Deux-shot roi et Otto, Orwyle en fond",
+      "action_visible": "Aegon garde le papier dans sa main, Otto lui fait face ; Orwyle en retrait ne touche plus la feuille. Le roi n’a pas remis le rôle à Criston.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Deux-shot roi et Otto, Orwyle en fond. Aegon garde le papier dans sa main, Otto lui fait face ; Orwyle en retrait ne touche plus la feuille. Le roi n’a pas remis le rôle à Criston. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B026",
+          "source_block_id": "VER01-B026",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Ceux-là, vous savez les compter. Quand il s’agit de ce qu’elle a fait, tout devient de la fumée.",
+          "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B026",
+            "text_sha256": "d819a2cf95052f61c653f260e453563e018c9b022e5520b1fc88d5aa78a872bf"
+          }
+        },
+        {
+          "line_id": "VER01-B027",
+          "source_block_id": "VER01-B027",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Un nombre faux ne vous donnera pas davantage de soldats.",
+          "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B027",
+            "text_sha256": "d944f81267293b84f83827f3cd41603f2a8df2c8ed2a5ca9862c2a47e8db8ab0"
+          }
+        },
+        {
+          "line_id": "VER01-B028",
+          "source_block_id": "VER01-B028",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Il donnerait peut-être envie aux vrais de marcher.",
+          "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B028",
+            "text_sha256": "de5e23f8d07038be4a66053c117489c60ff463d8194e780a1f5610bb9ee4b6a3"
+          }
+        },
+        {
+          "line_id": "VER01-B029",
+          "source_block_id": "VER01-B029",
+          "scene_id": "VER01",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Et le jour où leurs frères reviendront ?",
+          "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B029",
+            "text_sha256": "71635416e780360cc2f50dfc6bfe8b8165d74efba50ac4ef78889d7d0911a9db"
+          }
+        },
+        {
+          "line_id": "VER01-B030",
+          "source_block_id": "VER01-B030",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Ils reviendront à moi. C’est ma route. Ce sont mes gens.",
+          "intention": "Faire résister le retour possible des survivants au chiffre de propagande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B030",
+            "text_sha256": "663838b8d41de65aac795fcf556502d743ad0d8c4fcaa0cedbe8d84e73a6c0c9"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 27.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 24.4,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c255cb5827ba694c9902272c71d50f064c0c833750bdafa26e875387f4cd53af",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "otto",
+        "orwyle"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B026",
+          "source_block_id": "VER01-B026",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Ceux-là, vous savez les compter. Quand il s’agit de ce qu’elle a fait, tout devient de la fumée."
+        },
+        {
+          "line_id": "VER01-B027",
+          "source_block_id": "VER01-B027",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Un nombre faux ne vous donnera pas davantage de soldats."
+        },
+        {
+          "line_id": "VER01-B028",
+          "source_block_id": "VER01-B028",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Il donnerait peut-être envie aux vrais de marcher."
+        },
+        {
+          "line_id": "VER01-B029",
+          "source_block_id": "VER01-B029",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Et le jour où leurs frères reviendront ?"
+        },
+        {
+          "line_id": "VER01-B030",
+          "source_block_id": "VER01-B030",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Ils reviendront à moi. C’est ma route. Ce sont mes gens."
+        }
+      ],
+      "static_framing": "Deux-shot roi et Otto, Orwyle en fond",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C05",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 80,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "18ba7ad05e206bd46222bb7f0a8213b512fd67264ddce6655aabb5dcf946523e"
+      },
+      "source_block_ids": [
+        "VER01-B031",
+        "VER01-B032",
+        "VER01-B033",
+        "VER01-B034",
+        "VER01-B035",
+        "VER01-B036",
+        "VER01-B037"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B031",
+          "text_sha256": "3eb21eb0b669aebe7058a165d90b754931e20b0831d35283ddad03a8b5602b81"
+        },
+        {
+          "id": "VER01-B032",
+          "text_sha256": "b3de6ca6ddd0d4f0ca66e1be02e38a3ee7e254790228ad9dac795d2b75bdecf4"
+        },
+        {
+          "id": "VER01-B033",
+          "text_sha256": "4dde72a55a5c00ed75e1d00d24192af64265c56ecd5ec2f9019838b94fe16ca3"
+        },
+        {
+          "id": "VER01-B034",
+          "text_sha256": "d27ec6627502cf7e77f1221bb227673bf0afef8a4bb8b4a9a441005b1087e8f1"
+        },
+        {
+          "id": "VER01-B035",
+          "text_sha256": "0d124d34b8d604c22c45e6be9263108f5a5ced39257c518f6739e7a54ff0597f"
+        },
+        {
+          "id": "VER01-B036",
+          "text_sha256": "7e56a7c413888de88d9c3e4a845ec4ff100f42cec33a48f5fb831ba8dcd2944e"
+        },
+        {
+          "id": "VER01-B037",
+          "text_sha256": "d21ad81a7327e306a1db56bdfbdf50bcac7a5133c728fd701bed7e61c30df73d"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C04",
+        "next_cut_id": "VER01-C06",
+        "entry": "Raccord VER01-C04 : Le roi garde le papier que Criston a voulu reprendre",
+        "exit": "État à conserver : Aegon reboutonne sa manche sans quitter Otto des yeux",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+      "cadrage": "Contrechamp Otto et roi sur un axe constant",
+      "action_visible": "Aegon a une main sur le bouton de sa manche et regarde Otto de l’autre côté de la table. Son feuillet reste devant sa place.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Contrechamp Otto et roi sur un axe constant. Aegon a une main sur le bouton de sa manche et regarde Otto de l’autre côté de la table. Son feuillet reste devant sa place. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B032",
+          "source_block_id": "VER01-B032",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Faites venir ceux qui ont traversé. Je veux les entendre.",
+          "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B032",
+            "text_sha256": "b5695d2e1ff1bd1aa8d4192904dc04a44856d9ff820bcab01f14026cfbfacba1"
+          }
+        },
+        {
+          "line_id": "VER01-B033",
+          "source_block_id": "VER01-B033",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Ici ? Devant le conseil ?",
+          "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B033",
+            "text_sha256": "8e9fe2dbaefe5350737a716de7a27ba17396144149acb48ded7c40d92696b64f"
+          }
+        },
+        {
+          "line_id": "VER01-B034",
+          "source_block_id": "VER01-B034",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Vous craignez qu’ils disent mal les nombres ?",
+          "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B034",
+            "text_sha256": "e74db4c1895490da8340eda764f0376c2c2cad63b0b1be651e1507612e15a753"
+          }
+        },
+        {
+          "line_id": "VER01-B035",
+          "source_block_id": "VER01-B035",
+          "scene_id": "VER01",
+          "locuteur_id": "otto",
+          "locuteur": "OTTO",
+          "texte": "Je crains ce que vous leur promettrez avant de les avoir entendus.",
+          "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B035",
+            "text_sha256": "46917721297879a2aaf6203e90c2179370e8f807783bfc513c73a1ec3caaade3"
+          }
+        },
+        {
+          "line_id": "VER01-B037",
+          "source_block_id": "VER01-B037",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Alors restez pour l’entendre.",
+          "intention": "Un ordre d’entendre les survivants devient défi au grand-père",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B037",
+            "text_sha256": "2542b843ac9f7e2ff2ad063a7298d367ae33e1f42534c983adad3a02c12cd479"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 20.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 17.8,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "8311aabb703ca1557797421b02f98f90d762e4dcae116334f721fa10542e1b6d",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "otto"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B032",
+          "source_block_id": "VER01-B032",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Faites venir ceux qui ont traversé. Je veux les entendre."
+        },
+        {
+          "line_id": "VER01-B033",
+          "source_block_id": "VER01-B033",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Ici ? Devant le conseil ?"
+        },
+        {
+          "line_id": "VER01-B034",
+          "source_block_id": "VER01-B034",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Vous craignez qu’ils disent mal les nombres ?"
+        },
+        {
+          "line_id": "VER01-B035",
+          "source_block_id": "VER01-B035",
+          "speaker_id": "otto",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Je crains ce que vous leur promettrez avant de les avoir entendus."
+        },
+        {
+          "line_id": "VER01-B037",
+          "source_block_id": "VER01-B037",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Alors restez pour l’entendre."
+        }
+      ],
+      "static_framing": "Contrechamp Otto et roi sur un axe constant",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER01-C06",
+      "scene_id": "VER01",
+      "episode_id": "lc-e001",
+      "order": 81,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER01.json",
+        "scene_sha256": "21d1c9a13bdf6f1db39611cb3416d6c795e796e0f3e8a4d15f9953e376f4682a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "d43feba99dc53a634c244def6d837c692870dae64f35f858eeb77bcdbe1b6410"
+      },
+      "source_block_ids": [
+        "VER01-B038",
+        "VER01-B039",
+        "VER01-B040"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER01-B038",
+          "text_sha256": "f89fab1026cf0fa5fee2ce29624bcd878c58f790060b7c806071790c56e089ef"
+        },
+        {
+          "id": "VER01-B039",
+          "text_sha256": "a97d03f2165ac94b4dee39f6ecf5249d37c336078563ef9641ff38a2969efbc8"
+        },
+        {
+          "id": "VER01-B040",
+          "text_sha256": "ba5ef5f3911bee8a5ee9ddfca65681aa0c0993a43d7c459b1f38f9f08d7ddc66"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/otto.webp",
+          "sha256": "c2995302aeaf065b2f27c87345707b8363f2edaa937a1f178153454cb8e375ef",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "otto"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long vieillissant, front dégarni, cheveux gris latéraux, barbe très courte ; chaîne. Ne pas reprendre la tour de vêtement comme nouvel emblème.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/otto.svg",
+          "source_svg_sha256": "779c2d43abb89b29e6ceb8d38f6eaa19d7c2b075c6ea861af5b44780a735c536",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\otto.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        },
+        {
+          "character_id": "otto",
+          "state": "vêtement gris-vert sombre"
+        },
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C05",
+        "next_cut_id": "N60-Q07-C01",
+        "entry": "Raccord VER01-C05 : Aegon reboutonne sa manche sans quitter Otto des yeux",
+        "exit": "Sortie : Orwyle reprend le second feuillet ; Criston retire sa main du bord ; aucun résultat au-delà du texte adopté.",
+        "axis": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte."
+      },
+      "intention": "L’autre feuillet entre enfin dans le champ du pouvoir royal",
+      "cadrage": "Plan moyen incluant les mains du conseil",
+      "action_visible": "Orwyle tient le second feuillet distinct du premier ; Criston a la main reculée du bord, Aegon regarde ce papier découvert.",
+      "light": "Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes.",
+      "location": "Salle du conseil du Donjon Rouge",
+      "prompt_image": "Plan moyen incluant les mains du conseil. Orwyle tient le second feuillet distinct du premier ; Criston a la main reculée du bord, Aegon regarde ce papier découvert. Donjon Rouge, salle du conseil. Fenêtre latérale, jour couvert crédible, bougies d’appoint discrètes. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. otto : 60–70 ans, visage long et sec, barbe grise très courte, cheveux gris, front dégarni, silhouette droit et mince. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : aegon-ii — pourpoint noir et or ; orwyle — robes grises ; otto — vêtement gris-vert sombre ; criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER01-B039",
+          "source_block_id": "VER01-B039",
+          "scene_id": "VER01",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Celui-là aussi.",
+          "intention": "L’autre feuillet entre enfin dans le champ du pouvoir royal",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER01 — Ce qu’on peut dire du feu",
+            "block": "VER01-B039",
+            "text_sha256": "087092773d3a6444cdfe2811a81806d7ceae1beb38fe74d4698af7b5f9d042fa"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 4.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0df999376ea3721ffd97251081417e40bc5f17a5e5352850f54257ffae91b532",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:orwyle",
+        "film_identity_approval_pending:otto",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "orwyle",
+        "otto",
+        "criston"
+      ],
+      "speaker_ids": [
+        "aegon-ii"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER01-B039",
+          "source_block_id": "VER01-B039",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "orwyle",
+            "otto",
+            "criston"
+          ],
+          "text_unchanged": "Celui-là aussi."
+        }
+      ],
+      "static_framing": "Plan moyen incluant les mains du conseil",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table longitudinale, siège du roi en bout ; Orwyle à droite, Otto à gauche, Criston entre roi et porte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q07-C01",
+      "scene_id": "N60-Q07",
+      "episode_id": "lc-e001",
+      "order": 82,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q07.json",
+        "scene_sha256": "7c8a032fd187405e747cdd3d1b851c959311da91e0faaf47b2af48d5ecb00537",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "0deeb4e1d32bf23b945243fe5f68558db4daa20849e5132f962b49b2592a5301"
+      },
+      "source_block_ids": [
+        "N60-Q07-A001",
+        "N60-Q07-B001",
+        "N60-Q07-B002",
+        "N60-Q07-B003"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q07-A001",
+          "text_sha256": "7402f8b80ada157ed6a58ef50fdf385d1c3c8dca5452c3e36353424039588b29"
+        },
+        {
+          "id": "N60-Q07-B001",
+          "text_sha256": "4380bba245a3d04a965fb00f8189e0ea8b01b1f74a2cf9a59ebb4ffd730f5f03"
+        },
+        {
+          "id": "N60-Q07-B002",
+          "text_sha256": "c0615644ae6124de93f6e69c0a4c00e389a4c65ddf686ceec616923b5f56b74e"
+        },
+        {
+          "id": "N60-Q07-B003",
+          "text_sha256": "77d3a6ddcdab8432408e05297fde4058569768e94b2e3bf21121cba12c39296e"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "alys-grive",
+          "state": "coiffe laine brune, robe brune simple"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER01-C06",
+        "next_cut_id": "N60-Q07-C02",
+        "entry": "Entrée de scène : Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes.",
+        "exit": "État à conserver : MATIN : reine face à Alys et son sac de rebec, aucun public",
+        "axis": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes."
+      },
+      "intention": "Abandonner la relecture sans montrer une chanson achevée",
+      "cadrage": "Plan à deux, matin, espace libre entre les femmes",
+      "action_visible": "Rhaenyra et Alys seules face à face, espace libre entre elles ; le sac à rebec reste contre la hanche d’Alys. Aucun public ni chanteur.",
+      "light": "Matin latéral doux ; après ellipse fenêtre et salle occupée, changement de position manifeste.",
+      "location": "Peyredragon, entretien puis salle du conseil",
+      "prompt_image": "Plan à deux, matin, espace libre entre les femmes. Rhaenyra et Alys seules face à face, espace libre entre elles ; le sac à rebec reste contre la hanche d’Alys. Aucun public ni chanteur. Peyredragon, pièce d’entretien. Matin latéral doux rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. alys-grive : 28 ans, visage sec, attentif proposé, cheveux bruns tirés sous coiffe, silhouette fine. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; alys-grive — coiffe laine brune, robe brune simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q07-B001",
+          "source_block_id": "N60-Q07-B001",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "**Le feu n'est pas sur la liste.**",
+          "intention": "Abandonner la relecture sans montrer une chanson achevée",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5377,
+            "char_start": 0,
+            "char_end": 34,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 443
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "15917148a7f514939d711ab58e0428d43475a08b499797eb5482cbc222eae729"
+          }
+        },
+        {
+          "line_id": "N60-Q07-B002",
+          "source_block_id": "N60-Q07-B002",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Votre deuxième s'appelle *La reine qui n'a pas brûlé* et vous m'avez dit son prix avant que je le demande : que j'avoue la route. J'ai laissé quatre lignes blanches dans mon discours du sacre à cet endroit-là, devant six cents personnes, et huit jours plus tard elles sont toujours blanches.",
+          "intention": "Abandonner la relecture sans montrer une chanson achevée",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5377,
+            "char_start": 36,
+            "char_end": 327,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 443
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "fe882ad2fe6df41259f736e02112517f103734c402aa2436002d517120050123"
+          }
+        },
+        {
+          "line_id": "N60-Q07-B003",
+          "source_block_id": "N60-Q07-B003",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "**Chantez-le.** Pas une excuse, pas une explication — ce qui a eu lieu. Je ne relirai pas le couplet avant qu'il sorte.",
+          "intention": "Abandonner la relecture sans montrer une chanson achevée",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5377,
+            "char_start": 329,
+            "char_end": 448,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 443
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "61b518dfcd08f4d45f5f3f236bc3634a4dd146489507724f4d37b28e865fb1a1"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 38.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 35.6,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c65ee1dfdaa8e5a316db7ca44211f4c9fbe63378f096410a21c2d4cd065ede69",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:alys-grive"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q07-B001",
+          "source_block_id": "N60-Q07-B001",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "**Le feu n'est pas sur la liste.**"
+        },
+        {
+          "line_id": "N60-Q07-B002",
+          "source_block_id": "N60-Q07-B002",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "Votre deuxième s'appelle *La reine qui n'a pas brûlé* et vous m'avez dit son prix avant que je le demande : que j'avoue la route. J'ai laissé quatre lignes blanches dans mon discours du sacre à cet endroit-là, devant six cents personnes, et huit jours plus tard elles sont toujours blanches."
+        },
+        {
+          "line_id": "N60-Q07-B003",
+          "source_block_id": "N60-Q07-B003",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "**Chantez-le.** Pas une excuse, pas une explication — ce qui a eu lieu. Je ne relirai pas le couplet avant qu'il sorte."
+        }
+      ],
+      "static_framing": "Plan à deux, matin, espace libre entre les femmes",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments distincts du26 de la lune3,129 : matin7h23, puis conseil16h56",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q07-C02",
+      "scene_id": "N60-Q07",
+      "episode_id": "lc-e001",
+      "order": 83,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q07.json",
+        "scene_sha256": "7c8a032fd187405e747cdd3d1b851c959311da91e0faaf47b2af48d5ecb00537",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "3d0ce088aab6d1e8eea182c8d90da634311ba5b3e845021d5c8d5e90fbdca81e"
+      },
+      "source_block_ids": [
+        "N60-Q07-A002",
+        "N60-Q07-B004",
+        "N60-Q07-B005",
+        "N60-Q07-B006"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q07-A002",
+          "text_sha256": "3176df2f40ee96ad16d6c6c9dd1e5c585bc528fa05d6fc6753bd002c88307a37"
+        },
+        {
+          "id": "N60-Q07-B004",
+          "text_sha256": "2389fdc8eef21fddb7272c6a1a12a773e8a9528fd0f122b619a8864acef92cb4"
+        },
+        {
+          "id": "N60-Q07-B005",
+          "text_sha256": "3fca182293453b3905084a39012793a00625645b88eb9899fc0fe419d63b7887"
+        },
+        {
+          "id": "N60-Q07-B006",
+          "text_sha256": "203743571c142e4c8bc8db79d409e6a04396aebd678620886d1d61b13ac9290a"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "alys-grive",
+          "state": "coiffe laine brune, robe brune simple"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q07-C01",
+        "next_cut_id": "N60-Q07-C03",
+        "entry": "Raccord N60-Q07-C01 : MATIN : reine face à Alys et son sac de rebec, aucun public",
+        "exit": "État à conserver : PLUS TARD : salle occupée, Alys tient son cahier sans noms lisibles",
+        "axis": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes."
+      },
+      "intention": "Ellipse nette avant le compte revendiqué par Alys",
+      "cadrage": "Plan moyen Alys au conseil, reine dans la profondeur",
+      "action_visible": "Au conseil, Alys debout tient son cahier devant elle, la reine assise dans la profondeur et quelques silhouettes anonymes au bord de table. Aucun nom lisible sur les pages.",
+      "light": "Matin latéral doux ; après ellipse fenêtre et salle occupée, changement de position manifeste.",
+      "location": "Peyredragon, entretien puis salle du conseil",
+      "prompt_image": "Plan moyen Alys au conseil, reine dans la profondeur. Au conseil, Alys debout tient son cahier devant elle, la reine assise dans la profondeur et quelques silhouettes anonymes au bord de table. Aucun nom lisible sur les pages. Peyredragon, salle du conseil. Matin latéral doux rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. alys-grive : 28 ans, visage sec, attentif proposé, cheveux bruns tirés sous coiffe, silhouette fine. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; alys-grive — coiffe laine brune, robe brune simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q07-B004",
+          "source_block_id": "N60-Q07-B004",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "Votre Grâce. Ma conclusion, et je ne vous propose pas trois voies : j'en ai une, et je la défends.",
+          "intention": "Ellipse nette avant le compte revendiqué par Alys",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 2,
+            "char_end": 100,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "1a3868a9ee564e6c2321ce50de4236c95c6672156e58b5eb4f5e93de75e6ad66"
+          }
+        },
+        {
+          "line_id": "N60-Q07-B005",
+          "source_block_id": "N60-Q07-B005",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "**Je n'écris pas une chanson qui vous défend.** On ne fait pas aimer une souveraine absente, et une louange payée s'entend au premier vers. Je lâche **un compte contre un compte**. Otto dit trois mille. Je dis **cent quatre-vingt-onze**, avec les villages : quarante et un de Rosby, trente-huit des villages du roi sur cette route même, neuf de l'autre côté de la ville. Et j'invite chacun à y chercher son nom.",
+          "intention": "Ellipse nette avant le compte revendiqué par Alys",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 104,
+            "char_end": 515,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "a636730120511414318c5e1e6c23aa19a316e25ec08c35ea82d5d735ca61125f"
+          }
+        },
+        {
+          "line_id": "N60-Q07-B006",
+          "source_block_id": "N60-Q07-B006",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "C'est la seule pièce de tout ce plan qu'un homme puisse vérifier **sans nous croire**. Et chaque vivant qui vient faire rayer le sien fait descendre le chiffre **sans que vous ayez à ouvrir la bouche**.",
+          "intention": "Ellipse nette avant le compte revendiqué par Alys",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 519,
+            "char_end": 721,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "5c02f1e06e2dd295f76a3fc4e4c9831031a95d6748e967b087ef329a6aba9f28"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 60.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 56.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "ec4ba3911af8ddfd191cafe4b79ad0bd1f2aacc4b30a182a910e9530d74a0374",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:alys-grive"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "speaker_ids": [
+        "alys-grive"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q07-B004",
+          "source_block_id": "N60-Q07-B004",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "Votre Grâce. Ma conclusion, et je ne vous propose pas trois voies : j'en ai une, et je la défends."
+        },
+        {
+          "line_id": "N60-Q07-B005",
+          "source_block_id": "N60-Q07-B005",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "**Je n'écris pas une chanson qui vous défend.** On ne fait pas aimer une souveraine absente, et une louange payée s'entend au premier vers. Je lâche **un compte contre un compte**. Otto dit trois mille. Je dis **cent quatre-vingt-onze**, avec les villages : quarante et un de Rosby, trente-huit des villages du roi sur cette route même, neuf de l'autre côté de la ville. Et j'invite chacun à y chercher son nom."
+        },
+        {
+          "line_id": "N60-Q07-B006",
+          "source_block_id": "N60-Q07-B006",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "C'est la seule pièce de tout ce plan qu'un homme puisse vérifier **sans nous croire**. Et chaque vivant qui vient faire rayer le sien fait descendre le chiffre **sans que vous ayez à ouvrir la bouche**."
+        }
+      ],
+      "static_framing": "Plan moyen Alys au conseil, reine dans la profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments distincts du26 de la lune3,129 : matin7h23, puis conseil16h56",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q07-C03",
+      "scene_id": "N60-Q07",
+      "episode_id": "lc-e001",
+      "order": 84,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q07.json",
+        "scene_sha256": "7c8a032fd187405e747cdd3d1b851c959311da91e0faaf47b2af48d5ecb00537",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "5b4cc208ec4b8831b701a17de56ba65a79b8d8b973127a4bd75f425f12b2b34f"
+      },
+      "source_block_ids": [
+        "N60-Q07-B007"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q07-B007",
+          "text_sha256": "8cbe1fc31d71543fc4fb3b803187a58b4883ec305765f3379f518ceb73a07024"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "alys-grive",
+          "state": "coiffe laine brune, robe brune simple"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q07-C02",
+        "next_cut_id": "N60-Q07-C04",
+        "entry": "Raccord N60-Q07-C02 : PLUS TARD : salle occupée, Alys tient son cahier sans noms lisibles",
+        "exit": "État à conserver : Alys garde son cahier fermé devant elle ; aucune famille recevant la nouvelle montrée",
+        "axis": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes."
+      },
+      "intention": "L’aveu fait porter aux familles le poids des morts",
+      "cadrage": "Plan rapproché Alys, reine en amorce",
+      "action_visible": "Alys garde son cahier fermé contre elle et regarde la reine en amorce. Mains calleuses et coiffe brune nettes ; aucune famille recevant une nouvelle.",
+      "light": "Matin latéral doux ; après ellipse fenêtre et salle occupée, changement de position manifeste.",
+      "location": "Peyredragon, entretien puis salle du conseil",
+      "prompt_image": "Plan rapproché Alys, reine en amorce. Alys garde son cahier fermé contre elle et regarde la reine en amorce. Mains calleuses et coiffe brune nettes ; aucune famille recevant une nouvelle. Peyredragon, salle du conseil. Matin latéral doux rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. alys-grive : 28 ans, visage sec, attentif proposé, cheveux bruns tirés sous coiffe, silhouette fine. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; alys-grive — coiffe laine brune, robe brune simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q07-B007",
+          "source_block_id": "N60-Q07-B007",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "Le prix, comme toujours avant qu'on me le demande, et il est de vous : **on avoue le feu.** Une liste de morts est l'aveu qu'il y a eu des morts, et cet aveu-là ne se reprend jamais. Quarante et un foyers de Rosby apprendront par nous la mort d'un des leurs.",
+          "intention": "L’aveu fait porter aux familles le poids des morts",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 725,
+            "char_end": 983,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "e9e063bdb00b16956cd59f61c57a93f8dcf0af09a117f91183b507c6077ca712"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 26.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 23.1,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "efd845ebf5ca6cd7ebd23e571b3f5868fd855b9ee93885d7eba5f70185d4dc93",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:alys-grive"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "speaker_ids": [
+        "alys-grive"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q07-B007",
+          "source_block_id": "N60-Q07-B007",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "Le prix, comme toujours avant qu'on me le demande, et il est de vous : **on avoue le feu.** Une liste de morts est l'aveu qu'il y a eu des morts, et cet aveu-là ne se reprend jamais. Quarante et un foyers de Rosby apprendront par nous la mort d'un des leurs."
+        }
+      ],
+      "static_framing": "Plan rapproché Alys, reine en amorce",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments distincts du26 de la lune3,129 : matin7h23, puis conseil16h56",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q07-C04",
+      "scene_id": "N60-Q07",
+      "episode_id": "lc-e001",
+      "order": 85,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q07.json",
+        "scene_sha256": "7c8a032fd187405e747cdd3d1b851c959311da91e0faaf47b2af48d5ecb00537",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "2a14d248b0193657fb4c0db2c52525353bf80038f744c89d940cdaab9ade5800"
+      },
+      "source_block_ids": [
+        "N60-Q07-B008",
+        "N60-Q07-B009"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q07-B008",
+          "text_sha256": "d33550cc36e2df978d6f1dfa52a4b24b9370b553cbf98b36ab873a317d653418"
+        },
+        {
+          "id": "N60-Q07-B009",
+          "text_sha256": "606493d3002c2456c5952662207374e4d7d926ef99d7cd0165e03b1800251433"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "alys-grive",
+          "state": "coiffe laine brune, robe brune simple"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q07-C03",
+        "next_cut_id": "N60-Q06-C01",
+        "entry": "Raccord N60-Q07-C03 : Alys garde son cahier fermé devant elle ; aucune famille recevant la nouvelle montrée",
+        "exit": "Sortie : Alys s’arrête sur son risque ; la reine écoute sans offrir de résultat ; aucun résultat au-delà du texte adopté.",
+        "axis": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes."
+      },
+      "intention": "Un seul nom faux peut faire retirer la proposition",
+      "cadrage": "Plan tenu à deux, aucun insert de liste certifiée",
+      "action_visible": "Alys s’est tue, cahier fermé serré contre son corps ; la reine lui fait face sans bourse ni signe d’assentiment. Le sac à rebec reste hors du sol.",
+      "light": "Matin latéral doux ; après ellipse fenêtre et salle occupée, changement de position manifeste.",
+      "location": "Peyredragon, entretien puis salle du conseil",
+      "prompt_image": "Plan tenu à deux, aucun insert de liste certifiée. Alys s’est tue, cahier fermé serré contre son corps ; la reine lui fait face sans bourse ni signe d’assentiment. Le sac à rebec reste hors du sol. Peyredragon, salle du conseil. Matin latéral doux rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. alys-grive : 28 ans, visage sec, attentif proposé, cheveux bruns tirés sous coiffe, silhouette fine. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; alys-grive — coiffe laine brune, robe brune simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q07-B008",
+          "source_block_id": "N60-Q07-B008",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "Ce qui me ferait renoncer : **un seul nom faux.** Alors la liste devient la preuve d'Otto au lieu d'être la nôtre. Si maître Rulf ne peut pas clore ses deux suspens, j'abandonne le compte et je m'en tiens au pain — qui ne demande de preuve à personne.",
+          "intention": "Un seul nom faux peut faire retirer la proposition",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 987,
+            "char_end": 1238,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "9e87f0101fef07253a654db55d6b188409155051cb336db91924f74479b46eca"
+          }
+        },
+        {
+          "line_id": "N60-Q07-B009",
+          "source_block_id": "N60-Q07-B009",
+          "scene_id": "N60-Q07",
+          "locuteur_id": "alys-grive",
+          "locuteur": "ALYS",
+          "texte": "Et ce que je ne ferai pas : je n'achèterai pas le chanteur de La Gaffe, je ne ferai pas parler les oreilles de dame Aurore ni les relais de Mysaria, et je ne lâcherai rien qui invite un homme à rapporter son voisin. On aurait cent délations et pas un renseignement.",
+          "intention": "Un seul nom faux peut faire retirer la proposition",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6153,
+            "char_start": 1242,
+            "char_end": 1507,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1016
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "b110d120aec5c7fc4b95b18f80331519d5748035260e962d53e0fdbd25a81aff"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 48.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 44.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "2ceab1fadf27f1d6ece0a1730160ccecbc14f2f4c5b928b0b0abc9131d5b60f1",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:alys-grive"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "alys-grive"
+      ],
+      "speaker_ids": [
+        "alys-grive"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q07-B008",
+          "source_block_id": "N60-Q07-B008",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "Ce qui me ferait renoncer : **un seul nom faux.** Alors la liste devient la preuve d'Otto au lieu d'être la nôtre. Si maître Rulf ne peut pas clore ses deux suspens, j'abandonne le compte et je m'en tiens au pain — qui ne demande de preuve à personne."
+        },
+        {
+          "line_id": "N60-Q07-B009",
+          "source_block_id": "N60-Q07-B009",
+          "speaker_id": "alys-grive",
+          "image_subject_ids": [
+            "rhaenyra",
+            "alys-grive"
+          ],
+          "text_unchanged": "Et ce que je ne ferai pas : je n'achèterai pas le chanteur de La Gaffe, je ne ferai pas parler les oreilles de dame Aurore ni les relais de Mysaria, et je ne lâcherai rien qui invite un homme à rapporter son voisin. On aurait cent délations et pas un renseignement."
+        }
+      ],
+      "static_framing": "Plan tenu à deux, aucun insert de liste certifiée",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments distincts du26 de la lune3,129 : matin7h23, puis conseil16h56",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Entretien : deux femmes face à face, espace libre. Conseil : Alys debout face à reine, cahier et sac à rebec, autres membres seulement silhouettes anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q06-C01",
+      "scene_id": "N60-Q06",
+      "episode_id": "lc-e001",
+      "order": 86,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q06.json",
+        "scene_sha256": "ed6be5ff20ffaf9b19f45cde8a89263f95d41aa93fbb6ff6142f8d6643fec7ae",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "aaefca00c57fd56509e71904f2aec62a7b6578e0ff9296ad522246af30da787a"
+      },
+      "source_block_ids": [
+        "N60-Q06-B001",
+        "N60-Q06-B002",
+        "N60-Q06-B003"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q06-B001",
+          "text_sha256": "d632409f6f51864c4ec9029c6df1062f740f7068496f934017bbc52e1e20a62e"
+        },
+        {
+          "id": "N60-Q06-B002",
+          "text_sha256": "004fd17d019505b3d89ba138776157835cc7b57a6cc6a78f88b9aa0fde712cbd"
+        },
+        {
+          "id": "N60-Q06-B003",
+          "text_sha256": "10d357b0437b07a771bb53e96ae83b7f7cbd77831a5d83a4422a19b1ffcd8d29"
+        }
+      ],
+      "character_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "sara",
+          "state": "tablier cuisine sur robe terre"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q07-C04",
+        "next_cut_id": "N60-Q06-C02",
+        "entry": "Entrée de scène : Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert.",
+        "exit": "État à conserver : Sara garde les mains visibles sur sa propre ardoise ; la reine ne répond pas",
+        "axis": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert."
+      },
+      "intention": "La nourriture met à l’épreuve la victoire abstraite",
+      "cadrage": "Plan moyen Sara et reine, table en biais",
+      "action_visible": "Sara debout face à la reine garde les mains rouges sur sa propre ardoise au bord de table ; la reine l’écoute en silence.",
+      "light": "Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive.",
+      "location": "Conseil de Peyredragon",
+      "prompt_image": "Plan moyen Sara et reine, table en biais. Sara debout face à la reine garde les mains rouges sur sa propre ardoise au bord de table ; la reine l’écoute en silence. Peyredragon, salle du conseil. Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive. sara : 60 ans, visage rond marqué proposé, cheveux gris sous coiffe de travail proposée, silhouette solide. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : sara — tablier cuisine sur robe terre ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q06-B001",
+          "source_block_id": "N60-Q06-B001",
+          "scene_id": "N60-Q06",
+          "locuteur_id": "sara",
+          "locuteur": "SARA",
+          "texte": "Une contradiction, Votre Grâce, et elle est de moi contre eux.",
+          "intention": "La nourriture met à l’épreuve la victoire abstraite",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6193,
+            "char_start": 2,
+            "char_end": 64,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1055
+            },
+            "text_sha256": "e6441cf7570f560d362d30a7ac8b2d5ae5a373504357dded6c99afeb1bded7de",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q06-B002",
+          "source_block_id": "N60-Q06-B002",
+          "scene_id": "N60-Q06",
+          "locuteur_id": "sara",
+          "locuteur": "SARA",
+          "texte": "Port-Réal mange **deux mille muids par jour**. Les quarante muids du *Bras Rouge*, dont on parle depuis trois jours, c'est **vingt-neuf minutes de ville**.",
+          "intention": "La nourriture met à l’épreuve la victoire abstraite",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6193,
+            "char_start": 68,
+            "char_end": 223,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1055
+            },
+            "text_sha256": "ab1ad1d5bc02b17e3aaa761446559dbf7d257f75ebc34d7b2a5f4df4610b202a",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q06-B003",
+          "source_block_id": "N60-Q06-B003",
+          "scene_id": "N60-Q06",
+          "locuteur_id": "sara",
+          "locuteur": "SARA",
+          "texte": "Le livre dit : couper le port, le fleuve et la route. **Si on coupe les trois, la ville a faim en neuf jours** — et le ralliement sur lequel tout le reste repose meurt avec le pain.",
+          "intention": "La nourriture met à l’épreuve la victoire abstraite",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6193,
+            "char_start": 227,
+            "char_end": 408,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1055
+            },
+            "text_sha256": "61e35b930ea220581762b425079f3f9bd31df518ff6af9aaace2d0c2b4a19be0",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 35.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 32.4,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "fee466ded428904e2447ce4d83fa9725002d6470b9de72b7c53a06ee0211c3b4",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:sara"
+      ],
+      "image_subject_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "speaker_ids": [
+        "sara"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q06-B001",
+          "source_block_id": "N60-Q06-B001",
+          "speaker_id": "sara",
+          "image_subject_ids": [
+            "sara",
+            "rhaenyra"
+          ],
+          "text_unchanged": "Une contradiction, Votre Grâce, et elle est de moi contre eux."
+        },
+        {
+          "line_id": "N60-Q06-B002",
+          "source_block_id": "N60-Q06-B002",
+          "speaker_id": "sara",
+          "image_subject_ids": [
+            "sara",
+            "rhaenyra"
+          ],
+          "text_unchanged": "Port-Réal mange **deux mille muids par jour**. Les quarante muids du *Bras Rouge*, dont on parle depuis trois jours, c'est **vingt-neuf minutes de ville**."
+        },
+        {
+          "line_id": "N60-Q06-B003",
+          "source_block_id": "N60-Q06-B003",
+          "speaker_id": "sara",
+          "image_subject_ids": [
+            "sara",
+            "rhaenyra"
+          ],
+          "text_unchanged": "Le livre dit : couper le port, le fleuve et la route. **Si on coupe les trois, la ville a faim en neuf jours** — et le ralliement sur lequel tout le reste repose meurt avec le pain."
+        }
+      ],
+      "static_framing": "Plan moyen Sara et reine, table en biais",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur, avant le four ; archive129.3.26,17h35",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q06-C02",
+      "scene_id": "N60-Q06",
+      "episode_id": "lc-e001",
+      "order": 87,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q06.json",
+        "scene_sha256": "ed6be5ff20ffaf9b19f45cde8a89263f95d41aa93fbb6ff6142f8d6643fec7ae",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "075a2a17c4849bd3d01243aec42cf76156cd5a933985768ddc55834fc5fa6f80"
+      },
+      "source_block_ids": [
+        "N60-Q06-B004"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q06-B004",
+          "text_sha256": "e7cdcb6b51fa0b66f2451e05ada7f7e47aed0192fc0f2a0b860ef5cbfd1ccd12"
+        }
+      ],
+      "character_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "sara",
+          "state": "tablier cuisine sur robe terre"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q06-C01",
+        "next_cut_id": "N60-Q06-C03",
+        "entry": "Raccord N60-Q06-C01 : Sara garde les mains visibles sur sa propre ardoise ; la reine ne répond pas",
+        "exit": "État à conserver : Sara maintient son regard ; aucun poste ou convoi montré en insert",
+        "axis": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert."
+      },
+      "intention": "Son passage inspecté est encore une proposition",
+      "cadrage": "Plan rapproché Sara, reine en bord de cadre",
+      "action_visible": "Sara regarde droit devant elle, tablier de cuisine net et ardoise sous le bras ; une épaule royale en amorce. Aucun convoi ou poste de fouille en insert.",
+      "light": "Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive.",
+      "location": "Conseil de Peyredragon",
+      "prompt_image": "Plan rapproché Sara, reine en bord de cadre. Sara regarde droit devant elle, tablier de cuisine net et ardoise sous le bras ; une épaule royale en amorce. Aucun convoi ou poste de fouille en insert. Peyredragon, salle du conseil. Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive. sara : 60 ans, visage rond marqué proposé, cheveux gris sous coiffe de travail proposée, silhouette solide. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : sara — tablier cuisine sur robe terre ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q06-B004",
+          "source_block_id": "N60-Q06-B004",
+          "scene_id": "N60-Q06",
+          "locuteur_id": "sara",
+          "locuteur": "SARA",
+          "texte": "Alors j'ai écrit le contraire de ce qu'on m'a donné. **Je laisse le fleuve à demi ouvert** : un poste unique, tout fouillé, la farine et le sel qui passent. Et je ne donne rien, **je vends au prix d'avant** — l'aumône prouve la disette et double le prix.",
+          "intention": "Son passage inspecté est encore une proposition",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6193,
+            "char_start": 412,
+            "char_end": 666,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1055
+            },
+            "text_sha256": "04f6c82b639ec383ce1b49695ad978d3e8fa206c1b524cf824ee5beb8b9e5579",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 23.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 21.8,
+          "action_et_silence_hors_parole": 2,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "98d1edd4040dcb50885e7992a820abc64ff91608beebc37ccfe7f3c512c7e3d6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:sara"
+      ],
+      "image_subject_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "speaker_ids": [
+        "sara"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q06-B004",
+          "source_block_id": "N60-Q06-B004",
+          "speaker_id": "sara",
+          "image_subject_ids": [
+            "sara",
+            "rhaenyra"
+          ],
+          "text_unchanged": "Alors j'ai écrit le contraire de ce qu'on m'a donné. **Je laisse le fleuve à demi ouvert** : un poste unique, tout fouillé, la farine et le sel qui passent. Et je ne donne rien, **je vends au prix d'avant** — l'aumône prouve la disette et double le prix."
+        }
+      ],
+      "static_framing": "Plan rapproché Sara, reine en bord de cadre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur, avant le four ; archive129.3.26,17h35",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    }
+  ]
+}

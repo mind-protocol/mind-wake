@@ -1,0 +1,3578 @@
+{
+  "agent": 7,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-07",
+  "cuts": [
+    {
+      "cut_id": "N60-Q06-C03",
+      "scene_id": "N60-Q06",
+      "episode_id": "lc-e001",
+      "order": 88,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q06.json",
+        "scene_sha256": "ed6be5ff20ffaf9b19f45cde8a89263f95d41aa93fbb6ff6142f8d6643fec7ae",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "1196827eeca37110df9cab77e7fe9cfbf3058266c959b3cf3d4592fb9592183d"
+      },
+      "source_block_ids": [
+        "N60-Q06-B005"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q06-B005",
+          "text_sha256": "585cb68408d00cf29a9790550da790c049fddc09f12bb140569f6762efbac839"
+        }
+      ],
+      "character_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "sara",
+          "state": "tablier cuisine sur robe terre"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q06-C02",
+        "next_cut_id": "VER06-C01",
+        "entry": "Raccord N60-Q06-C02 : Sara maintient son regard ; aucun poste ou convoi montré en insert",
+        "exit": "Sortie : Reine silencieuse face à Sara ; aucune tête qui acquiesce ou bourse ouverte ; aucun résultat au-delà du texte adopté.",
+        "axis": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert."
+      },
+      "intention": "Attendre la parole royale et non en fabriquer le signe",
+      "cadrage": "Plan à deux tenu après la phrase",
+      "action_visible": "La reine silencieuse fait face à Sara dans un cadre à deux, ardoise entre elles sur la table. Mains contenues, aucune bourse ouverte.",
+      "light": "Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive.",
+      "location": "Conseil de Peyredragon",
+      "prompt_image": "Plan à deux tenu après la phrase. La reine silencieuse fait face à Sara dans un cadre à deux, ardoise entre elles sur la table. Mains contenues, aucune bourse ouverte. Peyredragon, salle du conseil. Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive. sara : 60 ans, visage rond marqué proposé, cheveux gris sous coiffe de travail proposée, silhouette solide. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : sara — tablier cuisine sur robe terre ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q06-B005",
+          "source_block_id": "N60-Q06-B005",
+          "scene_id": "N60-Q06",
+          "locuteur_id": "sara",
+          "locuteur": "SARA",
+          "texte": "Ça coûte cent dragons **à dépenser avant le jour d'entrée**. Un convoi décidé au seuil arrive **onze jours trop tard**. C'est votre parole qu'il me faut, pas celle de maître Hask : lui, il a déjà dit oui.",
+          "intention": "Attendre la parole royale et non en fabriquer le signe",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 6193,
+            "char_start": 670,
+            "char_end": 874,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 1055
+            },
+            "text_sha256": "046ad264a407ea2302f34cdc7f2f707dd161f2a1da4ff429783ecee4e1586f0b",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 16.9,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "158ada9f4705150d22928c823960fe2b13cecb3b66a296bc428213a6cfb125cb",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:sara"
+      ],
+      "image_subject_ids": [
+        "sara",
+        "rhaenyra"
+      ],
+      "speaker_ids": [
+        "sara"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q06-B005",
+          "source_block_id": "N60-Q06-B005",
+          "speaker_id": "sara",
+          "image_subject_ids": [
+            "sara",
+            "rhaenyra"
+          ],
+          "text_unchanged": "Ça coûte cent dragons **à dépenser avant le jour d'entrée**. Un convoi décidé au seuil arrive **onze jours trop tard**. C'est votre parole qu'il me faut, pas celle de maître Hask : lui, il a déjà dit oui."
+        }
+      ],
+      "static_framing": "Plan à deux tenu après la phrase",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur, avant le four ; archive129.3.26,17h35",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Sara debout face à la reine, table entre elles, ardoise personnelle ; aucun convoi en insert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan à deux tenu après la phrase. La reine silencieuse fait face à Sara dans un cadre à deux, ardoise entre elles sur la table. Mains contenues, aucune bourse ouverte. Peyredragon, salle du conseil. Jour diffus, lumière neutre et profondeur de salle, aucune image de famine fictive. sara : 60 ans, visage rond marqué proposé, cheveux gris sous coiffe de travail proposée, silhouette solide. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : sara — tablier cuisine sur robe terre ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "5ead5bde2dcc6f685459e0493cdf87817304e04d8822b8afb5fb6f1eb6c2fba2"
+    },
+    {
+      "cut_id": "VER06-C01",
+      "scene_id": "VER06",
+      "episode_id": "lc-e001",
+      "order": 89,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER06.json",
+        "scene_sha256": "9abe2a9792d082cfd9cc220441310c7d4c67f6b1b12158fda8069e5b2f951c42",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "3abb546ed78f2f7dace5c48e06b87183928f0dd9ca9dcd6486d54d8fc3bd71a8"
+      },
+      "source_block_ids": [
+        "VER06-B002",
+        "VER06-B003",
+        "VER06-B004",
+        "VER06-B005",
+        "VER06-B006",
+        "VER06-B007",
+        "VER06-B008",
+        "VER06-B009"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER06-B002",
+          "text_sha256": "169c1cb82656be466dd5c3e70b10fcb1ac248052dc5566b1d5c5275070258c37"
+        },
+        {
+          "id": "VER06-B003",
+          "text_sha256": "31d1f7b695424163620346f7db7a24965a6a2df22c88b02255e11f6d9693048f"
+        },
+        {
+          "id": "VER06-B004",
+          "text_sha256": "99ce5563738c5f00cea2084ce16d71acfe19b57016527048708f444e7d604762"
+        },
+        {
+          "id": "VER06-B005",
+          "text_sha256": "afd662519591d2e13a614a3b68897b46dbd536dbfd16b56c8d3379574eb492da"
+        },
+        {
+          "id": "VER06-B006",
+          "text_sha256": "16391b4fcbc38bec16b2225c6bbcd96ea6a6c593a1bb00493d8c12995025bcde"
+        },
+        {
+          "id": "VER06-B007",
+          "text_sha256": "50bce76d94761a7eb1f76e13a8892607287a40f13d5fb46269ca5cbeb4b1186d"
+        },
+        {
+          "id": "VER06-B008",
+          "text_sha256": "826392e74d7afa6282b0e88fb0f812bc305c2fe4fd157e7ac2eb483aab6d8733"
+        },
+        {
+          "id": "VER06-B009",
+          "text_sha256": "3204ac2e8abc7173543d4a552619131475cad22b62b7326030a00572814a1a00"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "boulanger-serie",
+          "state": "tablier écru, tunique terre"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q06-C03",
+        "next_cut_id": "VER06-C02",
+        "entry": "Entrée de scène : Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "exit": "État à conserver : Deux gardes restent en retrait ; Hann refuse la feuille avec ses mains de poix",
+        "axis": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur."
+      },
+      "intention": "Le four réel résiste au rôle du roi",
+      "cadrage": "Plan large du passage resserré puis plan à deux dans le fournil",
+      "action_visible": "Hann, mains noires de poix, laisse le rôle tendu par Aegon hors de ses mains. Derrière, le boulanger reste près de la pâte couverte ; deux gardes sont arrêtés à l’entrée étroite.",
+      "light": "Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène.",
+      "location": "Fournil du Boyau, Port-Réal",
+      "prompt_image": "Plan large du passage resserré. Hann, mains noires de poix, laisse le rôle tendu par Aegon hors de ses mains. Derrière, le boulanger reste près de la pâte couverte ; deux gardes sont arrêtés à l’entrée étroite. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER06-B004",
+          "source_block_id": "VER06-B004",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Celui-ci est sur ma feuille.",
+          "intention": "Le four réel résiste au rôle du roi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B004",
+            "text_sha256": "832ecca741ef7ae8e2d4552ee0ea7096638487f937b7961cd038942f324f4b53"
+          }
+        },
+        {
+          "line_id": "VER06-B005",
+          "source_block_id": "VER06-B005",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Vous voulez voir le four ou qu’il voie votre feuille ?",
+          "intention": "Le four réel résiste au rôle du roi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B005",
+            "text_sha256": "8c456849376e8b9e010b96e9df7c64f75f5e34b8b0740da2c189d41878b6a50b"
+          }
+        },
+        {
+          "line_id": "VER06-B007",
+          "source_block_id": "VER06-B007",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Lisez.",
+          "intention": "Le four réel résiste au rôle du roi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B007",
+            "text_sha256": "a8494a26d735be2c8e94efa5c5fd594b7933ea910393d3b790e7c1eb87df18d9"
+          }
+        },
+        {
+          "line_id": "VER06-B008",
+          "source_block_id": "VER06-B008",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Deux du Boyau. Cinq du Culpucier. Celui-ci n’a pas de date.",
+          "intention": "Le four réel résiste au rôle du roi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B008",
+            "text_sha256": "df7c16764040759f3742ec7e1b79244134ddc218fd21b360495209a1df8bd036"
+          }
+        },
+        {
+          "line_id": "VER06-B009",
+          "source_block_id": "VER06-B009",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Alors ne la mettez pas avant qu’on vous la dise.",
+          "intention": "Le four réel résiste au rôle du roi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B009",
+            "text_sha256": "4f45808c80b51488c785a421d1d7d1cc46cf7013181becfe5b0501a4a8cf8385"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 16.9,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4b9bdfbb082c542d53c8d3350d74094c9f2a4d8250a7167259e80097669f3e2b",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:boulanger-serie",
+        "film_identity_approval_pending:aegon-ii"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER06-B004",
+          "source_block_id": "VER06-B004",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Celui-ci est sur ma feuille."
+        },
+        {
+          "line_id": "VER06-B005",
+          "source_block_id": "VER06-B005",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Vous voulez voir le four ou qu’il voie votre feuille ?"
+        },
+        {
+          "line_id": "VER06-B007",
+          "source_block_id": "VER06-B007",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Lisez."
+        },
+        {
+          "line_id": "VER06-B008",
+          "source_block_id": "VER06-B008",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Deux du Boyau. Cinq du Culpucier. Celui-ci n’a pas de date."
+        },
+        {
+          "line_id": "VER06-B009",
+          "source_block_id": "VER06-B009",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Alors ne la mettez pas avant qu’on vous la dise."
+        }
+      ],
+      "static_framing": "Plan large du passage resserré",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan large du passage resserré. Hann, mains noires de poix, laisse le rôle tendu par Aegon hors de ses mains. Derrière, le boulanger reste près de la pâte couverte ; deux gardes sont arrêtés à l’entrée étroite. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "73aa3709115c6b6cd77e3925205ad40bd2f47c5f989de61b9dcbc8f8bd4c845b"
+    },
+    {
+      "cut_id": "VER06-C02",
+      "scene_id": "VER06",
+      "episode_id": "lc-e001",
+      "order": 90,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER06.json",
+        "scene_sha256": "9abe2a9792d082cfd9cc220441310c7d4c67f6b1b12158fda8069e5b2f951c42",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "065db149c82c6d73946d311fe56497e334f3ca4b8e866073ccf8ff1285626990"
+      },
+      "source_block_ids": [
+        "VER06-B010",
+        "VER06-B011",
+        "VER06-B012",
+        "VER06-B013",
+        "VER06-B014",
+        "VER06-B015",
+        "VER06-B016",
+        "VER06-B017",
+        "VER06-B018"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER06-B010",
+          "text_sha256": "fbddb75ca32fe7d0bfd66bc1231485614be38dc9a2eecfaab788cf793429b18e"
+        },
+        {
+          "id": "VER06-B011",
+          "text_sha256": "c435e0af9a8030b32475adab8f18497f568a442a786489ff619fecd78b4a37a4"
+        },
+        {
+          "id": "VER06-B012",
+          "text_sha256": "1b662faa8e491111151849a0dd3045b068fa7564a6255511f73f75fc4d13481e"
+        },
+        {
+          "id": "VER06-B013",
+          "text_sha256": "fed0767f4c6fa474895003fcad55c5f24290d31a963ec53a4918d51c1cfe6816"
+        },
+        {
+          "id": "VER06-B014",
+          "text_sha256": "f9fd246ecf84cced4590fa934832663c8d014e866ee4c094344c74a22462c807"
+        },
+        {
+          "id": "VER06-B015",
+          "text_sha256": "ba3a34ea4fb16d9c7f73fd05b745a16ab70c254021f3894259f25069c910a5c2"
+        },
+        {
+          "id": "VER06-B016",
+          "text_sha256": "6129d9d6650c7ead589af9a547f6ecc9852569142ff9b3e86935e2925fac1ce3"
+        },
+        {
+          "id": "VER06-B017",
+          "text_sha256": "e04400dbaca4769ad04354bbccc7f222ab0d9c36fb04b131f795f3c6ba5741b9"
+        },
+        {
+          "id": "VER06-B018",
+          "text_sha256": "5a585827065bdb3a54a09d1249de32673ae8db67fcc29713faa16ec8297225ce"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "boulanger-serie",
+          "state": "tablier écru, tunique terre"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER06-C01",
+        "next_cut_id": "VER06-C03",
+        "entry": "Raccord VER06-C01 : Deux gardes restent en retrait ; Hann refuse la feuille avec ses mains de poix",
+        "exit": "État à conserver : Le boulanger fait le geste de nuits ; Aegon rature deux avant qu’on le lui demande",
+        "axis": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur."
+      },
+      "intention": "Ne pas prendre deux fournées pour deux jours",
+      "cadrage": "Plan triangulaire roi, Hann et boulanger muet",
+      "action_visible": "Le boulanger tient deux doigts levés près du linge, Hann le regarde et Aegon a la plume sur une rature du rôle. Le four reste froid.",
+      "light": "Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène.",
+      "location": "Fournil du Boyau, Port-Réal",
+      "prompt_image": "Plan triangulaire roi, Hann et boulanger muet. Le boulanger tient deux doigts levés près du linge, Hann le regarde et Aegon a la plume sur une rature du rôle. Le four reste froid. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER06-B011",
+          "source_block_id": "VER06-B011",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Depuis quand ?",
+          "intention": "Ne pas prendre deux fournées pour deux jours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B011",
+            "text_sha256": "0d847a5b74fe98e2d91c60f23f5ecd78fa4cc841da41990b48f7810a6f8fc4cf"
+          }
+        },
+        {
+          "line_id": "VER06-B013",
+          "source_block_id": "VER06-B013",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Il vous demande quand le bois a cessé d’arriver. Pas de quel côté vous êtes.",
+          "intention": "Ne pas prendre deux fournées pour deux jours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B013",
+            "text_sha256": "45fd7cc455577ad2bf94e51175bd2c2c4c04d26eed179a31b35b72e53e0a9862"
+          }
+        },
+        {
+          "line_id": "VER06-B015",
+          "source_block_id": "VER06-B015",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Attendez.",
+          "intention": "Ne pas prendre deux fournées pour deux jours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B015",
+            "text_sha256": "5578dd2db1246225499f0a245789b8d07dd91a1bbfb5157181ab41f0d666c77d"
+          }
+        },
+        {
+          "line_id": "VER06-B017",
+          "source_block_id": "VER06-B017",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Deux fournées perdues. Ce n’est pas forcément deux jours.",
+          "intention": "Ne pas prendre deux fournées pour deux jours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B017",
+            "text_sha256": "a2d127ac0b1e3cad1f0e04e97088019fed23bad7be1e8067242669f492522d12"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 18.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 12.4,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "cac4afe8fae2cb3b726948d73feabcf6bc443a21ce184454f09929d23190a96c",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:boulanger-serie",
+        "film_identity_approval_pending:aegon-ii"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER06-B011",
+          "source_block_id": "VER06-B011",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Depuis quand ?"
+        },
+        {
+          "line_id": "VER06-B013",
+          "source_block_id": "VER06-B013",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Il vous demande quand le bois a cessé d’arriver. Pas de quel côté vous êtes."
+        },
+        {
+          "line_id": "VER06-B015",
+          "source_block_id": "VER06-B015",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Attendez."
+        },
+        {
+          "line_id": "VER06-B017",
+          "source_block_id": "VER06-B017",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Deux fournées perdues. Ce n’est pas forcément deux jours."
+        }
+      ],
+      "static_framing": "Plan triangulaire roi, Hann et boulanger muet",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan triangulaire roi, Hann et boulanger muet. Le boulanger tient deux doigts levés près du linge, Hann le regarde et Aegon a la plume sur une rature du rôle. Le four reste froid. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "2b01ae6fb54926d67a95d11aceea25384dcdd9ccd5cad18b498c9a9899b3812b"
+    },
+    {
+      "cut_id": "VER06-C03",
+      "scene_id": "VER06",
+      "episode_id": "lc-e001",
+      "order": 91,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER06.json",
+        "scene_sha256": "9abe2a9792d082cfd9cc220441310c7d4c67f6b1b12158fda8069e5b2f951c42",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c7e29a1792ddaec678db9a6d8ce38a9f5e60de81597ac2b3fa0a6e06f6f169ef"
+      },
+      "source_block_ids": [
+        "VER06-B019",
+        "VER06-B020",
+        "VER06-B021",
+        "VER06-B022",
+        "VER06-B023",
+        "VER06-B024",
+        "VER06-B025",
+        "VER06-B026"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER06-B019",
+          "text_sha256": "af2fee3aabbe2644bb6e045b8a5c900e6400604f9ef575caab5f14f997279369"
+        },
+        {
+          "id": "VER06-B020",
+          "text_sha256": "3e4bd91fd79fe78848e29fe4cf39a2fdcb69f7673e7e5628e3bd846a0d1c9dbf"
+        },
+        {
+          "id": "VER06-B021",
+          "text_sha256": "1b76f3a6c3c1b9fe70ca0d76fc326fa1e3d19806a7410d07f2cf0890b2f0faf8"
+        },
+        {
+          "id": "VER06-B022",
+          "text_sha256": "3300e61ecbc306958621d2b5e354a2934ca120a657f0d98a3722cb0263b15cb1"
+        },
+        {
+          "id": "VER06-B023",
+          "text_sha256": "b6d4884f2f7a6bdd29d7f602148cbfe6178f2181f51f0d268d8b8538667cce26"
+        },
+        {
+          "id": "VER06-B024",
+          "text_sha256": "9196c7acce213333630f0f456e43974b0c66fa204038bc527923bfeaef818510"
+        },
+        {
+          "id": "VER06-B025",
+          "text_sha256": "237f51a6702e77ddaa93474a9c700945694a04bb79b5dba103e57a92a040162c"
+        },
+        {
+          "id": "VER06-B026",
+          "text_sha256": "724236a1402275a3fe86d9fbc311d3cd90fb0031a78f13f5824ee2abe40d50f7"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "boulanger-serie",
+          "state": "tablier écru, tunique terre"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER06-C02",
+        "next_cut_id": "VER06-C04",
+        "entry": "Raccord VER06-C02 : Le boulanger fait le geste de nuits ; Aegon rature deux avant qu’on le lui demande",
+        "exit": "État à conserver : La bourse du roi n’est pas prise ; Hann désigne le combustible mouillé",
+        "axis": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur."
+      },
+      "intention": "L’argent sans trajet n’allume pas le bois",
+      "cadrage": "Plan de biais incluant bourse et fagots humides",
+      "action_visible": "Une bourse fermée pend dans la main d’Aegon ; Hann désigne les fagots humides contre le mur. Le boulanger ne tend aucune main vers l’or.",
+      "light": "Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène.",
+      "location": "Fournil du Boyau, Port-Réal",
+      "prompt_image": "Plan de biais incluant bourse et fagots humides. Une bourse fermée pend dans la main d’Aegon ; Hann désigne les fagots humides contre le mur. Le boulanger ne tend aucune main vers l’or. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER06-B019",
+          "source_block_id": "VER06-B019",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je veux le jour.",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B019",
+            "text_sha256": "2a6de262aa1d0665125e0e80f5b9e83a4083c81ba203c95f3d91d9c5ea5daa78"
+          }
+        },
+        {
+          "line_id": "VER06-B020",
+          "source_block_id": "VER06-B020",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Lui, il veut du bois.",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B020",
+            "text_sha256": "6c1046921b3ccecb2e3173b09d14cbeb72984d08bdeaf03509a2613b9cc02f42"
+          }
+        },
+        {
+          "line_id": "VER06-B022",
+          "source_block_id": "VER06-B022",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Quoi ?",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B022",
+            "text_sha256": "bb193b862dd3783015edc20cc8c322d5ce8d4a101536e7e126665222a4ef29c1"
+          }
+        },
+        {
+          "line_id": "VER06-B023",
+          "source_block_id": "VER06-B023",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Où l’achètera-t-il ?",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B023",
+            "text_sha256": "46edcb16b7bf392371e1940ce49ffb6db1b6069d290bf6555b0b62422454a6e2"
+          }
+        },
+        {
+          "line_id": "VER06-B024",
+          "source_block_id": "VER06-B024",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Là où l’on vend du bois.",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B024",
+            "text_sha256": "5793672a800bb4b6ff610c5eb097614bb7f62bf1ef12dc4140bdfdafb057b9a9"
+          }
+        },
+        {
+          "line_id": "VER06-B026",
+          "source_block_id": "VER06-B026",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Ce qu’il a pu acheter ne brûle pas. Votre argent peut lui en acheter d’autre. Il lui faut aussi qu’on le laisse passer jusqu’ici.",
+          "intention": "L’argent sans trajet n’allume pas le bois",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B026",
+            "text_sha256": "c7f1366924e976022ae4e47d4a5861f0c3cc707686b1fcc6386b74027eb6f8be"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 23.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 19.6,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "037ec61f5df4d5e4a3fa485a88f436ec27130f7260c63e2b3d1b3fec48e68330",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:boulanger-serie",
+        "film_identity_approval_pending:aegon-ii"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER06-B019",
+          "source_block_id": "VER06-B019",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Je veux le jour."
+        },
+        {
+          "line_id": "VER06-B020",
+          "source_block_id": "VER06-B020",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Lui, il veut du bois."
+        },
+        {
+          "line_id": "VER06-B022",
+          "source_block_id": "VER06-B022",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Quoi ?"
+        },
+        {
+          "line_id": "VER06-B023",
+          "source_block_id": "VER06-B023",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Où l’achètera-t-il ?"
+        },
+        {
+          "line_id": "VER06-B024",
+          "source_block_id": "VER06-B024",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Là où l’on vend du bois."
+        },
+        {
+          "line_id": "VER06-B026",
+          "source_block_id": "VER06-B026",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "Ce qu’il a pu acheter ne brûle pas. Votre argent peut lui en acheter d’autre. Il lui faut aussi qu’on le laisse passer jusqu’ici."
+        }
+      ],
+      "static_framing": "Plan de biais incluant bourse et fagots humides",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan de biais incluant bourse et fagots humides. Une bourse fermée pend dans la main d’Aegon ; Hann désigne les fagots humides contre le mur. Le boulanger ne tend aucune main vers l’or. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "c7cb7686b955f61ca7561a8458d731ee1f10211fc1b7b8a39ef70e4a0ee7ce48"
+    },
+    {
+      "cut_id": "VER06-C04",
+      "scene_id": "VER06",
+      "episode_id": "lc-e001",
+      "order": 92,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER06.json",
+        "scene_sha256": "9abe2a9792d082cfd9cc220441310c7d4c67f6b1b12158fda8069e5b2f951c42",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "8e185605820901e22e5d48f0b5b7453d9f1eb4b561bcfa750a2b3cd6ae051581"
+      },
+      "source_block_ids": [
+        "VER06-B027",
+        "VER06-B028",
+        "VER06-B029",
+        "VER06-B030"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER06-B027",
+          "text_sha256": "5d009e2a8f114ec9e8dd9cfe550d4c1799a0b653dead00d1cb09b41d4e72085f"
+        },
+        {
+          "id": "VER06-B028",
+          "text_sha256": "44dfa5e7f75dddb758870e6f6f11c6950dbd985f8eb306c7c7086c018cffb58e"
+        },
+        {
+          "id": "VER06-B029",
+          "text_sha256": "bca62321e90b1a52c2ec0ce9efd1c9a1c4b61c8f23a63b88f78eb8b2dcbcb02c"
+        },
+        {
+          "id": "VER06-B030",
+          "text_sha256": "d4fe276b1666012eedc4ba054c8f55ac91608640beabdafe5889f9306d55bdbb"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER06-C03",
+        "next_cut_id": "VER06-C05",
+        "entry": "Raccord VER06-C03 : La bourse du roi n’est pas prise ; Hann désigne le combustible mouillé",
+        "exit": "État à conserver : Un garde s’avance puis reste près de l’entrée ; les habitants gardent leur distance",
+        "axis": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur."
+      },
+      "intention": "Les protecteurs peuvent être ceux qui empêchent le passage",
+      "cadrage": "Contrechamp vers entrée, retour sur roi et gardes",
+      "action_visible": "Le garde est arrêté près de l’entrée ; Aegon le regarde depuis le fournil. Hann et les habitants gardent leur distance, four toujours sans feu.",
+      "light": "Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène.",
+      "location": "Fournil du Boyau, Port-Réal",
+      "prompt_image": "Contrechamp vers entrée, retour sur roi et gardes. Le garde est arrêté près de l’entrée ; Aegon le regarde depuis le fournil. Hann et les habitants gardent leur distance, four toujours sans feu. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER06-B028",
+          "source_block_id": "VER06-B028",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Qui arrête les charrettes ?",
+          "intention": "Les protecteurs peuvent être ceux qui empêchent le passage",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B028",
+            "text_sha256": "6eb89d18ac85253438fa00cd54ebfc5dcc0402589a0bd0dcab974284068bff68"
+          }
+        },
+        {
+          "line_id": "VER06-B029",
+          "source_block_id": "VER06-B029",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Les hommes qui disent protéger votre ville. Je ne sais pas lesquels sont les vôtres.",
+          "intention": "Les protecteurs peuvent être ceux qui empêchent le passage",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B029",
+            "text_sha256": "648f7a03f0067e74172cb19f59f21885793ad9ce23df4c2f50328ad6b22f9709"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 12.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 8.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "17696ca69c6a5747226a76d96ff8bc446e0bdd85755f67ee7dc4644c6eae98b6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:aegon-ii"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER06-B028",
+          "source_block_id": "VER06-B028",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Qui arrête les charrettes ?"
+        },
+        {
+          "line_id": "VER06-B029",
+          "source_block_id": "VER06-B029",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Les hommes qui disent protéger votre ville. Je ne sais pas lesquels sont les vôtres."
+        }
+      ],
+      "static_framing": "Contrechamp vers entrée, retour sur roi et gardes",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Contrechamp vers entrée, retour sur roi et gardes. Le garde est arrêté près de l’entrée ; Aegon le regarde depuis le fournil. Hann et les habitants gardent leur distance, four toujours sans feu. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "40c73a0ce9fdf5321675cf8c1a785caf16f2b6eb7be7b9eab5eb480fc4d9dc9c"
+    },
+    {
+      "cut_id": "VER06-C05",
+      "scene_id": "VER06",
+      "episode_id": "lc-e001",
+      "order": 93,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER06.json",
+        "scene_sha256": "9abe2a9792d082cfd9cc220441310c7d4c67f6b1b12158fda8069e5b2f951c42",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "f586538567ba0e914e95c20073226bbefaa3b6ee768b296ac4fd99871e904d7f"
+      },
+      "source_block_ids": [
+        "VER06-B031",
+        "VER06-B032",
+        "VER06-B033",
+        "VER06-B034",
+        "VER06-B035"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER06-B031",
+          "text_sha256": "88b471016564039e2559a5b7c19924c37f875b14f756e6a3772828f240057bc9"
+        },
+        {
+          "id": "VER06-B032",
+          "text_sha256": "c17b6f4a7b4d2e8cc0e32035b34dca2799db1539920e9dfc0f1c7d5cad6834fd"
+        },
+        {
+          "id": "VER06-B033",
+          "text_sha256": "2d40fd07aaec4781d06f9f2312d73237a9136e816c25d603249c36213e2b2a88"
+        },
+        {
+          "id": "VER06-B034",
+          "text_sha256": "c2ca2ccd99d1083e7ae6b064e849a061dbe4240ddd583c8693fb13022095692c"
+        },
+        {
+          "id": "VER06-B035",
+          "text_sha256": "84eb961a916a546f42c27d381db4d38f422074f0e9722e7f175ebda8df874941"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER06-C04",
+        "next_cut_id": "VER07-C01",
+        "entry": "Raccord VER06-C04 : Un garde s’avance puis reste près de l’entrée ; les habitants gardent leur distance",
+        "exit": "Sortie : Hann saisit un coin propre du rôle ; Aegon ne pose pas son sceau sur la marque ; aucun résultat au-delà du texte adopté.",
+        "axis": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur."
+      },
+      "intention": "Commander un accompagnement ne ravitaille pas encore les autres fours",
+      "cadrage": "Plan moyen de l’ordre et de sa trace raturée",
+      "action_visible": "Hann tient un coin propre du rôle sous la rature visible ; le boulanger pose sa marque à cet endroit. Le sceau du roi reste éloigné du papier.",
+      "light": "Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène.",
+      "location": "Fournil du Boyau, Port-Réal",
+      "prompt_image": "Plan moyen de l’ordre et de sa trace raturée. Hann tient un coin propre du rôle sous la rature visible ; le boulanger pose sa marque à cet endroit. Le sceau du roi reste éloigné du papier. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER06-B031",
+          "source_block_id": "VER06-B031",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Un homme accompagne le prochain chargement jusque devant ce four. Il ne prend rien en route. Il revient avec celui qui l’a reçu.",
+          "intention": "Commander un accompagnement ne ravitaille pas encore les autres fours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B031",
+            "text_sha256": "4c68d4d6a3509a2d1aaf093d3d0f98cfc447af404e2485da53a48d4308fa1129"
+          }
+        },
+        {
+          "line_id": "VER06-B032",
+          "source_block_id": "VER06-B032",
+          "scene_id": "VER06",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Et les autres ?",
+          "intention": "Commander un accompagnement ne ravitaille pas encore les autres fours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B032",
+            "text_sha256": "187fb43f053d40f455993d58eb8ba45d7d455f5c8b5247cf240a62b072744c4a"
+          }
+        },
+        {
+          "line_id": "VER06-B034",
+          "source_block_id": "VER06-B034",
+          "scene_id": "VER06",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je n’ai pas encore vu les autres.",
+          "intention": "Commander un accompagnement ne ravitaille pas encore les autres fours",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER06 — Le four froid",
+            "block": "VER06-B034",
+            "text_sha256": "df940000bff2364e491d9b479c76c85c0011a3c6edfe12411141d454e07c113e"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 20.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.1,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c8340e0d981fc1d774d86bb16f923101b16853628511eb3b038603d6d718449e",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:aegon-ii"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER06-B031",
+          "source_block_id": "VER06-B031",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Un homme accompagne le prochain chargement jusque devant ce four. Il ne prend rien en route. Il revient avec celui qui l’a reçu."
+        },
+        {
+          "line_id": "VER06-B032",
+          "source_block_id": "VER06-B032",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Et les autres ?"
+        },
+        {
+          "line_id": "VER06-B034",
+          "source_block_id": "VER06-B034",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Je n’ai pas encore vu les autres."
+        }
+      ],
+      "static_framing": "Plan moyen de l’ordre et de sa trace raturée",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Passage étroit devant four froid ; gardes à l’entrée, boulanger anonyme près de la pâte couverte, fagots humides contre le mur.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan moyen de l’ordre et de sa trace raturée. Hann tient un coin propre du rôle sous la rature visible ; le boulanger pose sa marque à cet endroit. Le sceau du roi reste éloigné du papier. Port-Réal, fournil du Boyau. Lumière du matin passant par la porte ; aucun foyer allumé dans cette scène. aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : aegon-ii — pourpoint noir et or ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "25e3c27fd71002353e1c57053488860d47dfdc66bdfc818f768fe2b096f49950"
+    },
+    {
+      "cut_id": "VER07-C01",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 94,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "160b3f6120bab6e89e4275078a5b47f3b899b5a381127c240e436a72614cd865"
+      },
+      "source_block_ids": [
+        "VER07-B002",
+        "VER07-B003",
+        "VER07-B004",
+        "VER07-B005",
+        "VER07-B006",
+        "VER07-B007",
+        "VER07-B008",
+        "VER07-B009",
+        "VER07-B010",
+        "VER07-B011"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B002",
+          "text_sha256": "a3a2e4f2f9c086c452b18cb309eb050d2e936fa23a79782c1834845d4e33b223"
+        },
+        {
+          "id": "VER07-B003",
+          "text_sha256": "e6d28a8d344d4267510182b99e39e813d08a2de0c619edb073bc7157baa00b0e"
+        },
+        {
+          "id": "VER07-B004",
+          "text_sha256": "a013532169708155dbc55763c1b78f5eae7408558f4d289c0000f4c0cfe6ccc0"
+        },
+        {
+          "id": "VER07-B005",
+          "text_sha256": "fc3940c4676f59ad7b3a8fecc6c711b08eb50221d9a2c79e5727aa0f8b2ce7e6"
+        },
+        {
+          "id": "VER07-B006",
+          "text_sha256": "f857f899f428b852b982de50c1678b08f1795e8950caba9b8626dbacc48dd0b5"
+        },
+        {
+          "id": "VER07-B007",
+          "text_sha256": "b03d896e5971fc7ec639d89a8e2353f5af09e340b20e8ac0e688e109edc58092"
+        },
+        {
+          "id": "VER07-B008",
+          "text_sha256": "abf9e6717d8964d0649fd11c91cdf75d300b12d6e59e37653b62a74a75c66e58"
+        },
+        {
+          "id": "VER07-B009",
+          "text_sha256": "0e2f928176462c6474cacaf14a14724c86c3e76741c9c196b74ce1dbeda5bdf2"
+        },
+        {
+          "id": "VER07-B010",
+          "text_sha256": "4758ec787c1317dd64f5a1a967a2b5de3270cdebae887a749a1750a5418e0ff0"
+        },
+        {
+          "id": "VER07-B011",
+          "text_sha256": "07d725d9a4138d46f270c5e44018a1782b7a7a8e6dd68a32f4aac56357eb2a1f"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau encore porté, petit accroc au bord"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER06-C05",
+        "next_cut_id": "VER07-C02",
+        "entry": "Entrée de scène : Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "exit": "État à conserver : Manteau blanc accroché puis libéré, petite maille manquante ; devis sur les planches",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+      "cadrage": "Plan moyen au milieu du bois, profondeur vers les coques",
+      "action_visible": "Hann a la main au bord accroché du manteau blanc de Criston, une petite maille manque près de la pointe de bois ; armure et planches dans le même cadre.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Plan moyen au milieu du bois, profondeur vers les coques. Hann a la main au bord accroché du manteau blanc de Criston, une petite maille manque près de la pointe de bois ; armure et planches dans le même cadre. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B003",
+          "source_block_id": "VER07-B003",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Les trois pièces de mât.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B003",
+            "text_sha256": "fa37f7a68d991ff982aeae34066880412afec3384a8371a13aee876401f63c71"
+          }
+        },
+        {
+          "line_id": "VER07-B004",
+          "source_block_id": "VER07-B004",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Elles sont là.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B004",
+            "text_sha256": "ab05bb5bde4ca9a50d6165658816db60bfddcffb153de9803fdc34d7a15a3c93"
+          }
+        },
+        {
+          "line_id": "VER07-B005",
+          "source_block_id": "VER07-B005",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Je les ai payées.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B005",
+            "text_sha256": "c9423f32c2f679dcfe838820f6d0c98c8b52ae705e1e7fe39bdee6a444b96b28"
+          }
+        },
+        {
+          "line_id": "VER07-B006",
+          "source_block_id": "VER07-B006",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "C’est pour cela qu’elles sont là.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B006",
+            "text_sha256": "6bebf747c1e693397051c802f521c0cdd7168c7f6966622b9559608876d8ade8"
+          }
+        },
+        {
+          "line_id": "VER07-B008",
+          "source_block_id": "VER07-B008",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Et les quarante brasses ?",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B008",
+            "text_sha256": "20cec856c54be3506c549a4c04754fcc2427bab9a0923fefd20a01705dcec6be"
+          }
+        },
+        {
+          "line_id": "VER07-B009",
+          "source_block_id": "VER07-B009",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Pas à vendre.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B009",
+            "text_sha256": "e1a0438e4810ffcb9f56e78b717593710ff781700e7f88f4a949ba28ff096b84"
+          }
+        },
+        {
+          "line_id": "VER07-B010",
+          "source_block_id": "VER07-B010",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Sous le sceau du roi.",
+          "intention": "Le sceau ne crée pas ce qui n’est plus à vendre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B010",
+            "text_sha256": "ea7e0ce18d8c14d632d9e68b908c0b3bc52e1e3feff996c32b01a4d8a44c5486"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 18.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 13.8,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0eadfa30fcc2aaefeeb3ca2e9fd58ebe9ef97f4ebde1c05c202aade3baee2bc5",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B003",
+          "source_block_id": "VER07-B003",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Les trois pièces de mât."
+        },
+        {
+          "line_id": "VER07-B004",
+          "source_block_id": "VER07-B004",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Elles sont là."
+        },
+        {
+          "line_id": "VER07-B005",
+          "source_block_id": "VER07-B005",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Je les ai payées."
+        },
+        {
+          "line_id": "VER07-B006",
+          "source_block_id": "VER07-B006",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "C’est pour cela qu’elles sont là."
+        },
+        {
+          "line_id": "VER07-B008",
+          "source_block_id": "VER07-B008",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Et les quarante brasses ?"
+        },
+        {
+          "line_id": "VER07-B009",
+          "source_block_id": "VER07-B009",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Pas à vendre."
+        },
+        {
+          "line_id": "VER07-B010",
+          "source_block_id": "VER07-B010",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Sous le sceau du roi."
+        }
+      ],
+      "static_framing": "Plan moyen au milieu du bois, profondeur vers les coques",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan moyen au milieu du bois, profondeur vers les coques. Hann a la main au bord accroché du manteau blanc de Criston, une petite maille manque près de la pointe de bois ; armure et planches dans le même cadre. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "963efa836893fd7e97418cf84a35d79a5e2074d693314dd737c6784a9bf5acfb"
+    },
+    {
+      "cut_id": "VER07-C02",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 95,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "0a4fa91ed6996f268b8195cfcee2f6af2d494ed1bef88340518a56bdde2d10eb"
+      },
+      "source_block_ids": [
+        "VER07-B012",
+        "VER07-B013",
+        "VER07-B014",
+        "VER07-B015",
+        "VER07-B016",
+        "VER07-B017",
+        "VER07-B018"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B012",
+          "text_sha256": "feadc962fad3619656808e6ac4d85eff3b09581d31d63fe0b694b0e0aafc01c0"
+        },
+        {
+          "id": "VER07-B013",
+          "text_sha256": "49a8ab71826f95cae516f6b6e3e77a261990c88b193e32fa32b33cc9963582a9"
+        },
+        {
+          "id": "VER07-B014",
+          "text_sha256": "73411db3433c182cddc7ad6841bfe7e69ec60905b3e49222762c38a07f72fa16"
+        },
+        {
+          "id": "VER07-B015",
+          "text_sha256": "65524869ae2e3c3b2b2baab4cc115771e57408d5292550ce8321519c3c036c68"
+        },
+        {
+          "id": "VER07-B016",
+          "text_sha256": "ae159d627565f06dd6359c80f4ea68ff58308bf377894571a2665605f247974d"
+        },
+        {
+          "id": "VER07-B017",
+          "text_sha256": "bdd2a50579b49a1177637cc406c7099f86e995534df338b004f48d29e97099f7"
+        },
+        {
+          "id": "VER07-B018",
+          "text_sha256": "7986b0296523f41a34bf345a12ef6c18d1a21c0467e592e7850b17481a1cc2a6"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau encore porté, petit accroc au bord"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C01",
+        "next_cut_id": "VER07-C03",
+        "entry": "Raccord VER07-C01 : Manteau blanc accroché puis libéré, petite maille manquante ; devis sur les planches",
+        "exit": "État à conserver : Hann protège la cire du devis ; Criston regarde les coques au fond",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+      "cadrage": "Champ à deux, devis en avant-plan",
+      "action_visible": "Hann touche la cire du devis sans la briser, Criston regarde les coques sur bers derrière lui. Les ouvriers ont encore les mains à leur ouvrage.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Champ à deux, devis en avant-plan. Hann touche la cire du devis sans la briser, Criston regarde les coques sur bers derrière lui. Les ouvriers ont encore les mains à leur ouvrage. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B012",
+          "source_block_id": "VER07-B012",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Elle tient le filin au sec ?",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B012",
+            "text_sha256": "d324df01585459db4bbb9f652777fe285dc184df4c70923a832c77fc31ea1d2b"
+          }
+        },
+        {
+          "line_id": "VER07-B014",
+          "source_block_id": "VER07-B014",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Je peux vous vendre une chose qui m’appartient. Pas inventer ce qui ne m’appartient plus.",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B014",
+            "text_sha256": "b7cfb4379f71799e58b8a9657d4fcbc4a45945c9f6d95fbecd4bad8e8a51edb2"
+          }
+        },
+        {
+          "line_id": "VER07-B015",
+          "source_block_id": "VER07-B015",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Le bordé est parti chez une prêteuse sur gage.",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B015",
+            "text_sha256": "d2d38c528c52e75d86be3cdc35c5e9a58faf75b18a33a68df334c4f10ec43a7b"
+          }
+        },
+        {
+          "line_id": "VER07-B016",
+          "source_block_id": "VER07-B016",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "C’est le nom qui est au compte.",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B016",
+            "text_sha256": "807be49955caa55b8ca82d1ddcd221aeef70974359a41838401c18a211f56514"
+          }
+        },
+        {
+          "line_id": "VER07-B017",
+          "source_block_id": "VER07-B017",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Une prêteuse sur gage ne construit pas trois navires de guerre.",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B017",
+            "text_sha256": "15fb12dc8c8d27fd140b3073b644b8f538cb510ace6eda899e0b56ac7f6053ef"
+          }
+        },
+        {
+          "line_id": "VER07-B018",
+          "source_block_id": "VER07-B018",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Peut-être qu’elle leur prête aussi des noms.",
+          "intention": "Un nom de prêteuse ne révèle pas qui commande les navires",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B018",
+            "text_sha256": "7c52ec8d25588cc4e01c9cca8d50af295be7b0535580c6cb7525c0ceb336e411"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 27.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 24.9,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "ec771af50ed58f01b160aba208f3d3dfc2e7920d6e6c83cf131a72785d6927a5",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "hann-bourbe",
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B012",
+          "source_block_id": "VER07-B012",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Elle tient le filin au sec ?"
+        },
+        {
+          "line_id": "VER07-B014",
+          "source_block_id": "VER07-B014",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Je peux vous vendre une chose qui m’appartient. Pas inventer ce qui ne m’appartient plus."
+        },
+        {
+          "line_id": "VER07-B015",
+          "source_block_id": "VER07-B015",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Le bordé est parti chez une prêteuse sur gage."
+        },
+        {
+          "line_id": "VER07-B016",
+          "source_block_id": "VER07-B016",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "C’est le nom qui est au compte."
+        },
+        {
+          "line_id": "VER07-B017",
+          "source_block_id": "VER07-B017",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Une prêteuse sur gage ne construit pas trois navires de guerre."
+        },
+        {
+          "line_id": "VER07-B018",
+          "source_block_id": "VER07-B018",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Peut-être qu’elle leur prête aussi des noms."
+        }
+      ],
+      "static_framing": "Champ à deux, devis en avant-plan",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Champ à deux, devis en avant-plan. Hann touche la cire du devis sans la briser, Criston regarde les coques sur bers derrière lui. Les ouvriers ont encore les mains à leur ouvrage. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "de0c5ec1ff374d0d8b9af3ff8f4e775a718cf2faf92a19e081de58415f4bb6e6"
+    },
+    {
+      "cut_id": "VER07-C03",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 96,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "ed43a049d5cbedf90d82adfbf3113bcacc01c34c8dd095b5e6f41f1aa168942e"
+      },
+      "source_block_ids": [
+        "VER07-B019",
+        "VER07-B020",
+        "VER07-B021",
+        "VER07-B022",
+        "VER07-B023"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B019",
+          "text_sha256": "89db121f09539159a1865e91851de0b3a4e6a38527dd7976a315af4d66a8bffd"
+        },
+        {
+          "id": "VER07-B020",
+          "text_sha256": "82c1a78ca39ecb0fa1dbe03763aefa682a56b0f395a94e0fa7b03543f15f1d17"
+        },
+        {
+          "id": "VER07-B021",
+          "text_sha256": "102f543187f11ef690e8a5aaaf36c481a42609ecdb02d1aabb189c01d8e2aff0"
+        },
+        {
+          "id": "VER07-B022",
+          "text_sha256": "604058ed37c3a3dcc4f34c1c2f4a3fd88a83cb0c7ef9e8d5eeffdd055f932e1e"
+        },
+        {
+          "id": "VER07-B023",
+          "text_sha256": "649f155e890d0f22538b85f5374b06015cd65a83f557572130a25a068f4b9116"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau encore porté, petit accroc au bord"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C02",
+        "next_cut_id": "VER07-C04",
+        "entry": "Raccord VER07-C02 : Hann protège la cire du devis ; Criston regarde les coques au fond",
+        "exit": "État à conserver : Criston plie son manteau sur le bras, armure toujours visible",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "La peur est rendue audible par l’arrêt des maillets",
+      "cadrage": "Plan large vers ouvriers puis retour au chevalier",
+      "action_visible": "Criston regarde les ouvriers arrêtés, Hann regarde le bord de son manteau ; un dernier maillet est tenu en l’air dans la profondeur.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Plan large vers ouvriers. Criston regarde les ouvriers arrêtés, Hann regarde le bord de son manteau ; un dernier maillet est tenu en l’air dans la profondeur. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B020",
+          "source_block_id": "VER07-B020",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Ils ont peur de quoi ?",
+          "intention": "La peur est rendue audible par l’arrêt des maillets",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B020",
+            "text_sha256": "87bf1b6bcd6f3c203d4915ba163d00d39eaa3a703f2bd6d7ed3ee937fa8b1b0e"
+          }
+        },
+        {
+          "line_id": "VER07-B022",
+          "source_block_id": "VER07-B022",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "De votre prochaine question.",
+          "intention": "La peur est rendue audible par l’arrêt des maillets",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B022",
+            "text_sha256": "cc72930de3bb441ce99d0ec8a65e32113869cc9f511de4019985197c6ba8ecdc"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 4.4,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9d22d00131e2679651d0a2b62bb8dc4d3708b1bff1e1defcea8e3ab1c1e2c1d2",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B020",
+          "source_block_id": "VER07-B020",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Ils ont peur de quoi ?"
+        },
+        {
+          "line_id": "VER07-B022",
+          "source_block_id": "VER07-B022",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "De votre prochaine question."
+        }
+      ],
+      "static_framing": "Plan large vers ouvriers",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan large vers ouvriers. Criston regarde les ouvriers arrêtés, Hann regarde le bord de son manteau ; un dernier maillet est tenu en l’air dans la profondeur. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau encore porté, petit accroc au bord ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "9d90e32e89351d8663a326964f830e70e818295736946cc664fd6d36197e5b8a"
+    },
+    {
+      "cut_id": "VER07-C04",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 97,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "8217559598702b3a65e8e6e32569dcb3ff2975e228c17c9a7fe9cefe3dcbfc5a"
+      },
+      "source_block_ids": [
+        "VER07-B024",
+        "VER07-B025",
+        "VER07-B026",
+        "VER07-B027",
+        "VER07-B028",
+        "VER07-B029",
+        "VER07-B030"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B024",
+          "text_sha256": "4baa02831e06c1524d7979fc7360ac90bd21cefcabf3e8961690b09c81ffc39d"
+        },
+        {
+          "id": "VER07-B025",
+          "text_sha256": "b4911368f302e47d7b6f6b25f260fd1edc444de9bce43b219d824d86a9a5324b"
+        },
+        {
+          "id": "VER07-B026",
+          "text_sha256": "9553102a588aa956872134f0c7c171dc25aea226cb00cc5339c697b1b7cf7e34"
+        },
+        {
+          "id": "VER07-B027",
+          "text_sha256": "cd4307c7085138700c3d39e9d383387e6b561d5ec7b9aa9e4bed9dda052506b2"
+        },
+        {
+          "id": "VER07-B028",
+          "text_sha256": "1aa7c35375c29b78f0cace925358b33845c0b782fd921a339ee9ce13947cebda"
+        },
+        {
+          "id": "VER07-B029",
+          "text_sha256": "37bb1c1066727a82442955d126690dafbbefbff0078034cfe285a3b40348f146"
+        },
+        {
+          "id": "VER07-B030",
+          "text_sha256": "9eac774c6e236d226ab629f2c4653f60e9f1bba81314cc6e59e64aa0d6e3c1e0"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C03",
+        "next_cut_id": "VER07-C05",
+        "entry": "Raccord VER07-C03 : Criston plie son manteau sur le bras, armure toujours visible",
+        "exit": "État à conserver : Criston pose sa propre bourse ; Hann la pèse puis la repose",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "Transformer une exigence en commencement payé par soi",
+      "cadrage": "Plan rapproché bourse, mains puis visages",
+      "action_visible": "Le manteau blanc de Criston est plié sur son bras, son armure demeure visible. Il fait face à Hann de l’autre côté des planches, sans ouvriers rassurés ajoutés.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Plan rapproché bourse, mains. Le manteau blanc de Criston est plié sur son bras, son armure demeure visible. Il fait face à Hann de l’autre côté des planches, sans ouvriers rassurés ajoutés. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B024",
+          "source_block_id": "VER07-B024",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Il me faut des mantelets. Des plateformes pour les affûts. Vous pouvez les faire ?",
+          "intention": "Transformer une exigence en commencement payé par soi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B024",
+            "text_sha256": "83dfe82bfe18a32490b0b546a112db1c3500ba652565ebb3e018a13532da416a"
+          }
+        },
+        {
+          "line_id": "VER07-B025",
+          "source_block_id": "VER07-B025",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Avec du bois que je peux garder et des hommes payés.",
+          "intention": "Transformer une exigence en commencement payé par soi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B025",
+            "text_sha256": "4b8e72c3d346a4d013b2bd116ca2d2610070a9772bdd4f12bafe3b0d46829694"
+          }
+        },
+        {
+          "line_id": "VER07-B026",
+          "source_block_id": "VER07-B026",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Une commande de la Couronne.",
+          "intention": "Transformer une exigence en commencement payé par soi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B026",
+            "text_sha256": "4472d5c3bbc9d10d573be932d4f452ab2511b4510e4da4e00041200d6dc3d085"
+          }
+        },
+        {
+          "line_id": "VER07-B027",
+          "source_block_id": "VER07-B027",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Qui sera payée par qui ?",
+          "intention": "Transformer une exigence en commencement payé par soi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B027",
+            "text_sha256": "d1b66894551bb1af8d7dc90eae0952f3eb89251b0e7d63336259fa46df83617d"
+          }
+        },
+        {
+          "line_id": "VER07-B029",
+          "source_block_id": "VER07-B029",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Ce commencement-là, par moi.",
+          "intention": "Transformer une exigence en commencement payé par soi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B029",
+            "text_sha256": "9ebf105e770d93012f979eb0a8963127d8e107b78d7fd27089b4c897cd45ea29"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 22.2,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 18.2,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "5b1e91c3584c782b766170eb26d56a0a7d6ad0d3adc6371bbab71b4cae393842",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B024",
+          "source_block_id": "VER07-B024",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Il me faut des mantelets. Des plateformes pour les affûts. Vous pouvez les faire ?"
+        },
+        {
+          "line_id": "VER07-B025",
+          "source_block_id": "VER07-B025",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Avec du bois que je peux garder et des hommes payés."
+        },
+        {
+          "line_id": "VER07-B026",
+          "source_block_id": "VER07-B026",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Une commande de la Couronne."
+        },
+        {
+          "line_id": "VER07-B027",
+          "source_block_id": "VER07-B027",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Qui sera payée par qui ?"
+        },
+        {
+          "line_id": "VER07-B029",
+          "source_block_id": "VER07-B029",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Ce commencement-là, par moi."
+        }
+      ],
+      "static_framing": "Plan rapproché bourse, mains",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan rapproché bourse, mains. Le manteau blanc de Criston est plié sur son bras, son armure demeure visible. Il fait face à Hann de l’autre côté des planches, sans ouvriers rassurés ajoutés. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "fcca4753d759d8f8cabc794920eaba75281dedd89be170ad923c23d772270f33"
+    },
+    {
+      "cut_id": "VER07-C05",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 98,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "86f6a6dd0be7c99d92a6e2b0e45d00e500fce5f7572a8aa9cce7ca7e1b0a2b0c"
+      },
+      "source_block_ids": [
+        "VER07-B031",
+        "VER07-B032",
+        "VER07-B033",
+        "VER07-B034",
+        "VER07-B035",
+        "VER07-B036",
+        "VER07-B037",
+        "VER07-B038"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B031",
+          "text_sha256": "835af88a461bf1bef738a323e359848534a7843866ce7b9e2191ecc3ede821ab"
+        },
+        {
+          "id": "VER07-B032",
+          "text_sha256": "5e831bd1fcd31e121ec7029d32ecf5c1abdfd78fc56cebf651285c9644fe5d39"
+        },
+        {
+          "id": "VER07-B033",
+          "text_sha256": "eda2806492a519786c03ed730b2e3de47fb0a0dafa2deb669bef523c4732f7a2"
+        },
+        {
+          "id": "VER07-B034",
+          "text_sha256": "bf91867e7a3aeaf36f442f43c8f0e364f83dbe5ce3b858f7fee712f2b1db8d89"
+        },
+        {
+          "id": "VER07-B035",
+          "text_sha256": "51bfe9b8fea8442ca3b5bfd7520b89aac1d324b17f167e058118e7c0f2b264e4"
+        },
+        {
+          "id": "VER07-B036",
+          "text_sha256": "246384074ffa1285fcc200946d3540ec32ee59c9f2aa628db5f94d3275fa6fc4"
+        },
+        {
+          "id": "VER07-B037",
+          "text_sha256": "4a7a9afff6fe58371528dc4b559a360b8a3a5f08fab59f233d62e3313cf8bd6e"
+        },
+        {
+          "id": "VER07-B038",
+          "text_sha256": "85d327abe2cf9f9401688b69806f8041815d47ce18f6049d353bc06261ea47d3"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C04",
+        "next_cut_id": "VER07-C06",
+        "entry": "Raccord VER07-C04 : Criston pose sa propre bourse ; Hann la pèse puis la repose",
+        "exit": "État à conserver : Hann retourne le devis, dos vierge",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+      "cadrage": "Plan moyen des hommes séparés par les planches",
+      "action_visible": "Le devis est retourné, dos vierge vers Hann et Criston ; la bourse repose sur une pile de planches, inchangée de place.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Plan moyen des hommes séparés par les planches. Le devis est retourné, dos vierge vers Hann et Criston ; la bourse repose sur une pile de planches, inchangée de place. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B031",
+          "source_block_id": "VER07-B031",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "C’est pour l’ouvrage ou pour les réponses ?",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B031",
+            "text_sha256": "38c01eb482e0eba62b5bd74d899bb6d3ca48546d4b0dffb60784758be3a764cf"
+          }
+        },
+        {
+          "line_id": "VER07-B032",
+          "source_block_id": "VER07-B032",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Pour l’ouvrage. Les réponses, vous voudrez les avoir aussi si le voisin achète votre bois avant vous.",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B032",
+            "text_sha256": "f0f87c33308d92cbaa127fc1a4e57ac1d4f953f4ea058a423d746b88d096ed1d"
+          }
+        },
+        {
+          "line_id": "VER07-B034",
+          "source_block_id": "VER07-B034",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Ne leur demandez pas qui les paie.",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B034",
+            "text_sha256": "8018435fc2352d0b65d51c8b72923839a9f6375573629b15170e41f64dded4b4"
+          }
+        },
+        {
+          "line_id": "VER07-B035",
+          "source_block_id": "VER07-B035",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Vous venez de le faire.",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B035",
+            "text_sha256": "2691d9035058c81e0d11bdf15e1b33856dfbb90b115f4b1527cc8dce8896d923"
+          }
+        },
+        {
+          "line_id": "VER07-B036",
+          "source_block_id": "VER07-B036",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Qu’est-ce qui leur manque ?",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B036",
+            "text_sha256": "4fa6276363d12d064f73e4dcc17e8fdd45007e40be73d15c6493e6410632dc02"
+          }
+        },
+        {
+          "line_id": "VER07-B038",
+          "source_block_id": "VER07-B038",
+          "scene_id": "VER07",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Je peux poser cette question-là.",
+          "intention": "Donner accès à une question de besoin plutôt qu’au payeur secret",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B038",
+            "text_sha256": "beb1c842c482e8f7821eca1fc7a381fb7962f53b0e5d799d9439b0f9b67f7f23"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 24.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 20.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9fce8c7d09e981eafed264e4cffb13c38a3bd88dc4efe5b53506f702baa1259e",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "hann-bourbe",
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B031",
+          "source_block_id": "VER07-B031",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "C’est pour l’ouvrage ou pour les réponses ?"
+        },
+        {
+          "line_id": "VER07-B032",
+          "source_block_id": "VER07-B032",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Pour l’ouvrage. Les réponses, vous voudrez les avoir aussi si le voisin achète votre bois avant vous."
+        },
+        {
+          "line_id": "VER07-B034",
+          "source_block_id": "VER07-B034",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Ne leur demandez pas qui les paie."
+        },
+        {
+          "line_id": "VER07-B035",
+          "source_block_id": "VER07-B035",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Vous venez de le faire."
+        },
+        {
+          "line_id": "VER07-B036",
+          "source_block_id": "VER07-B036",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Qu’est-ce qui leur manque ?"
+        },
+        {
+          "line_id": "VER07-B038",
+          "source_block_id": "VER07-B038",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "Je peux poser cette question-là."
+        }
+      ],
+      "static_framing": "Plan moyen des hommes séparés par les planches",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan moyen des hommes séparés par les planches. Le devis est retourné, dos vierge vers Hann et Criston ; la bourse repose sur une pile de planches, inchangée de place. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "33b1560397f9279293e4598a7bf305b21cf0ccaccef524fb0e2b21cb15279293"
+    },
+    {
+      "cut_id": "VER07-C06",
+      "scene_id": "VER07",
+      "episode_id": "lc-e001",
+      "order": 99,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER07.json",
+        "scene_sha256": "c3ffe6d1bf1c613093d2ee1d9fae4370b4134c8ae1252cc3be8ae380372e6105",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "76d45629b7bc0e358801a80a9d7e77228199efba2134eb854adf6a44f7a4d38f"
+      },
+      "source_block_ids": [
+        "VER07-B039",
+        "VER07-B040",
+        "VER07-B041"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER07-B039",
+          "text_sha256": "80b54a5d0e8f2c3f4bed4520cec026f509b3a13c1919dd3f327929c51a791669"
+        },
+        {
+          "id": "VER07-B040",
+          "text_sha256": "6ea9f72a03f84822a52b525306906d46f3b552a2de623abcfe8ad4c5bc9f831b"
+        },
+        {
+          "id": "VER07-B041",
+          "text_sha256": "282f241194e988e146e75e1a60d3f67c75cb8718b47fd4b23b9180c992b991bc"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible"
+        },
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C05",
+        "next_cut_id": "N60-X01-C01",
+        "entry": "Raccord VER07-C05 : Hann retourne le devis, dos vierge",
+        "exit": "Sortie : Maillet repris hors champ ; Hann pousse la feuille vers Criston debout ; aucun résultat au-delà du texte adopté.",
+        "axis": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes."
+      },
+      "intention": "Le travail précède les réponses, la commande reste à exécuter",
+      "cadrage": "Plan tenu à hauteur de l’ouvrage",
+      "action_visible": "Hann pousse la feuille vers Criston debout, un maillet est repris au fond. Le doigt du chevalier reste sur sa bourse, cape pliée au bras.",
+      "light": "Jour naturel couvert, humidité du bois, surfaces physiques et métal mat.",
+      "location": "Chantier de la Vase, Port-Réal",
+      "prompt_image": "Plan tenu à hauteur de l’ouvrage. Hann pousse la feuille vers Criston debout, un maillet est repris au fond. Le doigt du chevalier reste sur sa bourse, cape pliée au bras. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER07-B040",
+          "source_block_id": "VER07-B040",
+          "scene_id": "VER07",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "La commande d’abord.",
+          "intention": "Le travail précède les réponses, la commande reste à exécuter",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER07 — Ce qui manque au chantier",
+            "block": "VER07-B040",
+            "text_sha256": "7b782e65defa58f510478697961356da53370b45a314085f08ebf93f38cfbe70"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 6.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.3,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "122ece7288bdc8a41eb44e9b1fbda4a0a49afcca2d2d2af0b32f70fe941a58cd",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "film_identity_approval_pending:criston"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "hann-bourbe"
+      ],
+      "speaker_ids": [
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER07-B040",
+          "source_block_id": "VER07-B040",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "hann-bourbe"
+          ],
+          "text_unchanged": "La commande d’abord."
+        }
+      ],
+      "static_framing": "Plan tenu à hauteur de l’ouvrage",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Planches entre Hann et Criston, bers et trois coques dans le fond, ouvriers anonymes.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan tenu à hauteur de l’ouvrage. Hann pousse la feuille vers Criston debout, un maillet est repris au fond. Le doigt du chevalier reste sur sa bourse, cape pliée au bras. Port-Réal, chantier de la Vase. Jour naturel couvert, humidité du bois, surfaces physiques et métal mat. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. Tenues visibles : criston — armure pâle et cape blanche ; manteau défait et plié sur bras ; armure reste visible ; hann-bourbe — gilet gris-brun sur lin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "9d7bce235d7570001b521e991213b5ecb236b05b062cb4886951a3d4c95a21f6"
+    },
+    {
+      "cut_id": "N60-X01-C01",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 100,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "82c2ae77414726b5e97fb2ed7971c574ad5a8a01ab6bd13891863d400f97371e"
+      },
+      "source_block_ids": [
+        "N60-X01-B001",
+        "N60-X01-B002",
+        "N60-X01-B003",
+        "N60-X01-B004",
+        "N60-X01-B005",
+        "N60-X01-B006",
+        "N60-X01-B007"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B001",
+          "text_sha256": "877354e12fbf195e0b11283faac0273898c6b64822a0fbe4dc84f7d4fd2c5370"
+        },
+        {
+          "id": "N60-X01-B002",
+          "text_sha256": "4266fdfda7b8beb64ecd4afdf2344e377b624e6b10e42d34d06c7ecd9974968c"
+        },
+        {
+          "id": "N60-X01-B003",
+          "text_sha256": "02599464339f843c6d0f09749ba80a70104228c95922f192d7b04aec0b5a230d"
+        },
+        {
+          "id": "N60-X01-B004",
+          "text_sha256": "80db40904850944f6737ad51b96d4aeb65d6aac01939ed1bebbd5f37b6c1b416"
+        },
+        {
+          "id": "N60-X01-B005",
+          "text_sha256": "26587512b487afcc3537f80596117194a2e9943f5b0c73c253303899888d72f9"
+        },
+        {
+          "id": "N60-X01-B006",
+          "text_sha256": "a2c4f3b015817f835a4bfc75042bbf74e5b0597930864cb152f5dbe01d5b3c8d"
+        },
+        {
+          "id": "N60-X01-B007",
+          "text_sha256": "01ff55554414c48262db4d33d36a13177f5672ae3bc53aefedc91c09eefccaa7"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER07-C06",
+        "next_cut_id": "N60-X01-C02",
+        "entry": "Entrée de scène : Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "exit": "État à conserver : Le porteur maintient la perche, Hann retient deux fagots, contrôleur près des toiles",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "La consigne est locale et provisoire, pas accord Sara",
+      "cadrage": "Plan large de berge puis triangle au bord de barque",
+      "action_visible": "Hann retient deux fagots avec son genou dans une petite barque contre la berge ; le porteur tient sa perche et le contrôleur reste près des toiles à terre.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan large de berge. Hann retient deux fagots avec son genou dans une petite barque contre la berge ; le porteur tient sa perche et le contrôleur reste près des toiles à terre. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B002",
+          "source_block_id": "N60-X01-B002",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Ici, c’est moi qui borne le passage, en attendant une autre consigne. Farine et sel, sur les toiles. Le reste demeure à bord.",
+          "intention": "La consigne est locale et provisoire, pas accord Sara",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "roles/narrator/DECISION-CONTROLE-LOCAL-X01-V1.json",
+            "source_kind": "new_series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B003",
+          "source_block_id": "N60-X01-B003",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "C’est le reste qu’on apporte.",
+          "intention": "La consigne est locale et provisoire, pas accord Sara",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B005",
+          "source_block_id": "N60-X01-B005",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Défaites.",
+          "intention": "La consigne est locale et provisoire, pas accord Sara",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B006",
+          "source_block_id": "N60-X01-B006",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "Si je coupe, vous m’aidez à remettre. Le lien est à moi.",
+          "intention": "La consigne est locale et provisoire, pas accord Sara",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B007",
+          "source_block_id": "N60-X01-B007",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Vous le dénouez. Je ne vous ai pas dit de le couper.",
+          "intention": "La consigne est locale et provisoire, pas accord Sara",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 28.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 23.6,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "192979119c006996f7c2c29e2ab66501e89a63be731c159cdd5b9b4d941a726e",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "controleur-rive-serie",
+        "hann-bourbe",
+        "porteur-combustible-serie"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B002",
+          "source_block_id": "N60-X01-B002",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Ici, c’est moi qui borne le passage, en attendant une autre consigne. Farine et sel, sur les toiles. Le reste demeure à bord."
+        },
+        {
+          "line_id": "N60-X01-B003",
+          "source_block_id": "N60-X01-B003",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "C’est le reste qu’on apporte."
+        },
+        {
+          "line_id": "N60-X01-B005",
+          "source_block_id": "N60-X01-B005",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Défaites."
+        },
+        {
+          "line_id": "N60-X01-B006",
+          "source_block_id": "N60-X01-B006",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Si je coupe, vous m’aidez à remettre. Le lien est à moi."
+        },
+        {
+          "line_id": "N60-X01-B007",
+          "source_block_id": "N60-X01-B007",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Vous le dénouez. Je ne vous ai pas dit de le couper."
+        }
+      ],
+      "static_framing": "Plan large de berge",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan large de berge. Hann retient deux fagots avec son genou dans une petite barque contre la berge ; le porteur tient sa perche et le contrôleur reste près des toiles à terre. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "a37ee3e12572450598f12f99838dcc6decb6478d548593e96a12fe07e810dac8"
+    },
+    {
+      "cut_id": "N60-X01-C02",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 101,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "23fc92b5647f62fdc57139ebb0207783c2e6cf283c9d16b0ed89e25e67053ffe"
+      },
+      "source_block_ids": [
+        "N60-X01-B008",
+        "N60-X01-B009",
+        "N60-X01-B010",
+        "N60-X01-B011",
+        "N60-X01-B012"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B008",
+          "text_sha256": "aace18def7be385c57f1fa8d62bdf087d9acaeda5e31b6637e244e6f099e4be1"
+        },
+        {
+          "id": "N60-X01-B009",
+          "text_sha256": "38b9d076a68fe2bf98b67acd3d389b7238ced2a6159e8cd298f75562c1c5fe05"
+        },
+        {
+          "id": "N60-X01-B010",
+          "text_sha256": "9325ed02d3eee2372086badc9bb3ad0d409b1a32b0579a998ac29bfd01c05c4f"
+        },
+        {
+          "id": "N60-X01-B011",
+          "text_sha256": "f2568921e5291b5ce8a33af3ac72c9bb8c4910f1fd5cd982209d8967c4b334c2"
+        },
+        {
+          "id": "N60-X01-B012",
+          "text_sha256": "fcd277853942a13cc007252ef08ea0cd9a78462a01f76259fe6b618f894fa367"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C01",
+        "next_cut_id": "N60-X01-C03",
+        "entry": "Raccord N60-X01-C01 : Le porteur maintient la perche, Hann retient deux fagots, contrôleur près des toiles",
+        "exit": "État à conserver : Hann fend une branche ; contrôleur tient le lien défait",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "Inspection et bois sec sous écorce humide",
+      "cadrage": "Plan à hauteur du bois, visages dans la profondeur",
+      "action_visible": "Hann tient une branche fendue dont le cœur clair est visible ; le contrôleur regarde les deux morceaux sans les prendre, lien défait près de sa main.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan à hauteur du bois, visages dans la profondeur. Hann tient une branche fendue dont le cœur clair est visible ; le contrôleur regarde les deux morceaux sans les prendre, lien défait près de sa main. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B009",
+          "source_block_id": "N60-X01-B009",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Ça va au four duBoyau. Ils ont de la pâte. Le bois qu’ils ont pu acheter est mouillé.",
+          "intention": "Inspection et bois sec sous écorce humide",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B010",
+          "source_block_id": "N60-X01-B010",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Celui-ci aussi.",
+          "intention": "Inspection et bois sec sous écorce humide",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B012",
+          "source_block_id": "N60-X01-B012",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Il fera du feu. Celui qui attend là-bas ne fait que de la fumée.",
+          "intention": "Inspection et bois sec sous écorce humide",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 20.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.1,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "268153d7b738a95ff757002c931ffbee79737c651added65110b0256c132a553",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B009",
+          "source_block_id": "N60-X01-B009",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Ça va au four duBoyau. Ils ont de la pâte. Le bois qu’ils ont pu acheter est mouillé."
+        },
+        {
+          "line_id": "N60-X01-B010",
+          "source_block_id": "N60-X01-B010",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Celui-ci aussi."
+        },
+        {
+          "line_id": "N60-X01-B012",
+          "source_block_id": "N60-X01-B012",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Il fera du feu. Celui qui attend là-bas ne fait que de la fumée."
+        }
+      ],
+      "static_framing": "Plan à hauteur du bois, visages dans la profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null,
+      "final_prompt": "Plan à hauteur du bois, visages dans la profondeur. Hann tient une branche fendue dont le cœur clair est visible ; le contrôleur regarde les deux morceaux sans les prendre, lien défait près de sa main. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "3652bcf545f85092c27b15f4e447525d33f004849203e26452e073f854395c8b"
+    }
+  ]
+}

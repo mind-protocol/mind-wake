@@ -1,0 +1,3391 @@
+{
+  "agent": 8,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-08",
+  "cuts": [
+    {
+      "cut_id": "N60-X01-C03",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 102,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "ce54780efc4b1506e67eea93844bb14039accd14c8e683120084141e69d0bb45"
+      },
+      "source_block_ids": [
+        "N60-X01-B013",
+        "N60-X01-B014",
+        "N60-X01-B015",
+        "N60-X01-B016",
+        "N60-X01-B017"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B013",
+          "text_sha256": "74a78d313e4bbe0d908cef4e6b3be1d2215f615322b76dcce06bf27ff87240e7"
+        },
+        {
+          "id": "N60-X01-B014",
+          "text_sha256": "fc992a532bc9e7ce250e57b35b6f8e8c0780ab0c2fbb3fb5ddd5bde71a3d365f"
+        },
+        {
+          "id": "N60-X01-B015",
+          "text_sha256": "aab2d2ad3c216947b10f27c855c9132feb6d0d807e28a8a3489704160c763aaf"
+        },
+        {
+          "id": "N60-X01-B016",
+          "text_sha256": "5f4aaf396d4f4c9b237a2fd3a8e0ab304643b7feaf91713d05790ba2a5e8e7f0"
+        },
+        {
+          "id": "N60-X01-B017",
+          "text_sha256": "06f54f7c418c06dfb56dd21c4df363299e006a6a6f915a11c5fbe2e92fdb9df8"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C02",
+        "next_cut_id": "N60-X01-C04",
+        "entry": "Raccord N60-X01-C02 : Hann fend une branche ; contrôleur tient le lien défait",
+        "exit": "État à conserver : Le porteur regarde sa charge, Hann s’offre à suivre le lot",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "La destination exige une présence, pas une estampille",
+      "cadrage": "Plan moyen triangulaire, barque dans le fond",
+      "action_visible": "Le porteur regarde sa charge encore dans la barque ; Hann, tourné vers le contrôleur, garde les deux morceaux de bois à hauteur de poitrine.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan moyen triangulaire, barque dans le fond. Le porteur regarde sa charge encore dans la barque ; Hann, tourné vers le contrôleur, garde les deux morceaux de bois à hauteur de poitrine. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B013",
+          "source_block_id": "N60-X01-B013",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "La course est payée. Je ne peux pas rentrer avec une charge à remonter et dire que j’ai livré.",
+          "intention": "La destination exige une présence, pas une estampille",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B014",
+          "source_block_id": "N60-X01-B014",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Je n’ai personne pour vous suivre jusqu’au Boyau.",
+          "intention": "La destination exige une présence, pas une estampille",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B015",
+          "source_block_id": "N60-X01-B015",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Moi.",
+          "intention": "La destination exige une présence, pas une estampille",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B016",
+          "source_block_id": "N60-X01-B016",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Vous êtes avec lui.",
+          "intention": "La destination exige une présence, pas une estampille",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B017",
+          "source_block_id": "N60-X01-B017",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Et je resterai avec lui jusqu’à ce que ce soit au four. Ouvrez le reste. Ce qui pourrait tenir une palissade, vous le gardez.",
+          "intention": "La destination exige une présence, pas une estampille",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 27.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 24.9,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "3893b8e6e830e1560a9a9585c05db0e0a65e00cf6a630f368cf490403529afa9",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "porteur-combustible-serie",
+        "controleur-rive-serie",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B013",
+          "source_block_id": "N60-X01-B013",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "La course est payée. Je ne peux pas rentrer avec une charge à remonter et dire que j’ai livré."
+        },
+        {
+          "line_id": "N60-X01-B014",
+          "source_block_id": "N60-X01-B014",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Je n’ai personne pour vous suivre jusqu’au Boyau."
+        },
+        {
+          "line_id": "N60-X01-B015",
+          "source_block_id": "N60-X01-B015",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Moi."
+        },
+        {
+          "line_id": "N60-X01-B016",
+          "source_block_id": "N60-X01-B016",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Vous êtes avec lui."
+        },
+        {
+          "line_id": "N60-X01-B017",
+          "source_block_id": "N60-X01-B017",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Et je resterai avec lui jusqu’à ce que ce soit au four. Ouvrez le reste. Ce qui pourrait tenir une palissade, vous le gardez."
+        }
+      ],
+      "static_framing": "Plan moyen triangulaire, barque dans le fond",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-X01-C04",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 103,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "1a35d1127f2d4afc3cb7b2f7b480173b5c3637200c8d4eecb672bfc76ae82392"
+      },
+      "source_block_ids": [
+        "N60-X01-B018",
+        "N60-X01-B019",
+        "N60-X01-B020",
+        "N60-X01-B021",
+        "N60-X01-B022",
+        "N60-X01-B023"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B018",
+          "text_sha256": "6d6c08abdeb3969d3ce8f9a4a8fff65937c918f8957b6cab4ab97ac7b3f0e997"
+        },
+        {
+          "id": "N60-X01-B019",
+          "text_sha256": "0a6f2f8ed479ffe53ac1b9cffdc54f552ac415ecab257a7a2c3f2c13cd873653"
+        },
+        {
+          "id": "N60-X01-B020",
+          "text_sha256": "fdd2dc5c176ec52a6d16bbe1e89bdeb0aee4fa6399c3cb070499379ed37f701d"
+        },
+        {
+          "id": "N60-X01-B021",
+          "text_sha256": "93ea402a4ccb9955cf0c9ae5d5405cf74e871f4d08d05c2a6fad040bba0c4dce"
+        },
+        {
+          "id": "N60-X01-B022",
+          "text_sha256": "b57dd957bc05f4864fc432ee12517694d11c57f5ff127b34663c7e05ce0a9928"
+        },
+        {
+          "id": "N60-X01-B023",
+          "text_sha256": "441edd25100d6b445b906f6675b753269b40ceb6ec288c74661ccf51a6be26bb"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C03",
+        "next_cut_id": "N60-X01-C05",
+        "entry": "Raccord N60-X01-C03 : Le porteur regarde sa charge, Hann s’offre à suivre le lot",
+        "exit": "État à conserver : Contrôleur plie la branche sous inspection ; longs bois mis de côté",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "Admettre une fraction, laisser les bois longs",
+      "cadrage": "Plan rapproché mains puis lot au sol",
+      "action_visible": "Le contrôleur plie une branche entre ses poings ; les bois longs mis à part reposent sur la berge, les branches courtes sur la toile retournée.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan rapproché mains. Le contrôleur plie une branche entre ses poings ; les bois longs mis à part reposent sur la berge, les branches courtes sur la toile retournée. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B019",
+          "source_block_id": "N60-X01-B019",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Ne cassez pas tout avant que je l’aie vu.",
+          "intention": "Admettre une fraction, laisser les bois longs",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B021",
+          "source_block_id": "N60-X01-B021",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Ce lot-là. Pas la barque entière.",
+          "intention": "Admettre une fraction, laisser les bois longs",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B022",
+          "source_block_id": "N60-X01-B022",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "Et ce qui reste ?",
+          "intention": "Admettre une fraction, laisser les bois longs",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B023",
+          "source_block_id": "N60-X01-B023",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "On le voit ensuite. Vous ne repartirez pas en disant que tout est passé.",
+          "intention": "Admettre une fraction, laisser les bois longs",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.1,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d153498087b6fad50e185c8315305171ec98f571100c5bce34e426371498f1c7",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B019",
+          "source_block_id": "N60-X01-B019",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Ne cassez pas tout avant que je l’aie vu."
+        },
+        {
+          "line_id": "N60-X01-B021",
+          "source_block_id": "N60-X01-B021",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Ce lot-là. Pas la barque entière."
+        },
+        {
+          "line_id": "N60-X01-B022",
+          "source_block_id": "N60-X01-B022",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Et ce qui reste ?"
+        },
+        {
+          "line_id": "N60-X01-B023",
+          "source_block_id": "N60-X01-B023",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "On le voit ensuite. Vous ne repartirez pas en disant que tout est passé."
+        }
+      ],
+      "static_framing": "Plan rapproché mains",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-X01-C05",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 104,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c1b3438b465eb9bed69f7199713bf3e295e0f5ff17c17d701feac338a093b940"
+      },
+      "source_block_ids": [
+        "N60-X01-B024",
+        "N60-X01-B025",
+        "N60-X01-B026",
+        "N60-X01-B027",
+        "N60-X01-B028"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B024",
+          "text_sha256": "87ae007cc9b0bb0858e037d42324ea3fc56ec890cd5e44f3534bb7f69833137f"
+        },
+        {
+          "id": "N60-X01-B025",
+          "text_sha256": "662eea365578860eeb5834a987136fdcb0bed398f2aa3942ddcb7c48768be27d"
+        },
+        {
+          "id": "N60-X01-B026",
+          "text_sha256": "42c4c0ff67124ffa6cb3735bd0b6e764a0a2319f207f01fd522042c7ed835235"
+        },
+        {
+          "id": "N60-X01-B027",
+          "text_sha256": "d0fb3710c26aeaf3546ac99d0566abffcdcf669f1dcc2a65c426f811dadf4d0f"
+        },
+        {
+          "id": "N60-X01-B028",
+          "text_sha256": "ae9d7d66a1bd38653b620b971d3b5d20da7c83fc65558749a08d440521b55f95"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C04",
+        "next_cut_id": "N60-X01-C06",
+        "entry": "Raccord N60-X01-C04 : Contrôleur plie la branche sous inspection ; longs bois mis de côté",
+        "exit": "État à conserver : Hann fait réduire la charge du porteur ; corde encore au sol",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "Le chantier perdra Hann pendant le trajet",
+      "cadrage": "Plan moyen au-dessus de la charge préparée",
+      "action_visible": "Le porteur a une main sur un lot réduit, Hann lui indique la moitié laissée à terre ; une corde vide repose entre leurs pieds.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan moyen au-dessus de la charge préparée. Le porteur a une main sur un lot réduit, Hann lui indique la moitié laissée à terre ; une corde vide repose entre leurs pieds. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B025",
+          "source_block_id": "N60-X01-B025",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "On aura besoin de vous à la Vase.",
+          "intention": "Le chantier perdra Hann pendant le trajet",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B026",
+          "source_block_id": "N60-X01-B026",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Oui.",
+          "intention": "Le chantier perdra Hann pendant le trajet",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B027",
+          "source_block_id": "N60-X01-B027",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "Pour les pièces de Cole.",
+          "intention": "Le chantier perdra Hann pendant le trajet",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B028",
+          "source_block_id": "N60-X01-B028",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Je sais lesquelles.",
+          "intention": "Le chantier perdra Hann pendant le trajet",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 7.6,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "503c4db07ba44499214a2131782563097b3284bc91835ad10df5746da63a5836",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "porteur-combustible-serie",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B025",
+          "source_block_id": "N60-X01-B025",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "On aura besoin de vous à la Vase."
+        },
+        {
+          "line_id": "N60-X01-B026",
+          "source_block_id": "N60-X01-B026",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Oui."
+        },
+        {
+          "line_id": "N60-X01-B027",
+          "source_block_id": "N60-X01-B027",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Pour les pièces de Cole."
+        },
+        {
+          "line_id": "N60-X01-B028",
+          "source_block_id": "N60-X01-B028",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Je sais lesquelles."
+        }
+      ],
+      "static_framing": "Plan moyen au-dessus de la charge préparée",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-X01-C06",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 105,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c0fba9ce49ac10ba6f3deb0d1c90b40deb55b6b9f51e959a0d8d60b6789553a1"
+      },
+      "source_block_ids": [
+        "N60-X01-B029",
+        "N60-X01-B030",
+        "N60-X01-B031",
+        "N60-X01-B032",
+        "N60-X01-B033",
+        "N60-X01-B034",
+        "N60-X01-B035"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B029",
+          "text_sha256": "4ad8a58262b4f226ceabe633699036b16f499584d4ac12990f47b46771a87e1e"
+        },
+        {
+          "id": "N60-X01-B030",
+          "text_sha256": "2e1224e0cf49ff1e58648ce7f0bc9aeaed5ed9f192ce799fc731944b2dc69fe1"
+        },
+        {
+          "id": "N60-X01-B031",
+          "text_sha256": "8c9287ec013bfacf2237af906685c6b5b0ba865a19c60894436abefdf01f9147"
+        },
+        {
+          "id": "N60-X01-B032",
+          "text_sha256": "1d0dc42d0ab41da17b26a1759908a095eea3a52acc9adcd2757a56ce882208b4"
+        },
+        {
+          "id": "N60-X01-B033",
+          "text_sha256": "eeedcf27fe3aba9bd2e19ab4e4574f9030f83359fd00f2a5215cea6a4a535ccf"
+        },
+        {
+          "id": "N60-X01-B034",
+          "text_sha256": "cb37e6ebc6098fc4f1a26ed161119f1631f80d60281bc646ad0ac609eb09a1cb"
+        },
+        {
+          "id": "N60-X01-B035",
+          "text_sha256": "0dae98aa2b0ecabebe0abefc6ef7155c6b48754c5629529df396388b94a39670"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C05",
+        "next_cut_id": "N60-X01-C07",
+        "entry": "Raccord N60-X01-C05 : Hann fait réduire la charge du porteur ; corde encore au sol",
+        "exit": "État à conserver : Contrôleur tient la corde pendant que Hann charge son dos, bois longs toujours sur berge",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "La main qui aide vaut mieux qu’un reçu",
+      "cadrage": "Plan moyen dos et effort, contrôleur de côté",
+      "action_visible": "Le paquet court repose sur le dos de Hann, qui se redresse en grimaçant ; le contrôleur maintient la corde, bois longs toujours à part sur la berge.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan moyen dos et effort, contrôleur de côté. Le paquet court repose sur le dos de Hann, qui se redresse en grimaçant ; le contrôleur maintient la corde, bois longs toujours à part sur la berge. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B030",
+          "source_block_id": "N60-X01-B030",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Si vous avez besoin d’un reçu, je peux—",
+          "intention": "La main qui aide vaut mieux qu’un reçu",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B031",
+          "source_block_id": "N60-X01-B031",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "J’ai besoin de votre main, là.",
+          "intention": "La main qui aide vaut mieux qu’un reçu",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B033",
+          "source_block_id": "N60-X01-B033",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Si un homme de laVase vient me chercher, dites-lui où je suis allé. Qu’il n’attende pas ma main pour prendre les mesures. Pour lever les pièces, il attendra.",
+          "intention": "La main qui aide vaut mieux qu’un reçu",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B034",
+          "source_block_id": "N60-X01-B034",
+          "scene_id": "N60-X01",
+          "locuteur_id": "controleur-rive-serie",
+          "locuteur": "LE CONTRÔLEUR",
+          "texte": "Qui vous envoie ?",
+          "intention": "La main qui aide vaut mieux qu’un reçu",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        },
+        {
+          "line_id": "N60-X01-B035",
+          "source_block_id": "N60-X01-B035",
+          "scene_id": "N60-X01",
+          "locuteur_id": "hann-bourbe",
+          "locuteur": "HANN",
+          "texte": "Un four froid.",
+          "intention": "La main qui aide vaut mieux qu’un reçu",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 29.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 21.8,
+          "action_et_silence_hors_parole": 8,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "6db0387612433e3a83d39b857c8a479574e3fd1f54b41ba2087de40028c7914d",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [
+        "controleur-rive-serie",
+        "hann-bourbe"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B030",
+          "source_block_id": "N60-X01-B030",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Si vous avez besoin d’un reçu, je peux—"
+        },
+        {
+          "line_id": "N60-X01-B031",
+          "source_block_id": "N60-X01-B031",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "J’ai besoin de votre main, là."
+        },
+        {
+          "line_id": "N60-X01-B033",
+          "source_block_id": "N60-X01-B033",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Si un homme de laVase vient me chercher, dites-lui où je suis allé. Qu’il n’attende pas ma main pour prendre les mesures. Pour lever les pièces, il attendra."
+        },
+        {
+          "line_id": "N60-X01-B034",
+          "source_block_id": "N60-X01-B034",
+          "speaker_id": "controleur-rive-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Qui vous envoie ?"
+        },
+        {
+          "line_id": "N60-X01-B035",
+          "source_block_id": "N60-X01-B035",
+          "speaker_id": "hann-bourbe",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "controleur-rive-serie",
+            "porteur-combustible-serie"
+          ],
+          "text_unchanged": "Un four froid."
+        }
+      ],
+      "static_framing": "Plan moyen dos et effort, contrôleur de côté",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-X01-C07",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 106,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c5b56b0de2c8d387063fb6b088d9ec524a3cc3df4cef14d8c42dd3cb2c135ff0"
+      },
+      "source_block_ids": [
+        "N60-X01-B036"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B036",
+          "text_sha256": "ddf00ca947bc6ca6a9976913c3ed241ee8424b5f9442447dd915233707b6a38c"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C06",
+        "next_cut_id": "N60-X01-C08",
+        "entry": "Raccord N60-X01-C06 : Contrôleur tient la corde pendant que Hann charge son dos, bois longs toujours sur berge",
+        "exit": "État à conserver : Le porteur ouvre le passage ; Hann tourne le corps de côté sous les fagots",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "Voir la charge portée et la distance parcourue",
+      "cadrage": "Plan de suivi à pied dans passage étroit",
+      "action_visible": "Dans un passage étroit, Hann est de côté sous ses fagots ; le porteur plus loin tient sa propre charge sans charrette ni escorte royale.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan de suivi à pied dans passage étroit. Dans un passage étroit, Hann est de côté sous ses fagots ; le porteur plus loin tient sa propre charge sans charrette ni escorte royale. Port-Réal, passage étroit du Boyau. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 12,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 12,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d124614498a9f15b91aeba412cd3e78fa3ecf33fc5b569e29b1e040d68d9d949",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "porteur-combustible-serie"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan de suivi à pied dans passage étroit",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-X01-C08",
+      "scene_id": "N60-X01",
+      "episode_id": "lc-e001",
+      "order": 107,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+        "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "7faeebbccda22b60e5231e7f95a9dd9fd2574adebb564afffbe9c9cbf3cd926a"
+      },
+      "source_block_ids": [
+        "N60-X01-B037",
+        "N60-X01-B038",
+        "N60-X01-B039"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-X01-B037",
+          "text_sha256": "49ab0074215e66b3c75561f96f883a688345c3de6da56d509bad7262b924fee6"
+        },
+        {
+          "id": "N60-X01-B038",
+          "text_sha256": "74a07cc693a294c406d1bdadc11bb21fc4f73912b493f5ed6cff961550d579fc"
+        },
+        {
+          "id": "N60-X01-B039",
+          "text_sha256": "09313df46f9a2d15e571e069f98f90237c3a73f4490be5f747529d7a3a7ca076"
+        }
+      ],
+      "character_ids": [
+        "hann-bourbe",
+        "controleur-rive-serie",
+        "porteur-combustible-serie",
+        "boulanger-serie"
+      ],
+      "reference_images": [],
+      "costume_state": [
+        {
+          "character_id": "hann-bourbe",
+          "state": "gilet gris-brun sur lin"
+        },
+        {
+          "character_id": "controleur-rive-serie",
+          "state": "manteau gris, aucun insigne royal"
+        },
+        {
+          "character_id": "porteur-combustible-serie",
+          "state": "tunique terre, manches retroussées"
+        },
+        {
+          "character_id": "boulanger-serie",
+          "state": "tablier écru, tunique terre"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C07",
+        "next_cut_id": "N60-Q08-C01",
+        "entry": "Raccord N60-X01-C07 : Le porteur ouvre le passage ; Hann tourne le corps de côté sous les fagots",
+        "exit": "Sortie : Boulanger prend un morceau, Hann se redresse et reprend sa corde vide ; pâte sous le même linge ; aucun résultat au-delà du texte adopté.",
+        "axis": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte."
+      },
+      "intention": "Une première charge arrive, l’absence au chantier reste due",
+      "cadrage": "Plan du four puis seuil vers le chantier hors champ",
+      "action_visible": "Au fournil, le boulanger tient un morceau de petit bois près de la bouche du four ; Hann tient sa corde désormais vide, courbé près de la pâte toujours sous le même linge.",
+      "light": "Jour couvert humide ; au four lumière par porte, petite flamme seulement à fin du dernier plan.",
+      "location": "Approche fluviale de Port-Réal, puis passage du Boyau et fournil",
+      "prompt_image": "Plan du four. Au fournil, le boulanger tient un morceau de petit bois près de la bouche du four ; Hann tient sa corde désormais vide, courbé près de la pâte toujours sous le même linge. Port-Réal, fournil du Boyau. Jour doux par la porte du fournil, petite lueur dans la bouche du four. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-X01-B038",
+          "source_block_id": "N60-X01-B038",
+          "scene_id": "N60-X01",
+          "locuteur_id": "porteur-combustible-serie",
+          "locuteur": "LE PORTEUR",
+          "texte": "C’est le premier. Le reste est encore au contrôle.",
+          "intention": "Une première charge arrive, l’absence au chantier reste due",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "requests/scenes-lc-e001-v6-portes-vivres-20261104.json",
+            "source_kind": "series_fiction_written_by_scenes",
+            "not_executed_in_game": true
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 12,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 4,
+          "action_et_silence_hors_parole": 8,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d5fb467165ee1a7e891c783cd01686edf0a80e0ec0bfea035eb002c79ba93619",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:hann-bourbe",
+        "identity_image_missing:controleur-rive-serie",
+        "identity_image_missing:porteur-combustible-serie",
+        "identity_image_missing:boulanger-serie"
+      ],
+      "image_subject_ids": [
+        "hann-bourbe",
+        "boulanger-serie"
+      ],
+      "speaker_ids": [
+        "porteur-combustible-serie"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-X01-B038",
+          "source_block_id": "N60-X01-B038",
+          "speaker_id": "porteur-combustible-serie",
+          "image_subject_ids": [
+            "hann-bourbe",
+            "boulanger-serie"
+          ],
+          "text_unchanged": "C’est le premier. Le reste est encore au contrôle."
+        }
+      ],
+      "static_framing": "Plan du four",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après VER06 et la commande VER07, avant son exécution ; ellipse de série",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Barque le long d’une berge, contrôleur côté toiles, Hann sur charge et porteur à perche ; bois longs retenus. Trajet à pied puis four, même linge sur pâte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q08-C01",
+      "scene_id": "N60-Q08",
+      "episode_id": "lc-e001",
+      "order": 108,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+        "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "d938fd031f796c58358d1c0eb39aa901a449c3e52ee90be12fa8f7e3e3648b6c"
+      },
+      "source_block_ids": [
+        "N60-Q08-A001",
+        "N60-Q08-A002",
+        "N60-Q08-B001"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q08-A001",
+          "text_sha256": "dc2158a343cc8e42ab62a3c3d9a668cb9bcba5138e55cd374d696ca49d9ba80f"
+        },
+        {
+          "id": "N60-Q08-A002",
+          "text_sha256": "f2b132405123ede3bc68a5885743e5edd2429dae9d3d1092082a6b4d53bb75c0"
+        },
+        {
+          "id": "N60-Q08-B001",
+          "text_sha256": "08342f36e32a6f6b09d7c198a1e34d6c51afe3d45821008dddd3aab785edebba"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-X01-C08",
+        "next_cut_id": "N60-Q08-C02",
+        "entry": "Entrée de scène : Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte.",
+        "exit": "État à conserver : Premier jour de lune4, reine debout, feuillet vierge et plume de Gerardys, aucun roi capturé",
+        "axis": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte."
+      },
+      "intention": "Ellipse de date : ordonner pour l’entrée future",
+      "cadrage": "Plan moyen reine debout et mestre à la table",
+      "action_visible": "La reine debout au petit bout de table regarde Gerardys avec sa plume ; feuillet vierge et volumes fermés entre eux. Aucun prisonnier ni roi capturé.",
+      "light": "Jour latéral naturel, pas de cartouche ou mots générés ; date en texte de composition séparé.",
+      "location": "Peyredragon, table de travail",
+      "prompt_image": "Plan moyen reine debout et mestre à la table. La reine debout au petit bout de table regarde Gerardys avec sa plume ; feuillet vierge et volumes fermés entre eux. Aucun prisonnier ni roi capturé. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q08-B001",
+          "source_block_id": "N60-Q08-B001",
+          "scene_id": "N60-Q08",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Ecrivez, mestre. Trois lignes, et la date au bas. **Aegon est pris vivant.** Personne ne le touche -- ni dans les murs, ni sur la route, ni dans une cave. Un roi mort est un roi qu on chante ; celui-la, je veux pouvoir le montrer. Son sort, je le dirai devant le royaume, pas dans le noir. Otto Hightower : sa tete, le jour meme, devant ceux qui l ont servi. Le reste -- son noyau, les manteaux blancs, les hommes de la Main : la vie contre l allegeance, **avec des termes cette fois**. Trois jours pour s agenouiller, et ce qui l annule ecrit dessous. Qui refuse : les fers. Pas le feu, pas la corde. Et cela s applique dans les trois jours de l entree, ou cela ne s ecrit pas.",
+          "intention": "Ellipse de date : ordonner pour l’entrée future",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 9973,
+            "char_start": 46,
+            "char_end": 724,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 4,
+              "jour": 1,
+              "minute": 749
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "497150d3f39bc2042e4a451ba4474ec4aae00bdd811ca904a74345107672e828"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 64.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 60.4,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "6e2e39a78026dbbb0037730af39cf86745fac4a25dc108f9da0da7f15e2abe57",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q08-B001",
+          "source_block_id": "N60-Q08-B001",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "gerardys"
+          ],
+          "text_unchanged": "Ecrivez, mestre. Trois lignes, et la date au bas. **Aegon est pris vivant.** Personne ne le touche -- ni dans les murs, ni sur la route, ni dans une cave. Un roi mort est un roi qu on chante ; celui-la, je veux pouvoir le montrer. Son sort, je le dirai devant le royaume, pas dans le noir. Otto Hightower : sa tete, le jour meme, devant ceux qui l ont servi. Le reste -- son noyau, les manteaux blancs, les hommes de la Main : la vie contre l allegeance, **avec des termes cette fois**. Trois jours pour s agenouiller, et ce qui l annule ecrit dessous. Qui refuse : les fers. Pas le feu, pas la corde. Et cela s applique dans les trois jours de l entree, ou cela ne s ecrit pas."
+        }
+      ],
+      "static_framing": "Plan moyen reine debout et mestre à la table",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Ellipse explicite : premier jour de la lune4,129 ; ordre12h29 puis réponse12h42",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q08-C02",
+      "scene_id": "N60-Q08",
+      "episode_id": "lc-e001",
+      "order": 109,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+        "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "a5495bead4f97daaf513ebdc535cfaff3c109dcfa482248bf065e63fdafa9d5d"
+      },
+      "source_block_ids": [
+        "N60-Q08-A003",
+        "N60-Q08-A004",
+        "N60-Q08-B002"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q08-A003",
+          "text_sha256": "78352a73efd4d5295579d31e59f268fb6562631d6ff22898a9878b0685bc0321"
+        },
+        {
+          "id": "N60-Q08-A004",
+          "text_sha256": "f75333fd0761413dd1bd7c2860d0be8cde6478976b56b5d8966ec24c118df3b6"
+        },
+        {
+          "id": "N60-Q08-B002",
+          "text_sha256": "20db40dd92a3a2c93852363c02fcfe0309b101766b965be6aa5e7066fccb2141"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q08-C01",
+        "next_cut_id": "N60-Q08-C03",
+        "entry": "Raccord N60-Q08-C01 : Premier jour de lune4, reine debout, feuillet vierge et plume de Gerardys, aucun roi capturé",
+        "exit": "État à conserver : Plus tard dans la séance, Gerardys parle sans ouvrir son volume",
+        "axis": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte."
+      },
+      "intention": "Le trajet résiste au jour désiré",
+      "cadrage": "Contrechamp mestre, volumes fermés",
+      "action_visible": "Gerardys parle face à la reine hors champ, mains près du volume resté fermé. Le feuillet royal est séparé des livres, sans carte ni calendrier ajouté.",
+      "light": "Jour latéral naturel, pas de cartouche ou mots générés ; date en texte de composition séparé.",
+      "location": "Peyredragon, table de travail",
+      "prompt_image": "Contrechamp mestre, volumes fermés. Gerardys parle face à la reine hors champ, mains près du volume resté fermé. Le feuillet royal est séparé des livres, sans carte ni calendrier ajouté. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q08-B002",
+          "source_block_id": "N60-Q08-B002",
+          "scene_id": "N60-Q08",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Le jour n existe pas, et il ne se figera pas quand la table le croit. **Le brief dit J moins vingt : c est faux de dix jours.** Le pas le plus lent du plan n est ni la mer ni la marche de l ost -- c est une barque a salaisons qui monte a Sombreval tous les huit jours. Six jours de trajet, un passage sur huit, une affaire par passage : douze jours au mieux pour une question et sa reponse, vingt-huit au pire. Tout ce qui touche a la porte du Donjon se decide un mois avant l entree.",
+          "intention": "Le trajet résiste au jour désiré",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 9983,
+            "char_start": 94,
+            "char_end": 578,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 4,
+              "jour": 1,
+              "minute": 762
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "9beeba1ddea8776f7738a7c001ef9a2a0e92b3e2a62e55afd40095c7678a3f61"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 49.2,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 46.2,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "ac5629eab8d95adf902a9b4240f21cc9814c6665f74f45a0b1cd8caf4d279591",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q08-B002",
+          "source_block_id": "N60-Q08-B002",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "gerardys"
+          ],
+          "text_unchanged": "Le jour n existe pas, et il ne se figera pas quand la table le croit. **Le brief dit J moins vingt : c est faux de dix jours.** Le pas le plus lent du plan n est ni la mer ni la marche de l ost -- c est une barque a salaisons qui monte a Sombreval tous les huit jours. Six jours de trajet, un passage sur huit, une affaire par passage : douze jours au mieux pour une question et sa reponse, vingt-huit au pire. Tout ce qui touche a la porte du Donjon se decide un mois avant l entree."
+        }
+      ],
+      "static_framing": "Contrechamp mestre, volumes fermés",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Ellipse explicite : premier jour de la lune4,129 ; ordre12h29 puis réponse12h42",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q08-C03",
+      "scene_id": "N60-Q08",
+      "episode_id": "lc-e001",
+      "order": 110,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+        "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "b9788b73287586bd44b05a02c721a9ed457659916342faf8692d2328250a42e4"
+      },
+      "source_block_ids": [
+        "N60-Q08-A005",
+        "N60-Q08-B003"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q08-A005",
+          "text_sha256": "9f97fe4c789e37287685137941eff4620cbc5d40beb3a2abc450ebafaa2a99d8"
+        },
+        {
+          "id": "N60-Q08-B003",
+          "text_sha256": "67609e671841f5b4e2876aba7fb0989fba86aa6038f55145c08a33072adf2964"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q08-C02",
+        "next_cut_id": "VER02-C01",
+        "entry": "Raccord N60-Q08-C02 : Plus tard dans la séance, Gerardys parle sans ouvrir son volume",
+        "exit": "Sortie : Gerardys marque un temps, reine reste face à lui, pas d’assentiment inventé ; aucun résultat au-delà du texte adopté.",
+        "axis": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte."
+      },
+      "intention": "Chevaux ou24 jours, la décision ne lui appartient pas",
+      "cadrage": "Plan moyen à deux tenu sur le choix sans réponse",
+      "action_visible": "Gerardys tient son regard sur la reine debout face à lui ; les deux restent immobiles au bord de la table, aucun hochement royal d’assentiment.",
+      "light": "Jour latéral naturel, pas de cartouche ou mots générés ; date en texte de composition séparé.",
+      "location": "Peyredragon, table de travail",
+      "prompt_image": "Plan moyen à deux tenu sur le choix sans réponse. Gerardys tient son regard sur la reine debout face à lui ; les deux restent immobiles au bord de la table, aucun hochement royal d’assentiment. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q08-B003",
+          "source_block_id": "N60-Q08-B003",
+          "scene_id": "N60-Q08",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Et voici ce que personne n aimera. Quand j aurai fait mes trois premiers gestes, **la chaine qui commande ne sera plus la mienne : ce sera la mer des betes, a vingt-quatre jours.** Contre la barre de sept pieds il n y a ni phrase, ni panier, ni dragon. Tout ce qu on gagnera ensuite se gagnera en renoncant aux chevaux -- et cette decision-la n est pas de mon office.",
+          "intention": "Chevaux ou24 jours, la décision ne lui appartient pas",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 9983,
+            "char_start": 603,
+            "char_end": 970,
+            "file_sha256": "ac262d3c243c0d48562e19e5be3f368abb3a581899efba4af42df8d534b7123e",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 4,
+              "jour": 1,
+              "minute": 762
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "f1f540d9151fbc51de54451ff03f1df868ca2e704900f698a56c4e7b3bd7a891"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 37,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 32,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c6fe9d2dec8285a36c94795a3a5bdded0d631cffc0093287e5d1df90551a43fd",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q08-B003",
+          "source_block_id": "N60-Q08-B003",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "gerardys"
+          ],
+          "text_unchanged": "Et voici ce que personne n aimera. Quand j aurai fait mes trois premiers gestes, **la chaine qui commande ne sera plus la mienne : ce sera la mer des betes, a vingt-quatre jours.** Contre la barre de sept pieds il n y a ni phrase, ni panier, ni dragon. Tout ce qu on gagnera ensuite se gagnera en renoncant aux chevaux -- et cette decision-la n est pas de mon office."
+        }
+      ],
+      "static_framing": "Plan moyen à deux tenu sur le choix sans réponse",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Ellipse explicite : premier jour de la lune4,129 ; ordre12h29 puis réponse12h42",
+          "source": "scenes-lc-e001-v7-aveu-sort-roi-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine debout au petit côté, Gerardys avec plume, volumes fermés et feuillet distinct de toute lettre verte.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C01",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 111,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c65e24e9d1beab2c9605fff253252e952b76f80a7bcda28e034188a9fcc062a0"
+      },
+      "source_block_ids": [
+        "VER02-B002",
+        "VER02-B003",
+        "VER02-B004",
+        "VER02-B005",
+        "VER02-B006",
+        "VER02-B007",
+        "VER02-B008",
+        "VER02-B009",
+        "VER02-B010"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B002",
+          "text_sha256": "995357dd1f44c108a67e4cf316f7d9856bb579356a271c5833268b3d790cbef3"
+        },
+        {
+          "id": "VER02-B003",
+          "text_sha256": "2c56f412d0a6621264b5196ddd7dfc44896b79bbbf2a8cd493f7b1b4ad77c968"
+        },
+        {
+          "id": "VER02-B004",
+          "text_sha256": "5bd578471dbb6f234f4f9b857e8cceae0a4d1eb602f32958d23940019d3e0a2e"
+        },
+        {
+          "id": "VER02-B005",
+          "text_sha256": "16cf343ba2b14cefebe51cb39d8e1b703ee1f7cf17a587a9758d5223841f546c"
+        },
+        {
+          "id": "VER02-B006",
+          "text_sha256": "df9b32b0a29b4e2750f0e2275b7545d555c565a1bb618aa4e10695bbe41355e1"
+        },
+        {
+          "id": "VER02-B007",
+          "text_sha256": "6aa12fece7f165b46ed0bc9777b1c916472a715d681467c2e80ebb631e789313"
+        },
+        {
+          "id": "VER02-B008",
+          "text_sha256": "488dedac532606d9b9b55ca64e55fcfc1eae7607b4a19ab0447caadb34864165"
+        },
+        {
+          "id": "VER02-B009",
+          "text_sha256": "4fc2619721e5057e2e0a2a88892b4f12fdcbb981109f9c031bb68d99a3c24759"
+        },
+        {
+          "id": "VER02-B010",
+          "text_sha256": "029ef9f1450be3e78328b46a1f165ee0a09451e64059590f4d5bcfa4049afbc8"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q08-C03",
+        "next_cut_id": "VER02-C02",
+        "entry": "Entrée de scène : Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "exit": "État à conserver : Alicent reçoit le mestre debout puis s’assied, Orwyle demeure à l’autre bout",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "Une page absente empêche la consolation",
+      "cadrage": "Plan moyen de la table, distance entre les deux corps",
+      "action_visible": "Alicent assise à un bout de table et Orwyle debout à l’autre ; lettre scellée entre ciseaux et ruban vert, porte au fond.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Plan moyen de la table, distance entre les deux corps. Alicent assise à un bout de table et Orwyle debout à l’autre ; lettre scellée entre ciseaux et ruban vert, porte au fond. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER02-B003",
+          "source_block_id": "VER02-B003",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Lisez la dernière clause.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B003",
+            "text_sha256": "1a250212f74b5a55a2dc7ebfcafdc867686ca6c7a6e576e6da480484c5da2aad"
+          }
+        },
+        {
+          "line_id": "VER02-B004",
+          "source_block_id": "VER02-B004",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Je ne l’ai pas avec moi.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B004",
+            "text_sha256": "65b865d44df8dfc02f9bfbeaadefacc1fb605588f19ae86603e182a61d7352b7"
+          }
+        },
+        {
+          "line_id": "VER02-B005",
+          "source_block_id": "VER02-B005",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Je ne vous demande pas de me la montrer.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B005",
+            "text_sha256": "5e9f2155013008edd6af54edac4e83b7b5e5c6ff2c401b4c565c49aa7d5ea9d7"
+          }
+        },
+        {
+          "line_id": "VER02-B006",
+          "source_block_id": "VER02-B006",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Madame, une parole de mémoire peut changer le sens d’une réserve.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B006",
+            "text_sha256": "95d5c2011c0229755b79698eeb67c785839f168af359d4137af99e95654776a8"
+          }
+        },
+        {
+          "line_id": "VER02-B007",
+          "source_block_id": "VER02-B007",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "C’est donc une réserve.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B007",
+            "text_sha256": "8210e3339b76bb07cf0248127182c15a26346778598a97c41defb6fe6fdb8744"
+          }
+        },
+        {
+          "line_id": "VER02-B009",
+          "source_block_id": "VER02-B009",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Je dis seulement qu’il faut la page.",
+          "intention": "Une page absente empêche la consolation",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B009",
+            "text_sha256": "4e24a6ea6ec80f48fb3a228f70a91818645da856a9d296756ba8573b9c1197d8"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.2,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 18.2,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "a92cef32f35bb78b08a4bd6504c6fbdc5c723f7c2a4ad1bbfe8d79f70afc6e8b",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER02-B003",
+          "source_block_id": "VER02-B003",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Lisez la dernière clause."
+        },
+        {
+          "line_id": "VER02-B004",
+          "source_block_id": "VER02-B004",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je ne l’ai pas avec moi."
+        },
+        {
+          "line_id": "VER02-B005",
+          "source_block_id": "VER02-B005",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je ne vous demande pas de me la montrer."
+        },
+        {
+          "line_id": "VER02-B006",
+          "source_block_id": "VER02-B006",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Madame, une parole de mémoire peut changer le sens d’une réserve."
+        },
+        {
+          "line_id": "VER02-B007",
+          "source_block_id": "VER02-B007",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "C’est donc une réserve."
+        },
+        {
+          "line_id": "VER02-B009",
+          "source_block_id": "VER02-B009",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je dis seulement qu’il faut la page."
+        }
+      ],
+      "static_framing": "Plan moyen de la table, distance entre les deux corps",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C02",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 112,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "aecb1df2fd6340a278cd8da41ff36ed03991b710afccdfb6dd50be5e2622c021"
+      },
+      "source_block_ids": [
+        "VER02-B011",
+        "VER02-B012",
+        "VER02-B013",
+        "VER02-B014",
+        "VER02-B015"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B011",
+          "text_sha256": "6a3c602fc4c1b6e34b4e3bb3b8b34d62965f50988768076765df0677e51a3ca0"
+        },
+        {
+          "id": "VER02-B012",
+          "text_sha256": "1c378eb518c87687ec22d5900cc02f862351c34db04102bed2b3c5a3aed06e73"
+        },
+        {
+          "id": "VER02-B013",
+          "text_sha256": "1477631c84905d4e5ff63572b2b3018f878c58dbf560956ee8b62559d6a03aae"
+        },
+        {
+          "id": "VER02-B014",
+          "text_sha256": "3bbd699a376bf4f87ac008d619b022f1b92b5ca0f36d85913bcf5f0e5544cf9d"
+        },
+        {
+          "id": "VER02-B015",
+          "text_sha256": "8a04b206904554f84c64e056b6f757bb5f1aa33853ca6caf71c46ac2c2a29ed4"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER02-C01",
+        "next_cut_id": "VER02-C03",
+        "entry": "Raccord VER02-C01 : Alicent reçoit le mestre debout puis s’assied, Orwyle demeure à l’autre bout",
+        "exit": "État à conserver : Alicent cherche une réponse sur les enfants, mains immobiles près des ciseaux",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "Faire entendre la précision concrète de la demande familiale",
+      "cadrage": "Plan rapproché Alicent, mestre hors champ",
+      "action_visible": "Alicent regarde Orwyle hors champ, mains immobiles près des ciseaux, la lettre encore intacte à côté.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Plan rapproché Alicent, mestre hors champ. Alicent regarde Orwyle hors champ, mains immobiles près des ciseaux, la lettre encore intacte à côté. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER02-B011",
+          "source_block_id": "VER02-B011",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Est-ce que mes petits-enfants sont nommés ?",
+          "intention": "Faire entendre la précision concrète de la demande familiale",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B011",
+            "text_sha256": "5d81a71b2f5b2c7e011ee471964ecf87ea053dcecbdae8a0611be88c5cb9a004"
+          }
+        },
+        {
+          "line_id": "VER02-B012",
+          "source_block_id": "VER02-B012",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Je ne peux pas vous en donner l’assurance.",
+          "intention": "Faire entendre la précision concrète de la demande familiale",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B012",
+            "text_sha256": "e02d396ee746d1fa8d3855c00d8f07d7a9a28c7fce24b7f1c7ccbedcbd425861"
+          }
+        },
+        {
+          "line_id": "VER02-B013",
+          "source_block_id": "VER02-B013",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Est-ce qu’ils sont exclus ?",
+          "intention": "Faire entendre la précision concrète de la demande familiale",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B013",
+            "text_sha256": "4f4a6ad4f40274d06996da4d1fbd8844321e9e0e067579c939e084513590ff82"
+          }
+        },
+        {
+          "line_id": "VER02-B014",
+          "source_block_id": "VER02-B014",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Je ne peux pas davantage—",
+          "intention": "Faire entendre la précision concrète de la demande familiale",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B014",
+            "text_sha256": "6bfb87b3a0ee19f898ccb9ae738e7710221efbd45eb9ef07e47e49c1c30f7bd1"
+          }
+        },
+        {
+          "line_id": "VER02-B015",
+          "source_block_id": "VER02-B015",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Vous êtes revenu avec deux mains. L’une pouvait rapporter le papier.",
+          "intention": "Faire entendre la précision concrète de la demande familiale",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B015",
+            "text_sha256": "727b2d74e7df48e99f696ece1dd9bb322729d05155ec37ff07ed2c7074769a9f"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 19,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 16,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0c28d89a42ddbdec5059220d6c1be0237a9359509a45c152f206d97e596a449b",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER02-B011",
+          "source_block_id": "VER02-B011",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Est-ce que mes petits-enfants sont nommés ?"
+        },
+        {
+          "line_id": "VER02-B012",
+          "source_block_id": "VER02-B012",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je ne peux pas vous en donner l’assurance."
+        },
+        {
+          "line_id": "VER02-B013",
+          "source_block_id": "VER02-B013",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Est-ce qu’ils sont exclus ?"
+        },
+        {
+          "line_id": "VER02-B014",
+          "source_block_id": "VER02-B014",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je ne peux pas davantage—"
+        },
+        {
+          "line_id": "VER02-B015",
+          "source_block_id": "VER02-B015",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Vous êtes revenu avec deux mains. L’une pouvait rapporter le papier."
+        }
+      ],
+      "static_framing": "Plan rapproché Alicent, mestre hors champ",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C03",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 113,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "a9b5e30c193951ea46914cce1512571bbcd2497e46cb771d1cc2499bdc08bfab"
+      },
+      "source_block_ids": [
+        "VER02-B016",
+        "VER02-B017",
+        "VER02-B018",
+        "VER02-B019",
+        "VER02-B020",
+        "VER02-B021",
+        "VER02-B022",
+        "VER02-B023"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B016",
+          "text_sha256": "e6e8713bab369e92005c6c352b913730b5d0d90596b498e6df845c87528a6767"
+        },
+        {
+          "id": "VER02-B017",
+          "text_sha256": "8c1f17f7b5f88634dff40b5391ff5da90263413b586d22dae31d073288b8b2d2"
+        },
+        {
+          "id": "VER02-B018",
+          "text_sha256": "4fcaeff9cbb2add539bc8194439c0095f4c12d1bd840c6b23b07eab49c2c34d6"
+        },
+        {
+          "id": "VER02-B019",
+          "text_sha256": "41d2f9bd27ca50560580e7cfa6d059157e4db5701213810d980728454cffce79"
+        },
+        {
+          "id": "VER02-B020",
+          "text_sha256": "ca04a1b56f3f4b0f47f9c0ea93ef8f5bc0c2928752ed2e827105df983498a4eb"
+        },
+        {
+          "id": "VER02-B021",
+          "text_sha256": "69968e8cb9f0a09f65c3de801a72503145465d8603603a22b22e81db79488c91"
+        },
+        {
+          "id": "VER02-B022",
+          "text_sha256": "e0ef779918b2e93bf60f1c7fec2ee4cb884220765cb4e20215744c3c2f6568ef"
+        },
+        {
+          "id": "VER02-B023",
+          "text_sha256": "7d869a99c29a1490e13dd31ae8421289deb034a21f9068d99b3d425a1630ff8e"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER02-C02",
+        "next_cut_id": "VER02-C04",
+        "entry": "Raccord VER02-C02 : Alicent cherche une réponse sur les enfants, mains immobiles près des ciseaux",
+        "exit": "État à conserver : Alicent couvre de sa main le pli scellé distinct de toute instruction noire",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+      "cadrage": "Plan de biais à deux autour de la lettre",
+      "action_visible": "La paume d’Alicent recouvre la lettre scellée au milieu de la table ; Orwyle de biais regarde le pli, sans le prendre.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Plan de biais à deux autour de la lettre. La paume d’Alicent recouvre la lettre scellée au milieu de la table ; Orwyle de biais regarde le pli, sans le prendre. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER02-B017",
+          "source_block_id": "VER02-B017",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Ce pli est pour elle ?",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B017",
+            "text_sha256": "984d0620eb7b525b977e4c781d1a89db37e84f088cca7ef14fb8780e387b4636"
+          }
+        },
+        {
+          "line_id": "VER02-B019",
+          "source_block_id": "VER02-B019",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Trouvez-moi la page.",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B019",
+            "text_sha256": "5c02bbeac023a44e86fb547f79baafec7553f4f310b0a6d21caeec6425ed7977"
+          }
+        },
+        {
+          "line_id": "VER02-B020",
+          "source_block_id": "VER02-B020",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Votre père doit savoir qu’une copie circule.",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B020",
+            "text_sha256": "90ebb223168396af999a522974c53e20de2c7f8a97469125557ada221da5f2bf"
+          }
+        },
+        {
+          "line_id": "VER02-B021",
+          "source_block_id": "VER02-B021",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Il peut le savoir. Il ne doit pas choisir à ma place les mots que j’aurai le droit de lire.",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B021",
+            "text_sha256": "d4941c079a332b6bc92ad5181616521089369253ed4c160126d0578aad96f2e4"
+          }
+        },
+        {
+          "line_id": "VER02-B022",
+          "source_block_id": "VER02-B022",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Il me demandera pourquoi vous la vouliez.",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B022",
+            "text_sha256": "bc4fc507c792a336e222b2cdf57e97c890d5c8da44d8291b7dfe09c39f303b6b"
+          }
+        },
+        {
+          "line_id": "VER02-B023",
+          "source_block_id": "VER02-B023",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Dites-lui que j’ai demandé si mes enfants vivraient. Vous n’aurez pas à embellir.",
+          "intention": "Elle soustrait sa lecture au contrôle d’Otto",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B023",
+            "text_sha256": "117d82e7ac3f9a96ef67d584c28ac26c0ffee1b1cd8d6aef74043f90b05d2105"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 28.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 24.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9279b45c850d551e268b864b600d601d9d64bf613b6a035b3d375b83f36e5cb3",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [
+        "orwyle",
+        "alicent"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER02-B017",
+          "source_block_id": "VER02-B017",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Ce pli est pour elle ?"
+        },
+        {
+          "line_id": "VER02-B019",
+          "source_block_id": "VER02-B019",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Trouvez-moi la page."
+        },
+        {
+          "line_id": "VER02-B020",
+          "source_block_id": "VER02-B020",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Votre père doit savoir qu’une copie circule."
+        },
+        {
+          "line_id": "VER02-B021",
+          "source_block_id": "VER02-B021",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Il peut le savoir. Il ne doit pas choisir à ma place les mots que j’aurai le droit de lire."
+        },
+        {
+          "line_id": "VER02-B022",
+          "source_block_id": "VER02-B022",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Il me demandera pourquoi vous la vouliez."
+        },
+        {
+          "line_id": "VER02-B023",
+          "source_block_id": "VER02-B023",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Dites-lui que j’ai demandé si mes enfants vivraient. Vous n’aurez pas à embellir."
+        }
+      ],
+      "static_framing": "Plan de biais à deux autour de la lettre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C04",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 114,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c89248570d4dce97abc31a0f990c37cd1575d03d9a0c51e2bec31a49143688dd"
+      },
+      "source_block_ids": [
+        "VER02-B024",
+        "VER02-B025",
+        "VER02-B026",
+        "VER02-B027",
+        "VER02-B028",
+        "VER02-B029"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B024",
+          "text_sha256": "b4520c5768ec429f4eb384b19d09726fde3ae67c3607e9bd12d5039540d4118f"
+        },
+        {
+          "id": "VER02-B025",
+          "text_sha256": "6f76094a65752df31183704717e18650cccd8abf935699481851a26da81e4e89"
+        },
+        {
+          "id": "VER02-B026",
+          "text_sha256": "e4b50d5311e0bfc7ea78d751fa07af47e0a7ba727a2fb9fef389806ad3c77c50"
+        },
+        {
+          "id": "VER02-B027",
+          "text_sha256": "844d29e6c5e3856eb2511ab4010b2460abe695e565424116df2fc805f0ac8fc8"
+        },
+        {
+          "id": "VER02-B028",
+          "text_sha256": "7d6bd19285f1fdd67f03ee7d381095a0f59f67797e962f17de269baa7c1cc5cd"
+        },
+        {
+          "id": "VER02-B029",
+          "text_sha256": "256e0e36c000d4bbc98703aa90252efc34aeb199d5974141ed0e8e4c34a7d819"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER02-C03",
+        "next_cut_id": "VER02-C05",
+        "entry": "Raccord VER02-C03 : Alicent couvre de sa main le pli scellé distinct de toute instruction noire",
+        "exit": "État à conserver : Orwyle renonce au siège ; Alicent éloigne les ciseaux du sceau",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "Opposer garantie et moyen de la tenir",
+      "cadrage": "Contrechamp mestre puis retour contenu vers Alicent",
+      "action_visible": "Les ciseaux sont posés à distance du sceau ; la main d’Orwyle reste retirée du siège vide. Alicent le regarde depuis l’autre bout de table.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Contrechamp mestre. Les ciseaux sont posés à distance du sceau ; la main d’Orwyle reste retirée du siège vide. Alicent le regarde depuis l’autre bout de table. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER02-B025",
+          "source_block_id": "VER02-B025",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "On peut offrir une garantie et ne pas avoir les moyens de la tenir.",
+          "intention": "Opposer garantie et moyen de la tenir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B025",
+            "text_sha256": "aa441616634cbffc63fc21a954ac8bb4751a7322a9ea3aee1706290f9fed8a39"
+          }
+        },
+        {
+          "line_id": "VER02-B026",
+          "source_block_id": "VER02-B026",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Alors je veux savoir qui la signe et ce qu’il perd en la rompant.",
+          "intention": "Opposer garantie et moyen de la tenir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B026",
+            "text_sha256": "ca2f4a33eb538d09036631cff67a498b23aaed9845095fa6aa1c528042177d40"
+          }
+        },
+        {
+          "line_id": "VER02-B027",
+          "source_block_id": "VER02-B027",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Vous ne lui faites pas confiance.",
+          "intention": "Opposer garantie et moyen de la tenir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B027",
+            "text_sha256": "a416f2f39823eb6ab5cc70ac59cbf18550aa3a1220d1ee67ab30fe67933ec9be"
+          }
+        },
+        {
+          "line_id": "VER02-B029",
+          "source_block_id": "VER02-B029",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Non.",
+          "intention": "Opposer garantie et moyen de la tenir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B029",
+            "text_sha256": "bfd0b2bc7f155b17b1aea7aad8053aa09db23339527041996d6dee69aba415d4"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 19.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.6,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "b1168dbb9084716c52cfb680f07b3da00d4c7862f36afb7a710a81194922cbb0",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [
+        "orwyle",
+        "alicent"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER02-B025",
+          "source_block_id": "VER02-B025",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "On peut offrir une garantie et ne pas avoir les moyens de la tenir."
+        },
+        {
+          "line_id": "VER02-B026",
+          "source_block_id": "VER02-B026",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Alors je veux savoir qui la signe et ce qu’il perd en la rompant."
+        },
+        {
+          "line_id": "VER02-B027",
+          "source_block_id": "VER02-B027",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Vous ne lui faites pas confiance."
+        },
+        {
+          "line_id": "VER02-B029",
+          "source_block_id": "VER02-B029",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Non."
+        }
+      ],
+      "static_framing": "Contrechamp mestre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C05",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 115,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "fc13d2a931230ae38a043b35cc79533316fd36665d403140b0934664167def50"
+      },
+      "source_block_ids": [
+        "VER02-B030",
+        "VER02-B031",
+        "VER02-B032",
+        "VER02-B033",
+        "VER02-B034",
+        "VER02-B035"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B030",
+          "text_sha256": "b5df451ebf9cca25e1dc51735e39e8f4188d37516bc384b2151a8e83f3fd0adb"
+        },
+        {
+          "id": "VER02-B031",
+          "text_sha256": "5cdd89d401dec408b5cf98cfa6daa342c39e057dfcf0cb0c15a1631f0ff019fe"
+        },
+        {
+          "id": "VER02-B032",
+          "text_sha256": "9537124b7f719c68b0d4e1e9f680511b9fb11903fdbd85e21d22a6ae54bd1238"
+        },
+        {
+          "id": "VER02-B033",
+          "text_sha256": "f72080210ca34d7269714b119fa98ba1bd96eabae47ba0a3cf38519046dfab0f"
+        },
+        {
+          "id": "VER02-B034",
+          "text_sha256": "81bf0139e1f029aab5e964d9a1f54621d76e82fdeb75fa5fb7eb2c7805c2bcd0"
+        },
+        {
+          "id": "VER02-B035",
+          "text_sha256": "e30d6f6997010cd20db4b8bae48b90609c8e5312e6233a72c13661737d433b03"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER02-C04",
+        "next_cut_id": "VER02-C06",
+        "entry": "Raccord VER02-C04 : Orwyle renonce au siège ; Alicent éloigne les ciseaux du sceau",
+        "exit": "État à conserver : Alicent rappelle le mestre alors qu’il s’incline",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "La précision des titres expose l’imprécision sur les enfants",
+      "cadrage": "Plan rapproché à deux, Orwyle sur le départ",
+      "action_visible": "Orwyle incliné près de la porte a tourné le visage vers Alicent qui le rappelle ; la lettre reste sur la table entre eux.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Plan rapproché à deux, Orwyle sur le départ. Orwyle incliné près de la porte a tourné le visage vers Alicent qui le rappelle ; la lettre reste sur la table entre eux. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER02-B031",
+          "source_block_id": "VER02-B031",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Revenez avec ce que vous pourrez faire lire. Pas avec ce que je pourrais croire.",
+          "intention": "La précision des titres expose l’imprécision sur les enfants",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B031",
+            "text_sha256": "2fbbd92a7bde6179dfe41ad9529049d957308b50172f29eac37d28d94b3f42bb"
+          }
+        },
+        {
+          "line_id": "VER02-B033",
+          "source_block_id": "VER02-B033",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Votre Grâce, devant mon fils. Madame, ici. Vous savez toujours quel titre me donner.",
+          "intention": "La précision des titres expose l’imprécision sur les enfants",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B033",
+            "text_sha256": "4c78166a4c12cf737d309037d4ced4cb4ec889133a7fad3d9648fc638d71446d"
+          }
+        },
+        {
+          "line_id": "VER02-B034",
+          "source_block_id": "VER02-B034",
+          "scene_id": "VER02",
+          "locuteur_id": "orwyle",
+          "locuteur": "ORWYLE",
+          "texte": "Je vous ai offensée ?",
+          "intention": "La précision des titres expose l’imprécision sur les enfants",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B034",
+            "text_sha256": "b49f5ab9ab3fed3c5b2df1ddc7aadf6e1965dbb8114da5af0a10fe4bd9c40cb8"
+          }
+        },
+        {
+          "line_id": "VER02-B035",
+          "source_block_id": "VER02-B035",
+          "scene_id": "VER02",
+          "locuteur_id": "alicent",
+          "locuteur": "ALICENT",
+          "texte": "Je voudrais que vous soyez aussi précis pour les enfants.",
+          "intention": "La précision des titres expose l’imprécision sur les enfants",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER02 — La clause du bas",
+            "block": "VER02-B035",
+            "text_sha256": "e64b321475746824cbfba679fdf6cbcda06cdf36e6a791de360b5a9373fe7a20"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 22.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 19.6,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9d52fcd216d1c28f52576b6dbd832864ed49c65e9d19a947d97de62a6645f70d",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER02-B031",
+          "source_block_id": "VER02-B031",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Revenez avec ce que vous pourrez faire lire. Pas avec ce que je pourrais croire."
+        },
+        {
+          "line_id": "VER02-B033",
+          "source_block_id": "VER02-B033",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Votre Grâce, devant mon fils. Madame, ici. Vous savez toujours quel titre me donner."
+        },
+        {
+          "line_id": "VER02-B034",
+          "source_block_id": "VER02-B034",
+          "speaker_id": "orwyle",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je vous ai offensée ?"
+        },
+        {
+          "line_id": "VER02-B035",
+          "source_block_id": "VER02-B035",
+          "speaker_id": "alicent",
+          "image_subject_ids": [
+            "alicent",
+            "orwyle"
+          ],
+          "text_unchanged": "Je voudrais que vous soyez aussi précis pour les enfants."
+        }
+      ],
+      "static_framing": "Plan rapproché à deux, Orwyle sur le départ",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER02-C06",
+      "scene_id": "VER02",
+      "episode_id": "lc-e001",
+      "order": 116,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+        "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "fd654cf5d7940ae4c628e41744effcf0e934da3ca9d45bd33f266b1f2b08b849"
+      },
+      "source_block_ids": [
+        "VER02-B036"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER02-B036",
+          "text_sha256": "4c5cf600e12e660ff039fca599104aad2c9a6e7519b656b9dfb87b7e5f45fe84"
+        }
+      ],
+      "character_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+          "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "alicent"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+          "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+          "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "orwyle"
+          ],
+          "visually_inspected": true,
+          "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+          "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "alicent",
+          "state": "robe vert sombre"
+        },
+        {
+          "character_id": "orwyle",
+          "state": "robes grises"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER02-C05",
+        "next_cut_id": null,
+        "entry": "Raccord VER02-C05 : Alicent rappelle le mestre alors qu’il s’incline",
+        "exit": "Sortie : Elle coupe seulement le ruban ; le morceau court est tombé au sol ; aucun résultat au-delà du texte adopté.",
+        "axis": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert."
+      },
+      "intention": "Finir sur un geste qui lui coûte, aucune réponse arrivée",
+      "cadrage": "Plan fixe mains puis corps qui se penche",
+      "action_visible": "Un morceau court de ruban vert repose au sol près de la jupe d’Alicent penchée ; les ciseaux sont sur la table, sceau du pli intact.",
+      "light": "Lumière diffuse de fenêtre, verts assourdis et ombres naturelles.",
+      "location": "Appartements d’Alicent au Donjon Rouge",
+      "prompt_image": "Plan fixe mains. Un morceau court de ruban vert repose au sol près de la jupe d’Alicent penchée ; les ciseaux sont sur la table, sceau du pli intact. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "78b51ae852bfecbef44b11f1670807170561e6be9adfac04a1fa8dede7863601",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:alicent",
+        "film_identity_approval_pending:orwyle"
+      ],
+      "image_subject_ids": [
+        "alicent",
+        "orwyle"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan fixe mains",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Table entre Alicent et Orwyle ; porte dans le fond, lettre scellée distincte, ciseaux et ruban vert.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    }
+  ]
+}

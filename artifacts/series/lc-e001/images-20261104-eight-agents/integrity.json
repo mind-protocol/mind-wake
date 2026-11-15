@@ -1,0 +1,816 @@
+{
+  "checked_at": "2026-11-04T20:18:14.549Z",
+  "expected": 116,
+  "unique_cut_ids": 116,
+  "present": 75,
+  "missing": [
+    "N60-Q01-C02",
+    "N60-Q01-C03",
+    "N60-Q01-C04",
+    "N60-Q01-C05",
+    "N60-Q02-C04",
+    "N60-Q02-C05",
+    "N60-Q02-C06",
+    "N60-Q02-C07",
+    "VER05-C01",
+    "VER05-C02",
+    "VER05-C03",
+    "VER05-C04",
+    "VER05-C05",
+    "N60-Q04-C01",
+    "N60-Q04-C02",
+    "N60-Q04-C03",
+    "N60-Q04-C04",
+    "N60-Q04-C05",
+    "N60-Q04-C06",
+    "N60-Q04-C07",
+    "N60-Q04-C08",
+    "VER01-C01",
+    "VER01-C02",
+    "VER01-C03",
+    "VER01-C04",
+    "VER01-C05",
+    "VER01-C06",
+    "N60-Q07-C01",
+    "N60-Q07-C02",
+    "N60-Q07-C03",
+    "N60-Q07-C04",
+    "N60-Q06-C02",
+    "N60-Q06-C03",
+    "VER06-C03",
+    "VER06-C04",
+    "VER06-C05",
+    "VER07-C02",
+    "VER07-C03",
+    "VER07-C04",
+    "VER07-C05",
+    "VER07-C06"
+  ],
+  "errors": [],
+  "assets": [
+    {
+      "cut_id": "N60-Q09-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2587997,
+      "sha256": "608d7a6c51ae4046bb1bba0d8f3b3991dd295e55008a4dbd34d66277266c3654"
+    },
+    {
+      "cut_id": "N60-Q09-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2362591,
+      "sha256": "350ee24692fc732f83c1bef079e0c2df93d65c1a67791cfc7dd60300488e9c2c"
+    },
+    {
+      "cut_id": "N60-Q09-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2331758,
+      "sha256": "09eb08ce721a1115732f54e274bab2b9dd712f44f3cab373c72be17ec04e4a65"
+    },
+    {
+      "cut_id": "N60-Q09-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2655323,
+      "sha256": "37ae97296b1b1a82d0fd95fc0ffd9796112d1e01055bbe12ccb412d088e6be69"
+    },
+    {
+      "cut_id": "N60-Q09-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2537896,
+      "sha256": "ea861223c61757903fa26caad11b3feea3ff347653f0f9eae691f00db2149f1e"
+    },
+    {
+      "cut_id": "N60-Q09-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2368128,
+      "sha256": "6da2b621ae877a9f4f9452126b0eee2a4126e45943c415e31662866ad00fd12e"
+    },
+    {
+      "cut_id": "N60-Q09-C07",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2589101,
+      "sha256": "66756ba8e8e46cc021fee916b84f01d2c82e6aa2a8a6b1322eebee5f5cf21929"
+    },
+    {
+      "cut_id": "N60-Q09-C08",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2611375,
+      "sha256": "ac8d1b8567e1280867fe6ad7db4abf74fd098b6449c110f604fe519752a1cbd7"
+    },
+    {
+      "cut_id": "N60-Q09-C09",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2485644,
+      "sha256": "e4e76e78ae0278d6f9bd56271a64ce06d3c233bb77f39aca1d3ec24154f6d4e7"
+    },
+    {
+      "cut_id": "N60-Q01-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2349851,
+      "sha256": "ac313eaa49d3521078e508589e4f3120fb66f79fdd8a3dee3c1aed73ee3963e7"
+    },
+    {
+      "cut_id": "N60-Q01-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q01-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q01-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q01-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER04-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2530412,
+      "sha256": "f2e20921dca97b9084a74285307aef97c77bcfa788597b3a12fd040cd9e89f3a"
+    },
+    {
+      "cut_id": "VER04-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2187071,
+      "sha256": "cc55c75b81218b2ae8985cc62ad86e4d8a18fc73747cd3103711911a45fd2a8f"
+    },
+    {
+      "cut_id": "VER04-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2506189,
+      "sha256": "a89dd0fadc147623f79f0e09c977457495d81b84a63595743379302f817c7891"
+    },
+    {
+      "cut_id": "VER04-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2276215,
+      "sha256": "8010d233222c358273706e579e242214c95341d3b9fdf6cdd2dc6d1216abef91"
+    },
+    {
+      "cut_id": "VER04-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2756180,
+      "sha256": "e1313837f323c401cffb6af1f771f39b9a9ef4ec1b1bb1ec037dd3309eb14b31"
+    },
+    {
+      "cut_id": "VER04-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2558372,
+      "sha256": "6e529356e495732761186bda8c8033314f4e884f2aa3f7bea75c3e1268dc4431"
+    },
+    {
+      "cut_id": "VER04-C07",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2448009,
+      "sha256": "756a4fe02aa0dfe8abeed07377b024a1898921aa3df34581106d57838d40fda5"
+    },
+    {
+      "cut_id": "VER04-C08",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2753352,
+      "sha256": "280081393faaaf114d289160449ae3b9d0e9b758e693d82856f6c9ca3da38257"
+    },
+    {
+      "cut_id": "BAN01-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2308993,
+      "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0"
+    },
+    {
+      "cut_id": "BAN01-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2607066,
+      "sha256": "06e201fc361b630c98cfa7693f86f4ec4161aa8db45850def46810b8cf4234b5"
+    },
+    {
+      "cut_id": "BAN01-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2683530,
+      "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d"
+    },
+    {
+      "cut_id": "BAN01-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2477270,
+      "sha256": "cdb0fe54f49aff99ca74e45b94f0614d279579d05b7a265182b44e72ce876c85"
+    },
+    {
+      "cut_id": "BAN01-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2408069,
+      "sha256": "99f1003ad7d42e453892e4bce8a2115b20793a217e3b7ec85e49c4815931281d"
+    },
+    {
+      "cut_id": "BAN01-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2867439,
+      "sha256": "f4bd910fbefed5349dca4c89dcb5fa3a5c1d537e62dff31a693e8d32f030097b"
+    },
+    {
+      "cut_id": "BAN01-C07",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2619326,
+      "sha256": "0326c2ff2571473da6b8ee994e969345e47b64c4e141bf2f19f0b4ac4fb90804"
+    },
+    {
+      "cut_id": "BAN01-C08",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2323041,
+      "sha256": "b2ef410e48f7315301ad61fb131bbaa4ccb83c6547f23021fa088c0c29651c05"
+    },
+    {
+      "cut_id": "BAN01-C09",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2547144,
+      "sha256": "7c97a6d5bd9964d80b8f86f280f15661b1a92a41e0f77b527ae37fee9ce28c74"
+    },
+    {
+      "cut_id": "BAN01-C10",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2899406,
+      "sha256": "a0274659256cb04fd44dc26dfb4d43e2da1779c06f64a866e6ad1289e1dd4ff7"
+    },
+    {
+      "cut_id": "BAN01-C11",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2716009,
+      "sha256": "d35385982aa2c0f03f1ccfd2379446686d00220b6ac0cc666fc040e861872fd4"
+    },
+    {
+      "cut_id": "ROU01-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2565631,
+      "sha256": "a15ba412279a160c4c9f349985e438e5bada8d1a3f433c13e9d694ab625b814d"
+    },
+    {
+      "cut_id": "ROU01-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2523456,
+      "sha256": "4e8fc21b837034dc5a68045b28f03059a9170cab6fc60c1af373089c62c961da"
+    },
+    {
+      "cut_id": "ROU01-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2830159,
+      "sha256": "efbb7aa57113d432e75e2b994006bd4a82fa3c7b6a7a66ce8e1272af08871ee9"
+    },
+    {
+      "cut_id": "ROU01-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2464472,
+      "sha256": "e7a19a9bf1a5e684a2cb8b357948b1acaee0d2476284e2b349ab8204c8fd7de1"
+    },
+    {
+      "cut_id": "CEL01-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2612343,
+      "sha256": "70f2d095f26a7117ffff54123e02057dc9b37a65f6fdd96f35ea409e5083bb26"
+    },
+    {
+      "cut_id": "CEL01-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2232288,
+      "sha256": "ce126afc44b9c37a6e60f94788bfe32db6c445a992e591934a9a854704862358"
+    },
+    {
+      "cut_id": "CEL01-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2343297,
+      "sha256": "e5d22b2529b83f66dee3067ce2bb8a94abe2238667b5c8aa939944115836a080"
+    },
+    {
+      "cut_id": "CEL01-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2855614,
+      "sha256": "6c7dc93e2038c60800ad816e9e8972c69306df83ec50e7169edf0b2b387c6714"
+    },
+    {
+      "cut_id": "CEL01-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2819651,
+      "sha256": "68b10bd202d32338b5d82f0bd236fe325da15a3b98ab5baaa033b803178a06a6"
+    },
+    {
+      "cut_id": "CEL01-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2363079,
+      "sha256": "fdfb648121e0578405b85b49adb2b6a91e8e63b3a2bb2f4b42f6f0d72de48df0"
+    },
+    {
+      "cut_id": "CEL01-C07",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2689551,
+      "sha256": "ce86a0bd2c2ae8913822be2f3916d677eed053eed2278857dea2fa2e33cd42c1"
+    },
+    {
+      "cut_id": "CEL01-C08",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2422337,
+      "sha256": "16d51bbc29eb055b18205e1e661af1eb8829371c95e6141731a93ff07eae70ea"
+    },
+    {
+      "cut_id": "N60-Q05-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2479697,
+      "sha256": "b29443ae426ce054679439501ca83b9f88965fb594f369794cd29bb170c600e9"
+    },
+    {
+      "cut_id": "N60-Q05-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2124127,
+      "sha256": "7b124f68e74e91ae4ed80872c47446528aeabe7c57679958ac3a3037bb59e80a"
+    },
+    {
+      "cut_id": "N60-Q05-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2102765,
+      "sha256": "5af60c876597aa626707c378616d8084dfc1c01b85699f9e94ed99cea9f86b04"
+    },
+    {
+      "cut_id": "N60-Q05-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2169713,
+      "sha256": "402c9ef5262dfa2e9b7a0d81125f06c733664bf4d7be6416e58e3048ec48d344"
+    },
+    {
+      "cut_id": "VER03-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2825424,
+      "sha256": "8b82c95b7f8271c4ecc6f632cc2a014ba83d4da031375d5d631938fa58559a8b"
+    },
+    {
+      "cut_id": "VER03-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2696483,
+      "sha256": "c959eda558bf6a28edbdd4a208362aabcba1add2ce7db09b3a416334ae041160"
+    },
+    {
+      "cut_id": "VER03-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3014800,
+      "sha256": "2d763b092aab451d7c7cd5f6460c1413a56e89fa34af308d9527d07111b85004"
+    },
+    {
+      "cut_id": "VER03-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2910198,
+      "sha256": "c37d73baf24eb374b35108732834c0014f9ea43778265ec73d05edaa5013ab61"
+    },
+    {
+      "cut_id": "VER03-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2777413,
+      "sha256": "c8ce20b4770bfabb23835ee9947288f96730918c3fd54214ced2b6c20342f7f5"
+    },
+    {
+      "cut_id": "VER03-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3180107,
+      "sha256": "6d7a42a3c8e69335d3d09573ba3f1737b3e728995e5d2fb1ae67ce54409e816e"
+    },
+    {
+      "cut_id": "N60-Q02-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2715670,
+      "sha256": "841fb9ac7848bc4d4bf4b5753fc01f65d2298170104d40a56d1af377f811c16c"
+    },
+    {
+      "cut_id": "N60-Q02-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2377441,
+      "sha256": "c8ed9362d4fa13fdb3e8176d06a788b0b4c233aa59e823aed5e2d00027835833"
+    },
+    {
+      "cut_id": "N60-Q02-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2569996,
+      "sha256": "95f07c9155ed186bc9dccb9e859cc878f1eef72740cc0c425eb8124051ee0079"
+    },
+    {
+      "cut_id": "N60-Q02-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q02-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q02-C06",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q02-C07",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER05-C01",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER05-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER05-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER05-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER05-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C01",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C06",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C07",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q04-C08",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C01",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER01-C06",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q07-C01",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q07-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q07-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q07-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q06-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2510369,
+      "sha256": "a8341ce54a79beb765cbcbc03b244677985c023ef9080e550fcaef1677e0d2a7"
+    },
+    {
+      "cut_id": "N60-Q06-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-Q06-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER06-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2795043,
+      "sha256": "a0bba69f2f38ee27e512b093353906c4288751b61b3f4c6ec464e7a35ca59b89"
+    },
+    {
+      "cut_id": "VER06-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2732318,
+      "sha256": "5905af236fc478540b6ed7790a922d2be4b0a1bf799662596e5fd455c3cba7a8"
+    },
+    {
+      "cut_id": "VER06-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER06-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER06-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER07-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2799534,
+      "sha256": "345ad9458c1723f43aa6daa31bd144175c220727cf3ae6c9c11f17bab303f87f"
+    },
+    {
+      "cut_id": "VER07-C02",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER07-C03",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER07-C04",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER07-C05",
+      "status": "missing"
+    },
+    {
+      "cut_id": "VER07-C06",
+      "status": "missing"
+    },
+    {
+      "cut_id": "N60-X01-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2911696,
+      "sha256": "bb41265ea0101a167940a226febcbcd2ee239b09e8f16cd9475b77f0e6ebe24d"
+    },
+    {
+      "cut_id": "N60-X01-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2930900,
+      "sha256": "6c3690b6a69b0930456a5af0646da6bfd4a9669871c8945b05efac5c43953ec2"
+    },
+    {
+      "cut_id": "N60-X01-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2776214,
+      "sha256": "46815d466303121754e7173af7917b86ca0781a195ad435b987323354250d4c3"
+    },
+    {
+      "cut_id": "N60-X01-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2827776,
+      "sha256": "8158984343e20d4c87e389975579a29384e6f96a3bf7afbe6f8f112176fae40b"
+    },
+    {
+      "cut_id": "N60-X01-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2905853,
+      "sha256": "9e5e2c5f0bc6dbbc23728af6ccf9a78bbe32b50af25199a53136682b56a39875"
+    },
+    {
+      "cut_id": "N60-X01-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2853583,
+      "sha256": "e8b87e64004540cc2f22c6ba2200ddc2a76aa685159fbe0defe584493c25e424"
+    },
+    {
+      "cut_id": "N60-X01-C07",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 3148077,
+      "sha256": "fef88893ec6331d255ed765736296856d110fbadfc7ec8d2e6d4f5a27fe38b71"
+    },
+    {
+      "cut_id": "N60-X01-C08",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2838232,
+      "sha256": "8b1f57471928b4933bcf2473db59b9a90c9e658afa7fdd2a3092c29c5d5b86d5"
+    },
+    {
+      "cut_id": "N60-Q08-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2403640,
+      "sha256": "5d22dfabe1eeecb7923e7b33f904e53caf69dd2ef5c6082ff0635378a03b7860"
+    },
+    {
+      "cut_id": "N60-Q08-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2365464,
+      "sha256": "29b31bdee7e7680312a68fa51e542a25fab47f66b0508cb6f88b6daae23273e4"
+    },
+    {
+      "cut_id": "N60-Q08-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2380998,
+      "sha256": "80e0dfbf7f922cc6fac925d092948c50e01ba565fef8e3a74ef88d0cdef0ca2c"
+    },
+    {
+      "cut_id": "VER02-C01",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2169778,
+      "sha256": "6c04e84ad70e04f05e4071e2ea87d19ac0aa0b28ec12012bff80dbdc4d610042"
+    },
+    {
+      "cut_id": "VER02-C02",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2108342,
+      "sha256": "b406f83f6c72a1aef95ab0cee7c67063815d36d47a3ea0161f07d4af33b8415f"
+    },
+    {
+      "cut_id": "VER02-C03",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2138884,
+      "sha256": "350a1c1268113830b67b70da47260348e05f2ff3f5ae5d5cfb8a14e7626616cc"
+    },
+    {
+      "cut_id": "VER02-C04",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2254258,
+      "sha256": "0ae5f28c394e64e44adf7421ff87b3b5e760a61f62575d386a09d4e516d681e1"
+    },
+    {
+      "cut_id": "VER02-C05",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2401093,
+      "sha256": "d8b501cce46dd750e8e5da60accbf19999d560e3bf163b7a4f7e246ef257760f"
+    },
+    {
+      "cut_id": "VER02-C06",
+      "status": "present",
+      "width": 1672,
+      "height": 941,
+      "bytes": 2187887,
+      "sha256": "468c46d051f86218ff93bbad96a3028c8fce604f98003bfd9472410299701347"
+    }
+  ]
+}

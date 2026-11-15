@@ -1,0 +1,520 @@
+{
+  "agent": 1,
+  "cuts": [
+    {
+      "cut_id": "N60-Q09-C01",
+      "status": "produced",
+      "image_path": "artifacts/series/lc-e001/images-20261104-eight-agents/agent-01/N60-Q09-C01.png",
+      "sha256": "608d7a6c51ae4046bb1bba0d8f3b3991dd295e55008a4dbd34d66277266c3654",
+      "prompt": "Plan de trois-quarts en descente. Rhaenyra descend une marche entre Gerardys, registre serré contre lui à sa gauche, et Quince à sa droite. Les trois corps sont cadrés entre les murs étroits de la cage d’escalier. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Preserve the exact faces of the attached identity references, but follow the shot action, wardrobe and location described here. Single cinematic live-action photorealistic frame, landscape 16:9. No split panels, no text, subtitles, logos or watermarks. Realistic hands and distinct character identities.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Three identifiable characters, queen without circlet, damp narrow stairwell, matching costumes and single step. Film identity retained; prompt-compliant candidate, editorial review pending."
+    },
+    {
+      "cut_id": "N60-Q09-C02",
+      "status": "produced",
+      "image_path": "artifacts/series/lc-e001/images-20261104-eight-agents/agent-01/N60-Q09-C02.png",
+      "sha256": "350ee24692fc732f83c1bef079e0c2df93d65c1a67791cfc7dd60300488e9c2c",
+      "prompt": "Plan moyen mobile Quince en souffle, autres en amorce. Quince immobile au bord d’une marche reprend son souffle, une main près de sa ceinture ; la reine et Gerardys sont en amorce plus haut. Rien de la cour publique n’est visible. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Quince breathes by belt on wet stairs, queen and Gerardys higher, no courtyard, consistent faces and costumes. Candidate editorial approval pending."
+    },
+    {
+      "cut_id": "N60-Q09-C03",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C03.png",
+      "sha256": "09eb08ce721a1115732f54e274bab2b9dd712f44f3cab373c72be17ec04e4a65",
+      "prompt": "Plan rapproché latéral mestre, descente suspendue. Gerardys, de profil dans l’escalier, serre son registre et parle à la reine arrêtée près de lui. Quince n’est qu’une épaule au bord du cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected: Gerardys in profile holding ledger, queen attentive, Quince shoulder only, wet stairs and matching wardrobe, no text."
+    },
+    {
+      "cut_id": "N60-Q09-C04",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C04.png",
+      "sha256": "37ae97296b1b1a82d0fd95fc0ffd9796112d1e01055bbe12ccb412d088e6be69",
+      "prompt": "Plan à trois, arrêt. Gerardys est arrêté sur une marche ; Quince s’est décalé contre le mur pour ne pas le heurter. Rhaenyra les regarde, un pied posé sur la marche inférieure. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected three stopped on stairs, queen one foot lower, Quince against wall, ledger held, correct costumes, no text."
+    },
+    {
+      "cut_id": "N60-Q09-C05",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C05.png",
+      "sha256": "ea861223c61757903fa26caad11b3feea3ff347653f0f9eae691f00db2149f1e",
+      "prompt": "Plan de marche à hauteur du registre. À hauteur du registre, la plume de Gerardys touche le papier incliné contre son bras ; la reine est en amorce. Les pieds sont sur les marches, pas dans une salle d’audition. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected ledger and quill touching paper, queen partial foreground, stairs and boots visible, no readable writing."
+    },
+    {
+      "cut_id": "N60-Q09-C06",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C06.png",
+      "sha256": "6da2b621ae877a9f4f9452126b0eee2a4126e45943c415e31662866ad00fd12e",
+      "prompt": "Plan en profondeur vers cour, Quince à hauteur reine. Quince regarde par l’ouverture basse de la cage d’escalier vers une bande de cour humide. Rhaenyra reste à côté de lui ; les requérants ne sont pas regroupés pour une audience dans ce cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected Quince and queen looking through low opening, strip wet courtyard, matched wardrobe and identities."
+    },
+    {
+      "cut_id": "N60-Q09-C07",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C07.png",
+      "sha256": "66756ba8e8e46cc021fee916b84f01d2c82e6aa2a8a6b1322eebee5f5cf21929",
+      "prompt": "Plan rapproché mestre et reine, pas de prisonnier en insert. Gerardys parle bas, visage proche de la reine debout dans les marches. Le registre reste contre sa robe ; aucune chaise et aucun prisonnier dans le cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected close confidential two-shot queen and Gerardys, ledger, same wet stairs, no prisoner."
+    },
+    {
+      "cut_id": "N60-Q09-C08",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C08.png",
+      "sha256": "ac8d1b8567e1280867fe6ad7db4abf74fd098b6449c110f604fe519752a1cbd7",
+      "prompt": "Plan large fixe des volées, départ hors cadre. Quince occupe la volée inférieure, dos de trois-quarts, visage tourné vers le bas hors champ. Rhaenyra et Gerardys sont restés en haut, petits dans la profondeur de la cage. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected cinematic shot, correct identities and costumes, action and framing follow cut. No text. Candidate editorial review pending."
+    },
+    {
+      "cut_id": "N60-Q09-C09",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q09-C09.png",
+      "sha256": "e4e76e78ae0278d6f9bd56271a64ce06d3c233bb77f39aca1d3ec24154f6d4e7",
+      "prompt": "Plan large depuis la cour, rapprochement sur reine. Dans la cour basse, Rhaenyra fait face aux requérants anonymes sous les auvents de filets. Quince se tient plus bas près du bord du groupe. L’escalier n’est pas montré comme une seconde scène dans l’image. Peyredragon, cour basse sous les auvents de filets. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected cinematic shot, correct identities and costumes, action and framing follow cut. No text. Candidate editorial review pending."
+    },
+    {
+      "cut_id": "N60-Q01-C01",
+      "status": "produced",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\N60-Q01-C01.png",
+      "sha256": "ac313eaa49d3521078e508589e4f3120fb66f79fdd8a3dee3c1aed73ee3963e7",
+      "prompt": "Plan à trois près de la table, Quince au premier plan. Quince, mains près de la table, fait face à Rhaenyra au petit bout ; Gerardys écoute de l’autre côté. Aucun candidat ni dragon ne figure dans cette pièce. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "references": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "inspection": "Inspected cinematic shot, correct identities and costumes, action and framing follow cut. No text. Candidate editorial review pending."
+    }
+  ]
+}

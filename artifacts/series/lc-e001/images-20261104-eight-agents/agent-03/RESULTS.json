@@ -1,0 +1,1206 @@
+{
+  "agent": 3,
+  "total": 14,
+  "produced": 1,
+  "existing": 13,
+  "missing": 0,
+  "cuts": [
+    {
+      "cut_id": "BAN01-C08",
+      "status": "existing",
+      "prompt": "Plan rapproché sur Wat, épaule de la reine à gauche en amorce. Wat, visage de trois-quarts, parle vers la reine dont l’épaule occupe l’amorce gauche. Les hommes au mur restent silencieux derrière lui. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "6e811e330f6f1482602848d83b9fccd3dfa78aabea6e568c0b68b4f0c599cfad",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C08.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\BAN01-C08.png",
+      "image_sha256": "b2ef410e48f7315301ad61fb131bbaa4ccb83c6547f23021fa088c0c29651c05",
+      "visual_inspection": "Wat trois-quarts, épaule reine gauche, cour bleue/ambre.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B024",
+          "source_block_id": "lc-e001-s01-B024",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Mon frère était sur la route. Quand vous êtes descendue… vous nous aviez vus ?",
+          "intention": "La question sur la route",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B024",
+            "text_sha256": "f4792d5d25d4ac6904d1436babb30f78228c15ce0ffe7b6fcd4cee4d61583624"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 6.7,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "783a77a9449906c6e74bc474fdcd9684b0eb8e4afee6bdc963041fb0d91de5f8"
+      }
+    },
+    {
+      "cut_id": "BAN01-C09",
+      "status": "existing",
+      "prompt": "Plan rapproché à deux profils, reine à gauche et Wat à droite, sans coupe pendant l’attente. Deux profils : la reine à gauche regarde Wat à droite. Sa bouche est légèrement entrouverte, ses mains immobiles ; l’espace libre entre eux garde la rampe visible au fond. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "c1c416d2da0fb92d368af5c1a8822a89a4ca1c66ac899868a9d816f2e5e8d71e",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C09.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\BAN01-C09.png",
+      "image_sha256": "7c97a6d5bd9964d80b8f86f280f15661b1a92a41e0f77b527ae37fee9ce28c74",
+      "visual_inspection": "Deux profils reine gauche et Wat droite, intervalle et passage lisibles.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B026",
+          "source_block_id": "lc-e001-s01-B026",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Je vous vois maintenant.",
+          "intention": "La réponse au présent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B026",
+            "text_sha256": "73dafad1b8eebd14c05951c01a3122e7828e9e6375a0a1164d13ead627cf1cac"
+          }
+        },
+        {
+          "line_id": "lc-e001-s01-B028",
+          "source_block_id": "lc-e001-s01-B028",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Sur la route.",
+          "intention": "La réponse au présent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B028",
+            "text_sha256": "1c9869e426100c267335d56c32a4e28eaa0940601859c81d6a7d148472bd5030"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 3.1,
+          "action_et_silence_hors_parole": 5.5,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "51296238a851858cdff6cbb5ada20102a0f28bfd67be35c3ea4e79773e0f03b3"
+      }
+    },
+    {
+      "cut_id": "BAN01-C10",
+      "status": "existing",
+      "prompt": "Plan à trois : reine gauche, Wat droite, Quince en retrait entre les deux chemins. Rhaenyra à gauche et Wat à droite se font face ; Quince reste en retrait entre les deux issues. Wat a les épaules fixes et aucun genou au sol. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; wat — tunique taupe déchirée, cordon ; aucune chaîne ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "12ce93c6efee86cb36905f8f5388a4bb4b64808d809d8797ad9d8e6857adfae7",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C10.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\BAN01-C10.png",
+      "image_sha256": "a0274659256cb04fd44dc26dfb4d43e2da1779c06f64a866e6ad1289e1dd4ff7",
+      "visual_inspection": "Reine gauche, Wat debout droite, Quince entre deux issues.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B030",
+          "source_block_id": "lc-e001-s01-B030",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Dis les mots. Tu rentreras avec eux.",
+          "intention": "Le refus a un coût",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B030",
+            "text_sha256": "b67717466af0fd2d5f408fa16ae79217a92f51b04cce7ae17f0fddbeb255fe76"
+          }
+        },
+        {
+          "line_id": "lc-e001-s01-B031",
+          "source_block_id": "lc-e001-s01-B031",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Et sinon ?",
+          "intention": "Le refus a un coût",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B031",
+            "text_sha256": "45b4fd92078b0d725c3abe73216b8f252576123f4510cbce56af5f9981b92601"
+          }
+        },
+        {
+          "line_id": "lc-e001-s01-B033",
+          "source_block_id": "lc-e001-s01-B033",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Tu restes détenu.",
+          "intention": "Le refus a un coût",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B033",
+            "text_sha256": "46f945e7a2a2a5175a504726afb8dc7ff156ddc6dfdc23058a5a8c9e7a2a098e"
+          }
+        },
+        {
+          "line_id": "lc-e001-s01-B035",
+          "source_block_id": "lc-e001-s01-B035",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Alors je reste.",
+          "intention": "Le refus a un coût",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B035",
+            "text_sha256": "55c28553b01082126387ebc717aff25a2c99e69ded69bb62892540fea840c415"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 9.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 7.1,
+          "action_et_silence_hors_parole": 2,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "4c4b0933659875dc36a611999e5fd0e226ca3b880550b86754c5649f9d7dfbd2"
+      }
+    },
+    {
+      "cut_id": "BAN01-C11",
+      "status": "existing",
+      "prompt": "Plan en profondeur tenu : Wat et les deux chemins lisibles. Wat est au pied du petit escalier de détention sous la galerie, Quince devant lui sans le saisir. La reine reste près du mur au premier plan ; la rampe distincte laisse passer les autres hommes. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; robert-quince — tunique longue brune, ceinture cuir, bottes ; rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "ed3c6cfbe8f6efcd8ea01d27e784b3e6cd8dca649242c9406f182d3c560a794e",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C11.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\BAN01-C11.png",
+      "image_sha256": "d35385982aa2c0f03f1ccfd2379446686d00220b6ac0cc666fc040e861872fd4",
+      "visual_inspection": "Départ vers escalier bois sous galerie, reine au mur, autre rampe distincte.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 7,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e28b11eb8b33c2348ad29f4b8a70ce21215b20cc960e3e6ffd340cde268c9048"
+      }
+    },
+    {
+      "cut_id": "ROU01-C01",
+      "status": "existing",
+      "prompt": "Plan rapproché latéral à hauteur de selle, main gantée nette et route dans la profondeur. La main gantée de Rhaenyra est fermée sur la sangle de la selle de Syrax ; son profil et le haut de ses cuirs de vol sont visibles, la colonne très loin sur la route au-dessous. Au-dessus de la route, avant le sacre. Ciel couvert, feu orange motivé au sol rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Cuirs de vol, gant, ceinture de toile sous les cuirs ; sans couronne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "bc4206529d7b71578305e32b90c1bd6d7f91db807b4279e8f4047b09698e570e",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\ROU01-C01.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\ROU01-C01.png",
+      "image_sha256": "a15ba412279a160c4c9f349985e438e5bada8d1a3f433c13e9d694ab625b814d",
+      "visual_inspection": "Main gantée serrée sur cuir, reine et selle en amorce; colonne lointaine. Lumière orange très discrète.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s02.json",
+        "scene_sha256": "ac372aa5a2e44761e4137149a7d13d137fc070400d6f382a55c001881fe00add",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "082ff324aa039ce0e9894b3ca6dcb038bab42e29e5f378ed6ae6f370a890c7d4"
+      }
+    },
+    {
+      "cut_id": "ROU01-C02",
+      "status": "existing",
+      "prompt": "Plan moyen de profil, reine à gauche, route dans le bas droit. Rhaenyra de profil sur le cou de Syrax donne du champ au harnais et regarde la route dans le bas droit. Sa main sur le cuir reste visible ; aucun paysan isolé au premier plan. Au-dessus de la route, avant le sacre. Ciel couvert, feu orange motivé au sol rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Cuirs de vol, gant, ceinture de toile sous les cuirs ; sans couronne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "8f45ef922c4ddcc06a1f148b69aa12ff8d621400226822a6e8c32f334f3a90fe",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\ROU01-C02.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\ROU01-C02.png",
+      "image_sha256": "4e8fc21b837034dc5a68045b28f03059a9170cab6fc60c1af373089c62c961da",
+      "visual_inspection": "Profil de reine sur Syrax doré, harnais visible, regard route droite.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s02-B007",
+          "source_block_id": "lc-e001-s02-B007",
+          "scene_id": "lc-e001-s02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Brûle la route.",
+          "intention": "L’ordre précède la fourche",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "2. La route — avant le sacre",
+            "block": "lc-e001-s02-B007",
+            "text_sha256": "a363800def8085b7fda7dfdc30dfc0525104c3830dd700027b8ca9a665ffae69"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.3,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s02.json",
+        "scene_sha256": "ac372aa5a2e44761e4137149a7d13d137fc070400d6f382a55c001881fe00add",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "43687a5e59d81427dcbd729b85ed66c52ebae6b5fbf1ca9b75297eb616d7a59b"
+      }
+    },
+    {
+      "cut_id": "ROU01-C03",
+      "status": "produced",
+      "prompt": "Plan au sol à hauteur humaine, manche et dents de la fourche bien visibles. Un villageois anonyme à visage long glabre et cheveux gris dégarnis serre une fourche au bord du fossé ; un chariot est à gauche et un éclat orange atteint sa joue. Aucun visage de Wat ni mort identifiée. Au-dessus de la route, avant le sacre. Ciel couvert, feu orange motivé au sol villageois-route-anonyme : 45–55 ans, visage long glabre, nez busqué proposé pour le distinguer de Wat, cheveux gris dégarnis proposés, silhouette grand et osseux proposé. Tenues visibles : villageois-route-anonyme — tunique ocre et cape brune ; aucune identité film retenue. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "5c1b0fa5acd183c03a4c8e1f05cbb0e1aed249e96b2396e42b2dbe8c719fa018",
+      "references": [
+        {
+          "path": "media/images/ROU01-C03.png",
+          "sha256": "1f5b126e9f707769bb6ac6b16fbd4e083d6ec47c3f19d6f77bb455c5c6e06268",
+          "role": "composition_only_never_identity",
+          "character_ids": [],
+          "visually_inspected": true,
+          "inspection": "Villageois à la fourche près du fossé et chariot gauche ; apparence proche de Wat, donc INTERDITE comme référence de son identité. Conserver uniquement composition, lumière couverte et éclair orange.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\ROU01-C03.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\.codex\\generated_images\\01a1a824-7508-7450-b4b3-fba1f77dff21\\exec-8da23469-d9bd-486a-a6a6-303efaa6571f.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\ROU01-C03.png",
+      "image_sha256": "efbb7aa57113d432e75e2b994006bd4a82fa3c7b6a7a66ce8e1272af08871ee9",
+      "visual_inspection": "Identité corrigée: homme chauve gris glabre, tunique ocre, cape brune; distinct de Wat. Fourche et fossé conservés.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 5,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s02.json",
+        "scene_sha256": "ac372aa5a2e44761e4137149a7d13d137fc070400d6f382a55c001881fe00add",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c1c148696c77d50d5118225d44df2cd0acbea681654757e1b7adbb2d2257a282"
+      }
+    },
+    {
+      "cut_id": "ROU01-C04",
+      "status": "existing",
+      "prompt": "Plan large en biais depuis la selle, feu au sol et main crispée lisibles, aucun corps isolé. Une bande de feu et de fumée coupe la route ; des silhouettes anonymes sont à distance dans les champs. La main gantée de Rhaenyra se crispe sur le harnais en haut du cadre, sans corps isolé dans les flammes. Au-dessus de la route, avant le sacre. Ciel couvert, feu orange motivé au sol rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Cuirs de vol, gant, ceinture de toile sous les cuirs ; sans couronne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "e6d89d1c2ce106ae57b6df9aa63c1f809acbdf7a33105a8a9d7af4a007083653",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\ROU01-C04.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\ROU01-C04.png",
+      "image_sha256": "e7a19a9bf1a5e684a2cb8b357948b1acaee0d2476284e2b349ab8204c8fd7de1",
+      "visual_inspection": "Bande de feu et fumée en travers de route, silhouettes lointaines; main sur cuir visible.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s02.json",
+        "scene_sha256": "ac372aa5a2e44761e4137149a7d13d137fc070400d6f382a55c001881fe00add",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c60cf04478a385e300ac66e8855cc3f996cd03c081935ab4e767b89b01bfca38"
+      }
+    },
+    {
+      "cut_id": "CEL01-C01",
+      "status": "existing",
+      "prompt": "Plan d’ensemble à hauteur d’yeux, reine gauche, Wat droite, Quince au seuil. Dans le cellier, Rhaenyra à gauche fait face à Wat debout à droite ; Quince tient les clés au seuil ouvert au fond droit. Table à gauche, paille et tonneau entre les murs de basalte. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; robert-quince — tunique longue brune, ceinture cuir, bottes ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "39026f1191d37a766c2818be1a68656147e0c37fcd5839326aa6ecc728a84733",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C01.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C01.png",
+      "image_sha256": "70f2d095f26a7117ffff54123e02057dc9b37a65f6fdd96f35ea409e5083bb26",
+      "visual_inspection": "Reine gauche, Wat debout droite, Quince avec clés, porte ouverte et table gauche.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B004",
+          "source_block_id": "lc-e001-s03-B004",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Quand vous nous avez vus… saviez-vous ce qu’on portait ? Les fourches, les outils ?",
+          "intention": "La visite",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B004",
+            "text_sha256": "8aa1a88feee9a14e2ee1629794d41fda96482a1e1b89de2e9acba71e80cffd1e"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 12,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 6.7,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "0bf1a5af5a4404ea491a2b47fb20207638fbf21234b7e9bbe43cd501dbad0cb3"
+      }
+    },
+    {
+      "cut_id": "CEL01-C02",
+      "status": "existing",
+      "prompt": "Plan à deux à mi-corps, mains de Wat visibles au premier plan droit. Les mains salies de Wat sont visibles près de sa tunique taupe au premier plan droit ; la reine les regarde depuis la gauche, ses propres mains contre sa robe. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "b670d6ac1a77c4e125aa2622b528691a3255fccdf2ab975401ed8d2ff44cbf2f",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C02.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C02.png",
+      "image_sha256": "ce126afc44b9c37a6e60f94788bfe32db6c445a992e591934a9a854704862358",
+      "visual_inspection": "Mains sales ouvertes de Wat avant-plan droit, reine regarde vers elles.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B006",
+          "source_block_id": "lc-e001-s03-B006",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "J’ai vu une colonne, des pointes. J’ai donné l’ordre sans vérifier ce que vous portiez.",
+          "intention": "Sans vérifier",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B006",
+            "text_sha256": "466c0680360f1790617aa5b9413f7b69a05c6a3d43970d53f1429da2dfb92176"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B008",
+          "source_block_id": "lc-e001-s03-B008",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Et si vous les aviez vus ?",
+          "intention": "Sans vérifier",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B008",
+            "text_sha256": "bb8e5f6dcec06593fee666605187e06b84f923fec647c2e038ce77b173d7a86b"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 13,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 9.8,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "880d5b0cc420a86f0834df76793918278614b3b02e4b01b4f1b79da56634319d"
+      }
+    },
+    {
+      "cut_id": "CEL01-C03",
+      "status": "existing",
+      "prompt": "Deux profils proches sans contre-plongée. Wat baisse le regard, une main refermée sur sa manche roussie ; Rhaenyra le regarde sans réduire l’intervalle entre eux. Le tonneau reste près de Wat. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "ae77c3ef15bda4c30855a591f88c302bc9b5a80fac602306486e581b7a0e685d",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C03.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C03.png",
+      "image_sha256": "e5d22b2529b83f66dee3067ce2bb8a94abe2238667b5c8aa939944115836a080",
+      "visual_inspection": "Wat tête baissée serre sa manche usée, reine à distance, Quince flou.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B010",
+          "source_block_id": "lc-e001-s03-B010",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Je voudrais te dire que j’aurais arrêté.",
+          "intention": "Le nom et la mère",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B010",
+            "text_sha256": "53313413a6438cf0427e73d79d3e54a044c90793728376d5f2259a9ae353ab28"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B012",
+          "source_block_id": "lc-e001-s03-B012",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Je ne sais pas. Je sais ce que j’ai fait.",
+          "intention": "Le nom et la mère",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B012",
+            "text_sha256": "333f39e2f0f1b328d3d6fbb27cd476047d2c1612c8ed39f82381ab52bc616cdd"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B014",
+          "source_block_id": "lc-e001-s03-B014",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Rennic. Mon frère. Ma mère nous attend au gué. Je suis parti avec lui. Qu’est-ce que je lui dis en rentrant ?",
+          "intention": "Le nom et la mère",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B014",
+            "text_sha256": "156c7f2551129a73c843b91ed5f1da347092cbd9ffdd80775dd992d501a10d50"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 17.3,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "f807523cdfc876f25b1cd385cf8c0a2cb34bc4e9331729b0b7fd2da6c770360e"
+      }
+    },
+    {
+      "cut_id": "CEL01-C04",
+      "status": "existing",
+      "prompt": "Plan en profondeur vers la porte éclairée, reine à gauche sans barrer le passage. Quince se tient sur le côté du seuil et la porte est plaquée contre le mur. Wat regarde le passage entièrement libre ; la reine à gauche ne le barre pas. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : robert-quince — tunique longue brune, ceinture cuir, bottes ; wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "bd8f29ffc82361be23077c51c93e3b5b8a72b657c6444e83d6bc397de2c7c8d5",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C04.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C04.png",
+      "image_sha256": "6c7dc93e2038c60800ad816e9e8972c69306df83ec50e7169edf0b2b387c6714",
+      "visual_inspection": "Passage libre fortement lisible, Quince sur côté, reine gauche, Wat droite.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B016",
+          "source_block_id": "lc-e001-s03-B016",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Je n’y étais pas. Les noms… je dois les reprendre aux hommes qui les ont ramassés.",
+          "intention": "La liberté sans prix",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B016",
+            "text_sha256": "07feb9c041e46c36e26628ede2236b7eec05a3f6b8995259ffe977565e3726ae"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B018",
+          "source_block_id": "lc-e001-s03-B018",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Tu es libre. Sans serment. Ser Robert, ouvrez.",
+          "intention": "La liberté sans prix",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B018",
+            "text_sha256": "f076dd008189cc2d3df004bd9f74c4de9f8e92a95d6ea687574aa47275c26e1f"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 16,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 10.7,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "042ad8b3c23e525e7c5888a70e3d45bde3cc5110ed97b27c989addcc8afdacbc"
+      }
+    },
+    {
+      "cut_id": "CEL01-C05",
+      "status": "existing",
+      "prompt": "Plan moyen de la reine et du castellan, sortie ouverte dans la profondeur droite. Rhaenyra parle à Quince près de la table vide à gauche ; Wat est debout près de la sortie ouverte dans la profondeur droite, sans chaîne. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "bc856eee696d5ac0453b73ca2886a791911af2f9bde6a466a6637d8a66d3fe9b",
+      "references": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C05.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C05.png",
+      "image_sha256": "68b10bd202d32338b5d82f0bd236fe325da15a3b98ab5baaa033b803178a06a6",
+      "visual_inspection": "Reine et Quince près de table; Wat près de sortie. Bol existant sur table, réserve mineure contre table vide demandée.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B023",
+          "source_block_id": "lc-e001-s03-B023",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Les noms, leurs sources. Commencez par Rennic.",
+          "intention": "Les serments attendront",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B023",
+            "text_sha256": "ade80080ec99da87c31cf58e7c1685c355d9c6152e14bdafe98bd4044266c815"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B024",
+          "source_block_id": "lc-e001-s03-B024",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Il faut prendre les scribes qui recopient les serments. Et faire revenir les hommes de Sombreval.",
+          "intention": "Les serments attendront",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B024",
+            "text_sha256": "abafc13af8af1e3575c5794b7623924956718afcbdb1bf834e268b4d09fb35aa"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B025",
+          "source_block_id": "lc-e001-s03-B025",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Alors les serments attendront.",
+          "intention": "Les serments attendront",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B025",
+            "text_sha256": "3b906ace51f94c9abae3c7c93c58bbbfcd86df6a889137230095f9eaa1235169"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 17,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 12,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "15643c132497a497f68089bb2bbfc837210e3ed604a2e913e5c883fc8a18b00c"
+      }
+    },
+    {
+      "cut_id": "CEL01-C06",
+      "status": "existing",
+      "prompt": "Plan moyen à deux au seuil, lumière du couloir sur les visages. Quince et Wat se font face au seuil libre ; Wat regarde le castellan. Rhaenyra reste en retrait gauche, sans les interrompre. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; robert-quince — tunique longue brune, ceinture cuir, bottes ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. Une seule action visible, un instant unique. Aucun texte lisible, aucune légende, aucun filigrane. Respecter exactement les identités et les costumes des références indiquées.",
+      "prompt_sha256": "2043749e63a7d74713f92bd7ffbe81106b778acb42e02bc7fb9e91a43b1f5473",
+      "references": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "source_image": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\CEL01-C06.png",
+      "image_path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\CEL01-C06.png",
+      "image_sha256": "fdfb648121e0578405b85b49adb2b6a91e8e63b3a2bb2f4b42f6f0d72de48df0",
+      "visual_inspection": "Quince et Wat face à face au seuil; reine en retrait gauche.",
+      "visually_inspected": true,
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B027",
+          "source_block_id": "lc-e001-s03-B027",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Où te faire porter la réponse ?",
+          "intention": "Une adresse pour la réponse",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B027",
+            "text_sha256": "c5e989023864912d0a31d28884558dff126e79630565b96893fbbc48c2bb717e"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B028",
+          "source_block_id": "lc-e001-s03-B028",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Au hameau au gué. Demandez la maison de Rennic et Wat. Ma mère y est.",
+          "intention": "Une adresse pour la réponse",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B028",
+            "text_sha256": "707cc0479b72de33ffe7d9cafb5f5942a22fa6d10f3e9daa9cedda68b4c17e46"
+          }
+        },
+        {
+          "line_id": "lc-e001-s03-B029",
+          "source_block_id": "lc-e001-s03-B029",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Je fais noter. Si nous n’avons rien, on te le dira aussi.",
+          "intention": "Une adresse pour la réponse",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B029",
+            "text_sha256": "ca1fc4d22af66cc72063ad5db208f32d6224ab4baec4ca5d3f9d504742bb2638"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 17,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.1,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "fd84e72db8e419626e2e6dc4b7a65fad45ac0dc0cc82acc1cc3c014155132e3a"
+      }
+    }
+  ]
+}

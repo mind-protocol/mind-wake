@@ -1,0 +1,485 @@
+[
+  {
+    "cut_id": "N60-X01-C03",
+    "prompt": "Plan moyen triangulaire, barque dans le fond. Le porteur regarde sa charge encore dans la barque ; Hann, tourné vers le contrôleur, garde les deux morceaux de bois à hauteur de poitrine. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "ce54780efc4b1506e67eea93844bb14039accd14c8e683120084141e69d0bb45"
+    }
+  },
+  {
+    "cut_id": "N60-X01-C04",
+    "prompt": "Plan rapproché mains. Le contrôleur plie une branche entre ses poings ; les bois longs mis à part reposent sur la berge, les branches courtes sur la toile retournée. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "1a35d1127f2d4afc3cb7b2f7b480173b5c3637200c8d4eecb672bfc76ae82392"
+    }
+  },
+  {
+    "cut_id": "N60-X01-C05",
+    "prompt": "Plan moyen au-dessus de la charge préparée. Le porteur a une main sur un lot réduit, Hann lui indique la moitié laissée à terre ; une corde vide repose entre leurs pieds. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c1b3438b465eb9bed69f7199713bf3e295e0f5ff17c17d701feac338a093b940"
+    }
+  },
+  {
+    "cut_id": "N60-X01-C06",
+    "prompt": "Plan moyen dos et effort, contrôleur de côté. Le paquet court repose sur le dos de Hann, qui se redresse en grimaçant ; le contrôleur maintient la corde, bois longs toujours à part sur la berge. Berge fluviale à l’approche de Port-Réal. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. controleur-rive-serie : 40–50 ans, visage long rasé proposé, cheveux noirs courts proposés, silhouette mince et raide proposé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; controleur-rive-serie — manteau gris, aucun insigne royal ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c0fba9ce49ac10ba6f3deb0d1c90b40deb55b6b9f51e959a0d8d60b6789553a1"
+    }
+  },
+  {
+    "cut_id": "N60-X01-C07",
+    "prompt": "Plan de suivi à pied dans passage étroit. Dans un passage étroit, Hann est de côté sous ses fagots ; le porteur plus loin tient sa propre charge sans charrette ni escorte royale. Port-Réal, passage étroit du Boyau. Jour maritime couvert, bois et pierre humides. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. porteur-combustible-serie : 25–35 ans, visage rond rasé proposé, cheveux bruns courts proposés, silhouette plus petit et plus vif que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; porteur-combustible-serie — tunique terre, manches retroussées. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c5b56b0de2c8d387063fb6b088d9ec524a3cc3df4cef14d8c42dd3cb2c135ff0"
+    }
+  },
+  {
+    "cut_id": "N60-X01-C08",
+    "prompt": "Plan du four. Au fournil, le boulanger tient un morceau de petit bois près de la bouche du four ; Hann tient sa corde désormais vide, courbé près de la pâte toujours sous le même linge. Port-Réal, fournil du Boyau. Jour doux par la porte du fournil, petite lueur dans la bouche du four. hann-bourbe : 56 ans, visage large buriné proposé, barbe grise, cheveux courts gris proposés, silhouette épaules lourdes, dos courbé. boulanger-serie : 40–50 ans, visage rond rasé proposé, cheveux châtains sous coiffe proposés, silhouette plus léger que Hann. Tenues visibles : hann-bourbe — gilet gris-brun sur lin ; boulanger-serie — tablier écru, tunique terre. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-X01.json",
+      "scene_sha256": "a04037d1fa0ae9987090cb68ffb3720c69f580e43dcaf028cdb50ef13277cd4d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "7faeebbccda22b60e5231e7f95a9dd9fd2574adebb564afffbe9c9cbf3cd926a"
+    }
+  },
+  {
+    "cut_id": "N60-Q08-C01",
+    "prompt": "Plan moyen reine debout et mestre à la table. La reine debout au petit bout de table regarde Gerardys avec sa plume ; feuillet vierge et volumes fermés entre eux. Aucun prisonnier ni roi capturé. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+      "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "d938fd031f796c58358d1c0eb39aa901a449c3e52ee90be12fa8f7e3e3648b6c"
+    }
+  },
+  {
+    "cut_id": "N60-Q08-C02",
+    "prompt": "Contrechamp mestre, volumes fermés. Gerardys parle face à la reine hors champ, mains près du volume resté fermé. Le feuillet royal est séparé des livres, sans carte ni calendrier ajouté. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+      "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "a5495bead4f97daaf513ebdc535cfaff3c109dcfa482248bf065e63fdafa9d5d"
+    }
+  },
+  {
+    "cut_id": "N60-Q08-C03",
+    "prompt": "Plan moyen à deux tenu sur le choix sans réponse. Gerardys tient son regard sur la reine debout face à lui ; les deux restent immobiles au bord de la table, aucun hochement royal d’assentiment. Peyredragon, table de travail. Jour latéral naturel, pas de cartouche ou mots générés rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q08.json",
+      "scene_sha256": "00cc83812812553b9a4a805cd186c1d2c2f51115940ad21b78dcf7ac6e43e2bd",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "b9788b73287586bd44b05a02c721a9ed457659916342faf8692d2328250a42e4"
+    }
+  },
+  {
+    "cut_id": "VER02-C01",
+    "prompt": "Plan moyen de la table, distance entre les deux corps. Alicent assise à un bout de table et Orwyle debout à l’autre ; lettre scellée entre ciseaux et ruban vert, porte au fond. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c65e24e9d1beab2c9605fff253252e952b76f80a7bcda28e034188a9fcc062a0"
+    }
+  },
+  {
+    "cut_id": "VER02-C02",
+    "prompt": "Plan rapproché Alicent, mestre hors champ. Alicent regarde Orwyle hors champ, mains immobiles près des ciseaux, la lettre encore intacte à côté. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "aecb1df2fd6340a278cd8da41ff36ed03991b710afccdfb6dd50be5e2622c021"
+    }
+  },
+  {
+    "cut_id": "VER02-C03",
+    "prompt": "Plan de biais à deux autour de la lettre. La paume d’Alicent recouvre la lettre scellée au milieu de la table ; Orwyle de biais regarde le pli, sans le prendre. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "a9b5e30c193951ea46914cce1512571bbcd2497e46cb771d1cc2499bdc08bfab"
+    }
+  },
+  {
+    "cut_id": "VER02-C04",
+    "prompt": "Contrechamp mestre. Les ciseaux sont posés à distance du sceau ; la main d’Orwyle reste retirée du siège vide. Alicent le regarde depuis l’autre bout de table. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c89248570d4dce97abc31a0f990c37cd1575d03d9a0c51e2bec31a49143688dd"
+    }
+  },
+  {
+    "cut_id": "VER02-C05",
+    "prompt": "Plan rapproché à deux, Orwyle sur le départ. Orwyle incliné près de la porte a tourné le visage vers Alicent qui le rappelle ; la lettre reste sur la table entre eux. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "fc13d2a931230ae38a043b35cc79533316fd36665d403140b0934664167def50"
+    }
+  },
+  {
+    "cut_id": "VER02-C06",
+    "prompt": "Plan fixe mains. Un morceau court de ruban vert repose au sol près de la jupe d’Alicent penchée ; les ciseaux sont sur la table, sceau du pli intact. Donjon Rouge, appartements d’Alicent. Lumière diffuse de fenêtre, verts assourdis et ombres naturelles. alicent : 41 ans, visage ovale, traits tirés, cheveux auburn attachés, silhouette droite, mains contenues. orwyle : 65–75 ans, visage replet, front large, sourcils lourds, cheveux crâne dégarni, gris latéraux, silhouette replet. Tenues visibles : alicent — robe vert sombre ; orwyle — robes grises. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/alicent.webp",
+        "sha256": "c7d7b908f8eb18f526df8226a0d1f84ef19f7c3830d7570c9ed1a6fbebaf5e82",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "alicent"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage ovale, front dégagé, cheveux auburn attachés sans voile visible, robe vert sombre.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/alicent.svg",
+        "source_svg_sha256": "4b94c9b70bfdc2d45c7a0b67e4862542ab768ead7621903c128379f971b46a9c",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\alicent.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/orwyle.webp",
+        "sha256": "c75ac2c0b03371806b4cb7d186a798a623020afb9bc9aced0640f954466c791e",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "orwyle"
+        ],
+        "visually_inspected": true,
+        "inspection": "Vieil homme replet, crâne dégarni, couronne de cheveux gris, sourcils lourds, robe et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/orwyle.svg",
+        "source_svg_sha256": "bad71d5119dafec717b98428807eb0a331178644cdbe4c6321bceb0c1c040e09",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\orwyle.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER02.json",
+      "scene_sha256": "84331c7787bea3a384a20f4cfbdee6867a217080d9bb0276dcf1da13edd58e6d",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "fd654cf5d7940ae4c628e41744effcf0e934da3ca9d45bd33f266b1f2b08b849"
+    }
+  }
+]
