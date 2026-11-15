@@ -18,6 +18,7 @@ interface Cursor {
   head: string | null;
   target: string | null;
   after_id: string | null;
+  synced_at: number;
 }
 const fullName = z.string().regex(/^t[13]_[a-z0-9]+$/);
 const pageSchema = z.object({
@@ -58,6 +59,13 @@ export class RedditInbox {
     db.exec(
       "CREATE TABLE IF NOT EXISTS cursors(source TEXT PRIMARY KEY,head TEXT,target TEXT,after_id TEXT); CREATE TABLE IF NOT EXISTS imported(account TEXT NOT NULL,id TEXT NOT NULL,PRIMARY KEY(account,id)); CREATE TABLE IF NOT EXISTS lease(id INTEGER PRIMARY KEY,owner TEXT,until_ms INTEGER)",
     );
+    const cursorColumns = db.prepare("PRAGMA table_info(cursors)").all() as { name: string }[];
+    if (!cursorColumns.some((column) => column.name === "synced_at")) {
+      db.exec("ALTER TABLE cursors ADD COLUMN synced_at INTEGER NOT NULL DEFAULT 0");
+      // Existing cursors have no trustworthy lower bound. Start safely at now;
+      // a lost Reddit head must never turn years of history into new inbox items.
+      db.prepare("UPDATE cursors SET synced_at=? WHERE synced_at=0").run(Date.now());
+    }
     return db;
   }
   private allowed() {
@@ -112,7 +120,7 @@ export class RedditInbox {
         if (!this.allowed()) break;
         const key = `${this.account}:${source}`;
         let cursor = db
-          .prepare("SELECT head,target,after_id FROM cursors WHERE source=?")
+          .prepare("SELECT head,target,after_id,synced_at FROM cursors WHERE source=?")
           .get(key) as Cursor | undefined;
         try {
           // Three pages per source per pass; unfinished pagination is durably resumed.
@@ -143,7 +151,7 @@ export class RedditInbox {
             const newest = first === undefined ? null : fullName.parse(first);
             if (!cursor) {
               // Start now, without flooding the thread with historical posts/replies.
-              db.prepare("INSERT INTO cursors VALUES(?,?,NULL,NULL)").run(key, newest);
+              db.prepare("INSERT INTO cursors(source,head,target,after_id,synced_at) VALUES(?,?,NULL,NULL,?)").run(key, newest, Date.now());
               break;
             }
             const target: string | null = cursor.target ?? newest;
@@ -159,6 +167,14 @@ export class RedditInbox {
                 .prepare("SELECT 1 FROM imported WHERE account=? AND id=?")
                 .get(this.account, id);
               if (!exists) {
+                const created = z.number().positive().parse(item["created_utc"]);
+                // If Reddit no longer returns the stored head, pagination may
+                // reach arbitrarily old content. The persisted time watermark
+                // limits imports to posts created since the last successful pass.
+                if (created * 1000 <= cursor.synced_at) {
+                  db.prepare("INSERT OR IGNORE INTO imported VALUES(?,?)").run(this.account, id);
+                  continue;
+                }
                 const author = typeof item["author"] === "string" ? item["author"] : "[deleted]";
                 const sub = z
                   .string()
@@ -176,7 +192,6 @@ export class RedditInbox {
                   .parse(item[id.startsWith("t3_") ? "selftext" : "body"] ?? "");
                 const title =
                   typeof item["title"] === "string" ? item["title"] : "Réponse à votre publication";
-                const created = z.number().positive().parse(item["created_utc"]);
                 const inboxId = `shared-inbox:reddit:${this.account}:${id}`;
                 if (
                   author !== "[deleted]" &&
@@ -210,13 +225,15 @@ export class RedditInbox {
               head: more ? cursor.head : (target ?? cursor.head),
               target: more ? target : null,
               after_id: more ? page.after : null,
+              synced_at: more ? cursor.synced_at : Date.now(),
             };
             if (more && updated.after_id === cursor.after_id)
               throw Error("Reddit cursor did not advance");
-            db.prepare("UPDATE cursors SET head=?,target=?,after_id=? WHERE source=?").run(
+            db.prepare("UPDATE cursors SET head=?,target=?,after_id=?,synced_at=? WHERE source=?").run(
               updated.head,
               updated.target,
               updated.after_id,
+              updated.synced_at,
               key,
             );
             cursor = updated;
