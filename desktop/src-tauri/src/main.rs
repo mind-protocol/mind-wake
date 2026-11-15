@@ -6,9 +6,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+mod disk_assets;
 mod runtime_paths;
 mod quick_input;
 mod paint;
+mod fork_reply;
 mod windows_startup;
 mod updates;
 mod startup_receipt;
@@ -16,9 +18,11 @@ mod documents;
 mod series_assembly;
 mod series_assembly_data;
 mod conversation_images;
+mod voice_screen;
 mod external_urls;
 mod authorizations;
 mod i18n;
+mod owner_messages_watch;
 
 use cli::{CliRun, OwnerRequest, Verb};
 use std::time::Duration;
@@ -54,7 +58,8 @@ where
 
 #[tauri::command]
 async fn wake_status() -> Result<CliRun, String> {
-    blocking(|| cli::wake(Verb::Status)).await
+    // Lecture partagée avec l'icône : réutilisée si elle date de moins de 1,5 s.
+    blocking(|| cli::shared_status(Duration::from_millis(1500))).await
 }
 
 #[tauri::command]
@@ -104,6 +109,11 @@ async fn wake_now() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn voice_graph() -> Result<CliRun, String> {
+    blocking(cli::voice_graph).await
+}
+
+#[tauri::command]
 async fn wake_messages() -> Result<CliRun, String> {
     blocking(|| cli::wake(Verb::Messages)).await
 }
@@ -123,13 +133,17 @@ async fn second_thread(action: String, text: Option<String>) -> Result<CliRun, S
     blocking(move || cli::second_thread(&action, text)).await
 }
 #[tauri::command]
+async fn wake_main_thread(action: String) -> Result<CliRun, String> {
+    blocking(move || cli::main_thread(&action)).await
+}
+#[tauri::command]
 async fn wake_coach(action: String, text: Option<String>) -> Result<CliRun, String> {
     blocking(move || cli::wake_coach(&action, text)).await
 }
 
 #[tauri::command]
-async fn wake_forks(action: String, id: Option<u8>, text: Option<String>) -> Result<CliRun, String> {
-    blocking(move || cli::wake_forks(&action, id, text)).await
+async fn wake_forks(action: String, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_forks(&action, id, text, voice_screen_refs)).await
 }
 
 #[tauri::command]
@@ -165,8 +179,8 @@ async fn open_external_url(url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn wake_reply(idempotency_key: String, text: String) -> Result<CliRun, String> {
-    blocking(move || cli::wake_reply(idempotency_key, text)).await
+async fn wake_reply(idempotency_key: String, text: String, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_reply(idempotency_key, text, voice_screen_refs)).await
 }
 
 #[tauri::command]
@@ -287,7 +301,8 @@ impl Switch {
 }
 
 fn refresh_light(tray: &TrayIcon<Wry>, switch: &Switch) {
-    let status = cli::wake(Verb::Status);
+    // Quand le panneau relit toutes les 2 s, l'icône reprend sa lecture au lieu d'en lancer une.
+    let status = cli::shared_status(Duration::from_millis(2500));
     let light = Light::of(&status);
     let always_on = status.as_ref().ok().and_then(|r| serde_json::from_str::<serde_json::Value>(&r.stdout).ok()).map(|j| j["data"]["executionMode"] == "always-on" && matches!(light, Light::On | Light::Awake)).unwrap_or(false);
     if let Ok(icon) = Image::from_bytes(light.icon()) {
@@ -318,6 +333,15 @@ fn menu_action(app: &AppHandle, verb: Verb) {
 
 fn main() {
     runtime_paths::load();
+    // Interface servie depuis desktop/ui du dépôt : `npm run desktop:ui` suffit, sans cargo.
+    let mut context = tauri::generate_context!();
+    let embedded_only = std::env::var(disk_assets::EMBEDDED_UI_ENV).as_deref() == Ok("1");
+    let ui_root = disk_assets::ui_root(&cli::repo(), embedded_only);
+    let reload_root = ui_root.clone();
+    if let Some(root) = ui_root {
+        let embedded = context.set_assets(Box::new(disk_assets::NoAssets));
+        context.set_assets(Box::new(disk_assets::DiskAssets::new(root, embedded)));
+    }
     tauri::Builder::default()
         .on_page_load(|_webview, payload| {
             if let Some(file) = std::env::var_os("MIND_WAKE_STARTUP_RECEIPT") {
@@ -350,12 +374,15 @@ fn main() {
             wake_now,
             wake_on,
             wake_always_on,
+            voice_graph,
             wake_messages,
             wake_history,
             wake_order,
             second_thread,
+            wake_main_thread,
             wake_coach,
             wake_forks,
+            fork_reply::fork_reply_draft,
             workspace_sync_status,
             workspace_sync_configure,
             elevenlabs,
@@ -364,6 +391,7 @@ fn main() {
             open_external_url,
             wake_reply,
             voice_input,
+            voice_screen::voice_screen_sample,
             helpers_answers,
             owner_threads,
             recipient_status,
@@ -374,7 +402,8 @@ fn main() {
             broadcast_send,
             owner_reply
         ])
-        .setup(|app| {
+        .setup(move |app| {
+            if let Some(root)=reload_root.clone() {disk_assets::watch_reload(app.handle().clone(), root);}
             if let Err(error)=paint::start(app.handle()) {eprintln!("Paint : {error}");}
             // Legacy right-click WebView retired; the supervised post-it observer owns this interaction.
             let open = MenuItem::with_id(app, "open", i18n::text("Ouvrir le panneau", "Open panel"), true, None::<&str>)?;
@@ -452,6 +481,7 @@ fn main() {
             app.manage(windows_startup::StartupMenu(startup));
             windows_startup::refresh(app.handle(), false);
             updates::start();
+            owner_messages_watch::start(app.handle().clone());
             let _ = startup_receipt::write();
 
             let handle = app.handle().clone();
@@ -471,6 +501,6 @@ fn main() {
                 let _ = window.hide();
             }
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("échec du démarrage du panneau MIND Wake");
 }

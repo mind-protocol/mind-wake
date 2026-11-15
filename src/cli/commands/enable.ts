@@ -6,7 +6,6 @@
  *
  * Refus, profil laissé `disabled` avec un motif journalisé :
  * - aucune révision en attente, ou révision incomplète (limite obligatoire absente) ;
- * - stockage local déjà saturé au regard du plafond de la révision ;
  * - composants absents : isolation et adapter runtime ne sont pas livrés dans ce build ;
  * - code `--confirm` erroné.
  *
@@ -25,7 +24,6 @@ import type {
   UnitOfWork,
 } from "../../contracts/index.js";
 import { REQUIRED_LIMIT_FIELDS } from "../../contracts/index.js";
-import { assessStorage, measureDataDir } from "../../export/index.js";
 import { JournalWriter, toUtcTimestamp } from "../../journal/index.js";
 import {
   classifyChange,
@@ -70,7 +68,6 @@ export const ENABLE_REFUSALS = [
   "missing_limit",
   "invalid_state",
   "emergency_stop_locked",
-  "storage_saturated",
   "components_missing",
   "confirmation_required",
   "confirmation_mismatch",
@@ -259,11 +256,8 @@ export async function enable(
           `une session en cours ou un blocage empêche le changement de policy ; état ${profile.state}`,
         );
       }
-      const storage = assessStorage(
-        measureDataDir(dataDir.path),
-        revision.groups.data.localStorageCapBytes,
-      );
-      if (storage.status === "saturated") throw new Refusal("storage_saturated", storage.detail);
+      // Pas de mesure du dossier de données ici : son parcours complet prenait plusieurs
+      // minutes et bloquait chaque changement de policy (décision de l'utilisateur, 2026-11-05).
       const missing = missingComponents(components, revision);
       if (missing.length > 0) {
         throw new Refusal(

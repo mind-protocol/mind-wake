@@ -9,18 +9,23 @@ avec les crédits du compte ; chaque texte est transmis à ElevenLabs.
 Le serveur MCP local expose, pour les profils `MIND_WAKE_DATA_DIR` :
 
 - `elevenlabs_list_voices({cursor?})` : catalogue paginé, avec `next_page_token` ;
-- `elevenlabs_generate_speech({text, voice_id?})` : MP3, voix sélectionnée par
-  défaut ou voix passée à cet appel, modèle `eleven_multilingual_v2`.
+- `speak_desktop({text, idempotency_key})` pour lire une réponse courte.
+- `elevenlabs_generate_speech({text, voice_id?, idempotency_key?})` pour générer
+  un MP3 avec la voix choisie et le modèle `eleven_multilingual_v2`.
 
 Exemple : `elevenlabs_generate_speech({"text":"Bonjour, voici ma découverte."})`.
-La sortie contient `audioPath` et `playback: "queued_for_desktop"`. Elle ne prouve
-pas une écoute. Aucun nouvel appel payant n’est relancé automatiquement sur erreur.
+Les deux outils rendent la main avec `generation: "in_progress"` dès la
+réservation locale. Le processus MCP poursuit la génération et met le clip en
+file à réception du MP3. Un nouvel appel avec les mêmes paramètres et la même clé
+peut récupérer `audioPath` et `playback: "queued_for_desktop"` une fois le clip prêt.
+La génération peut être interrompue si le processus MCP s’arrête. Aucun nouvel
+appel payant n’est relancé automatiquement sur erreur.
 Le texte est limité à 5 000 caractères par appel. Pas de clonage ni création de
 nouvelle identité vocale dans cette intégration.
 
 Les réglages sont relus à chaque appel, sans redémarrer le serveur déjà doté de ces
 outils. Après installation du code, les sessions MCP déjà lancées doivent se
-reconnecter pour découvrir les deux outils.
+reconnecter pour charger cette version des outils.
 
 Le desktop récupère les résultats toutes les trois secondes et lit un clip à la
 fois, même sur un autre onglet. Le lecteur permet pause, reprise et réécoute ;

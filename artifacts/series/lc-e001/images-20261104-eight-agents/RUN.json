@@ -1,0 +1,82 @@
+{
+  "episode_id": "lc-e001",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "total": 116,
+  "agents": [
+    {
+      "agent": 1,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01\\manifest.json",
+      "count": 14,
+      "first": "N60-Q09-C01",
+      "last": "N60-Q01-C05"
+    },
+    {
+      "agent": 2,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\manifest.json",
+      "count": 15,
+      "first": "VER04-C01",
+      "last": "BAN01-C07"
+    },
+    {
+      "agent": 3,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-03\\manifest.json",
+      "count": 14,
+      "first": "BAN01-C08",
+      "last": "CEL01-C06"
+    },
+    {
+      "agent": 4,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\manifest.json",
+      "count": 15,
+      "first": "CEL01-C07",
+      "last": "N60-Q02-C03"
+    },
+    {
+      "agent": 5,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-05\\manifest.json",
+      "count": 14,
+      "first": "N60-Q02-C04",
+      "last": "N60-Q04-C05"
+    },
+    {
+      "agent": 6,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-06\\manifest.json",
+      "count": 15,
+      "first": "N60-Q04-C06",
+      "last": "N60-Q06-C02"
+    },
+    {
+      "agent": 7,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-07\\manifest.json",
+      "count": 14,
+      "first": "N60-Q06-C03",
+      "last": "N60-X01-C02"
+    },
+    {
+      "agent": 8,
+      "manifest": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-08\\manifest.json",
+      "count": 15,
+      "first": "N60-X01-C03",
+      "last": "VER02-C06"
+    }
+  ],
+  "requested_agents": 3,
+  "assignment": {
+    "ep1_images_01": [
+      1,
+      5
+    ],
+    "ep1_images_02": [
+      2,
+      6
+    ],
+    "ep1_images_03": [
+      3,
+      7
+    ],
+    "parent": [
+      4,
+      8
+    ]
+  }
+}

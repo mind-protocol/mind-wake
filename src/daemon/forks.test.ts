@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import {
   FORK_IDS,
+  clusterStatusPublisher,
   forkDir,
   forkEnabled,
   forkProjects,
@@ -21,6 +22,9 @@ import type { UtcTimestamp } from "../contracts/index.js";
 import { ProcessTreeSupervisor } from "../runner/process-tree.js";
 import type { ProfileId, SessionId } from "../contracts/index.js";
 import { WakeManager } from "./wake-manager.js";
+import { clusterStatus } from "../communication/cluster-status.js";
+import { readOwnerInboxHistory } from "../communication/owner-inbox.js";
+import { readReceivedMessages } from "../communication/received-messages.js";
 
 let dir: string, workspace: string;
 beforeEach(() => {
@@ -61,6 +65,29 @@ it("preserves each fork's inbox independently across off/on", () => {
   expect(() => {
     setForkEnabled(dir, 9, true);
   }).toThrow();
+});
+it("delivers a queued screen atlas only to its selected fork and releases its bytes after acceptance", async () => {
+  setForkEnabled(dir, 2, true);
+  setForkEnabled(dir, 3, true);
+  const screen = ["AA=="];
+  const receipt = sendToFork(dir, 2, "Regarde le menu", undefined, "", undefined, screen);
+  sendToFork(dir, 3, "Autre message");
+  const observed = new Map<number, unknown>();
+  await runForks({
+    dataDir: dir, workspace, profile: () => "run", maxTurns: 1,
+    turn: async input => {
+      const fake = fakeProcess();
+      const result = await runForkTurn(input, () => fake.child);
+      const turn = fake.requests.find(request => request.method === "turn/start");
+      observed.set(input.id, turn?.params["input"]);
+      return result;
+    },
+  });
+  expect(observed.get(2)).toEqual([expect.objectContaining({ type: "text" }), { type: "image", url: "data:image/png;base64,AA==" }]);
+  expect(observed.get(3)).toEqual([expect.objectContaining({ type: "text" })]);
+  const store = new SecondThreadStore(forkDir(dir, 2));
+  try { expect(store.pendingScreen(receipt.entryId)).toEqual([]); }
+  finally { store.close(); }
 });
 it("excludes the principal's newly reserved project at a block transition", () => {
   setForkEnabled(dir, 2, true);
@@ -144,7 +171,43 @@ it("marks unfinished turns interrupted after a worker restart", async () => {
   expect(readForks(dir, workspace).forks[0]?.lastTurn).toMatchObject({ outcome: "completed" });
 });
 
-function fakeProcess(hang = false, status = "completed", errorInfo?: string, turns?: unknown[]) {
+it("broadcasts changed public statuses to enabled peers with explicit FYI provenance", () => {
+  setForkEnabled(dir, 4, true);
+  setForkEnabled(dir, 8, true);
+  const item = { type: "agentMessage", phase: "commentary", text: "[status]  Carte analysée. [/status]" };
+  expect(clusterStatus({ ...item, type: "mcpToolCall" })).toBeUndefined();
+  expect(clusterStatus({ ...item, text: "Citation : " + item.text })).toBeUndefined();
+  const status = clusterStatus(item);
+  expect(status).toBe("Carte analysée.");
+  const publish = clusterStatusPublisher(dir, 8, "Fork 8");
+  publish(status!);
+  publish(status!);
+  publish("Comparaison terminée.");
+  clusterStatusPublisher(dir, 8, "Fork 8")("Comparaison terminée.");
+  const store = new SecondThreadStore(forkDir(dir, 4));
+  try {
+    expect(store.pendingHuman().map(entry => entry.text)).toEqual([
+      "FYI — Fork 8 : Carte analysée.",
+      "FYI — Fork 8 : Comparaison terminée.",
+    ]);
+    expect(store.pendingSteering(0)?.senderFork).toBe("8");
+    expect(store.entries().map(entry => entry.clusterStatus)).toEqual([true, true]);
+  } finally { store.close(); }
+  expect(readOwnerInboxHistory(dir)).toHaveLength(2);
+  expect(readOwnerInboxHistory(dir)[0]?.origin).toMatchObject({ kind: "peer_message", author: "Fork 8" });
+  expect(readReceivedMessages(dir).map(message => message.source.kind)).toEqual(["cluster-status", "cluster-status"]);
+  expect(fs.existsSync(forkDir(dir, 2))).toBe(false);
+  clusterStatusPublisher(dir, 1, "Fil principal")("Données de partie reçues.");
+  const recipient = new SecondThreadStore(forkDir(dir, 8));
+  try {
+    expect(recipient.pendingHuman()).toMatchObject([
+      { text: "FYI — Fil principal : Données de partie reçues.", senderFork: 1, clusterStatus: true },
+    ]);
+  } finally { recipient.close(); }
+  expect(readOwnerInboxHistory(dir)).toHaveLength(2);
+});
+
+function fakeProcess(hang = false, status = "completed", errorInfo?: string, turns?: unknown[], steerAck?: string) {
   const requests: { method: string; params: Record<string, unknown> }[] = [];
   let closed = false,
     waiter: ((line: string | null) => void) | null = null;
@@ -185,7 +248,10 @@ function fakeProcess(hang = false, status = "completed", errorInfo?: string, tur
       if (request.id === undefined) return;
       push({
         id: request.id,
-        result: request.method === "thread/read" ? { thread: { id: "principal", turns } } : request.method.startsWith("thread/") ? { thread: { id: "own-thread" } } : {},
+        result: request.method === "thread/read" ? { thread: { id: "principal", turns } }
+          : request.method.startsWith("thread/") ? { thread: { id: "own-thread" } }
+          : request.method === "turn/start" ? { turn: { id: "active-turn" } }
+          : request.method === "turn/steer" ? { turnId: steerAck } : {},
       });
       if (request.method === "turn/start" && !hang) {
         push({
@@ -207,6 +273,11 @@ function fakeProcess(hang = false, status = "completed", errorInfo?: string, tur
           },
         });
       }
+      if (request.method === "turn/steer" && (steerAck !== "active-turn"
+        || requests.filter(r => r.method === "turn/steer").length === 2)) push({
+        method: "turn/completed",
+        params: { threadId: "own-thread", turn: { id: "active-turn", status: "completed" } },
+      });
     },
     terminateTree: () => {
       kills++;
@@ -219,6 +290,36 @@ function fakeProcess(hang = false, status = "completed", errorInfo?: string, tur
   };
   return { child, requests, kills: () => kills };
 }
+it.each(["active-turn", "different-turn"])("steers new interfil messages and checks acknowledgement %s", async ack => {
+  setForkEnabled(dir, 8, true);
+  sendToFork(dir, 8, "Déjà en attente", "earlier-message", "", 4);
+  const fake = fakeProcess(true, "completed", undefined, undefined, ack);
+  await runForks({
+    dataDir: dir, workspace, profile: () => "run", maxTurns: 1,
+    turn: input => {
+      sendToFork(dir, 8, "La case B est sur l’eau douce.", "new-message", "", 4);
+      sendToFork(dir, 8, "Capture automatique", "app-message", '{"humanInstruction":false}');
+      sendToFork(dir, 8, "Nouveau message humain", undefined, "", undefined, ["AA=="]);
+      return runForkTurn(input, () => fake.child);
+    },
+  });
+  const steers = fake.requests.filter(request => request.method === "turn/steer");
+  expect(steers).toHaveLength(ack === "active-turn" ? 2 : 1);
+  expect(steers[0]?.params).toMatchObject({
+    threadId: "own-thread", expectedTurnId: "active-turn",
+    input: [{ type: "text", text: expect.stringMatching(/^Message de Fork 4.*La case B/) }],
+  });
+  if (ack === "active-turn") expect(steers[1]?.params["input"]).toEqual([
+    { type: "text", text: expect.stringMatching(/^Message humain.*Nouveau message humain/) },
+    { type: "image", url: "data:image/png;base64,AA==" },
+  ]);
+  const store = new SecondThreadStore(forkDir(dir, 8));
+  try {
+    expect(store.pendingHuman().map(entry => entry.text)).toEqual(ack === "active-turn"
+      ? ["Capture automatique"]
+      : ["La case B est sur l’eau douce.", "Capture automatique", "Nouveau message humain"]);
+  } finally { store.close(); }
+});
 it("coaching reads the last completed turn's public messages and starts separately", async () => {
   const fake = fakeProcess(false, "completed", undefined, [
     { id: "finished", status: "completed", items: [{ type: "agentMessage", text: "Une idée à ouvrir" }, { type: "reasoning", text: "private reasoning" }] },

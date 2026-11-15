@@ -3,7 +3,7 @@ import { VoiceControls } from './VoiceControls';
 import { useVoiceDraft, type VoiceInputProps } from './useVoiceDraft';
 import { VoiceError, type VoiceClip, type VoiceRecording } from './voice-controller.ts';
 
-async function begin(signal: AbortSignal): Promise<VoiceRecording> {
+export async function beginWebRecording(signal: AbortSignal): Promise<VoiceRecording> {
   if (!globalThis.isSecureContext || !navigator.mediaDevices?.getUserMedia) throw new VoiceError('secure_context_required');
   if (typeof MediaRecorder === 'undefined') throw new VoiceError('microphone_unavailable');
   let stream: MediaStream;
@@ -40,7 +40,7 @@ async function begin(signal: AbortSignal): Promise<VoiceRecording> {
   };
 }
 export default function VoiceInput(props: VoiceInputProps) {
-  const { state, controller } = useVoiceDraft(props, begin);
+  const { state, controller } = useVoiceDraft(props, beginWebRecording);
   useEffect(() => { const hidden = () => { if (document.hidden) void controller.cancel(); };
     document.addEventListener('visibilitychange', hidden); return () => document.removeEventListener('visibilitychange', hidden); }, [controller]);
   return <VoiceControls state={state} start={() => { void controller.start(); }} finish={() => { void controller.finish(); }} cancel={() => { void controller.cancel(); }} />;

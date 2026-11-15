@@ -5,6 +5,16 @@ import os from 'node:os';
 import path from 'node:path';
 import {deliver,replyText} from './postit-reply.mjs';
 const selection={schema:'mind.postit.selection.v1',question_id:'coach-v1',question:"Tu veux l'explication ? Écran 🧩",option_id:'yes',option:'Oui, bientôt',message_id:'postit:'+'a'.repeat(64)};
+test('a receipt naming another fork is never accepted as an acknowledgement',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'postit-wrong-fork-'));
+ try{
+  const cli=path.join(dir,'cli.mjs');
+  const source_receipt={schema:'mind.postit.question.v1',question_id:selection.question_id,question:selection.question,destination:'fork:8',cli,data_dir:dir};
+  const card={...selection,destination:'fork:8',source_receipt};
+  fs.writeFileSync(cli,`let s='';for await(const c of process.stdin)s+=c;const v=JSON.parse(s);console.log(JSON.stringify({schema:'mind-wake.cli',command:'forks send',ok:true,data:{status:'recorded',destination:'fork:2',provenance:v.provenance,reply:{id:v.idempotency_key,text:v.text}}}));`);
+  await assert.rejects(deliver(card,cli,dir));
+ }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
 test('Unicode and apostrophes reach stdin; retry is idempotent',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'postit-contract-'));
  try {

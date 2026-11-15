@@ -94,6 +94,22 @@ it("carries header names from channel metadata and retains ref-only peers withou
  expect(renderMeta(model.items[0]!).children.filter(c=>c instanceof MetaNode&&c.tag==="strong").map(c=>(c as MetaNode).textContent)).toEqual(["Marco","peer-ref"]);
 });
 
+it("renders one author-attributed FYI with its existing delivery receipt", () => {
+ const at = "2026-11-05T19:50:26.004Z";
+ const status = {id:"inbox:status:42", at, text:"FYI — Fork 4 : Carte analysée.",
+  state:"delivered", deliveredAt:"2026-11-05T19:50:26.877Z",
+  source:{channel:"local-inbox", kind:"cluster-status", originKind:"peer_message", name:"Fork 4"}};
+ const ordinary = {...status, id:"inbox:ordinary", source:{...status.source, kind:"pair"}};
+ const model = conversation(envelope({profileId:"default", receivedMessages:[status, status, ordinary]}))!;
+ const items = model.items.filter(item => item.from === "received");
+ expect(items).toHaveLength(2);
+ expect(items[0]).toMatchObject({text:"Carte analysée.", clusterStatus:true, delivery:"delivered", deliveredAt:status.deliveredAt});
+ expect(renderMeta(items[0]!).textContent).toContain("FYI · Fork 4");
+ expect(conversationReceipt(items[0]!)?.text).toBe(" ✓✓");
+ expect(items[1]).toMatchObject({text:ordinary.text});
+ expect(items[1]?.clusterStatus).toBeUndefined();
+});
+
 it("uses a down arrow only for the explicit local Wake-to-repo route, never body claims",()=>{
  const at="2026-10-30T23:55:24Z";
  const sent=(id:string,channel:string,ref:string,name="Codex")=>({id,at,text:'{"channel":"repo-session","sender":{"ref":"local-wake-agent"},"name":"sous-agent"}',channel,sender:{ref,name:"Marco"},recipient:{ref:"peer-ref",name},threadId:"t",messageId:id,state:"recorded"});

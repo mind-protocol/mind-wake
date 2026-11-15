@@ -55,16 +55,20 @@ export function registerBackgroundTools(
     "start_background_job",
     {
       description:
-        "Queue a local Node .mjs script you created under jobs/. Wake's daemon supervises it across wakes; Pause/Force-off stop its process tree. Outputs: jobs/runs/<id>/ and MIND_WAKE_JOB_OUTPUT. This does not authorize external spending, extra AI sessions or bypassing provider limits. Use idempotency_key to avoid launching duplicates. The daemon must be running.",
+        "Queue a local Node .mjs script you created under jobs/. Wake's daemon supervises it across wakes; Pause/Force-off stop its process tree. Outputs: jobs/runs/<id>/ and MIND_WAKE_JOB_OUTPUT. This does not authorize external spending, extra AI sessions or bypassing provider limits. Use idempotency_key to avoid launching duplicates. relaunch: true is for long-running loops only (simulation, presence): if Pause, Force-off or the daemon's end interrupts the job, the daemon queues it again, same script and args, as soon as Wake is allowed again; never after a failure, a cancellation or a normal end. The script must tolerate a restart (stale locks, checkpoint). The daemon must be running.",
       inputSchema: z.strictObject({
         title: z.string().trim().min(1),
         script: z.string().min(1),
         args: z.array(z.string()).default([]),
         idempotency_key: z.string().min(8).max(128),
+        relaunch: z.boolean().default(false),
       }),
       annotations: { openWorldHint: false },
     },
-    (a) => call(true, (s) => ({ job: s.submit(a.title, a.script, a.args, a.idempotency_key) })),
+    (a) =>
+      call(true, (s) => ({
+        job: s.submit(a.title, a.script, a.args, a.idempotency_key, { relaunch: a.relaunch }),
+      })),
   );
   server.registerTool(
     "list_background_jobs",

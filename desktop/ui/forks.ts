@@ -1,3 +1,7 @@
+import {voiceChatControls,voiceTranscriptStatus} from './voice-chat-ui.js';
+import { watchForkReply } from "./fork-reply-overlay.js";
+import {forkVoice} from './fork-voice.js';
+import type {VoiceScreenshots} from './voice-screenshots.js';
 import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { renderMarkdown } from "./markdown.js";
@@ -9,6 +13,10 @@ interface ForkEntry {
   text: string;
   delivered: boolean;
   activity?: boolean;
+  senderFork?: number;
+  clusterStatus?: true;
+  /** Notice runtime (ex. réponse rapide d'un autre fil) : ni toi ni un fork. */
+  notice?: { label: string; hidden: boolean };
   source?: string;
 }
 export interface ForkView {
@@ -101,6 +109,10 @@ export function mountForks(options: {
     command: string,
     args: Record<string, unknown>,
   ) => Promise<{ ok?: unknown; data?: unknown; error?: { message?: unknown } }>;
+  voiceScreenshots: VoiceScreenshots;
+  sampleVoiceScreen?():Promise<string>;
+  liveReply?: { read(id: number): Promise<unknown>; show(text: string): Promise<unknown> };
+  importVoiceImage(raw:string):Promise<{reference:string;capturedAt:string}>;
   selectTab: () => void;
   decorate: (body: HTMLElement, text: string) => void;
 }): void {
@@ -126,6 +138,9 @@ export function mountForks(options: {
   const messages = document.createElement("ol");
   messages.id = "fork-thread-messages";
   messages.className = "messages";
+  const incoming = document.createElement("p");
+  incoming.className = "fork-presence";
+  incoming.hidden = true;
   const presence = document.createElement("p");
   presence.className = "fork-presence";
   presence.setAttribute("role", "status");
@@ -141,8 +156,14 @@ export function mountForks(options: {
   send.textContent = tr("Envoyer");
   const feedback = document.createElement("p");
   feedback.setAttribute("role", "status");
-  form.append(text, send, feedback);
-  panel.append(heading, status, messages, presence, form);
+  const voice=document.createElement('button'),cancelVoice=document.createElement('button'),voiceStatus=document.createElement('p');
+  voice.type='button';voice.textContent='Voice';voice.setAttribute('aria-pressed','false');cancelVoice.type='button';cancelVoice.textContent='Annuler Voice';voiceStatus.setAttribute('role','status');
+  form.append(text,send,voice,cancelVoice,voiceStatus,feedback);
+  panel.append(heading, status, messages, incoming, presence, form);
+  const transcriptStatus=voiceTranscriptStatus(panel,"2");
+  const updateVoice=voiceChatControls(voice,cancelVoice);
+  updateVoice(false,false);
+  const transcriptions=new Map<number,number>();
   // Access to localStorage itself may be disabled by the webview.
   const readState = new ForkReadState({
     getItem: (key) => localStorage.getItem(key),
@@ -167,6 +188,38 @@ export function mountForks(options: {
     }
   >();
   const drafts = new Map<number, string>();
+  const selections = new Map<number, {start:number;end:number;direction:'forward'|'backward'|'none'}>();
+  const pendingVoiceOff = new Set<number>();
+  const scrolls = new Map<number,number>(),voiceNotes=new Map<number,string>();
+  // NLR (6 nov. 2026, 04:45) : ne jamais faire défiler quand il est remonté lire ; suivre seulement
+  // s'il est déjà tout en bas, à quelques pixels près ; à l'ouverture de l'onglet, en bas une fois.
+  const FOLLOW_SLACK_PX = 8;
+  let pinned = true;
+  const capture=forkVoice({screenshots:options.voiceScreenshots,invoke:options.invoke,importImage:raw=>options.importVoiceImage(raw),
+    ...(options.sampleVoiceScreen?{visualSnapshot:options.sampleVoiceScreen}:{}),
+    send:async(id,body,voiceScreenRefs)=>{
+      // Recheck at transport time: a delayed transcription must not outlive Off/Pause.
+      if(model?.profile!=="run" || pendingVoiceOff.has(id) || !model.forks.find(f=>f.id===id)?.enabled)
+        throw Error("Dictée conservée en brouillon : Fork arrêté ou en pause ; aucun nouvel envoi.");
+      await request('send',{id,text:body,...(voiceScreenRefs?.length?{voiceScreenRefs}:{})});
+    },
+    recover:(id,body)=>{const previous=id===current?text.value:drafts.get(id) || '';const recovered=[previous,body].filter(Boolean).join('\n\n');drafts.set(id,recovered);if(current===id){const start=text.selectionStart,end=text.selectionEnd,direction=text.selectionDirection;text.value=recovered;if(typeof text.setSelectionRange === "function")text.setSelectionRange(start,end,direction);}},
+    captureSegment:(id,event)=>{transcriptStatus.segment(String(id),event);},
+    transcribing:(id,pending)=>{transcriptions.set(id,pending);transcriptStatus(transcriptions.get(current)??0);},
+    presentation:(recording,processing,starting)=>{updateVoice(recording,processing,starting);},
+    status:(id,note)=>{const scoped="Fork "+String(id)+" · "+note;voiceNotes.set(id,scoped);if(id===current)voiceStatus.textContent=scoped;},
+  });
+  voice.onclick=()=>{
+    if(capture.target()===undefined && (model?.profile!=="run" || pendingVoiceOff.has(current) || !model.forks.find(f=>f.id===current)?.enabled)) {
+      voiceStatus.textContent="Voice indisponible : ce Fork est arrêté ou Wake est en pause.";
+      return;
+    }
+    void (capture.target()===undefined?capture.start(current):capture.stop()).catch(showError);
+  };
+  cancelVoice.onclick=()=>{void capture.stop(true);};
+  window.addEventListener('voice-stop',()=>{void capture.stop(true);});
+  window.addEventListener('fork-voice-stop',()=>{void capture.stop(true);});
+  window.addEventListener('beforeunload',()=>{void capture.stop(true);});
   for (let id = 2; id <= 8; id++) {
     const row = document.createElement("div");
     row.className = "fork-control";
@@ -214,9 +267,19 @@ export function mountForks(options: {
     element("tab-second").before(tab);
     const select = () => {
       drafts.set(current, text.value);
+      selections.set(current,{start:text.selectionStart,end:text.selectionEnd,direction:text.selectionDirection});
+      // Position de lecture gardée seulement si NLR était remonté lire ; en bas, rien à garder.
+      if (!panel.hidden && messages.scrollHeight - messages.scrollTop - messages.clientHeight > FOLLOW_SLACK_PX)
+        scrolls.set(current, messages.scrollTop);
+      else scrolls.delete(current);
       current = id;
+      transcriptStatus.select(String(id));
+      transcriptStatus(transcriptions.get(id)??0);
       text.value = drafts.get(id) ?? "";
+      const selection=selections.get(id);
+      if(selection && typeof text.setSelectionRange === "function")text.setSelectionRange(selection.start,selection.end,selection.direction);
       feedback.textContent = "";
+      voiceStatus.textContent=voiceNotes.get(id) || (capture.target()===undefined?'':'Capture liée au Fork '+String(capture.target()));
       signature = "";
       options.selectTab();
       document.querySelectorAll("[data-fork-tab]").forEach((button) => {
@@ -226,7 +289,14 @@ export function mountForks(options: {
       panel.setAttribute("aria-labelledby", tab.id);
       tab.setAttribute("aria-selected", "true");
       render();
-      messages.scrollTop = messages.scrollHeight;
+      // NLR (6 nov. 2026, 04:45) : à l'ouverture, en bas une fois ; un fil quitté en cours de
+      // lecture retrouve sa position, sans défilement.
+      const reading = scrolls.get(id);
+      if (reading === undefined) scrollToEnd();
+      else {
+        pinned = false;
+        messages.scrollTop = reading;
+      }
       updateIndicators();
     };
     tab.addEventListener("click", select);
@@ -235,10 +305,16 @@ export function mountForks(options: {
       const fork = model?.forks.find((f) => f.id === id);
       if (!fork) return;
       toggle.disabled = true;
+      if(fork.enabled) {
+        pendingVoiceOff.add(id);
+        // Cancel synchronously, before waiting on the Off request or a status refresh.
+        if(capture.target()===id)void capture.stop(true);
+      }
       void request(fork.enabled ? "off" : "on", { id })
         .then(apply)
         .catch(showError)
         .finally(() => {
+          pendingVoiceOff.delete(id);
           toggle.disabled = false;
         });
     });
@@ -268,6 +344,8 @@ export function mountForks(options: {
   }
   function apply(next: ForksView) {
     model = next;
+    const target=capture.target();
+    if(target!==undefined && (next.profile!=="run" || pendingVoiceOff.has(target) || !next.forks.find(f=>f.id===target)?.enabled))void capture.stop(true);
     fresh = true;
     render();
   }
@@ -334,30 +412,66 @@ export function mountForks(options: {
       return;
     }
     signature = next;
-    const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
+    const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= FOLLOW_SLACK_PX;
     messages.replaceChildren(
       ...conversation.map((entry) => {
+        const statusAuthor = entry.clusterStatus && entry.senderFork !== undefined
+          ? entry.senderFork === 1 ? "Fil principal" : `Fork ${entry.senderFork}`
+          : undefined;
         const li = document.createElement("li");
-        li.dataset["self"] = String(entry.role === "human");
-        if (entry.activity) li.dataset["from"] = "activity";
+        li.dataset["self"] = String(entry.role === "human" && entry.senderFork === undefined && entry.notice === undefined);
+        if (entry.notice) li.dataset["from"] = "received";
+        if (statusAuthor) li.dataset["from"] = "received";
+        else if (entry.activity) li.dataset["from"] = "activity";
         const meta = document.createElement("small");
         if (entry.role === "agent") meta.append(icon(current), " ");
         meta.append(
-          `${entry.role === "human" ? tr("Toi") : entry.role === "agent" ? `Codex · fork ${String(current)}` : entry.activity ? tr("Activité{0}", [entry.source ? ` · ${entry.source}` : ""]) : tr("État")} · ${new Date(entry.at).toLocaleString(formatLocale())}${entry.delivered ? "" : tr(" · en attente")}`,
+          `${entry.notice ? entry.notice.label : statusAuthor ? `FYI · ${statusAuthor}` : entry.role === "human" ? (entry.senderFork === undefined ? tr("Toi") : `Fork ${entry.senderFork}`) : entry.role === "agent" ? `Codex · fork ${String(current)}` : entry.activity ? tr("Activité{0}", [entry.source ? ` · ${entry.source}` : ""]) : tr("État")} · ${new Date(entry.at).toLocaleString(formatLocale())}`,
         );
+        if (entry.role === "human" && !entry.notice) {
+          const receipt = document.createElement("span");
+          receipt.className = "delivery-receipt";
+          receipt.dataset["delivered"] = String(entry.delivered);
+          receipt.textContent = entry.delivered ? " ✓✓" : tr(" ✓ · en file");
+          receipt.title = entry.delivered ? tr("Transmis à la session de l’agent") : tr("Message enregistré dans la boîte du fork.");
+          meta.append(receipt);
+        }
         const body =
           entry.role === "agent" ? renderMarkdown(entry.text) : document.createElement("p");
         if (entry.role === "agent") options.decorate(body, entry.text);
-        else body.textContent = entry.text;
+        else {
+          const prefix = `FYI — ${statusAuthor} : `;
+          body.textContent = statusAuthor && entry.text.startsWith(prefix) ? entry.text.slice(prefix.length) : entry.text;
+        }
         li.append(meta, body);
         return li;
       }),
     );
     const objectives = projectWakesCard(fork.projectWakes, `fork-${String(current)}`);
     if (objectives) messages.append(objectives);
-    if (follow) messages.scrollTop = messages.scrollHeight;
+    if (follow) scrollToEnd();
     updateIndicators();
   }
+  /** Bas du fil, puis encore après la mise en page (Markdown, images) : le dernier message reste visible. */
+  function scrollToEnd() {
+    pinned = true;
+    messages.scrollTop = messages.scrollHeight;
+    if (typeof requestAnimationFrame === "function")
+      requestAnimationFrame(() => {
+        if (pinned) messages.scrollTop = messages.scrollHeight;
+      });
+  }
+  // Suit le bas tant que NLR y est ; une image chargée plus tard ne le fait pas décrocher.
+  messages.addEventListener("scroll", () => {
+    pinned = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= FOLLOW_SLACK_PX;
+  });
+  messages.addEventListener(
+    "load",
+    () => {
+      if (pinned) messages.scrollTop = messages.scrollHeight;
+    },
+    true,
+  );
   messages.addEventListener("scroll", updateIndicators);
   document.addEventListener("visibilitychange", updateIndicators);
   window.addEventListener("focus", updateIndicators);
@@ -371,7 +485,7 @@ export function mountForks(options: {
       .then((next) => {
         drafts.set(id, "");
         if (current === id && text.value.trim() === value) text.value = "";
-        feedback.textContent = tr("Message enregistré pour le fork {0}, à lire au prochain tour.", [String(id)]);
+        feedback.textContent = tr("Message enregistré pour le fork {0}.", [String(id)]);
         apply(next);
       })
       .catch(showError)
@@ -392,6 +506,13 @@ export function mountForks(options: {
       busy = false;
     }
   }
+  if (options.liveReply) watchForkReply(
+    () => !panel.hidden && model?.profile === "run" && model.forks.some(fork => fork.id === current && fork.enabled) ? current : undefined,
+    options.liveReply.read, options.liveReply.show, text => {
+      incoming.textContent = text;
+      incoming.hidden = !text;
+    },
+  );
   void refresh();
   setInterval(() => void refresh(), 5000);
 }

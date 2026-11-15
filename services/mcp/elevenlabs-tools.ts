@@ -11,7 +11,11 @@ export function registerElevenLabsTools(
   const service = new ElevenLabs(dir);
   const run = async (work: () => unknown) => {
     try {
-      return { content: [{ type: "text" as const, text: JSON.stringify(await work()) }] };
+      return {
+        content: [
+          { type: "text" as const, text: JSON.stringify(await work()) },
+        ],
+      };
     } catch (error) {
       const message =
         error instanceof Error &&
@@ -20,7 +24,10 @@ export function registerElevenLabsTools(
         )
           ? error.message
           : "ElevenLabs: request failed; check connection and settings.";
-      return { isError: true, content: [{ type: "text" as const, text: message }] };
+      return {
+        isError: true,
+        content: [{ type: "text" as const, text: message }],
+      };
     }
   };
   server.registerTool(
@@ -34,13 +41,38 @@ export function registerElevenLabsTools(
     ({ cursor }) => run(() => service.voices(cursor)),
   );
   server.registerTool(
+    "speak_desktop",
+    {
+      description:
+        "Speak a current short principal response through the configured ElevenLabs desktop voice. Returns immediately with generation: in_progress while audio is being generated in the background. Supply reply:<owner message id> as idempotency_key also used by automatic response reading. Sends only selected prose without rewriting. Never send human/peer/tool/history content. At most 1500 prose characters and 3 queued clips; no automatic paid retry. Respects Pause/Force-off.",
+      inputSchema: z.strictObject({
+        text: z.string().min(1).max(5000),
+        idempotency_key: z.string().min(1).max(200),
+        thread_id: z.string().min(1).max(128).optional(),
+        agent_ref: z.string().min(1).max(128).optional(),
+        cycle_id: z.string().min(1).max(128).optional(),
+        expected_voice_revision:z.string().min(1).max(256).optional(),
+      }),
+      annotations: {
+        readOnlyHint: false,
+        openWorldHint: true,
+        idempotentHint: true,
+      },
+    },
+    (args) => run(() => service.queueDesktopSpeech(args)),
+  );
+  server.registerTool(
     "elevenlabs_generate_speech",
     {
       description:
-        "Send text to ElevenLabs and generate speech using the selected default voice or voice_id. Consumes account credits; requires human-enabled integration and authorized content. Returns a local MP3 and queues playback in the Wake desktop when available. Queued does not mean heard. Respects Pause/stop. No voice cloning or design.",
+        "Generate speech in the background using the selected ElevenLabs voice. Consumes account credits; requires human-enabled integration and authorized content. Returns generation: in_progress immediately. Playback is queued in the Wake desktop on success. Supply an idempotency_key to retrieve a completed MP3 on a subsequent call with the same input. Respects Pause/stop. No voice cloning or design.",
       inputSchema: speechSchema,
-      annotations: { readOnlyHint: false, openWorldHint: true, idempotentHint: false },
+      annotations: {
+        readOnlyHint: false,
+        openWorldHint: true,
+        idempotentHint: false,
+      },
     },
-    (args) => run(() => service.generate(args)),
+    (args) => run(() => service.queueGeneration(args)),
   );
 }

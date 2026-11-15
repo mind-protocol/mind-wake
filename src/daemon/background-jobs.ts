@@ -23,6 +23,14 @@ export interface BackgroundJob {
   exitCode: number | null;
   detail: string | null;
   cancel: boolean;
+  /**
+   * Opt-in: une boucle longue (simulation, présence) relancée telle quelle quand elle a été
+   * interrompue (Pause, Force-off, fin du moteur), dès que Wake l'autorise de nouveau. Jamais
+   * après un échec, une annulation ou une fin normale.
+   */
+  relaunch?: boolean;
+  /** Job qui a pris la suite de celui-ci après une interruption. */
+  relaunchedAs?: string;
 }
 interface Row {
   id: string;
@@ -95,7 +103,13 @@ export class BackgroundJobStore {
     if (!row) throw new Error("Unknown background job");
     return JSON.parse(row.payload) as BackgroundJob;
   }
-  submit(title: string, script: string, args: string[], key: string): BackgroundJob {
+  submit(
+    title: string,
+    script: string,
+    args: string[],
+    key: string,
+    options: { relaunch?: boolean } = {},
+  ): BackgroundJob {
     return this.db
       .transaction(() => {
         const prior = this.db.prepare("SELECT * FROM jobs WHERE request_key=?").get(key) as
@@ -123,6 +137,7 @@ export class BackgroundJobStore {
           exitCode: null,
           detail: null,
           cancel: false,
+          ...(options.relaunch === true ? { relaunch: true } : {}),
         };
         this.db
           .prepare("INSERT INTO jobs(id,request_key,payload) VALUES(?,?,?)")
@@ -148,6 +163,27 @@ export class BackgroundJobStore {
         ? { cancel: true, status: "cancelled", endedAt: new Date().toISOString() }
         : { cancel: true },
     );
+  }
+  /**
+   * Relance les jobs `relaunch` interrompus : un nouveau job, même script et mêmes arguments,
+   * clé dérivée de l'ancien (idempotente). L'ancien garde la trace de son successeur.
+   */
+  relaunchInterrupted(): BackgroundJob[] {
+    return this.db
+      .transaction(() => {
+        const out: BackgroundJob[] = [];
+        for (const job of this.list()) {
+          if (job.relaunch !== true || job.status !== "interrupted" || job.relaunchedAs !== undefined)
+            continue;
+          const next = this.submit(job.title, job.script, job.args, `relaunch:${job.id}`, {
+            relaunch: true,
+          });
+          this.update(job.id, { relaunchedAs: next.id });
+          out.push(next);
+        }
+        return out;
+      })
+      .immediate();
   }
   events(take = false): string[] {
     return this.db
@@ -179,6 +215,7 @@ export class BackgroundJobs {
   constructor(
     readonly dataDir: string,
     readonly allowed: () => boolean,
+    readonly onRelaunch?: (job: BackgroundJob) => void,
   ) {
     this.store = new BackgroundJobStore(dataDir);
     this.supervisor = new ProcessTreeSupervisor(runtimeDirFor(dataDir));
@@ -214,6 +251,9 @@ export class BackgroundJobs {
           await this.#stop(id, active.process, "Wake paused, stopped or no longer authorized");
         return;
       }
+      // Wake autorise de nouveau : les boucles longues interrompues repartent d'elles-mêmes.
+      for (const next of this.store.relaunchInterrupted())
+        this.onRelaunch?.(next);
       for (const job of this.store.list()) {
         const active = this.running.get(job.id);
         if (job.cancel && (job.status === "queued" || job.status === "running")) {

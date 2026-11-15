@@ -56,7 +56,7 @@ fn env_path(name: &str) -> Option<PathBuf> {
     std::env::var_os(name).filter(|v| !v.is_empty()).map(PathBuf::from)
 }
 
-fn repo() -> PathBuf {
+pub(crate) fn repo() -> PathBuf {
     env_path("MIND_WAKE_REPO_DIR")
         .unwrap_or_else(|| std::env::current_exe().ok().and_then(|exe|exe.ancestors().find(|p|p.join("dist/cli/main.js").is_file()).map(std::path::Path::to_path_buf)).unwrap_or_else(||PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")))
 }
@@ -98,7 +98,7 @@ pub fn helpers_answers() -> Result<CliRun, String> {
 }
 
 pub fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
-    if !matches!(action.as_str(), "status" | "configure" | "voices" | "pending" | "audio" | "ack" | "generate") {
+    if !matches!(action.as_str(), "status" | "configure" | "voices" | "pending" | "audio" | "ack" | "generate" | "speak_desktop" | "claim" | "event" | "enable_pending" | "transcribe" | "stt_preflight" | "realtime_transcription_token" | "cancel_transcription" | "configure_transcription" | "voice_mode_state") {
         return Err("Action ElevenLabs inconnue".into());
     }
     let mut args = owner_command();
@@ -106,6 +106,11 @@ pub fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<
     args.push(repo().join("services/elevenlabs/desktop-main.ts").into());
     let input = serde_json::json!({"action": action, "payload": payload}).to_string();
     run_with_timeout(args, Some(input), Duration::from_secs(75))
+}
+
+/// Fixed read-only projection. No action/path comes from the webview.
+pub fn voice_graph() -> Result<CliRun, String> {
+    run_with_timeout(vec![repo().join("services/voice-graph/desktop-main.mjs").into()], None, Duration::from_secs(75))
 }
 
 pub fn voice_input(action: String, audio: Option<String>) -> Result<CliRun, String> {
@@ -132,7 +137,71 @@ fn wake_args(verb_args: &[&str]) -> Result<Vec<OsString>, String> {
 }
 
 pub fn wake(verb: Verb) -> Result<CliRun, String> {
-    run(wake_args(verb.args())?, None)
+    if matches!(verb, Verb::On | Verb::Resume) {
+        let status = run(wake_args(Verb::Status.args())?, None)?;
+        recover_abandoned_session(&status)?;
+    }
+    let generation = STATUS.generation();
+    let result = run(wake_args(verb.args())?, None);
+    match verb {
+        Verb::Status => { if let Ok(run) = &result { STATUS.remember(generation, run); } }
+        // Toute autre commande peut changer l'état : le prochain lecteur relit.
+        _ => STATUS.forget(),
+    }
+    result
+}
+
+/// Dernier `wake status` réussi, partagé entre l'icône et le panneau : un seul processus
+/// Node pour les deux au lieu d'un chacun. Les lecteurs simultanés attendent le même appel.
+struct StatusCache {
+    turn: std::sync::Mutex<()>,
+    last: std::sync::Mutex<Option<(Instant, i32, String)>>,
+    /// Avancé à chaque changement d'état : une lecture commencée avant n'est pas gardée.
+    generation: std::sync::atomic::AtomicU64,
+}
+
+static STATUS: StatusCache = StatusCache {
+    turn: std::sync::Mutex::new(()),
+    last: std::sync::Mutex::new(None),
+    generation: std::sync::atomic::AtomicU64::new(0),
+};
+
+impl StatusCache {
+    fn fresh(&self, max_age: Duration) -> Option<CliRun> {
+        let last = self.last.lock().unwrap_or_else(|e| e.into_inner());
+        last.as_ref()
+            .filter(|(at, _, _)| at.elapsed() < max_age)
+            .map(|(_, exit_code, stdout)| CliRun { exit_code: *exit_code, stdout: stdout.clone() })
+    }
+    fn generation(&self) -> u64 {
+        self.generation.load(std::sync::atomic::Ordering::SeqCst)
+    }
+    fn remember(&self, generation: u64, run: &CliRun) {
+        let mut last = self.last.lock().unwrap_or_else(|e| e.into_inner());
+        if self.generation() == generation {
+            *last = Some((Instant::now(), run.exit_code, run.stdout.clone()));
+        }
+    }
+    fn forget(&self) {
+        let mut last = self.last.lock().unwrap_or_else(|e| e.into_inner());
+        self.generation.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        *last = None;
+    }
+    fn get(&self, max_age: Duration, read: impl FnOnce() -> Result<CliRun, String>) -> Result<CliRun, String> {
+        if let Some(run) = self.fresh(max_age) { return Ok(run); }
+        let _turn = self.turn.lock().unwrap_or_else(|e| e.into_inner());
+        // Un autre lecteur a pu relire pendant l'attente.
+        if let Some(run) = self.fresh(max_age) { return Ok(run); }
+        let generation = self.generation();
+        let result = read();
+        if let Ok(run) = &result { self.remember(generation, run); }
+        result
+    }
+}
+
+/// `wake status` réutilisé s'il date de moins de `max_age`.
+pub fn shared_status(max_age: Duration) -> Result<CliRun, String> {
+    STATUS.get(max_age, || wake(Verb::Status))
 }
 
 /// Fixed profile-local first welcome. No shell, file name or extra argument from the webview.
@@ -199,7 +268,7 @@ pub fn open_wake_location(kind: &str) -> Result<(), String> {
 /// Le daemon est détaché du panneau (le fermer ne l'arrête pas) ; sa sortie va dans
 /// `daemon.log` du dossier de données.
 pub fn wake_now() -> Result<CliRun, String> {
-    let status = wake(Verb::Status)?;
+    let status = recover_abandoned_session(&wake(Verb::Status)?)?;
     let running = serde_json::from_str::<serde_json::Value>(&status.stdout)
         .map(|j| j["data"]["daemon"]["state"] == "running")
         .unwrap_or(false);
@@ -211,7 +280,7 @@ pub fn wake_now() -> Result<CliRun, String> {
 }
 
 pub fn always_on() -> Result<CliRun, String> {
-    let status = wake(Verb::Status)?;
+    let status = recover_abandoned_session(&wake(Verb::Status)?)?;
     let running = serde_json::from_str::<serde_json::Value>(&status.stdout).map(|j| j["data"]["daemon"]["state"] == "running").unwrap_or(false);
     // This command is an explicit user selection in the panel/tray. Revalidate the
     // consented policy through reactivate before clearing an emergency stop.
@@ -222,6 +291,43 @@ pub fn always_on() -> Result<CliRun, String> {
     let result = wake(Verb::AlwaysOn)?;
     if result.exit_code == 0 && !running { start_daemon(&status.stdout)?; }
     Ok(result)
+}
+
+/// Restart only the engine needed to reconcile its abandoned sessions. The
+/// persisted Pause/Force-off controls stay in place until the explicit action.
+fn recover_abandoned_session(before: &CliRun) -> Result<CliRun, String> {
+    recover_abandoned_session_with(before, start_daemon, || wake(Verb::Status), || {
+        std::thread::sleep(Duration::from_millis(300));
+    })
+}
+
+fn recover_abandoned_session_with(
+    before: &CliRun,
+    start: impl FnOnce(&str) -> Result<(), String>,
+    mut status: impl FnMut() -> Result<CliRun, String>,
+    mut wait: impl FnMut(),
+) -> Result<CliRun, String> {
+    let parse = |r: &CliRun| -> Result<serde_json::Value, String> {
+        let value: serde_json::Value = serde_json::from_str(&r.stdout).map_err(|e| e.to_string())?;
+        if r.exit_code != 0 || value["ok"] != true {
+            return Err("État du moteur indisponible ; reprise non effectuée".into());
+        }
+        Ok(value)
+    };
+    let value = parse(before)?;
+    if value["data"]["openSessions"].as_u64().unwrap_or(0) == 0
+        || value["data"]["daemon"]["state"] == "running" {
+        return Ok(CliRun { exit_code: before.exit_code, stdout: before.stdout.clone() });
+    }
+    start(&before.stdout)?;
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline {
+        let current = status()?;
+        let value = parse(&current)?;
+        if value["data"]["openSessions"] == 0 { return Ok(current); }
+        wait();
+    }
+    Err("Le moteur n’a pas encore réconcilié la session interrompue ; Pause et Force-off restent conservés".into())
 }
 
 fn requires_reactivation(status: &str) -> bool {
@@ -349,6 +455,13 @@ pub fn wake_coach(action: &str, text: Option<String>) -> Result<CliRun, String> 
     } else { None };
     run(wake_args(&["coach", verb])?, body)
 }
+/// Fil principal On/Off : actions fixes, aucune donnée venue du webview n'atteint la CLI.
+pub fn main_thread(action: &str) -> Result<CliRun, String> {
+    let verb = match action { "status" => "status", "on" => "on", "off" => "off", _ => return Err("Action inconnue".into()) };
+    let result = run(wake_args(&["main-thread", verb])?, None)?;
+    if verb != "status" { STATUS.forget(); }
+    Ok(result)
+}
 pub fn second_thread(action: &str, text: Option<String>) -> Result<CliRun, String> {
     if action == "send" {
         let body = text.ok_or("Message manquant")?;
@@ -366,12 +479,19 @@ pub fn second_thread(action: &str, text: Option<String>) -> Result<CliRun, Strin
     Ok(result)
 }
 
-pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>) -> Result<CliRun, String> {
+pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
     let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action inconnue".into()) };
     let body = if matches!(action, "on" | "off" | "send") {
         let slot = id.filter(|n| (2..=8).contains(n)).ok_or("Fork attendu : 2 à 8")?;
         if action == "send" && text.as_ref().is_none_or(|s| s.trim().is_empty() || s.chars().count() > 4000) { return Err("Message vide ou trop long".into()); }
-        Some(serde_json::json!({"id":slot,"text":text}).to_string())
+        let mut body = serde_json::json!({"id":slot,"text":text});
+        if let Some(refs) = voice_screen_refs {
+            if action != "send" || refs.len() > 3 || refs.iter().any(|r| r.len() > 100) {
+                return Err("Planche écran invalide".into());
+            }
+            body["voice_screen_refs"] = serde_json::json!(refs);
+        }
+        Some(body.to_string())
     } else { None };
     let result = run(wake_args(&["forks", verb])?, body)?;
     if matches!(action, "on" | "ensure") && result.exit_code == 0 {
@@ -409,12 +529,18 @@ fn start_parallel_worker(data_dir: &str, worker: &str, log_name: &str) -> Result
 
 /// Réponse de l'humain à son agent (`mind-wake reply`) : clé vérifiée ici puis par la CLI,
 /// texte par l'entrée standard, jamais en argument.
-pub fn wake_reply(key: String, text: String) -> Result<CliRun, String> {
+pub fn wake_reply(key: String, text: String, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
     if !idempotency_key(&key) {
         return Err("clé d'idempotence invalide".into());
     }
     let mut args = wake_args(&["reply", "--idempotency-key"])?;
     args.push(key.into());
+    if let Some(references) = voice_screen_refs.filter(|refs| !refs.is_empty()) {
+        if references.len() > 3 || references.iter().any(|reference| reference.len() > 120) {
+            return Err("Références des planches écran invalides".into());
+        }
+        args.extend(["--voice-screen-refs".into(), serde_json::to_string(&references).map_err(|e| e.to_string())?.into()]);
+    }
     run(args, Some(text))
 }
 
@@ -585,6 +711,67 @@ fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Optio
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn cache() -> StatusCache {
+        StatusCache { turn: std::sync::Mutex::new(()), last: std::sync::Mutex::new(None), generation: std::sync::atomic::AtomicU64::new(0) }
+    }
+    fn status(stdout: &str) -> Result<CliRun, String> { Ok(CliRun { exit_code: 0, stdout: stdout.into() }) }
+
+    #[test]
+    fn shared_status_reuses_a_fresh_read_and_rereads_after_a_change() {
+        let c = cache();
+        let mut reads = 0;
+        assert_eq!(c.get(Duration::from_secs(5), || { reads += 1; status("a") }).unwrap().stdout, "a");
+        assert_eq!(c.get(Duration::from_secs(5), || { reads += 1; status("b") }).unwrap().stdout, "a");
+        assert_eq!(reads, 1);
+        c.forget();
+        assert_eq!(c.get(Duration::from_secs(5), || { reads += 1; status("c") }).unwrap().stdout, "c");
+        assert_eq!(c.get(Duration::ZERO, || { reads += 1; status("d") }).unwrap().stdout, "d");
+        assert_eq!(reads, 3);
+    }
+
+    #[test]
+    fn shared_status_drops_a_read_that_started_before_a_change() {
+        let c = cache();
+        let _ = c.get(Duration::from_secs(5), || { c.forget(); status("stale") });
+        let mut reads = 0;
+        assert_eq!(c.get(Duration::from_secs(5), || { reads += 1; status("new") }).unwrap().stdout, "new");
+        assert_eq!(reads, 1);
+    }
+
+    fn recovery_status(daemon: &str, open: u64) -> CliRun {
+        CliRun { exit_code: 0, stdout: serde_json::json!({
+            "ok": true, "data": {"daemon": {"state": daemon}, "openSessions": open,
+            "profile": {"state": "stopped", "emergencyStopLocked": true}}
+        }).to_string() }
+    }
+
+    #[test]
+    fn reconciles_before_reactivation_without_clearing_force_off() {
+        let mut polls = 0;
+        let recovered = recover_abandoned_session_with(&recovery_status("crashed", 1),
+            |status| { assert!(requires_reactivation(status)); Ok(()) },
+            || { polls += 1; Ok(recovery_status("running", if polls == 1 {1} else {0})) },
+            || {}).unwrap();
+        assert_eq!(polls, 2);
+        assert!(requires_reactivation(&recovered.stdout));
+    }
+
+    #[test]
+    fn leaves_live_sessions_and_clean_stops_alone() {
+        for before in [recovery_status("running", 1), recovery_status("crashed", 0)] {
+            recover_abandoned_session_with(&before,
+                |_| panic!("must not start another engine"),
+                || panic!("must not poll"), || {}).unwrap();
+        }
+    }
+
+    #[test]
+    fn failed_recovery_never_proceeds_to_activation() {
+        let result = recover_abandoned_session_with(&recovery_status("crashed", 1),
+            |_| Err("engine unavailable".into()), || panic!("must not poll"), || {});
+        assert!(result.is_err());
+    }
 
     #[test]
     fn explicit_always_on_reactivates_only_a_stopped_or_locked_profile() {

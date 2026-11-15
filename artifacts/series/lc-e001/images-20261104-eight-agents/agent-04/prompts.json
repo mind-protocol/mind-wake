@@ -1,0 +1,644 @@
+[
+  {
+    "cut_id": "CEL01-C07",
+    "prompt": "Plan en profondeur depuis le cellier, reine dans la pénombre gauche et Wat au fond droit.. Wat de dos dans le couloir au fond droit marche vers le jour ; Rhaenyra reste dans la pénombre gauche, mains immobiles. Porte ouverte, aucun geste de rappel. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C03.png",
+        "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+        "role": "identity",
+        "character_ids": [
+          "wat",
+          "willem",
+          "robert-quince",
+          "vieux-captif-serie"
+        ],
+        "visually_inspected": true,
+        "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+        "exists": true
+      },
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+      "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "5e0412feb08a037712376ccded846e82a3f94387f9424d5cb7013e6a00bab325"
+    }
+  },
+  {
+    "cut_id": "CEL01-C08",
+    "prompt": "Plan moyen calme, mains et place vide au premier plan, regard vers l’espace du livre absent.. Rhaenyra seule près de la table a posé une écuelle sur le côté ; le centre vide attend un livre absent. La porte demeure ouverte, aucun Quince dans le passage. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+      "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "958bde3a2169d2839f0d9f5996dd5ce030d2ce429244346aa9f144de01e4bf6e"
+    }
+  },
+  {
+    "cut_id": "N60-Q05-C01",
+    "prompt": "Plan moyen reine, Wend et mestre. Wend debout près du seuil, mains le long du corps, fait face à la reine à distance de parole. Gerardys est côté table ; personne d’autre n’entre. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+      "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "d262b209ed27fde5dad03824cc0a4e3367a6d309a7eeba591f276f93fa9d3b98"
+    }
+  },
+  {
+    "cut_id": "N60-Q05-C02",
+    "prompt": "Plan rapproché Wend, seuil dans la profondeur. Wend parle, visage sec et tendu, la porte nette derrière son épaule. La robe du mestre forme une amorce sombre sur le côté. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+      "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "ed1127899a5ffd5bbcac43d3f546abe85f1e63d3b82682d42a06bf01c7be59ea"
+    }
+  },
+  {
+    "cut_id": "N60-Q05-C03",
+    "prompt": "Plan tenu à hauteur de ses yeux. Wend regarde ses bottes, épaules fixes et mains baissées ; la reine reste à distance dans la profondeur. Aucun visiteur n’éprouve la porte. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+      "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "45b1d2fec3db87392b195157c176da222b3232ff804f5ce123fe853ca184797a"
+    }
+  },
+  {
+    "cut_id": "N60-Q05-C04",
+    "prompt": "Contrechamp reine avec mestre en amorce. Rhaenyra regarde Wend hors champ ; Gerardys, en amorce, tient la plume sur le registre. Aucun courrier parti ni accord extérieur montré. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+      "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "3bbb3753ac426d2c8b4703bafa99ad77cea0b41df75bd59b96073d5cf945bce9"
+    }
+  },
+  {
+    "cut_id": "VER03-C01",
+    "prompt": "Plan d’escalier à hauteur de la dernière marche. Helaena assise sur la dernière marche garde les genoux devant le passage, aiguille sans fil en main ; Criston une marche plus bas est décalé de sa pointe. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "9ded00a00eedd8b941534bf17d27c5a1d9915a5c84f80a95145f23da3eb4cc4f"
+    }
+  },
+  {
+    "cut_id": "VER03-C02",
+    "prompt": "Plan rapproché Helaena avec porte fermée derrière elle. Helaena près de la porte fermée des enfants, petite chaussure posée à côté de sa jupe ; Criston demeure tourné vers elle, sans regarder dans la chambre. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "e2bc3fce26d61511123dc45cf4f2c38c3c4665dbb4d6349f255524781fd32985"
+    }
+  },
+  {
+    "cut_id": "VER03-C03",
+    "prompt": "Plan moyen de profil le long de la rampe. Criston regarde le tournant inférieur ; son casque repose sur la rampe. Helaena reste en haut près de la porte, chaussure encore au sol. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "77e2f0496a8b1765f9bc94512885a5879f21f5d6ffaea18c91fab5ca7cf5cb20"
+    }
+  },
+  {
+    "cut_id": "VER03-C04",
+    "prompt": "Plan moyen du battant inférieur, depuis le niveau bas. Criston pose la main sur le battant du bas de l’escalier, depuis ce seul niveau. Helaena et le palier des enfants sont hors champ au-dessus du tournant. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "beea7672b86d109f724c4da9689b86049e6400eb68653ecbc4a6d4e8d4ec0fe7"
+    }
+  },
+  {
+    "cut_id": "VER03-C05",
+    "prompt": "Plan moyen de deux marches, caméra immobile. Criston immobile sur la marche juste sous Helaena fait face au tournant ; elle reste près de la petite chaussure. Casque posé sur la rampe. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "9aae7312dee50922f882477bdded2010cf6d2d3ae080df1ce76c4a2d6c00b487"
+    }
+  },
+  {
+    "cut_id": "VER03-C06",
+    "prompt": "Plan large de la porte et de la marche occupée. Helaena à l’embrasure tient la chaussure ramassée contre sa jupe ; Criston reste sur la marche inférieure et lui rend son regard. Aucun enfant visible. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+        "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "criston"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+        "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+        "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "helaena"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+        "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+      "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "39c0bdc16453fd7805659baee53d83e18ea8aa6ce375c1d4d1ec3f3d44fa2fc5"
+    }
+  },
+  {
+    "cut_id": "N60-Q02-C01",
+    "prompt": "Plan d’ensemble de la Table Peinte. La reine debout au petit bout de la Table Peinte regarde la toile et les pièces ; Gerardys à gauche, Hask debout en face, le Sanglier côté porte. Aucun second tissu n’est posé dessus. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+      "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c42ceb9699245371f09d20af86f52e47a1e30056a1f666e4f6145c35122ad1d6"
+    }
+  },
+  {
+    "cut_id": "N60-Q02-C02",
+    "prompt": "Plan de table en biais, visage royal dans la profondeur. Une main de la reine est arrêtée près d’une place vide entre les pièces de bois, avec fils et formes sans étiquettes lisibles. Son visage est dans la profondeur. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+      "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "6127111cfa711e981031adce73eabb604f6a5f92b92d053cc550b1e91a4ad6ea"
+    }
+  },
+  {
+    "cut_id": "N60-Q02-C03",
+    "prompt": "Plan rapproché Sanglier, pièce et mestre en second plan. Le Sanglier tient une tuile retournée entre pouce et index, petit dépôt de craie sur le pouce ; Gerardys et la reine sont en amorce autour de la table. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+    "references": [
+      {
+        "path": "media/images/BAN01-C01.png",
+        "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+        "role": "identity",
+        "character_ids": [
+          "rhaenyra",
+          "robert-quince"
+        ],
+        "visually_inspected": true,
+        "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+        "exists": true
+      },
+      {
+        "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+        "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+        "role": "identity_portrait_candidate",
+        "character_ids": [
+          "gerardys"
+        ],
+        "visually_inspected": true,
+        "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+        "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+        "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+        "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+        "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+        "exists": true
+      }
+    ],
+    "source": {
+      "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+      "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+      "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+      "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+      "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+      "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+      "cut_sha256": "c56b274aa674a1009b0e83d6e53b459aa9eb378077800b8ad6aca8282d406931"
+    }
+  }
+]

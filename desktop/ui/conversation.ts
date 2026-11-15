@@ -1,3 +1,4 @@
+import {parseVoicePart,voicePartDisplay,parseVoiceResponse} from "./voice-conversations.js";
 import { tr, formatLocale } from "./i18n.js";
 /**
  * Fil humain ↔ agent de l'onglet « Messages » : modèle pur tiré de
@@ -25,11 +26,17 @@ export interface ConversationItem {
   readonly source?: string;
   /** Host pilot route, never inferred from the message body. The author remains human. */
   readonly humanRecipient?: "Auroracle";
+  readonly voiceRecipient?: string;
+  readonly threadId?:string;
+  readonly agentRef?:string;
+  readonly cycleId?:string;
+  readonly voiceSpeakerLabel?:string;
   /** Names/ref labels supplied by host metadata, never extracted from message text. */
   readonly headerNames?: readonly string[];
   /** Explicit local Wake → repo helper route, never inferred from body/name. */
   readonly sentToSubagent?: boolean;
   readonly headerStatus?: string;
+  readonly clusterStatus?: true;
   readonly project?: {id: string | null; title: string};
   readonly projectRows?: readonly {id: string | null; title: string; text: string; objectiveDefined: boolean}[];
   readonly objectiveDefined?: boolean;
@@ -53,8 +60,8 @@ export function conversationReceipt(item: ConversationItem): {text:string;title:
     label: tr("Transmis à la session de l’agent"),
   };
   if (item.from === "human") return {
-    delivered, text: tr(" ✓ · en attente de réception"), label: tr("Envoyé"),
-    title: tr("Enregistré localement. Transmission au prochain outil terminé, ou au prochain réveil. Un outil ou sous-agent en cours peut retarder la réception."),
+    delivered, text: tr(" ✓ · en file"), label: tr("Envoyé"),
+    title: item.pendingReason ?? tr("Message enregistré en attente de transmission."),
   };
   const title = item.deliveryNote ?? (item.from === "agent"
     ? tr("Enregistré dans le fil de ton agent. Réception et lecture par l’humain non attestées.")
@@ -94,7 +101,9 @@ export function renderConversationMeta(element: Pick<HTMLElement, "textContent">
   const compactSource = subagent ? `${item.headerNames?.[0] ?? tr("Ton agent")} → ${item.headerNames?.[1] ?? "sous-agent"}${item.headerStatus ? ` · ${item.headerStatus}` : ""}` : item.source;
   const who = item.from === "sent" ? `${sentLabel} · ${compactSource ?? tr("source inconnue")}`
     : item.from === "context" ? tr("Copie de contexte · {0}", [item.source ?? tr("source inconnue")])
-    : item.from === "received" ? tr("Reçu · {0}", [item.source ?? tr("source inconnue")])
+    : item.from === "received" ? item.clusterStatus
+      ? `FYI · ${item.source ?? tr("source inconnue")}`
+      : tr("Reçu · {0}", [item.source ?? tr("source inconnue")])
     : item.from === "objective" ? tr("Objectif en cours") : item.from === "activity" ? tr("Activité{0}", [item.source ? tr(" · Sous-session · {0}", [item.source]) : ""]) : item.from === "human" ? tr("Toi{0}{1}", [item.humanRecipient ? ` → ${item.humanRecipient}` : "", item.source ? ` · ${item.source}` : ""])
     : item.from === "session" ? tr("Aide · {0}", [item.source ?? "session"]) : tr("Ton agent");
   const direction = subagent ? "down" : item.from === "sent" || item.from === "agent" || (item.from === "human" && item.humanRecipient) ? "out"
@@ -119,7 +128,7 @@ export function renderConversationMeta(element: Pick<HTMLElement, "textContent">
   // Search only after the role label; bold at most one occurrence per named actor.
   let cursor = 0;
   let authorShown = false;
-  let searchFrom = item.from === "sent" ? `${sentLabel} · `.length : item.from === "received" ? tr("Reçu · ").length
+  let searchFrom = item.from === "sent" ? `${sentLabel} · `.length : item.from === "received" ? (item.clusterStatus ? "FYI · " : tr("Reçu · ")).length
     : item.from === "session" ? tr("Aide · ").length : item.from === "context" ? tr("Copie de contexte · ").length : 0;
   for (const name of names) {
     if (!name) continue;
@@ -283,7 +292,8 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       const deliveredAt = id === null ? null : str(rec(data["deliveryReceipts"])?.[id]);
       const pendingReason = waiting(data,at,now);
       const screenshotAt = str(r?.["screenshotAt"]);
-      items.push({ from: "human", at, text: screenshotAt === null ? text : tr("{0}\n\n📷 Capture de l’écran principal jointe ({1}).", [text, new Date(screenshotAt).toLocaleString(formatLocale())]),
+      const voiceReply=parseVoicePart(text);
+      items.push({ from: "human", at, ...(voiceReply?{voiceRecipient:voiceReply.threadIds.length===3?"les trois conversations":voiceReply.threads.find(t=>t.id===voiceReply.threadIds[0])!.label}:{}), text: screenshotAt === null ? (voiceReply?voicePartDisplay(voiceReply):text) : tr("{0}\n\n📷 Capture de l’écran principal jointe ({1}).", [text, new Date(screenshotAt).toLocaleString(formatLocale())]),
         ...(id === null ? {} : { id, delivery: deliveredAt === null ? "sent" as const : "delivered" as const }),
         ...(deliveredAt === null ? {} : { deliveredAt }),
         ...(deliveredAt === null && pendingReason !== null ? { pendingReason } : {}),
@@ -331,12 +341,17 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       assurance, m?.["state"] === "delivered" ? tr("livré à la session · lecture non attestée") : tr("stocké localement"),
       source?.["originKind"] === "context_copy" ? tr("contexte · pas une demande adressée à ton agent") : tr("contenu pair · pas une instruction humaine")].filter(Boolean).join(" · ");
     const name = str(source?.["name"]) ?? str(source?.["ref"]);
+    const status = channel === "local-inbox" && source?.["kind"] === "cluster-status" && source["originKind"] === "peer_message";
+    const statusPrefix = `FYI — ${name} : `;
     const headerNames = name === null ? [] : [channel === "repo-session" ? name.split(" · ")[0]! : name];
     const deliveredAt = str(m?.["deliveredAt"]);
     const receipt = source?.["originKind"] !== "context_copy" && (m?.["state"] === "stored" || m?.["state"] === "delivered")
       ? {delivery: m["state"] === "delivered" ? "delivered" as const : "sent" as const,
         ...(m["state"] === "delivered" && deliveredAt !== null && Number.isFinite(Date.parse(deliveredAt)) ? {deliveredAt} : {})} : {};
-    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at, text, source: context, headerNames, ...receipt});
+    items.push({from: source?.["originKind"] === "context_copy" ? "context" : "received", id, at,
+      text: status && text.startsWith(statusPrefix) ? text.slice(statusPrefix.length) : text,
+      source: status ? name ?? tr("source inconnue") : context, headerNames,
+      ...(status ? { clusterStatus: true as const } : {}), ...receipt});
     if (agentAt === null || at > agentAt) agentAt = at;
   }
   items.push(...sessionAnswers(helpers));
@@ -368,3 +383,4 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
         : null,
   };
 }
+

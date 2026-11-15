@@ -1,0 +1,3420 @@
+{
+  "agent": 4,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04",
+  "cuts": [
+    {
+      "cut_id": "CEL01-C07",
+      "scene_id": "lc-e001-s03",
+      "episode_id": "lc-e001",
+      "order": 44,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "5e0412feb08a037712376ccded846e82a3f94387f9424d5cb7013e6a00bab325"
+      },
+      "source_block_ids": [
+        "lc-e001-s03-B031",
+        "lc-e001-s03-B032"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s03-B031",
+          "text_sha256": "49006ad48352c15680050025e44cd36031b92f0a847692e9506aceb0dfe465cb"
+        },
+        {
+          "id": "lc-e001-s03-B032",
+          "text_sha256": "4f15eb48274c996dc267b70911d6f121f1e682745a0912f7839705ca6113de4c"
+        }
+      ],
+      "character_ids": [
+        "wat",
+        "rhaenyra"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "wat",
+          "state": "tunique taupe déchirée, cordon ; aucune chaîne"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "CEL01-C06",
+        "next_cut_id": "CEL01-C08",
+        "entry": "Wat a donné une adresse à Quince.",
+        "exit": "Il est parti, aucune conversion ni pardon montré.",
+        "axis": "Wat a passé la nuit détenu."
+      },
+      "intention": "Le départ sans pardon",
+      "cadrage": "Plan en profondeur depuis le cellier, reine dans la pénombre gauche et Wat au fond droit.",
+      "action_visible": "Wat de dos dans le couloir au fond droit marche vers le jour ; Rhaenyra reste dans la pénombre gauche, mains immobiles. Porte ouverte, aucun geste de rappel.",
+      "light": "Matin frais par porte droite, bougie discrète à gauche",
+      "location": "Cellier de Peyredragon",
+      "prompt_image": "Plan en profondeur depuis le cellier, reine dans la pénombre gauche et Wat au fond droit.. Wat de dos dans le couloir au fond droit marche vers le jour ; Rhaenyra reste dans la pénombre gauche, mains immobiles. Porte ouverte, aucun geste de rappel. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Image fixe de ce moment ; les gestes successifs restent des intentions de jeu, pas une animation prétendue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "36079d20a7e87c8f48a28e44aea05c450f2a2ee460044cef4b072033cac54834",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "wat",
+        "rhaenyra"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan en profondeur depuis le cellier, reine dans la pénombre gauche et Wat au fond droit.",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Matin après le banquet",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Wat a passé la nuit détenu.",
+        "movement_intent": "Image fixe de ce moment ; les gestes successifs restent des intentions de jeu, pas une animation prétendue."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/CEL01-C07.png"
+    },
+    {
+      "cut_id": "CEL01-C08",
+      "scene_id": "lc-e001-s03",
+      "episode_id": "lc-e001",
+      "order": 45,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s03.json",
+        "scene_sha256": "5ff632d1a442b795bb2ca2accf6a860d742b8a6fb90386e2f2f95c1925054460",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "958bde3a2169d2839f0d9f5996dd5ce030d2ce429244346aa9f144de01e4bf6e"
+      },
+      "source_block_ids": [
+        "lc-e001-s03-B033",
+        "lc-e001-s03-B034",
+        "lc-e001-s03-B035",
+        "lc-e001-s03-B036"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s03-B033",
+          "text_sha256": "43c59fa40d4de721a6490a29cba58f0abbf133cc57ef66c7fd7d38cdfe2ff609"
+        },
+        {
+          "id": "lc-e001-s03-B034",
+          "text_sha256": "86b034064ff361dfd8d7790125699b0da2d66d871f21d9bf04f6e8a82c5d7eda"
+        },
+        {
+          "id": "lc-e001-s03-B035",
+          "text_sha256": "8075d469f8174574f6f7f5d2f3e517b4c5dea0658806ea65ee47c41f7bdf5800"
+        },
+        {
+          "id": "lc-e001-s03-B036",
+          "text_sha256": "0acf62950ddf565dc02154b59365de251a422ca0d1395e35630971d996ab0087"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "CEL01-C07",
+        "next_cut_id": "N60-Q05-C01",
+        "entry": "Wat parti, Quince encore à portée de voix au début du plan.",
+        "exit": "Registre demandé mais pas arrivé ; recherche à faire, pas de réparation accomplie.",
+        "axis": "Wat a passé la nuit détenu."
+      },
+      "intention": "La place du livre",
+      "cadrage": "Plan moyen calme, mains et place vide au premier plan, regard vers l’espace du livre absent.",
+      "action_visible": "Rhaenyra seule près de la table a posé une écuelle sur le côté ; le centre vide attend un livre absent. La porte demeure ouverte, aucun Quince dans le passage.",
+      "light": "Matin frais par porte droite, bougie discrète à gauche",
+      "location": "Cellier de Peyredragon",
+      "prompt_image": "Plan moyen calme, mains et place vide au premier plan, regard vers l’espace du livre absent.. Rhaenyra seule près de la table a posé une écuelle sur le côté ; le centre vide attend un livre absent. La porte demeure ouverte, aucun Quince dans le passage. Peyredragon, cellier au matin. Matin frais par porte droite, bougie discrète à gauche rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer.. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s03-B033",
+          "source_block_id": "lc-e001-s03-B033",
+          "scene_id": "lc-e001-s03",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Faites venir le registre.",
+          "intention": "La place du livre",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "3. Le cellier — au matin",
+            "block": "lc-e001-s03-B033",
+            "text_sha256": "3f04cefe77da067f79ea862a254b9aef854061bd90040c9626255f12ae83b21b"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.8,
+          "action_et_silence_hors_parole": 0,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Image fixe de ce moment ; les gestes successifs restent des intentions de jeu, pas une animation prétendue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4c8ba1178290b141aace5cafc30c2e5129ccfb60da80795130ec96dd594a365c",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "rhaenyra"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s03-B033",
+          "source_block_id": "lc-e001-s03-B033",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra"
+          ],
+          "text_unchanged": "Faites venir le registre."
+        }
+      ],
+      "static_framing": "Plan moyen calme, mains et place vide au premier plan, regard vers l’espace du livre absent.",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Matin après le banquet",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Wat a passé la nuit détenu.",
+        "movement_intent": "Image fixe de ce moment ; les gestes successifs restent des intentions de jeu, pas une animation prétendue."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/CEL01-C08.png"
+    },
+    {
+      "cut_id": "N60-Q05-C01",
+      "scene_id": "N60-Q05",
+      "episode_id": "lc-e001",
+      "order": 46,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+        "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "d262b209ed27fde5dad03824cc0a4e3367a6d309a7eeba591f276f93fa9d3b98"
+      },
+      "source_block_ids": [
+        "N60-Q05-B001",
+        "N60-Q05-B002"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q05-B001",
+          "text_sha256": "ffce57ee070fe9004bf360d72f644716824e91d7dc0e1be42093ab8f529b5798"
+        },
+        {
+          "id": "N60-Q05-B002",
+          "text_sha256": "3f082f4357002e845190b7ecc8bc9981912f54bd892b1e8e3cb20e735e239d30"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "wend",
+          "state": "tunique gris fer, ceinture simple"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "CEL01-C08",
+        "next_cut_id": "N60-Q05-C02",
+        "entry": "Entrée de scène : Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve.",
+        "exit": "État à conserver : Wend reste debout près du seuil sans qu’aucun entrant n’éprouve la règle",
+        "axis": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve."
+      },
+      "intention": "Laisser du temps à celui qui doit borner son autorité",
+      "cadrage": "Plan moyen reine, Wend et mestre",
+      "action_visible": "Wend debout près du seuil, mains le long du corps, fait face à la reine à distance de parole. Gerardys est côté table ; personne d’autre n’entre.",
+      "light": "Jour diffus par fenêtre, lumière crédible sur mains et bottes.",
+      "location": "Peyredragon, Chambre de la Table Peinte près du seuil",
+      "prompt_image": "Plan moyen reine, Wend et mestre. Wend debout près du seuil, mains le long du corps, fait face à la reine à distance de parole. Gerardys est côté table ; personne d’autre n’entre. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q05-B001",
+          "source_block_id": "N60-Q05-B001",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Onze ans, aucune ligne écrite, ni sceau ni marque, et vous refusez ou vous laissez passer sur votre seule tête. **Ça s'arrête aujourd'hui, et ce n'est pas moi qui vais l'écrire.**\n\nJe donne le titre et ce que j'attends : *que rien n'entre par cette porte que nous n'ayons voulu, et que ce que vous refusez tienne sans vous.* **Le reste, votre autorité, vous me la dites vous-même, en gestes et en nombres**, et le mestre l'écrit comme vous la dites, sans la résumer.\n\nJ'ai dicté sa page à quelqu'un une fois cette lune. **Je ne recommencerai pas.**",
+          "intention": "Laisser du temps à celui qui doit borner son autorité",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5820,
+            "char_start": 0,
+            "char_end": 548,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 714
+            },
+            "text_sha256": "bad4978d4b65006217041427970226fa31939c1b77a41d209a9c924c05fd5891",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 47.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 43.6,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "3bb2ca37e3127edf1ff78daab29425524003ee81ff84c555a52ef82ced0565ca",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:wend",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q05-B001",
+          "source_block_id": "N60-Q05-B001",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "Onze ans, aucune ligne écrite, ni sceau ni marque, et vous refusez ou vous laissez passer sur votre seule tête. **Ça s'arrête aujourd'hui, et ce n'est pas moi qui vais l'écrire.**\n\nJe donne le titre et ce que j'attends : *que rien n'entre par cette porte que nous n'ayons voulu, et que ce que vous refusez tienne sans vous.* **Le reste, votre autorité, vous me la dites vous-même, en gestes et en nombres**, et le mestre l'écrit comme vous la dites, sans la résumer.\n\nJ'ai dicté sa page à quelqu'un une fois cette lune. **Je ne recommencerai pas.**"
+        }
+      ],
+      "static_framing": "Plan moyen reine, Wend et mestre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Avant Q02 ; archive129.3.26,11h54–11h59",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q05-C02",
+      "scene_id": "N60-Q05",
+      "episode_id": "lc-e001",
+      "order": 47,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+        "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "ed1127899a5ffd5bbcac43d3f546abe85f1e63d3b82682d42a06bf01c7be59ea"
+      },
+      "source_block_ids": [
+        "N60-Q05-B003",
+        "N60-Q05-B004"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q05-B003",
+          "text_sha256": "77a6861e0b193ef50e56df211cbcb54f7ca47bcc043ab65aae3f4aa7c852ccf5"
+        },
+        {
+          "id": "N60-Q05-B004",
+          "text_sha256": "b357856868a89f19eec47c3740d27a9b09faa49dabb53759472e53490a459444"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "wend",
+          "state": "tunique gris fer, ceinture simple"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q05-C01",
+        "next_cut_id": "N60-Q05-C03",
+        "entry": "Raccord N60-Q05-C01 : Wend reste debout près du seuil sans qu’aucun entrant n’éprouve la règle",
+        "exit": "État à conserver : Wend parle mains le long du corps, mestre visible au bord du cadre",
+        "axis": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve."
+      },
+      "intention": "Demander six hommes et une heure de fermeture",
+      "cadrage": "Plan rapproché Wend, seuil dans la profondeur",
+      "action_visible": "Wend parle, visage sec et tendu, la porte nette derrière son épaule. La robe du mestre forme une amorce sombre sur le côté.",
+      "light": "Jour diffus par fenêtre, lumière crédible sur mains et bottes.",
+      "location": "Peyredragon, Chambre de la Table Peinte près du seuil",
+      "prompt_image": "Plan rapproché Wend, seuil dans la profondeur. Wend parle, visage sec et tendu, la porte nette derrière son épaule. La robe du mestre forme une amorce sombre sur le côté. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q05-B003",
+          "source_block_id": "N60-Q05-B003",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "wend",
+          "locuteur": "WEND",
+          "texte": "Trois choses, Votre Grâce, et la troisième est celle pour laquelle je suis monté sans discuter.",
+          "intention": "Demander six hommes et une heure de fermeture",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5821,
+            "char_start": 67,
+            "char_end": 162,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 716
+            },
+            "text_sha256": "1627b1212e4f0a71b3d8adc54faa28a8b7d8485cf643c0bacf58c8e21d55701d",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q05-B004",
+          "source_block_id": "N60-Q05-B004",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "wend",
+          "locuteur": "WEND",
+          "texte": "**Un** : six hommes qui sont à moi et qu'on ne me prend pas, ni pour les grèves ni pour les murs — six, pas neuf, je n'en demande pas plus qu'il n'en faut. **Deux** : le droit de fermer la porte une heure sans la permission de personne, et de le dire après.",
+          "intention": "Demander six hommes et une heure de fermeture",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5821,
+            "char_start": 166,
+            "char_end": 423,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 716
+            },
+            "text_sha256": "4357c74e0bfbb81908a65a223e658c34ef2a3f28f312b7880b7bf176dd88140b",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 34.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 31.1,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "5ca9c69775e5f48917589d1b02149824cee32807e1827c91f457aacbd592ea0f",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:wend",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "wend"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q05-B003",
+          "source_block_id": "N60-Q05-B003",
+          "speaker_id": "wend",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "Trois choses, Votre Grâce, et la troisième est celle pour laquelle je suis monté sans discuter."
+        },
+        {
+          "line_id": "N60-Q05-B004",
+          "source_block_id": "N60-Q05-B004",
+          "speaker_id": "wend",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "**Un** : six hommes qui sont à moi et qu'on ne me prend pas, ni pour les grèves ni pour les murs — six, pas neuf, je n'en demande pas plus qu'il n'en faut. **Deux** : le droit de fermer la porte une heure sans la permission de personne, et de le dire après."
+        }
+      ],
+      "static_framing": "Plan rapproché Wend, seuil dans la profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Avant Q02 ; archive129.3.26,11h54–11h59",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q05-C03",
+      "scene_id": "N60-Q05",
+      "episode_id": "lc-e001",
+      "order": 48,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+        "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "45b1d2fec3db87392b195157c176da222b3232ff804f5ce123fe853ca184797a"
+      },
+      "source_block_ids": [
+        "N60-Q05-B005",
+        "N60-Q05-B006",
+        "N60-Q05-B007"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q05-B005",
+          "text_sha256": "db0492e441015654154c08abc37187daefdc317ba2af404aefa6f3875dffa8de"
+        },
+        {
+          "id": "N60-Q05-B006",
+          "text_sha256": "9ec5e9a1bd84cfb0e34e8f3d2581b8fd8fef2b0588e32ab567b203615e9a738d"
+        },
+        {
+          "id": "N60-Q05-B007",
+          "text_sha256": "b37fbe56e30f44e80dc6725ee382c33d42a17b679c2fadba819b046eecd8348b"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "wend",
+          "state": "tunique gris fer, ceinture simple"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q05-C02",
+        "next_cut_id": "N60-Q05-C04",
+        "entry": "Raccord N60-Q05-C02 : Wend parle mains le long du corps, mestre visible au bord du cadre",
+        "exit": "État à conserver : Wend regarde ses bottes après sa troisième demande",
+        "axis": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve."
+      },
+      "intention": "Oser un refus unique du mot royal",
+      "cadrage": "Plan tenu à hauteur de ses yeux puis de ses bottes",
+      "action_visible": "Wend regarde ses bottes, épaules fixes et mains baissées ; la reine reste à distance dans la profondeur. Aucun visiteur n’éprouve la porte.",
+      "light": "Jour diffus par fenêtre, lumière crédible sur mains et bottes.",
+      "location": "Peyredragon, Chambre de la Table Peinte près du seuil",
+      "prompt_image": "Plan tenu à hauteur de ses yeux. Wend regarde ses bottes, épaules fixes et mains baissées ; la reine reste à distance dans la profondeur. Aucun visiteur n’éprouve la porte. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q05-B005",
+          "source_block_id": "N60-Q05-B005",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "wend",
+          "locuteur": "WEND",
+          "texte": "**Trois** : le droit de refuser un homme **que vous avez laissé passer**. Une fois. En le disant tout haut le jour même, à vous, et en le portant au livre.",
+          "intention": "Oser un refus unique du mot royal",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5821,
+            "char_start": 427,
+            "char_end": 582,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 716
+            },
+            "text_sha256": "1cf4e614772cd264d311a4a89649a2f42d43e99679fdbe99f2deede6cf2be2f2",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q05-B007",
+          "source_block_id": "N60-Q05-B007",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "wend",
+          "locuteur": "WEND",
+          "texte": "Si je ne peux pas faire ça, la porte n'existe pas : il suffit d'obtenir un mot de vous une fois, et n'importe qui peut entrer pour toujours.",
+          "intention": "Oser un refus unique du mot royal",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5821,
+            "char_start": 610,
+            "char_end": 750,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 716
+            },
+            "text_sha256": "4b7d41b5c0712fd222685d847c5d48f8c15bfcc1ed4c5d72752ba7f4b8d3f22a",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 30.2,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 26.2,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "eccfa71475aad028d8b35e6c58956ff81d8da8675c5723d3c29463603a2d91f1",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:wend",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "wend"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q05-B005",
+          "source_block_id": "N60-Q05-B005",
+          "speaker_id": "wend",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "**Trois** : le droit de refuser un homme **que vous avez laissé passer**. Une fois. En le disant tout haut le jour même, à vous, et en le portant au livre."
+        },
+        {
+          "line_id": "N60-Q05-B007",
+          "source_block_id": "N60-Q05-B007",
+          "speaker_id": "wend",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "Si je ne peux pas faire ça, la porte n'existe pas : il suffit d'obtenir un mot de vous une fois, et n'importe qui peut entrer pour toujours."
+        }
+      ],
+      "static_framing": "Plan tenu à hauteur de ses yeux",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Avant Q02 ; archive129.3.26,11h54–11h59",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q05-C04",
+      "scene_id": "N60-Q05",
+      "episode_id": "lc-e001",
+      "order": 49,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q05.json",
+        "scene_sha256": "eea5585aab7a5f6a911d7cd125c27d4329cce9ec54b7a202c405d75633417f85",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "3bbb3753ac426d2c8b4703bafa99ad77cea0b41df75bd59b96073d5cf945bce9"
+      },
+      "source_block_ids": [
+        "N60-Q05-B008"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q05-B008",
+          "text_sha256": "ce37e2c5fb48fcc3d45be542e355bec79909068c6e625621ec3b68242b817c94"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "wend",
+          "state": "tunique gris fer, ceinture simple"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q05-C03",
+        "next_cut_id": "VER03-C01",
+        "entry": "Raccord N60-Q05-C03 : Wend regarde ses bottes après sa troisième demande",
+        "exit": "Sortie : La reine regarde Wend ; Gerardys consigne mais aucun message n’est expédié ; aucun résultat au-delà du texte adopté.",
+        "axis": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve."
+      },
+      "intention": "Assumer publiquement une future erreur sans notification accomplie",
+      "cadrage": "Contrechamp reine avec mestre en amorce",
+      "action_visible": "Rhaenyra regarde Wend hors champ ; Gerardys, en amorce, tient la plume sur le registre. Aucun courrier parti ni accord extérieur montré.",
+      "light": "Jour diffus par fenêtre, lumière crédible sur mains et bottes.",
+      "location": "Peyredragon, Chambre de la Table Peinte près du seuil",
+      "prompt_image": "Contrechamp reine avec mestre en amorce. Rhaenyra regarde Wend hors champ ; Gerardys, en amorce, tient la plume sur le registre. Aucun courrier parti ni accord extérieur montré. Peyredragon, chambre donnant sur un seuil gardé. Jour diffus par fenêtre, lumière crédible sur mains et bottes. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wend : 30–35 ans, visage étroit proposé, rasé, cheveux bruns courts proposés, silhouette sec, dos à la porte. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; wend — tunique gris fer, ceinture simple ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q05-B008",
+          "source_block_id": "N60-Q05-B008",
+          "scene_id": "N60-Q05",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "**Les trois, telles que vous les avez dites.** Mestre : mot pour mot, y compris *une fois*.\n\nEt j'ajoute ce que ça me coûte, pour que ce soit écrit à côté et pas découvert plus tard : **le jour où vous userez de la troisième, j'aurai tort en public devant l'homme que j'aurai laissé passer.** C'est le prix, et je le paie parce que vous avez raison — un mot de moi obtenu une fois vaudrait passage pour toujours, et je ne le saurais jamais.\n\nSix hommes à vous, qu'on ne vous prend pas. **Ser Robert l'apprendra de moi.**",
+          "intention": "Assumer publiquement une future erreur sans notification accomplie",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5823,
+            "char_start": 0,
+            "char_end": 520,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 719
+            },
+            "text_sha256": "fb0dec34c0221bacb9b6b02bc7f0f7434159d19bd64156047ee4ee0ded961583",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 48,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 44,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "bb1cddd3a286af0f225632457188d7da2d3c8914c83a07abd20b296b758ca8da",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:wend",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "wend",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q05-B008",
+          "source_block_id": "N60-Q05-B008",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "wend",
+            "gerardys"
+          ],
+          "text_unchanged": "**Les trois, telles que vous les avez dites.** Mestre : mot pour mot, y compris *une fois*.\n\nEt j'ajoute ce que ça me coûte, pour que ce soit écrit à côté et pas découvert plus tard : **le jour où vous userez de la troisième, j'aurai tort en public devant l'homme que j'aurai laissé passer.** C'est le prix, et je le paie parce que vous avez raison — un mot de moi obtenu une fois vaudrait passage pour toujours, et je ne le saurais jamais.\n\nSix hommes à vous, qu'on ne vous prend pas. **Ser Robert l'apprendra de moi.**"
+        }
+      ],
+      "static_framing": "Contrechamp reine avec mestre en amorce",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Avant Q02 ; archive129.3.26,11h54–11h59",
+          "source": "scenes-lc-e001-v6-portes-vivres-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Wend près de la porte, reine à distance de parole, Gerardys côté table ; aucun tiers entrant ne met le droit à l’épreuve.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C01",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 50,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "9ded00a00eedd8b941534bf17d27c5a1d9915a5c84f80a95145f23da3eb4cc4f"
+      },
+      "source_block_ids": [
+        "VER03-B002",
+        "VER03-B003",
+        "VER03-B004",
+        "VER03-B005",
+        "VER03-B006",
+        "VER03-B007",
+        "VER03-B008",
+        "VER03-B009"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B002",
+          "text_sha256": "09936b86e427f92efa2deada3234b12270ce6c3bcd1c4b7a54b8fa3e7f8d64a9"
+        },
+        {
+          "id": "VER03-B003",
+          "text_sha256": "72da90cceae86f7fa3ba624d0922aade294ec537557f4e33b5c9aabf99e83e10"
+        },
+        {
+          "id": "VER03-B004",
+          "text_sha256": "c73da67ab2cd082dd15a4a6798e8bdf11f9fed897fb705ed988d0a51dff115c9"
+        },
+        {
+          "id": "VER03-B005",
+          "text_sha256": "2b31c94da6b8078ba47465a74a163eaddc92a2168ec6e4300206ec8c9ee02b56"
+        },
+        {
+          "id": "VER03-B006",
+          "text_sha256": "d5f6e95dcb687dad421eb25d0ae96e01a8333dc3086ee72b7cf20275815d6bc2"
+        },
+        {
+          "id": "VER03-B007",
+          "text_sha256": "130c75d31b9f685229456ca853795fb6e6248df8b03b96498306bf332666350b"
+        },
+        {
+          "id": "VER03-B008",
+          "text_sha256": "8884ca90639ca06f32999655c2441ae3ac6d121fe02b60499a2bebca4b972eca"
+        },
+        {
+          "id": "VER03-B009",
+          "text_sha256": "d706bce2f380299a62a0a98b78ff2648c3c80e30ef9e4d3cded68ba9e2b837f4"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q05-C04",
+        "next_cut_id": "VER03-C02",
+        "entry": "Entrée de scène : Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "exit": "État à conserver : Helaena garde ses genoux devant le passage ; Criston s’écarte de l’aiguille",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "Le trajet militaire bute sur une mère présente",
+      "cadrage": "Plan d’escalier à hauteur de la dernière marche",
+      "action_visible": "Helaena assise sur la dernière marche garde les genoux devant le passage, aiguille sans fil en main ; Criston une marche plus bas est décalé de sa pointe.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan d’escalier à hauteur de la dernière marche. Helaena assise sur la dernière marche garde les genoux devant le passage, aiguille sans fil en main ; Criston une marche plus bas est décalé de sa pointe. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B003",
+          "source_block_id": "VER03-B003",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Majesté.",
+          "intention": "Le trajet militaire bute sur une mère présente",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B003",
+            "text_sha256": "6fc8286c205cdb96802cbcb3f234177dfa3c335c9cb50b6650b94c0e7a1b41c4"
+          }
+        },
+        {
+          "line_id": "VER03-B005",
+          "source_block_id": "VER03-B005",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Le premier ?",
+          "intention": "Le trajet militaire bute sur une mère présente",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B005",
+            "text_sha256": "8becc1b727d9b2ad9be3c5946b032057ccf6c23cc49acd1026365000998d2c37"
+          }
+        },
+        {
+          "line_id": "VER03-B006",
+          "source_block_id": "VER03-B006",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "J’ai demandé deux hommes.",
+          "intention": "Le trajet militaire bute sur une mère présente",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B006",
+            "text_sha256": "933cb72245003ff5a838ad671bbccd8708bf51c21ba938bda76a29abca7e4a2d"
+          }
+        },
+        {
+          "line_id": "VER03-B007",
+          "source_block_id": "VER03-B007",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Le premier s’appelle comment ?",
+          "intention": "Le trajet militaire bute sur une mère présente",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B007",
+            "text_sha256": "3a1e9483006fc716a3b281340b9bf125afd49e9ce2d8e3d35fa68b622dede54e"
+          }
+        },
+        {
+          "line_id": "VER03-B008",
+          "source_block_id": "VER03-B008",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Je dois les voir avant de les nommer.",
+          "intention": "Le trajet militaire bute sur une mère présente",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B008",
+            "text_sha256": "20a9d8e418779d2b5efb1d2c797bc1664d3c47f8b5cef221aec33bead45ccfe2"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 13.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 9.3,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "5956814ae8ad9e6de8324ea5e372cf75ef7d972c7221951b12b785312d7803b5",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "helaena"
+      ],
+      "speaker_ids": [
+        "criston",
+        "helaena"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B003",
+          "source_block_id": "VER03-B003",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Majesté."
+        },
+        {
+          "line_id": "VER03-B005",
+          "source_block_id": "VER03-B005",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Le premier ?"
+        },
+        {
+          "line_id": "VER03-B006",
+          "source_block_id": "VER03-B006",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "J’ai demandé deux hommes."
+        },
+        {
+          "line_id": "VER03-B007",
+          "source_block_id": "VER03-B007",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Le premier s’appelle comment ?"
+        },
+        {
+          "line_id": "VER03-B008",
+          "source_block_id": "VER03-B008",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Je dois les voir avant de les nommer."
+        }
+      ],
+      "static_framing": "Plan d’escalier à hauteur de la dernière marche",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C02",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 51,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e2bc3fce26d61511123dc45cf4f2c38c3c4665dbb4d6349f255524781fd32985"
+      },
+      "source_block_ids": [
+        "VER03-B010",
+        "VER03-B011",
+        "VER03-B012",
+        "VER03-B013",
+        "VER03-B014",
+        "VER03-B015",
+        "VER03-B016",
+        "VER03-B017"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B010",
+          "text_sha256": "e2621bc8dc33b69d8ba284632c3bf75f2652b16f4e0105316dd1e2b4c72baf2a"
+        },
+        {
+          "id": "VER03-B011",
+          "text_sha256": "2b3e0a9e7735627036241ef54058f5e6b16df52b874c77407cae7b3f7ba075d0"
+        },
+        {
+          "id": "VER03-B012",
+          "text_sha256": "4af06d0fdabffbd3eb1d3820a5172a48d1a7fed0c47336a8cded817877c8a236"
+        },
+        {
+          "id": "VER03-B013",
+          "text_sha256": "44db9cd3332a67396e7efe7e67f62cc850aece59a515d2fbb08098160732e32f"
+        },
+        {
+          "id": "VER03-B014",
+          "text_sha256": "c2666180d005e569115d4b8098c044b44a4c5fe3c6d7817ee26020dcbf160c03"
+        },
+        {
+          "id": "VER03-B015",
+          "text_sha256": "f98ec499c22c13666837c659c99d69a66dd51dc595f1edb7caa4e6f010d24a0f"
+        },
+        {
+          "id": "VER03-B016",
+          "text_sha256": "bc46fed0ea3348a7ce098d0f0a728b670b50f43a7f55f109928f0f535c83108a"
+        },
+        {
+          "id": "VER03-B017",
+          "text_sha256": "972736f209024f79c533002ee2ac2e3adf452e2b84ef43e9233050fa6a7b5862"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C01",
+        "next_cut_id": "VER03-C03",
+        "entry": "Raccord VER03-C01 : Helaena garde ses genoux devant le passage ; Criston s’écarte de l’aiguille",
+        "exit": "État à conserver : La petite chaussure est à côté de sa jupe ; Criston ne regarde pas dans la chambre",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "Un visage connu ne prouve plus la sûreté",
+      "cadrage": "Plan rapproché Helaena avec porte fermée derrière elle",
+      "action_visible": "Helaena près de la porte fermée des enfants, petite chaussure posée à côté de sa jupe ; Criston demeure tourné vers elle, sans regarder dans la chambre.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan rapproché Helaena avec porte fermée derrière elle. Helaena près de la porte fermée des enfants, petite chaussure posée à côté de sa jupe ; Criston demeure tourné vers elle, sans regarder dans la chambre. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B010",
+          "source_block_id": "VER03-B010",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Celui qui gardait hier avait une fille.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B010",
+            "text_sha256": "75256ed0ccb087aaf115cf2178592a35d010afd317dd04441e1c54b904635a27"
+          }
+        },
+        {
+          "line_id": "VER03-B011",
+          "source_block_id": "VER03-B011",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Je connais ses états de service.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B011",
+            "text_sha256": "2927292453161b98cb4f1f6d98b04d8d932396137c24357eeca76cb9dfe4280c"
+          }
+        },
+        {
+          "line_id": "VER03-B012",
+          "source_block_id": "VER03-B012",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Elle est plus grande que Maelor. C’est ce qu’il m’a dit. Je l’ai cru.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B012",
+            "text_sha256": "01121639d1a4e26c4334ac705992ebfcf9d76d22d2a1d28685806654a9231c1e"
+          }
+        },
+        {
+          "line_id": "VER03-B014",
+          "source_block_id": "VER03-B014",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Deux hommes éprouvés. Vous les verrez.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B014",
+            "text_sha256": "e77b4f187eb6e98ea7ba6af17ec34697e17b6cc7ce8d603d62631f77260a756b"
+          }
+        },
+        {
+          "line_id": "VER03-B015",
+          "source_block_id": "VER03-B015",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Ensemble ?",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B015",
+            "text_sha256": "630e24caf8c49204ba8a48fc7b08208dfa0b2e120b3e01dc8cd13442119c5730"
+          }
+        },
+        {
+          "line_id": "VER03-B016",
+          "source_block_id": "VER03-B016",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Si vous le souhaitez.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B016",
+            "text_sha256": "75b51c039ade012d3e6f87e1625f66f834c4ce2769daee40fb81b174b6055d92"
+          }
+        },
+        {
+          "line_id": "VER03-B017",
+          "source_block_id": "VER03-B017",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Non. Le premier. Puis le second.",
+          "intention": "Un visage connu ne prouve plus la sûreté",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B017",
+            "text_sha256": "e46b99721ef8bbaa9cb22e2d8f36e7da8855bbf67e974232ab3d8e7f56731401"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 24,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 20,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "bc49ce3fc6abac16d732c2ff7fa7ac00bb398f735aec0a672f300dcee10e644f",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "helaena"
+      ],
+      "speaker_ids": [
+        "helaena",
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B010",
+          "source_block_id": "VER03-B010",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Celui qui gardait hier avait une fille."
+        },
+        {
+          "line_id": "VER03-B011",
+          "source_block_id": "VER03-B011",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Je connais ses états de service."
+        },
+        {
+          "line_id": "VER03-B012",
+          "source_block_id": "VER03-B012",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Elle est plus grande que Maelor. C’est ce qu’il m’a dit. Je l’ai cru."
+        },
+        {
+          "line_id": "VER03-B014",
+          "source_block_id": "VER03-B014",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Deux hommes éprouvés. Vous les verrez."
+        },
+        {
+          "line_id": "VER03-B015",
+          "source_block_id": "VER03-B015",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Ensemble ?"
+        },
+        {
+          "line_id": "VER03-B016",
+          "source_block_id": "VER03-B016",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Si vous le souhaitez."
+        },
+        {
+          "line_id": "VER03-B017",
+          "source_block_id": "VER03-B017",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Non. Le premier. Puis le second."
+        }
+      ],
+      "static_framing": "Plan rapproché Helaena avec porte fermée derrière elle",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C03",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 52,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "77e2f0496a8b1765f9bc94512885a5879f21f5d6ffaea18c91fab5ca7cf5cb20"
+      },
+      "source_block_ids": [
+        "VER03-B018",
+        "VER03-B019",
+        "VER03-B020",
+        "VER03-B021",
+        "VER03-B022",
+        "VER03-B023",
+        "VER03-B024"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B018",
+          "text_sha256": "e26f6c6594f52adbc19021ec7f1cdc92e4d20721a0d78b8b28be572e9ad40195"
+        },
+        {
+          "id": "VER03-B019",
+          "text_sha256": "daf71018e92b4c9c19c2b2e97c508f369651678690c54c9c6c04be7dd780b508"
+        },
+        {
+          "id": "VER03-B020",
+          "text_sha256": "d34656e4c706ac9f775a58c338c55c7edb51b6d1076eb6e039920502a0910d0f"
+        },
+        {
+          "id": "VER03-B021",
+          "text_sha256": "226bad55f66f4e5b130187001e868d728216e74cefff8e2d054a962b9ebe0fdc"
+        },
+        {
+          "id": "VER03-B022",
+          "text_sha256": "bb524cfed40b94967b53c5f624080457ba4511b5b523a587beddfc2345944841"
+        },
+        {
+          "id": "VER03-B023",
+          "text_sha256": "42c4c0ff67124ffa6cb3735bd0b6e764a0a2319f207f01fd522042c7ed835235"
+        },
+        {
+          "id": "VER03-B024",
+          "text_sha256": "3021420163d852ec38f4be21c9318a6479abe7cae44fc447075407a12191d170"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C02",
+        "next_cut_id": "VER03-C04",
+        "entry": "Raccord VER03-C02 : La petite chaussure est à côté de sa jupe ; Criston ne regarde pas dans la chambre",
+        "exit": "État à conserver : Casque posé sur la rampe ; Criston regarde le tournant qui masque la porte du bas",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "La mère fait constater au chevalier où il ne voit pas",
+      "cadrage": "Plan moyen de profil le long de la rampe",
+      "action_visible": "Criston regarde le tournant inférieur ; son casque repose sur la rampe. Helaena reste en haut près de la porte, chaussure encore au sol.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan moyen de profil le long de la rampe. Criston regarde le tournant inférieur ; son casque repose sur la rampe. Helaena reste en haut près de la porte, chaussure encore au sol. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B019",
+          "source_block_id": "VER03-B019",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Vous ne pouvez pas passer la journée sur ces marches.",
+          "intention": "La mère fait constater au chevalier où il ne voit pas",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B019",
+            "text_sha256": "f1ba86534a2352022d004976940ba9a99b71208350563f88685e555965426d9f"
+          }
+        },
+        {
+          "line_id": "VER03-B020",
+          "source_block_id": "VER03-B020",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Pourquoi ?",
+          "intention": "La mère fait constater au chevalier où il ne voit pas",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B020",
+            "text_sha256": "dde8656a50b75fd1568782ea878a292e953e13f04b69cb4bd640b61247fcd69f"
+          }
+        },
+        {
+          "line_id": "VER03-B022",
+          "source_block_id": "VER03-B022",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Parce que si quelqu’un vient par le bas, vous serez la première devant lui.",
+          "intention": "La mère fait constater au chevalier où il ne voit pas",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B022",
+            "text_sha256": "477e106e7512b49e0837da1538a7ad8a0ab31a0ff05b5f3f122108ebe71a357b"
+          }
+        },
+        {
+          "line_id": "VER03-B023",
+          "source_block_id": "VER03-B023",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Oui.",
+          "intention": "La mère fait constater au chevalier où il ne voit pas",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B023",
+            "text_sha256": "3ef8014022279d9eab210c2a7e6540e35e0592f15ee9491d1f58489152125160"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 16,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 12,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "f03d6507bfb509bfeee8219a46dd24ed9a0e11af1c8886911119991029f4051a",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "helaena"
+      ],
+      "speaker_ids": [
+        "criston",
+        "helaena"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B019",
+          "source_block_id": "VER03-B019",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Vous ne pouvez pas passer la journée sur ces marches."
+        },
+        {
+          "line_id": "VER03-B020",
+          "source_block_id": "VER03-B020",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Pourquoi ?"
+        },
+        {
+          "line_id": "VER03-B022",
+          "source_block_id": "VER03-B022",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Parce que si quelqu’un vient par le bas, vous serez la première devant lui."
+        },
+        {
+          "line_id": "VER03-B023",
+          "source_block_id": "VER03-B023",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Oui."
+        }
+      ],
+      "static_framing": "Plan moyen de profil le long de la rampe",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C04",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 53,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "beea7672b86d109f724c4da9689b86049e6400eb68653ecbc4a6d4e8d4ec0fe7"
+      },
+      "source_block_ids": [
+        "VER03-B025",
+        "VER03-B026",
+        "VER03-B027",
+        "VER03-B028",
+        "VER03-B029"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B025",
+          "text_sha256": "60030d9584d8012245b5379d4a82b12e7e80e83558ca5effc03ef160be49f75b"
+        },
+        {
+          "id": "VER03-B026",
+          "text_sha256": "f074e5133818fb4e4cff839508fd4d6a35fbd0332722f2a2c4c6426dd9f97989"
+        },
+        {
+          "id": "VER03-B027",
+          "text_sha256": "1598f5b8446004b39b16bb8588bf55e4feca12508d00e70b03d7a478dabd01a5"
+        },
+        {
+          "id": "VER03-B028",
+          "text_sha256": "068fced3100c2be37fdc47a9bb8ae5779bf58b56be55f98e604ce75b80fec5c4"
+        },
+        {
+          "id": "VER03-B029",
+          "text_sha256": "d18069a7176c091826b96727f6bd07cae41e1c202085cf591a91b3973e1fcefd"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C03",
+        "next_cut_id": "VER03-C05",
+        "entry": "Raccord VER03-C03 : Casque posé sur la rampe ; Criston regarde le tournant qui masque la porte du bas",
+        "exit": "État à conserver : Criston vérifie le battant au bas ; Helaena reste en haut près de la chaussure",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "Éprouver matériellement la porte ne règle pas la relève",
+      "cadrage": "Plan de profondeur depuis le haut, descente puis retour",
+      "action_visible": "Criston pose la main sur le battant du bas de l’escalier, depuis ce seul niveau. Helaena et le palier des enfants sont hors champ au-dessus du tournant.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan moyen du battant inférieur, depuis le niveau bas. Criston pose la main sur le battant du bas de l’escalier, depuis ce seul niveau. Helaena et le palier des enfants sont hors champ au-dessus du tournant. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. Tenues visibles : criston — armure pâle et cape blanche. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B025",
+          "source_block_id": "VER03-B025",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Le battant du bas reste fermé.",
+          "intention": "Éprouver matériellement la porte ne règle pas la relève",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B025",
+            "text_sha256": "3ea994b1a13e2d1a526088304b74306b306a93e39119e7bf6e9f9b4a64b2e7a2"
+          }
+        },
+        {
+          "line_id": "VER03-B026",
+          "source_block_id": "VER03-B026",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Il s’ouvre pour les draps.",
+          "intention": "Éprouver matériellement la porte ne règle pas la relève",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B026",
+            "text_sha256": "3965629d0b5a1519454cf3bcb5600ee10be7ccf2c165cb1cfeb83b4cb95e0c40"
+          }
+        },
+        {
+          "line_id": "VER03-B027",
+          "source_block_id": "VER03-B027",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "On les fera monter ailleurs.",
+          "intention": "Éprouver matériellement la porte ne règle pas la relève",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B027",
+            "text_sha256": "d49efe45e70f5d67cdf46ea98e08c603a704eb128744e78744230070316a9de8"
+          }
+        },
+        {
+          "line_id": "VER03-B028",
+          "source_block_id": "VER03-B028",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Puis pour le bois. Puis pour quelqu’un qui connaît celui qui porte le bois.",
+          "intention": "Éprouver matériellement la porte ne règle pas la relève",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B028",
+            "text_sha256": "8de015f8a63d8e74a1a73c3280f8f744fcd95844b2d67147c3f667bba47a0170"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 13.3,
+          "action_et_silence_hors_parole": 8,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c30a977a74a15cca28a9b8c1276110ecc8ebd579c41e00cf01d6b7629dfe94ca",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston"
+      ],
+      "speaker_ids": [
+        "criston",
+        "helaena"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B025",
+          "source_block_id": "VER03-B025",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston"
+          ],
+          "text_unchanged": "Le battant du bas reste fermé."
+        },
+        {
+          "line_id": "VER03-B026",
+          "source_block_id": "VER03-B026",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston"
+          ],
+          "text_unchanged": "Il s’ouvre pour les draps."
+        },
+        {
+          "line_id": "VER03-B027",
+          "source_block_id": "VER03-B027",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston"
+          ],
+          "text_unchanged": "On les fera monter ailleurs."
+        },
+        {
+          "line_id": "VER03-B028",
+          "source_block_id": "VER03-B028",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston"
+          ],
+          "text_unchanged": "Puis pour le bois. Puis pour quelqu’un qui connaît celui qui porte le bois."
+        }
+      ],
+      "static_framing": "Plan moyen du battant inférieur, depuis le niveau bas",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C05",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 54,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "9aae7312dee50922f882477bdded2010cf6d2d3ae080df1ce76c4a2d6c00b487"
+      },
+      "source_block_ids": [
+        "VER03-B030",
+        "VER03-B031",
+        "VER03-B032",
+        "VER03-B033"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B030",
+          "text_sha256": "cbed61beb99a3853541a5d38c4b5fa7e54ce4c56cdba2053a62d1b86f8298d01"
+        },
+        {
+          "id": "VER03-B031",
+          "text_sha256": "e8c5409d2527791bb7f04fef0ebf547bb7dff18dbc8cb483df95f8688cdad03d"
+        },
+        {
+          "id": "VER03-B032",
+          "text_sha256": "6a856b93d95e92362d4941db0ce064866736396d7162adc381e750b6b5c9bcdc"
+        },
+        {
+          "id": "VER03-B033",
+          "text_sha256": "86fe1aad4796e0a40ee3ab99010c0f1d7022d7dd57394a53c9e5b57e2d3860fb"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C04",
+        "next_cut_id": "VER03-C06",
+        "entry": "Raccord VER03-C04 : Criston vérifie le battant au bas ; Helaena reste en haut près de la chaussure",
+        "exit": "État à conserver : Criston fait face au tournant, une marche sous Helaena",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "Son devoir de sortie est suspendu par une garde réelle",
+      "cadrage": "Plan moyen de deux marches, caméra immobile",
+      "action_visible": "Criston immobile sur la marche juste sous Helaena fait face au tournant ; elle reste près de la petite chaussure. Casque posé sur la rampe.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan moyen de deux marches, caméra immobile. Criston immobile sur la marche juste sous Helaena fait face au tournant ; elle reste près de la petite chaussure. Casque posé sur la rampe. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B030",
+          "source_block_id": "VER03-B030",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Elle ferme. Mais je veux voir la relève.",
+          "intention": "Son devoir de sortie est suspendu par une garde réelle",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B030",
+            "text_sha256": "7111bec27bf84c7bb101be6054b28823f35fca6c267adabd6091cccc3488ff66"
+          }
+        },
+        {
+          "line_id": "VER03-B032",
+          "source_block_id": "VER03-B032",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Vous deviez sortir.",
+          "intention": "Son devoir de sortie est suspendu par une garde réelle",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B032",
+            "text_sha256": "359f27c8d889ff1259b63f83a9e8d240db4b01671b8633b2233ddcbeb9e005b3"
+          }
+        },
+        {
+          "line_id": "VER03-B033",
+          "source_block_id": "VER03-B033",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Pas encore.",
+          "intention": "Son devoir de sortie est suspendu par une garde réelle",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B033",
+            "text_sha256": "d9abbecbd6a90f27bad308aa1e243047b18ce1675e96b3c5c71c07e3ef23b3a9"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 8.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 5.8,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4e822ea45f784666791cf532cb2c08909635e26a7840ec853f5f0598f4a0a7ab",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "helaena"
+      ],
+      "speaker_ids": [
+        "criston",
+        "helaena"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B030",
+          "source_block_id": "VER03-B030",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Elle ferme. Mais je veux voir la relève."
+        },
+        {
+          "line_id": "VER03-B032",
+          "source_block_id": "VER03-B032",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Vous deviez sortir."
+        },
+        {
+          "line_id": "VER03-B033",
+          "source_block_id": "VER03-B033",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Pas encore."
+        }
+      ],
+      "static_framing": "Plan moyen de deux marches, caméra immobile",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER03-C06",
+      "scene_id": "VER03",
+      "episode_id": "lc-e001",
+      "order": 55,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER03.json",
+        "scene_sha256": "424543d894c517c9851d2389afdeae372c195e6259a40ccf161bb1a831962a92",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "39c0bdc16453fd7805659baee53d83e18ea8aa6ce375c1d4d1ec3f3d44fa2fc5"
+      },
+      "source_block_ids": [
+        "VER03-B034",
+        "VER03-B035",
+        "VER03-B036",
+        "VER03-B037"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER03-B034",
+          "text_sha256": "a04887ccdb4aae1bf544e78daf2ade83932903fd8b25b04b17dc36625aff8991"
+        },
+        {
+          "id": "VER03-B035",
+          "text_sha256": "7ef1f23646dc41e3252c0c0b82d47c0a8c42be7ec2b72ece648268a26b9c9ae3"
+        },
+        {
+          "id": "VER03-B036",
+          "text_sha256": "b17e0b5606933fa5f7d4403aa676870a0bcec52b8241095101fc73d9ca304566"
+        },
+        {
+          "id": "VER03-B037",
+          "text_sha256": "fc23a04a9e1938e6569943c5060bfb5ea0416a1f8266cecc674d52e1495ac693"
+        }
+      ],
+      "character_ids": [
+        "criston",
+        "helaena"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/criston.webp",
+          "sha256": "0982eec22d4f580baad572e421b4fed0c9ac5d9a880ee76e35555dfdfcb63457",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "criston"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long, nez droit, cheveux noirs ondulés courts grisonnants, barbe rasée, cape blanche.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/criston.svg",
+          "source_svg_sha256": "e95938078f18718b7d397feb8d81feb0f35c453e4c2324346aebaadd56e22585",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\criston.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/helaena.webp",
+          "sha256": "ac8f5a1d9d59ebf531a2d867c52a137e3e937ce90688eedf49551998944050ab",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "helaena"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune ovale fin, yeux clairs, cheveux blond cendré clair en torsades ; pas argent pur visible.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/helaena.svg",
+          "source_svg_sha256": "f9564179710bb6807aecdd5c6ce2f47eedddb4738594837e47530b1bd398fc5f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\helaena.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "criston",
+          "state": "armure pâle et cape blanche"
+        },
+        {
+          "character_id": "helaena",
+          "state": "robe gris-vert pâle, pas de couronne ajoutée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C05",
+        "next_cut_id": "N60-Q02-C01",
+        "entry": "Raccord VER03-C05 : Criston fait face au tournant, une marche sous Helaena",
+        "exit": "Sortie : Helaena ramasse la chaussure et ferme ; Criston reste dans l’escalier ; aucun résultat au-delà du texte adopté.",
+        "axis": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage."
+      },
+      "intention": "Deux noms restent promis mais une présence tient déjà la place",
+      "cadrage": "Plan large de la porte et de la marche occupée",
+      "action_visible": "Helaena à l’embrasure tient la chaussure ramassée contre sa jupe ; Criston reste sur la marche inférieure et lui rend son regard. Aucun enfant visible.",
+      "light": "Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre.",
+      "location": "Escalier de service du Donjon Rouge",
+      "prompt_image": "Plan large de la porte et de la marche occupée. Helaena à l’embrasure tient la chaussure ramassée contre sa jupe ; Criston reste sur la marche inférieure et lui rend son regard. Aucun enfant visible. Donjon Rouge, escalier de service des enfants. Jour latéral indirect, chambre non montrée, pierre claire dans l’ombre. criston : 47 ans, visage long, dur, imberbe, cheveux bruns courts grisonnants aux tempes, silhouette athlétique, épaules droites. helaena : 20 ans, visage ovale fin, yeux pâles, cheveux blond cendré clair demi-relevé, silhouette fine, gestes précis. Tenues visibles : criston — armure pâle et cape blanche ; helaena — robe gris-vert pâle, pas de couronne ajoutée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER03-B035",
+          "source_block_id": "VER03-B035",
+          "scene_id": "VER03",
+          "locuteur_id": "helaena",
+          "locuteur": "HELAENA",
+          "texte": "Un mot pour le premier. Un autre pour le second.",
+          "intention": "Deux noms restent promis mais une présence tient déjà la place",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B035",
+            "text_sha256": "8aea2329bbcf152d2593fea7eab7b829bd13086a7adbb7cfad61b73c4cb0329d"
+          }
+        },
+        {
+          "line_id": "VER03-B036",
+          "source_block_id": "VER03-B036",
+          "scene_id": "VER03",
+          "locuteur_id": "criston",
+          "locuteur": "CRISTON",
+          "texte": "Je viendrai vous le dire.",
+          "intention": "Deux noms restent promis mais une présence tient déjà la place",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER03 — Ceux qui tiennent la porte",
+            "block": "VER03-B036",
+            "text_sha256": "d0e09091ebe724b32e8a3773ba4a6abf5ec370083613ec45ecc32d2eec0fcd52"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 12.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 6.7,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "64742ea5938d3be46271cb29c37258258c388ebf103ceaf4451ab9e584bce5e7",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:criston",
+        "film_identity_approval_pending:helaena"
+      ],
+      "image_subject_ids": [
+        "criston",
+        "helaena"
+      ],
+      "speaker_ids": [
+        "helaena",
+        "criston"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER03-B035",
+          "source_block_id": "VER03-B035",
+          "speaker_id": "helaena",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Un mot pour le premier. Un autre pour le second."
+        },
+        {
+          "line_id": "VER03-B036",
+          "source_block_id": "VER03-B036",
+          "speaker_id": "criston",
+          "image_subject_ids": [
+            "criston",
+            "helaena"
+          ],
+          "text_unchanged": "Je viendrai vous le dire."
+        }
+      ],
+      "static_framing": "Plan large de la porte et de la marche occupée",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Chambre en haut derrière Helaena ; escalier tournant descendant hors vue vers le battant bas. Casque sur rampe après son dépôt, chaussure près de la jupe jusqu’au ramassage.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q02-C01",
+      "scene_id": "N60-Q02",
+      "episode_id": "lc-e001",
+      "order": 56,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+        "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c42ceb9699245371f09d20af86f52e47a1e30056a1f666e4f6145c35122ad1d6"
+      },
+      "source_block_ids": [
+        "N60-Q02-B001",
+        "N60-Q02-B002"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q02-B001",
+          "text_sha256": "8c10b24133e49bcce6794db5eadedc36c016af3922eca69e4222f9146fcf4235"
+        },
+        {
+          "id": "N60-Q02-B002",
+          "text_sha256": "907c5e93b89bf9725e70385c3d631f34c29574a33227155a9293540dd68aace2"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "le-sanglier",
+          "state": "cuir brun usé, laine sombre"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER03-C06",
+        "next_cut_id": "N60-Q02-C02",
+        "entry": "Entrée de scène : Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique.",
+        "exit": "État à conserver : Reine debout près de la toile et des pièces de bois, regards dirigés vers elle",
+        "axis": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique."
+      },
+      "intention": "La méthode doit rendre les trous visibles",
+      "cadrage": "Plan d’ensemble de la Table Peinte puis rapprochement reine",
+      "action_visible": "La reine debout au petit bout de la Table Peinte regarde la toile et les pièces ; Gerardys à gauche, Hask debout en face, le Sanglier côté porte. Aucun second tissu n’est posé dessus.",
+      "light": "Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés.",
+      "location": "Chambre de la Table Peinte, Peyredragon",
+      "prompt_image": "Plan d’ensemble de la Table Peinte. La reine debout au petit bout de la Table Peinte regarde la toile et les pièces ; Gerardys à gauche, Hask debout en face, le Sanglier côté porte. Aucun second tissu n’est posé dessus. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q02-B001",
+          "source_block_id": "N60-Q02-B001",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Mes seigneurs, jusqu’ici nous avons eu des objectifs, des moyens, des hommes, des idées",
+          "intention": "La méthode doit rendre les trous visibles",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 0,
+            "char_end": 87,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "ac8629dd7b18bb5e56a270b9c42d7742e5a010d7913df3717cd3e0676e52fae3",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q02-B002",
+          "source_block_id": "N60-Q02-B002",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "mais pas toujours le moyen de voir, d’un seul regard, si tout cela formait réellement un plan.\n\nC’est à cela que sert cette table.\n\nChaque pièce de bois est une **affaire** : une chose précise dont le Conseil doit venir à bout.\n\nNous les lions selon ce dont elles dépendent. Si une affaire ne peut avancer avant qu’une autre soit résolue, le fil le montre. Si elle aide seulement, nous l’indiquons autrement.\n\nEt chaque pièce porte son état :\n\n**Actionnable**",
+          "intention": "La méthode doit rendre les trous visibles",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 90,
+            "char_end": 549,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "17ba50ac5b16cf7f48deb493d513680e85285852d83a0afd8a185385d53b9541",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 44.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 41.8,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "b952ca2baf0a25dbf946285ab1463088b050be96062e3a7dc1e7983cbc74b2a6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:le-sanglier",
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q02-B001",
+          "source_block_id": "N60-Q02-B001",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "Mes seigneurs, jusqu’ici nous avons eu des objectifs, des moyens, des hommes, des idées"
+        },
+        {
+          "line_id": "N60-Q02-B002",
+          "source_block_id": "N60-Q02-B002",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "mais pas toujours le moyen de voir, d’un seul regard, si tout cela formait réellement un plan.\n\nC’est à cela que sert cette table.\n\nChaque pièce de bois est une **affaire** : une chose précise dont le Conseil doit venir à bout.\n\nNous les lions selon ce dont elles dépendent. Si une affaire ne peut avancer avant qu’une autre soit résolue, le fil le montre. Si elle aide seulement, nous l’indiquons autrement.\n\nEt chaque pièce porte son état :\n\n**Actionnable**"
+        }
+      ],
+      "static_framing": "Plan d’ensemble de la Table Peinte",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur ; archive129.3.26 après-midi",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q02-C02",
+      "scene_id": "N60-Q02",
+      "episode_id": "lc-e001",
+      "order": 57,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+        "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "6127111cfa711e981031adce73eabb604f6a5f92b92d053cc550b1e91a4ad6ea"
+      },
+      "source_block_ids": [
+        "N60-Q02-B003",
+        "N60-Q02-B004",
+        "N60-Q02-B005",
+        "N60-Q02-B006"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q02-B003",
+          "text_sha256": "249c5aa38a552be6b235aaec848f716219e42abc7e99d336391b2679f5f40bf3"
+        },
+        {
+          "id": "N60-Q02-B004",
+          "text_sha256": "51d15e3d0bb79507ef3992e4abe5751bd4b140e0a1cd661990c0b0729b28bf53"
+        },
+        {
+          "id": "N60-Q02-B005",
+          "text_sha256": "a3ea9e9438df6ab0b95190448268f2023719d5e21e87018d33705eb38354ed72"
+        },
+        {
+          "id": "N60-Q02-B006",
+          "text_sha256": "49e3ce969c32d762b1c9743ffe1c92763566ccc0c144ead2c1a01e070fc922fb"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "le-sanglier",
+          "state": "cuir brun usé, laine sombre"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q02-C01",
+        "next_cut_id": "N60-Q02-C03",
+        "entry": "Raccord N60-Q02-C01 : Reine debout près de la toile et des pièces de bois, regards dirigés vers elle",
+        "exit": "État à conserver : Pièces sur toile sans étiquettes générées, main royale s’arrête près d’un espace vide",
+        "axis": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique."
+      },
+      "intention": "Différencier états et aveu sans prétendre que des actions réussissent",
+      "cadrage": "Plan de table en biais, visage royal dans la profondeur",
+      "action_visible": "Une main de la reine est arrêtée près d’une place vide entre les pièces de bois, avec fils et formes sans étiquettes lisibles. Son visage est dans la profondeur.",
+      "light": "Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés.",
+      "location": "Chambre de la Table Peinte, Peyredragon",
+      "prompt_image": "Plan de table en biais, visage royal dans la profondeur. Une main de la reine est arrêtée près d’une place vide entre les pièces de bois, avec fils et formes sans étiquettes lisibles. Son visage est dans la profondeur. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q02-B003",
+          "source_block_id": "N60-Q02-B003",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "nous savons quoi faire, qui peut le faire, avec quoi, et comment nous saurons que cela a marché.\n\n**Bloquée**",
+          "intention": "Différencier états et aveu sans prétendre que des actions réussissent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 552,
+            "char_end": 661,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "aeae07b02afc63c496c246aaeb2051bbcfe00907d1d1652fe70db210fcea3a60",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q02-B004",
+          "source_block_id": "N60-Q02-B004",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "une autre affaire nous retient.\n\n**En attente**",
+          "intention": "Différencier états et aveu sans prétendre que des actions réussissent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 664,
+            "char_end": 711,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "5cf7e349783901d432fcc9fd7271e36f70d1c1932046d27b387d75412260c740",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q02-B005",
+          "source_block_id": "N60-Q02-B005",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "nous attendons quelque chose de précis du monde.\n\n**Fermée**",
+          "intention": "Différencier états et aveu sans prétendre que des actions réussissent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 714,
+            "char_end": 774,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "7bdef9f8b2cbe8b9ca22fdc782bb489ea993c2623e34eca9c4822616603297c0",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q02-B006",
+          "source_block_id": "N60-Q02-B006",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "sa condition de fin est réellement satisfaite.\n\nEt surtout : **non couverte**.\n\nCela signifie que nous savons qu’une chose est nécessaire, mais que notre plan s’arrête avant d’atteindre une action réelle.\n\nAinsi, pour Port-Réal, nous partons de la prise de la ville et nous suivons chaque branche : le Guet, les portes, les soutiens, le Donjon, les routes, les hommes.\n\nChaque branche doit finir soit par quelque chose déjà acquis, soit par quelque chose que nous pouvons faire maintenant, soit par quelque chose de précis que nous attendons.\n\nSi elle finit dans le vide, voilà le travail du Conseil.\n\nCette table ne sert donc pas à montrer tout ce que nous savons.\n\nElle sert à répondre à une seule question :\n\n**entre ce que nous voulons et ce que nous pouvons réellement faire, où sont encore les trous ?**",
+          "intention": "Différencier états et aveu sans prétendre que des actions réussissent",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5984,
+            "char_start": 777,
+            "char_end": 1586,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "785949ee6b5a6abdeac1702923cca1d86a1f9cca77d570b862a65d83e581d72e",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 80.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 77.3,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4ebbda3ed7299528ad7d8a8625e01f4482ec6c7e73b699df6fb8a3742ef2551b",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:le-sanglier",
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q02-B003",
+          "source_block_id": "N60-Q02-B003",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "nous savons quoi faire, qui peut le faire, avec quoi, et comment nous saurons que cela a marché.\n\n**Bloquée**"
+        },
+        {
+          "line_id": "N60-Q02-B004",
+          "source_block_id": "N60-Q02-B004",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "une autre affaire nous retient.\n\n**En attente**"
+        },
+        {
+          "line_id": "N60-Q02-B005",
+          "source_block_id": "N60-Q02-B005",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "nous attendons quelque chose de précis du monde.\n\n**Fermée**"
+        },
+        {
+          "line_id": "N60-Q02-B006",
+          "source_block_id": "N60-Q02-B006",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "sa condition de fin est réellement satisfaite.\n\nEt surtout : **non couverte**.\n\nCela signifie que nous savons qu’une chose est nécessaire, mais que notre plan s’arrête avant d’atteindre une action réelle.\n\nAinsi, pour Port-Réal, nous partons de la prise de la ville et nous suivons chaque branche : le Guet, les portes, les soutiens, le Donjon, les routes, les hommes.\n\nChaque branche doit finir soit par quelque chose déjà acquis, soit par quelque chose que nous pouvons faire maintenant, soit par quelque chose de précis que nous attendons.\n\nSi elle finit dans le vide, voilà le travail du Conseil.\n\nCette table ne sert donc pas à montrer tout ce que nous savons.\n\nElle sert à répondre à une seule question :\n\n**entre ce que nous voulons et ce que nous pouvons réellement faire, où sont encore les trous ?**"
+        }
+      ],
+      "static_framing": "Plan de table en biais, visage royal dans la profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur ; archive129.3.26 après-midi",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q02-C03",
+      "scene_id": "N60-Q02",
+      "episode_id": "lc-e001",
+      "order": 58,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q02.json",
+        "scene_sha256": "3a46ec6b6184c8920a75b560553221109f9a4cc1b0165901f1a4f80af21d6390",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "c56b274aa674a1009b0e83d6e53b459aa9eb378077800b8ad6aca8282d406931"
+      },
+      "source_block_ids": [
+        "N60-Q02-B007",
+        "N60-Q02-B008",
+        "N60-Q02-B009",
+        "N60-Q02-B010"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q02-B007",
+          "text_sha256": "4131e8af17ba1062c73166e905705790b44d465ad0fbbcaea220d4a1419a7324"
+        },
+        {
+          "id": "N60-Q02-B008",
+          "text_sha256": "4e646dd3563aba62ebc14cc172581fb42942ca3a9ca24312f22b854b1d4ad5c1"
+        },
+        {
+          "id": "N60-Q02-B009",
+          "text_sha256": "6838cb65d1bf4c3e1b05519b425486fa8c881bcc6865857e7c346193c6fa1247"
+        },
+        {
+          "id": "N60-Q02-B010",
+          "text_sha256": "f61085a96ea3823d81cb2064d57757ac27b375c73d3cca3b93f0f6838cd798d0"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "le-sanglier",
+          "state": "cuir brun usé, laine sombre"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "aldon-hask",
+          "state": "veste laine gris-brun propre, manche lustrée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q02-C02",
+        "next_cut_id": "N60-Q02-C04",
+        "entry": "Raccord N60-Q02-C02 : Pièces sur toile sans étiquettes générées, main royale s’arrête près d’un espace vide",
+        "exit": "État à conserver : Le Sanglier retourne une tuile et la repose au même endroit",
+        "axis": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique."
+      },
+      "intention": "Pouvoir effacer rend l’erreur praticable",
+      "cadrage": "Plan rapproché Sanglier, pièce et mestre en second plan",
+      "action_visible": "Le Sanglier tient une tuile retournée entre pouce et index, petit dépôt de craie sur le pouce ; Gerardys et la reine sont en amorce autour de la table.",
+      "light": "Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés.",
+      "location": "Chambre de la Table Peinte, Peyredragon",
+      "prompt_image": "Plan rapproché Sanglier, pièce et mestre en second plan. Le Sanglier tient une tuile retournée entre pouce et index, petit dépôt de craie sur le pouce ; Gerardys et la reine sont en amorce autour de la table. Peyredragon, salle de la Table Peinte. Jour de fenêtre motivé, volumes lisibles, bois et toile réellement tissés. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. le-sanglier : 50–60 ans, visage buriné carré proposé, cheveux gris courts proposés, silhouette large, jambe raide. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. aldon-hask : 63 ans, visage sec, traits réguliers proposés, cheveux gris clairsemés proposés, silhouette mince, toujours propre. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; le-sanglier — cuir brun usé, laine sombre ; gerardys — robe grise anthracite usée ; aldon-hask — veste laine gris-brun propre, manche lustrée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q02-B008",
+          "source_block_id": "N60-Q02-B008",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "le-sanglier",
+          "locuteur": "LE SANGLIER",
+          "texte": "Ça s'efface.",
+          "intention": "Pouvoir effacer rend l’erreur praticable",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5987,
+            "char_start": 303,
+            "char_end": 315,
+            "event_type": "geste",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 848
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "c50daf0d4aa5284fd6339e5da218ab97e04bb962b084f8f22389186b9f35c48c",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q02-B010",
+          "source_block_id": "N60-Q02-B010",
+          "scene_id": "N60-Q02",
+          "locuteur_id": "le-sanglier",
+          "locuteur": "LE SANGLIER",
+          "texte": "Alors on peut se tromper sans que ça reste.",
+          "intention": "Pouvoir effacer rend l’erreur praticable",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "C:/Users/reyno/le-conseil2/etat/flux.jsonl",
+            "line": 5987,
+            "char_start": 374,
+            "char_end": 417,
+            "event_type": "geste",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 26,
+              "minute": 848
+            },
+            "file_sha256": "77896b8a541aa2a014e27a566e5eb8c4188f2092075efec2b35cb51ef443e0fc",
+            "text_sha256": "8362a09f6b5a21cc5fa6d65898a45e4f146efa4587f925305c9550ab1aa3921d",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 8.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 4.9,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9a5a17ecc420d0bdcad1a851934be48dd8a164332b4ebb0b84dd0261e309640c",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:le-sanglier",
+        "identity_image_missing:aldon-hask",
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "le-sanglier",
+        "gerardys",
+        "aldon-hask"
+      ],
+      "speaker_ids": [
+        "le-sanglier"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q02-B008",
+          "source_block_id": "N60-Q02-B008",
+          "speaker_id": "le-sanglier",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "Ça s'efface."
+        },
+        {
+          "line_id": "N60-Q02-B010",
+          "source_block_id": "N60-Q02-B010",
+          "speaker_id": "le-sanglier",
+          "image_subject_ids": [
+            "rhaenyra",
+            "le-sanglier",
+            "gerardys",
+            "aldon-hask"
+          ],
+          "text_unchanged": "Alors on peut se tromper sans que ça reste."
+        }
+      ],
+      "static_framing": "Plan rapproché Sanglier, pièce et mestre en second plan",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Conseil ultérieur ; archive129.3.26 après-midi",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine au petit côté ; Gerardys à sa gauche avec plume, Hask debout en face, Sanglier côté porte. Toile, tuiles de bois, place laissée vide, pas de maquette magique.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    }
+  ]
+}

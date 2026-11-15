@@ -96,6 +96,11 @@ export interface SchedulerOptions {
   /** Réveil demandé par l'humain en attente (`mind-wake wake`) : lève fenêtre et attente. */
   readonly humanWakePending?: (nowMs: number) => boolean;
   readonly alwaysOn?: () => boolean;
+  /**
+   * Fil principal On/Off (réglage de l'humain). `false` : aucun nouveau lancement, sans
+   * changer l'état du profil ; la session en cours termine normalement. Absent : On.
+   */
+  readonly mainThreadEnabled?: () => boolean;
   /** Verrou d'instance du profil, déjà acquis. */
   readonly lock: InstanceLock;
   readonly backoff?: BackoffPolicy;
@@ -303,6 +308,9 @@ export class Scheduler {
     if (this.#inFlight !== null) {
       return { kind: "inactive", state: profile.state, detail: "session.in_flight" };
     }
+    if (this.#mainThreadOff()) {
+      return { kind: "inactive", state: profile.state, detail: "main_thread.off" };
+    }
     if (profile.state === "blocked" && this.#blockedOnUnknownQuota()) {
       return this.#recheckBlockedQuota(profile);
     }
@@ -330,6 +338,15 @@ export class Scheduler {
     const result = this.#o.uow.transaction(() => this.#decide(this.#o.clock.now(), facts));
     if (result.kind === "launched") this.#startSession(result.ticket);
     return result;
+  }
+
+  /** Lecture défensive : un réglage illisible ou en erreur laisse le fil principal On. */
+  #mainThreadOff(): boolean {
+    try {
+      return this.#o.mainThreadEnabled?.() === false;
+    } catch {
+      return false;
+    }
   }
 
   /** Dernier refus : jauge d'abonnement illisible (lecture échouée ou hors délai). */
@@ -436,6 +453,10 @@ export class Scheduler {
     const profile = this.#profile();
     if (profile.state !== "ready" && profile.state !== "hibernating") {
       return { kind: "inactive", state: profile.state, detail: `profile.state: ${profile.state}` };
+    }
+    // Relu après la collecte des faits : un Off posé entre-temps l'emporte.
+    if (this.#mainThreadOff()) {
+      return { kind: "inactive", state: profile.state, detail: "main_thread.off" };
     }
     const resolution = resolvePolicy(uow.policies, profileId);
     const revision = resolution.status === "active" ? resolution.revision : null;

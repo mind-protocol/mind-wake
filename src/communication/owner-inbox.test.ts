@@ -11,6 +11,7 @@ import {
   claimOwnerMessages,
   confirmOwnerClaim,
   releaseOwnerClaims,
+  takeOwnerMessagesForHook,
 } from "./owner-inbox.js";
 import { ownerInboxHook } from "./owner-inbox-hook.js";
 import { claudeRunArgs } from "../adapters/claude/command.js";
@@ -108,6 +109,29 @@ it("injects desktop messages once, in order, and retains deduplication across wa
   expect(ownerInboxHook(dir, "session-1", input())).toBeNull();
   send();
   expect(ownerInboxHook(dir, "session-1", input("SessionStart"))).toBeNull();
+});
+
+it("bounds peer hook delivery, preserves Reddit links, and never truncates human messages", () => {
+  const origin = { kind: "peer_message" as const, channel: "reddit", author: "Reddit", senderRef: "reddit:u/a", recipientRef: "reddit:u/owner", threadId: "t3_a", messageId: "t3_a", correlationId: "reddit-a" };
+  enqueueOwnerMessage(dir, { id: "peer-1", at: "2026-10-29T16:30:00Z", text: `peer ${"x".repeat(3000)}\n\n[Voir sur Reddit](https://www.reddit.com/r/a/comments/a/)`, origin });
+  enqueueOwnerMessage(dir, { id: "peer-2", at: "2026-10-29T16:30:01Z", text: "P".repeat(1200), origin: { ...origin, messageId: "t3_b", correlationId: "reddit-b" } });
+  enqueueOwnerMessage(dir, { id: "human-long", at: "2026-10-29T16:30:02Z", text: "H".repeat(9000) });
+  const batch = takeOwnerMessagesForHook(dir, "bounded", 2300);
+  expect(batch.messages.map(m => m.id)).toEqual(["peer-1", "human-long"]);
+  expect(batch.messages[0]!.text.length).toBeLessThanOrEqual(1500);
+  expect(batch.messages[0]!.text).toContain("https://www.reddit.com/r/a/comments/a/");
+  expect(batch.messages[1]!.text).toHaveLength(9000);
+  expect(batch.deferred).toBe(1);
+  expect(ownerMessagePending(dir)).toBe(true);
+});
+
+it("announces how many peer messages remain for later hooks", () => {
+  const origin = { kind: "peer_message" as const, channel: "mind-shared-hub", author: "Peer", senderRef: "peer", recipientRef: "owner", threadId: "thread", messageId: "message", correlationId: "copy" };
+  for (let i = 0; i < 6; i++)
+    enqueueOwnerMessage(dir, { id: `peer-${String(i)}`, at: `2026-10-29T16:30:0${String(i)}Z`, text: "P".repeat(1500), origin: { ...origin, messageId: `message-${String(i)}`, correlationId: `copy-${String(i)}` } });
+  const result = ownerInboxHook(dir, "session-1", input()) as { hookSpecificOutput: { additionalContext: string } };
+  expect(result.hookSpecificOutput.additionalContext).toMatch(/\+\d+ autres messages en attente/);
+  expect(ownerMessagePending(dir)).toBe(true);
 });
 
 it("keeps pending messages for a wake if the previous session ended before a tool hook", () => {

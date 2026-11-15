@@ -1,6 +1,8 @@
 import path from "node:path";
 import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
 import { WakeCoach } from "./coach.js";
+import { FastReplyService } from "../communication/fast-reply-server.js";
+import { PatternHolderService } from "../communication/pattern-holders.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { withWakeManager } from "./wake-manager.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
@@ -121,6 +123,7 @@ import {
 import { AgentWakeups, type QuotaSource } from "./wakeups.js";
 import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
+import { mainThreadEnabled } from "./main-thread.js";
 import { currentContextEvent } from "./current-context.js";
 import { ownerIsWatching, ownerPresenceEvent } from "./owner-presence.js";
 import { DuoMonitor } from "../communication/duo-reminder.js";
@@ -269,6 +272,8 @@ export class WakeDaemon implements SessionLauncher {
   #ownerProgress: OwnerProgressReminder | null = null;
   #duo: DuoMonitor | null = null;
   #coach: WakeCoach | null = null;
+  #fastReply: FastReplyService | null = null;
+  #patternHolders: PatternHolderService | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -640,6 +645,7 @@ export class WakeDaemon implements SessionLauncher {
         executionMode(this.#o.dataDir) === "always-on" ||
         (this.#registration.id === "claude" && ownerMessagePending(this.#o.dataDir, true)),
       alwaysOn: () => executionMode(this.#o.dataDir) === "always-on",
+      mainThreadEnabled: () => mainThreadEnabled(this.#o.dataDir),
       priority: this.#signal,
       launcher: this,
       lock: this.#lock,
@@ -681,6 +687,20 @@ export class WakeDaemon implements SessionLauncher {
           log: message => this.#log(message),
         });
         this.#coach.start();
+        // Réponse rapide : Claude préchauffé, hors pause (comme avant), arrêtée par le stop.
+        this.#fastReply = new FastReplyService({
+          dataDir: this.#o.dataDir,
+          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
+          log: message => this.#log(message),
+        });
+        this.#fastReply.start();
+        // Pattern holders : accords qui se réveillent quand le fil touche leur domaine.
+        this.#patternHolders = new PatternHolderService({
+          dataDir: this.#o.dataDir,
+          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
+          log: message => this.#log(message),
+        });
+        this.#patternHolders.start();
       }
       if (real !== null && real.sandbox === null) {
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
@@ -695,12 +715,14 @@ export class WakeDaemon implements SessionLauncher {
             policy.status === "active" &&
             policy.revision.groups.runtime.hostUnsandboxedAcknowledged === true
           );
-        });
+        }, job => this.#log(`job relancé après interruption : ${job.id} (${job.title})`));
         this.#backgroundJobs.start();
       }
       await scheduler.run(this.#abort.signal);
     } finally {
       await this.#coach?.close();
+      await this.#fastReply?.close();
+      await this.#patternHolders?.close();
       await this.#auroreSync?.close();
       await this.#workspaceSync?.close();
       await this.#backgroundJobs?.close();

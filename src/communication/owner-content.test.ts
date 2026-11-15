@@ -115,3 +115,20 @@ it("rejects malformed image bytes before queueing", () => {
     });
   }).toThrow("Invalid owner image");
 });
+
+it("delivers composed PNGs as ordered image blocks and clears them after receipt", () => {
+  const voiceScreens = ["iVBORw0KGgo=", "iVBORw0KGgof"];
+  enqueueOwnerMessage(dir, { id: "visual-voice", at: image.capturedAt, text: "Le menu fugace", voiceScreens });
+  expect(takeOwnerMessages(dir, "hook")).toEqual([]);
+  const messages = claimOwnerMessages(dir, "session", "claim");
+  expect(messages[0]?.voiceScreens).toEqual(voiceScreens);
+  expect(ownerContent(messages, "codex").slice(2)).toEqual(
+    voiceScreens.map(base64 => ({ type: "image", url: `data:image/png;base64,${base64}` })),
+  );
+  expect(ownerContent(messages, "claude").slice(2)).toEqual(
+    voiceScreens.map(data => ({ type: "image", source: { type: "base64", media_type: "image/png", data } })),
+  );
+  expect(JSON.stringify(ownerContent(messages, "codex").slice(0, 2))).not.toContain(voiceScreens[0]);
+  confirmOwnerClaim(dir, "session", "claim");
+  expect(claimOwnerMessages(dir, "next", "claim")).toEqual([]);
+});

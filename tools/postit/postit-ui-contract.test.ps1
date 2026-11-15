@@ -48,7 +48,7 @@ try {
   $onClick.Invoke($emotes.Tag.buttons[1],@([EventArgs]::Empty))
   if(-not $emotes.IsDisposed){throw 'Reaction picker did not close'}
   if(-not $conversation.IsDisposed -or $script:freeformCalls -ne 1){throw 'Reaction did not save/send/close once'}
-  $reaction=@(Get-ChildItem -LiteralPath $testDir -Filter 'postit-*.json' | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName | ConvertFrom-Json })
+  $reaction=@(Get-ChildItem -LiteralPath $testDir -Filter '*.reply.json' | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName | ConvertFrom-Json })
   if($reaction.Count -ne 1 -or $reaction[0].capture -or $reaction[0].reply_to -ne 'own_fixture' -or $reaction[0].text -notmatch 'Gardons'){throw 'Reaction source or capture incorrect'}
   $emotes.Dispose()
   'PASS: opaque buttons, save then transport, immediate close, other note preserved, retry retains choice, no automatic resend'

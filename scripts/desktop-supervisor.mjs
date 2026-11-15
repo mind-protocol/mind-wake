@@ -170,7 +170,10 @@ export async function supervise(manifestFile, startup, launch = startLocal) {
       const { code, signal } = await waitForDesktopExit(child);
       if (Date.now() - started > 60000) failures = 0;
       delay = restartDelay(code, signal, failures++);
-      if (delay === null) return;
+      if (delay === null) {
+        log(`desktop exited (${code ?? signal}); supervisor stopped after clean exit`);
+        return;
+      }
       log(`desktop exited (${code ?? signal}); restarting in ${delay}ms`);
     } catch (error) {
       delay = restartDelay(null, null, failures++);

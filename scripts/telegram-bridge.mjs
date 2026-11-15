@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import { TelegramApi, TelegramBridge } from "../services/telegram/bridge.mjs";
+import {
+  acquireTelegramLock,
+  ownsTelegramLock,
+  releaseTelegramLock,
+} from "./telegram-lock.mjs";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataDir = path.resolve(
@@ -21,19 +26,7 @@ if (
 )
   throw Error("Configuration Telegram invalide");
 const lock = path.join(dataDir, "telegram.pid");
-try {
-  const pid = Number(fs.readFileSync(lock, "utf8"));
-  if (pid > 0) {
-    try {
-      process.kill(pid, 0);
-      process.exit(0);
-    } catch {}
-  }
-  fs.unlinkSync(lock);
-} catch (error) {
-  if (error.code !== "ENOENT") throw error;
-}
-fs.writeFileSync(lock, String(process.pid), { flag: "wx" });
+if (!acquireTelegramLock(lock)) process.exit(0);
 let stopping = false;
 process.on("SIGINT", () => {
   stopping = true;
@@ -181,6 +174,12 @@ try {
   console.log(`Telegram @${me.username} → @${config.ownerUsername.replace(/^@/, "")}`);
   const loop = async (method) => {
     while (!stopping) {
+      if (!ownsTelegramLock(lock)) {
+        // Another bridge took over telegram.pid: two getUpdates consumers must never coexist.
+        console.error("Telegram : verrou repris par un autre pont, arrêt");
+        stopping = true;
+        break;
+      }
       try {
         if (!active()) {
           if (method === "incoming") bridge.set("status", "suspended");
@@ -213,5 +212,5 @@ try {
   await Promise.all([loop("outgoing"), loop("incoming")]);
 } finally {
   bridge.close();
-  fs.rmSync(lock, { force: true });
+  releaseTelegramLock(lock);
 }

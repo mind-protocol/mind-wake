@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DELEGATION_REMINDER, DelegationEvidence } from "../../daemon/delegation-reminder.js";
 import { fileURLToPath } from "node:url";
+import { nodeScriptArgs } from "../../cli/script-entry.js";
 import type {
   AdapterCapabilities,
   AdapterEvent,
@@ -71,6 +72,9 @@ export const CLAUDE_ADAPTER_ID = "claude" as AdapterId;
  * `usage_report` sur `/usage` (Agent SDK 0.3.273, qui embarque Claude Code 2.1.273).
  */
 export const CLAUDE_MIN_VERSION = "2.1.273";
+
+/** Native sessions: a Bash call running longer than 15 s continues in the background. */
+export const CLAUDE_BASH_DEFAULT_TIMEOUT_MS = "15000";
 
 const EXECUTION_MECHANISM =
   "CLI officiel Claude Code, mode non interactif `claude -p` en stream-json (code.claude.com/docs/en/headless)";
@@ -147,6 +151,8 @@ export interface ClaudeAdapterOptions {
   readonly onStreamLine?: (sessionId: SessionId, line: string) => void;
   /** Configuration MCP de confiance ; ne charge pas les serveurs du workspace. */
   readonly mcpConfigFile?: string;
+  /** Dossier des journaux de débogage du CLI, un fichier par session ; absent : désactivé. */
+  readonly debugDir?: string;
   readonly ownerInboxDir?: string;
   readonly maxTurns?: number;
   /**
@@ -445,7 +451,14 @@ export class ClaudeAdapter implements RuntimeAdapter {
         ? {
             extra: {
               ...(o.extraEnv ?? {}),
-              ...(mode.nativeCapabilities === true ? { CLAUDE_CODE_ENABLE_TODO_TOOLS: "1" } : {}),
+              // A Bash call still running at this timeout moves to the background instead of
+              // holding the turn, so owner messages are delivered at the next tool boundary.
+              ...(mode.nativeCapabilities === true
+                ? {
+                    CLAUDE_CODE_ENABLE_TODO_TOOLS: "1",
+                    BASH_DEFAULT_TIMEOUT_MS: CLAUDE_BASH_DEFAULT_TIMEOUT_MS,
+                  }
+                : {}),
             },
           }
         : {}),
@@ -494,16 +507,11 @@ export class ClaudeAdapter implements RuntimeAdapter {
       nativeCapabilities,
       ...(o.ownerInboxDir !== undefined && permission === "skip_permissions_unsandboxed"
         ? {
-            ownerInboxHook: {
-              dataDir: o.ownerInboxDir,
-              node: process.execPath,
-              script: fileURLToPath(
-                new URL("../../communication/owner-inbox-hook.js", import.meta.url),
-              ),
-            },
+            ownerInboxHook: ownerInboxHookLaunch(o.ownerInboxDir),
           }
         : {}),
       ...(o.mcpConfigFile === undefined ? {} : { mcpConfigFile: o.mcpConfigFile }),
+      ...(o.debugDir === undefined ? {} : { debugFile: path.join(o.debugDir, `${sessionId}.log`) }),
       permission,
       session: { mode: record.started ? "resume" : "new", id: claudeSessionId },
       ...(o.maxTurns === undefined ? {} : { maxTurns: o.maxTurns }),
@@ -1367,4 +1375,25 @@ export class ClaudeAdapter implements RuntimeAdapter {
       }
     }
   }
+}
+
+/** Hook du canal propriétaire, dans le même mode que le moteur (dist ou sources). */
+function ownerInboxHookLaunch(dataDir: string): {
+  dataDir: string;
+  node: string;
+  script: string;
+  nodeArgs?: string[];
+} {
+  const compiled = fileURLToPath(
+    new URL("../../communication/owner-inbox-hook.js", import.meta.url),
+  );
+  const args = nodeScriptArgs(compiled) ?? [compiled];
+  const script = args.at(-1) ?? compiled;
+  const nodeArgs = args.slice(0, -1);
+  return {
+    dataDir,
+    node: process.execPath,
+    script,
+    ...(nodeArgs.length > 0 ? { nodeArgs } : {}),
+  };
 }

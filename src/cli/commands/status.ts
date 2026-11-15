@@ -1,4 +1,5 @@
 import { executionMode, type ExecutionMode } from "../../daemon/execution-mode.js";
+import { readMainThread, type MainThreadSetting } from "../../daemon/main-thread.js";
 import { keyboardContextStatus } from "../../daemon/keyboard-context.js";
 import { readCurrentProject } from "../../daemon/project-change.js";
 import { workspaceDirFor } from "../../daemon/paths.js";
@@ -147,6 +148,8 @@ export interface StatusData {
   readonly keyboardContext?: { readonly state: string; readonly bufferedChanges: number };
   readonly dataDir: string;
   readonly executionMode: ExecutionMode;
+  /** Fil principal On/Off : Off, plus aucun nouveau réveil principal. */
+  readonly mainThread: MainThreadSetting;
   readonly persistence: Persistence | null;
   readonly profile: {
     readonly id: string;
@@ -216,6 +219,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
       return {
         dataDir: dataDir.path,
         executionMode: executionMode(dataDir.path),
+        mainThread: readMainThread(dataDir.path),
         keyboardContext: keyboardContextStatus(
           dataDir.path,
           profile !== null && ["ready", "running", "hibernating"].includes(profile.state),
@@ -293,6 +297,7 @@ export function status(ctx: CliContext, dataDir: DataDir): CommandResult<StatusD
       activeProject: readCurrentProject(workspaceDirFor(dataDir.path)),
       wakePreview: readWakePreview(workspaceDirFor(dataDir.path)),
       executionMode: executionMode(dataDir.path),
+      mainThread: readMainThread(dataDir.path),
       keyboardContext: keyboardContextStatus(
         dataDir.path,
         profile !== null && ["ready", "running", "hibernating"].includes(profile.state),

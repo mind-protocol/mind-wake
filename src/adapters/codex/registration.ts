@@ -8,6 +8,8 @@
  */
 
 import { withFilResume } from "../../communication/fil-continuity.js";
+import { CLUSTER_STATUS_PROMPT } from "../../communication/cluster-status.js";
+import { clusterStatusPublisher } from "../../daemon/forks.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import { discoverCodex, executableFromPath } from "./executable.js";
 import path from "node:path";
@@ -84,6 +86,9 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,
         ownerInboxDir: context.dataDir,
+        ...(context.nativeCapabilities === true
+          ? { onClusterStatus: clusterStatusPublisher(context.dataDir, 1, "Fil principal") }
+          : {}),
         nativeCapabilities: context.nativeCapabilities === true,
         ...(process.env["CODEX_HOME"]
           ? { nativeCodexHome: path.resolve(process.env["CODEX_HOME"]) }
@@ -104,9 +109,12 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
             context.workspaceDir,
             withWakePersonality(
               context.workspaceDir,
-              typeof config.systemPrompt === "function"
-                ? config.systemPrompt(request)
-                : (config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
+              [
+                typeof config.systemPrompt === "function"
+                  ? config.systemPrompt(request)
+                  : (config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
+                ...(context.nativeCapabilities === true ? [CLUSTER_STATUS_PROMPT] : []),
+              ].join("\n\n"),
             ),
           ),
       }),

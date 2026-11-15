@@ -4,7 +4,9 @@ La vue d’ensemble propose sept interrupteurs indépendants, Off par défaut :
 le fil principal et les forks 2 à 8 font au maximum huit agents Codex.
 Chaque fork possède un onglet, une boîte de réception, une transcription et un
 identifiant de fil Codex persistants. Off arrête son travail et conserve ces données.
-Les messages humains attendent son prochain tour, sans activer un fork éteint.
+Les messages humains directs, avec leurs éventuelles planches de dictée, sont
+transmis par `turn/steer` pendant un tour actif. Sans accusé du même tour, ils
+attendent son prochain tour. Un message n’active pas un fork éteint.
 Chaque fork affiche son icône numérotée et colorée, son état « Travaille » et
 son indicateur « Nouveau message » dans l’onglet et la vue d’ensemble. Le
 compteur ne concerne que ses réponses d’agent et s’efface quand son fil est
@@ -98,3 +100,18 @@ en cours de tour, les limites fournisseur et une boucle IPC réelle avec un
 faux Codex dans un Windows Job Object. Ils n’appellent aucun modèle.
 Une utilisation avec de vrais agents et une revue visuelle dans le desktop
 restent à observer avant de déclarer le parcours complet validé.
+
+Un fork Codex actif peut adresser un message à un autre fork actif en plaçant
+`[agent:fork8]texte[/agent]` dans sa réponse finale publique. Remplacer 8
+par le numéro du destinataire. Un seul message interfil est accepté par tour.
+Le panneau du destinataire affiche le brouillon pendant la génération. Après
+un tour terminé avec succès, le message est enregistré une seule fois, avec
+le numéro du fork expéditeur. Si le destinataire est déjà en tour, Wake pousse
+le message via `turn/steer`. L’accusé du même tour confirme la réception par le
+runtime. Sans cet accusé, le message reste en attente pour le prochain tour.
+
+Un fork ou le fil principal Codex natif peut publier une phrase autonome
+`[status]…[/status]` dans un message public. À la fin de ce message, Wake
+diffuse le statut modifié en FYI, avec le nom de son auteur, au fil principal
+et aux forks activés autres que l’émetteur. Les destinataires actifs passent
+par le mécanisme de steering de leur runtime. Le FYI n’attend aucune réponse.

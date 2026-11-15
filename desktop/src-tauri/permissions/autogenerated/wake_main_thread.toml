@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-wake-main-thread"
+description = "Enables the wake_main_thread command without any pre-configured scope."
+commands.allow = ["wake_main_thread"]
+
+[[permission]]
+identifier = "deny-wake-main-thread"
+description = "Denies the wake_main_thread command without any pre-configured scope."
+commands.deny = ["wake_main_thread"]

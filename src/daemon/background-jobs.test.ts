@@ -135,3 +135,31 @@ it.skipIf(process.platform !== "win32")(
   },
   30_000,
 );
+
+it("relaunches only opted-in loops interrupted by a stop, once Wake is allowed again", async () => {
+  script("setInterval(() => {}, 1000);");
+  let allowed = true;
+  const relaunched: string[] = [];
+  manager = new BackgroundJobs(dir, () => allowed, (job) => relaunched.push(job.id));
+  const loop = manager.store.submit("boucle", "jobs/test.mjs", [], "loop-key", { relaunch: true });
+  const once = manager.store.submit("ponctuel", "jobs/test.mjs", ["x"], "once-key");
+  await manager.tick();
+  await until(() => manager?.store.get(loop.id).status === "running");
+  await until(() => manager?.store.get(once.id).status === "running");
+  allowed = false;
+  await manager.tick();
+  expect(manager.store.get(loop.id).status).toBe("interrupted");
+  expect(manager.store.get(once.id).status).toBe("interrupted");
+  await manager.tick();
+  expect(relaunched).toEqual([]);
+  allowed = true;
+  await manager.tick();
+  const next = manager.store.get(loop.id).relaunchedAs;
+  expect(next).toBeDefined();
+  expect(relaunched).toEqual([next]);
+  expect(manager.store.get(once.id).relaunchedAs).toBeUndefined();
+  await until(() => next !== undefined && manager?.store.get(next).status === "running");
+  expect(manager.store.get(next ?? "").relaunch).toBe(true);
+  await manager.tick();
+  expect(manager.store.list().filter((j) => j.title === "boucle")).toHaveLength(2);
+});

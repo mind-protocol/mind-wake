@@ -1,3 +1,10 @@
+import {conversationViewport,reconcileConversationChildren,conversationWindow,conversationMessageCount,CHAT_PAGE_SIZE} from './conversation-viewport.js';
+import {voiceScreenshotsPreference,voiceScreenshotAttachments} from './voice-screenshots.js';
+import {voiceScreenComposer,type VoiceScreenDraft} from './voice-screen-composer.js';
+import {mountVoiceGraph} from './voice-graph-view.js';
+import {mountVoiceMode,voiceModeStopsDictation,type VoiceModeState} from "./voice-mode-view.js";
+import {mountVoiceSettingsSwitch} from "./voice-settings-switch.js";
+import {mountVoiceCycle,type VoiceCycleEvent} from "./voice-cycle.js";
 import { initDuo } from "./duo.js";
 import { tr, formatLocale } from "./i18n.js";
 import { mountOnboarding } from "./onboarding.js";
@@ -5,13 +12,19 @@ import { projectWakesCard } from "./project-wakes.js";
 import { initProjects } from "./projects.js";
 import { mountWakePreview } from "./wake-preview.js";
 import { initWorkspaceSync } from "./workspace-sync.js";
+import {voiceCaptureSelection,voiceThreadSettings,isVoiceThreadId} from "./voice-conversations.js";
+import {deliverVoiceTranscript} from "./deliver-voice.js";
 import { initElevenLabs } from "./elevenlabs.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
 import { bindChatImages } from "./chat-images.js";
-import { voiceInput, audioBase64 } from "./voice-input.js";
-import { marcoVoice } from "./marco-voice.js";
+import {voiceChatControls,voiceTranscriptStatus} from './voice-chat-ui.js';
+import {voiceChatController,voiceChatPlayback,voiceChatBargeIn} from "./voice-chat-controller.js";
+import {bargeInPreference} from "./voice-barge-in.js";
+import { desktopSpeech } from "./desktop-speech.js";
+import { dictationProviderLabel,selectedDictationProvider } from "./dictation-provider.js";
 import { mountSecondThread } from "./second-thread.js";
+import { mountMainThread } from "./main-thread.js";
 import { mountForks } from "./forks.js";
 import { mountCoach } from "./coach.js";
 /**
@@ -37,7 +50,10 @@ import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } f
 
 interface TauriGlobal {
   readonly core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
-  readonly event?: {listen:(name:string,callback:()=>void)=>Promise<unknown>};
+  readonly event?: {
+    listen:(name:string,callback:(event?:unknown)=>void)=>Promise<unknown>;
+    emitTo?:(target:string,event:string,payload:unknown)=>Promise<unknown>;
+  };
 }
 
 interface CliRun {
@@ -176,6 +192,7 @@ function conversationBody(text: string, kind: BumpKind | null, imageText = text)
 }
 
 function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement {
+  const viewportPosition=chatViewport.capture();
   const li = document.createElement("li");
   li.dataset["self"] = "true";
   li.dataset["messageId"] = key;
@@ -191,7 +208,8 @@ function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement
   byId("chat").append(li);
   if (kind === null) messageFileLinks?.observe([{id:key,at:new Date().toISOString(),text}],false,true);
   byId("chat-note").textContent = "";
-  if (follow) byId("chat").scrollTop = byId("chat").scrollHeight;
+  chatViewport.restore({...viewportPosition,follow:follow&&viewportPosition.follow});
+  chatViewport.watch();
   return li;
 }
 let chatOpen = false;
@@ -220,12 +238,21 @@ function errorText(envelope: Envelope): string {
 
 // --- Agent : statut, voyant, sélecteur ---------------------------------------------------
 
-async function refresh(): Promise<void> {
+let refreshInFlight=false;
+async function refresh():Promise<void>{
+  if(refreshInFlight)return;refreshInFlight=true;
+  try{await refreshOnce();}finally{refreshInFlight=false;}
+}
+async function refreshOnce(): Promise<void> {
+  // La conversation ne dépend pas du statut : la lire en parallèle évite ~1 s de latence
+  // et un tour plus long que POLL_MS (tick sauté).
+  const chat = tick % CHART_EVERY === 0 || chatOpen || dictation.active() ? refreshChatSoon() : Promise.resolve();
   try {
     const envelope = await invoke("wake_status");
     lastRead = { ok: true, fetchedAt: Date.now(), envelope };
+    mainThreadView?.update(envelope.data);
     const voiceProfile = envelope.data?.["profile"] as {state?:string;emergencyStopLocked?:boolean}|undefined;
-    if(dictation?.active() && (voiceProfile?.emergencyStopLocked || ["paused","stopped","disabled"].includes(voiceProfile?.state??""))) dictation.stop(true);
+    if((dictation.active() || mainVoiceProcessing) && (voiceProfile?.emergencyStopLocked || ["paused","stopped","disabled"].includes(voiceProfile?.state??""))) dictation.stop(true);
     renderWakePreview((envelope.data as { wakePreview?: unknown } | undefined)?.wakePreview);
     const input = (envelope.data as { keyboardContext?: { state?: string } } | undefined)
       ?.keyboardContext;
@@ -250,7 +277,7 @@ async function refresh(): Promise<void> {
   window.dispatchEvent(new Event("wake-interface-ready"));
   if (tick % CHART_EVERY === 0) await refreshChart();
   if (tick % CHART_EVERY === 0) await refreshThreads();
-  if (tick % CHART_EVERY === 0 || chatOpen || dictation.active()) await refreshChat();
+  await chat;
   tick += 1;
 }
 
@@ -570,12 +597,31 @@ function markChatSeen(at: string): void {
 
 /** Markdown de l'agent affiché sans ses marques (titres, gras, code) ; jamais interprété. */
 
-let chatVisibleCount = 30;
+const chatViewport=conversationViewport(byId("chat"));
+window.addEventListener("beforeunload",()=>chatViewport.dispose());
+let chatVisibleCount = CHAT_PAGE_SIZE;
 let chatSignature = "";
+let chatRequest = 0;
+let lastChatResponse = 0;
 let chatLoadingOlder = false;
 let chatHasOpened = false;
-byId("chat-older").addEventListener("click", () => { chatVisibleCount += 30; chatLoadingOlder = true; void refreshChat(); });
+byId("chat-older").addEventListener("click", () => { chatVisibleCount += CHAT_PAGE_SIZE; chatLoadingOlder = true; void refreshChat(); });
+// Une seule lecture à la fois ; une demande pendant la lecture en relance une seule après.
+let chatInFlight: Promise<void> | null = null;
+let chatAgain = false;
+function refreshChatSoon(): Promise<void> {
+  if (chatInFlight) { chatAgain = true; return chatInFlight; }
+  chatInFlight = (async () => {
+    try { do { chatAgain = false; await refreshChat(); } while (chatAgain); }
+    finally { chatInFlight = null; }
+  })();
+  return chatInFlight;
+}
+// Le panneau Rust signale l'écriture d'un message de l'agent : lecture immédiate.
+void tauri?.event?.listen("owner-messages-changed", () => void refreshChatSoon());
 async function refreshChat(): Promise<void> {
+  const request = ++chatRequest;
+  const speechObservation=chatLoadingOlder?"history":"live";
   void refreshRecipient();
   let model;
   try {
@@ -586,19 +632,23 @@ async function refreshChat(): Promise<void> {
     ]);
     model = conversation(messages, helpers);
   } catch (error) {
+    if (request < lastChatResponse) return;
     byId("chat-note").textContent = tr("Messages indisponibles : {0}", [message(error)]);
     return;
   }
+  if (request < lastChatResponse) return;
+  lastChatResponse = request;
   if (model === null) {
     byId("chat-note").textContent = tr("Messages indisponibles : format inattendu.");
     return;
   }
-  marcoReader.observe(model.items);
+  // Model contains ALL fetched messages; visual pagination is only slice(-chatVisibleCount).
+  desktopReader.observe(model.items,speechObservation);
   const fresh = model.agentUpdatedAt !== null && model.agentUpdatedAt > chatSeenAt();
   byId("chat-new").hidden = chatOpen || !fresh;
   if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
   byId("chat-note").textContent = model.note ?? "";
-  byId("chat-older").hidden = model.items.length <= chatVisibleCount;
+  byId("chat-older").hidden = conversationMessageCount(model.items) <= chatVisibleCount;
   // Keep local bubbles through polling until the persisted ID appears.
   let reconciled = false;
   for (const item of model.items) {
@@ -610,22 +660,28 @@ async function refreshChat(): Promise<void> {
   }
   if (outgoingChat.size) byId("chat-note").textContent = "";
   messageFileLinks?.observe(model.items.filter(item=>(item.from === "human" || item.from === "agent" || item.from === "received") && automaticBumpKind(item) === null).map(item=>({id:item.id,at:item.at,text:item.text})),chatSignature === "" || chatLoadingOlder);
-  const signature=JSON.stringify([model.items.slice(-chatVisibleCount),model.projectWakes]);
+  const visibleMessages=conversationWindow(model.items,chatVisibleCount);
+  const signature=JSON.stringify([visibleMessages,model.projectWakes]);
   if(signature===chatSignature && !reconciled)return;
   const chatPane=byId("chat");
   const firstRender=chatSignature==="";
-  const follow=!chatLoadingOlder && (firstRender || chatPane.scrollHeight-chatPane.scrollTop-chatPane.clientHeight < 100);
-  const oldTop=chatPane.scrollTop,oldHeight=chatPane.scrollHeight;
+  const position=chatViewport.capture(firstRender&&chatPane.children.length===0);
+  if(chatLoadingOlder)position.follow=false;
+  const existing=new Map([...chatPane.children].map(node=>[(node as HTMLElement).dataset["viewportKey"]??(node as HTMLElement).dataset["messageId"],node as HTMLElement]));
   chatSignature=signature;
-  byId("chat").replaceChildren(
-    ...model.items.slice(-chatVisibleCount).map((item) => {
+  const desired=visibleMessages.map((item) => {
+      const rendered=JSON.stringify(item),viewportKey=item.id??rendered,old=existing.get(viewportKey);
+      if(old?.dataset["renderSignature"]===rendered)return old;
       const li = document.createElement("li");
+      li.dataset["renderSignature"]=rendered;li.dataset["viewportKey"]=viewportKey;
       li.dataset["self"] = String(item.from === "human");
       if (item.id) li.dataset["messageId"] = item.id;
       const meta = document.createElement("small");
       li.dataset["from"] = item.from;
       if (item.humanRecipient === "Auroracle") li.dataset["recipient"] = "auroracle";
       renderConversationMeta(meta, item);
+      if(item.voiceRecipient) meta.append(" · Reçu dans "+item.voiceRecipient);
+      if(item.voiceSpeakerLabel) meta.append(" · Vocal de "+item.voiceSpeakerLabel+" (relayé)");
       if (item.objectiveDefined === false) meta.append(" ", undefinedObjectiveBadge());
       if (item.project) {
         meta.prepend(projectBadge(item.project.id, item.project.title), " ");
@@ -668,12 +724,13 @@ async function refreshChat(): Promise<void> {
         li.append(wait);
       }
       return li;
-    }),
-  );
-  const objectives = projectWakesCard(model.projectWakes);
-  if (objectives) chatPane.append(objectives);
-  chatPane.append(...outgoingChat.values());
-  chatPane.scrollTop=follow?chatPane.scrollHeight:oldTop+(chatPane.scrollHeight-oldHeight);
+    });
+  const objectiveKey='project-wakes',objectiveSignature=JSON.stringify(model.projectWakes),oldObjectives=existing.get(objectiveKey);
+  const objectives=oldObjectives?.dataset['renderSignature']===objectiveSignature?oldObjectives:projectWakesCard(model.projectWakes);
+  if(objectives){objectives.dataset['viewportKey']=objectiveKey;objectives.dataset['renderSignature']=objectiveSignature;desired.push(objectives);}
+  desired.push(...outgoingChat.values());
+  reconcileConversationChildren(chatPane,desired);
+  chatViewport.restore(position);chatViewport.watch();
   chatLoadingOlder=false;
 }
 
@@ -756,71 +813,146 @@ async function refreshRecipient():Promise<void> {
 }
 const recipientStorage=(()=>{try{return localStorage;}catch{return undefined;}})();
 const saveChatDraft=bindChatDraft(byId<HTMLTextAreaElement>('chat-text'),byId<HTMLSelectElement>('chat-recipient'),recipientStorage);
-let voiceStream:MediaStream|undefined;
-let finishVoiceReading:(()=>void)|undefined;
-const marcoReader=marcoVoice({
-  read:text=>new Promise<void>((resolve,reject)=>{
-    if(!('speechSynthesis' in window)){reject(Error('Lecture vocale indisponible.'));return;}
-    const spoken=plainText(text).replace(/!?\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,'');
-    const utterance=new SpeechSynthesisUtterance(spoken);utterance.lang='fr-FR';
-    const voice=speechSynthesis.getVoices().find(value=>value.localService&&value.lang.startsWith('fr'));
-    if(voice)utterance.voice=voice;
-    const finish=():void=>{finishVoiceReading=undefined;resolve();};
-    finishVoiceReading=finish;utterance.onend=finish;utterance.onerror=finish;
-    speechSynthesis.speak(utterance);
-  }),
-  cancel:()=>{if('speechSynthesis' in window)speechSynthesis.cancel();finishVoiceReading?.();},
-  speaking:value=>{voiceStream?.getAudioTracks().forEach(track=>{track.enabled=!value;});},
+const voiceScreenshots=voiceScreenshotsPreference(recipientStorage,false);
+const principalScreenComposer=voiceScreenComposer();
+let principalScreenRevision=0;
+const clearPrincipalScreen=()=>{principalScreenRevision++;principalScreenComposer.clear();};
+voiceScreenshots.subscribe(clearPrincipalScreen);
+const sampleVoiceScreen=async():Promise<string>=>{
+  if(!tauri)throw Error('Capture écran disponible dans le desktop local');
+  return JSON.stringify(await tauri.core.invoke('voice_screen_sample'));
+};
+async function importVoiceScreenshot(raw:string,name:string):Promise<{reference:string;capturedAt:string}>{
+  if(!tauri)throw Error('Desktop local requis');
+  const shot=JSON.parse(raw) as {base64:string;capturedAt:string};
+  const bytes=Uint8Array.from(atob(shot.base64),char=>char.charCodeAt(0));
+  const imported=await tauri.core.invoke('conversation_image_import',{name,bytes:Array.from(bytes)}) as {reference:string};
+  return {reference:imported.reference,capturedAt:shot.capturedAt};
+}
+const screenshotsToggle=byId<HTMLInputElement>('voice-screenshots');screenshotsToggle.checked=voiceScreenshots.enabled();screenshotsToggle.addEventListener('change',()=>voiceScreenshots.set(screenshotsToggle.checked));
+const voiceCapture=voiceCaptureSelection();
+const threadSettings=voiceThreadSettings(recipientStorage);
+const voiceDestination=document.createElement('select');voiceDestination.id='voice-destination';voiceDestination.setAttribute('aria-label','Destinataires des dictées');
+const refreshVoiceDestinations=()=>{const selected=voiceDestination.value;voiceDestination.replaceChildren(new Option('Dernier interlocuteur entendu','focus'),new Option('Marco · échange principal','principal'),...threadSettings.get().map(t=>new Option(t.label,t.id)));voiceDestination.value=selected&&[...voiceDestination.options].some(o=>o.value===selected)?selected:'focus';};
+refreshVoiceDestinations();
+const voiceDestinationLabel=document.createElement('label');voiceDestinationLabel.textContent='Demander une réaction à ';voiceDestinationLabel.append(voiceDestination);
+const voiceRouteStatus=document.createElement('span');voiceRouteStatus.setAttribute('role','status');
+const voiceThreadEditor=document.createElement('details');const voiceThreadSummary=document.createElement('summary');voiceThreadSummary.textContent='Nommer mes trois conversations';voiceThreadEditor.append(voiceThreadSummary);
+for(const thread of threadSettings.get()){
+ const row=document.createElement('label');row.textContent=thread.id+' ';
+ const name=document.createElement('input');name.value=thread.label;name.maxLength=60;name.setAttribute('aria-label','Nom de '+thread.id);
+ const save=()=>{try{threadSettings.update(threadSettings.get().map(t=>t.id===thread.id?{...t,label:name.value}:t));refreshVoiceDestinations();}catch(error){byId('chat-voice-status').textContent=message(error);}};
+ name.addEventListener('change',save);row.append(name);voiceThreadEditor.append(row);
+}
+// Barge-in stays off until chosen: on loudspeakers the agent's own echo could cut it.
+const bargeInSetting=bargeInPreference(recipientStorage);
+const bargeInToggle=document.createElement('input');bargeInToggle.type='checkbox';bargeInToggle.id='voice-barge-in';bargeInToggle.checked=bargeInSetting.enabled();
+bargeInToggle.addEventListener('change',()=>bargeInSetting.set(bargeInToggle.checked));
+const bargeInLabel=document.createElement('label');bargeInLabel.append(bargeInToggle,' Couper la voix de l’agent dès que je parle (micro actif ; casque conseillé : sur haut-parleurs, l’écho peut couper la voix)');
+byId('voice-advanced-controls').append(voiceDestinationLabel,voiceRouteStatus,voiceThreadEditor);byId('voice-advanced-controls').append(bargeInLabel);
+const voiceCycle=mountVoiceCycle(document.body,()=>threadSettings.get());
+window.addEventListener('voice-cycle',event=>voiceCycle.event((event as CustomEvent<VoiceCycleEvent>).detail));
+void tauri?.event?.listen('voice-cycle',event=>voiceCycle.event((event as {payload:VoiceCycleEvent}).payload));
+window.addEventListener('beforeunload',()=>voiceCycle.dispose());
+let voiceMode:ReturnType<typeof mountVoiceMode>|undefined;
+const desktopReader=desktopSpeech({
+  speak:async(text,idempotency_key,metadata)=>{
+    if(!tauri)return;
+    const result=await tauri.core.invoke('elevenlabs',{action:'speak_desktop',payload:{text,idempotency_key,thread_id:metadata?.threadId??'principal',...(metadata?.agentRef?{agent_ref:metadata.agentRef}:{}),...(metadata?.cycleId?{cycle_id:metadata.cycleId}:{}),...((metadata?.threadId&&isVoiceThreadId(metadata.threadId)&&voiceMode?.state())?{expected_voice_revision:voiceMode.state()!.revision}:{})}}) as {stdout:string;exitCode:number};
+    const envelope=JSON.parse(result.stdout) as {ok:boolean;error?:{message:string}};
+    if(!envelope.ok || result.exitCode!==0)throw Error(envelope.error?.message??'Lecture ElevenLabs indisponible.');
+  },
   error:note=>{byId('chat-voice-status').textContent=note;},
 });
-const dictation = voiceInput({
-  microphone:async()=>{
-    if(!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')throw Error('Microphone indisponible dans cette fenêtre.');
-    voiceStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:false});
-    const acquired=voiceStream;
-    return {stop:()=>{acquired.getTracks().forEach(track=>track.stop());if(voiceStream===acquired)voiceStream=undefined;}};
+const dictationProviderSelect=byId<HTMLSelectElement>('chat-transcription-provider');
+dictationProviderSelect.value='current';
+dictationProviderSelect.addEventListener('change',()=>{byId('chat-voice-status').textContent='Prochaine dictée : '+dictationProviderLabel(selectedDictationProvider(dictationProviderSelect.value))+'. Aucun changement automatique après une erreur.';});
+const mainTranscriptStatus=voiceTranscriptStatus(byId('general-conversation'));
+const cancelDictation=document.createElement('button');
+byId('chat-voice').after(cancelDictation);
+const updateMainVoice=voiceChatControls(byId<HTMLButtonElement>('chat-voice'),cancelDictation);
+let mainVoiceRecording=false,mainVoiceProcessing=false;
+updateMainVoice(false,false);
+cancelDictation.onclick=()=>{dictation.stop(true);};
+const dictation = voiceChatController({
+  owner:"Voice principal",
+  provider:()=>selectedDictationProvider(dictationProviderSelect.value),
+  invoke:async(command,args)=>{
+    if(command!=="elevenlabs"){const envelope=await invoke(command,args);if(envelope.ok!==true)throw Error(errorText(envelope));return envelope.data as {text?:string};}
+    if(!tauri)throw Error("Desktop local requis");
+    const result=await tauri.core.invoke(command,args) as {stdout:string;exitCode:number};
+    const envelope=JSON.parse(result.stdout) as {ok:boolean;data?:{text?:string};error?:{message:string}};
+    if(!envelope.ok||result.exitCode!==0)throw Error(envelope.error?.message??"Dictée ElevenLabs indisponible ; utiliser la saisie manuelle.");
+    return envelope.data??{};
   },
-  recorder:()=>new MediaRecorder(voiceStream!),
+  transcribing:pending=>{mainTranscriptStatus(pending);voiceCycle.transcribing(pending);},
+  screenshots:voiceScreenshots,
+  ...(tauri?{visualSnapshot:sampleVoiceScreen}:{}),
+  captureContext:capturedAt=>{
+    const selection=voiceCapture.capture(capturedAt,isVoiceThreadId(voiceDestination.value)||voiceDestination.value==='principal'?voiceDestination.value:undefined,threadSettings.get());
+    voiceRouteStatus.textContent=' · Réaction : '+(threadSettings.get().find(t=>t.id===selection.replyTo)?.label??'Marco')+' · les autres reçoivent pour information';
+    return selection;
+  },
   snapshot:async()=>{
     const envelope=await invoke('voice_input',{action:'snapshot'});
     if(envelope.ok!==true)throw Error(errorText(envelope));
     return JSON.stringify(envelope.data);
   },
-  transcribe:async(audio)=>{
-    const envelope=await invoke('voice_input',{action:'transcribe',audio:await audioBase64(audio)});
-    if(envelope.ok!==true)throw Error(errorText(envelope));
-    return String(envelope.data?.['text']??'');
-  },
-  send:async(text,images)=>{
+  send:async(text,images,metadata)=>{
     if(!text.trim())return;
     if(!tauri)throw Error('Dictée disponible dans l’app desktop.');
-    let suffix='';
-    for(const [index,raw] of images.entries()){
-      const label=index===0?'Début':index===images.length-1?'Fin':'Écran';
-      const shot=JSON.parse(raw) as {base64:string;capturedAt:string};
-      const bytes=Uint8Array.from(atob(shot.base64),char=>char.charCodeAt(0));
-      const imported=await tauri.core.invoke('conversation_image_import',{name:'screen.jpeg',bytes:Array.from(bytes)}) as {reference:string};
-      if(dictation.cancelled())return;
-      suffix+=`\n\n![${label} de la dictée · ${shot.capturedAt}](<${imported.reference}>)`;
-    }
-    const size=4000-suffix.length-20;
-    const transcript=text.trim();
-    for(let index=0;index<transcript.length;index+=size){
-      if(dictation.cancelled())return;
-      const body=`[Dictée vocale]\n${transcript.slice(index,index+size)}${suffix}`;
-      const key=`ui-voice-${crypto.randomUUID()}`;
-      await transmitChat(key,body,outgoingBubble(key,body),false);
-    }
+    const allowed=()=>dictation.screenshotsAllowed(metadata.requestId)&&!dictation.cancelled(metadata.requestId);
+    const screenRevision=principalScreenRevision;
+    const imageReferences:string[]=[];
+    let draft:VoiceScreenDraft|undefined;
+    await deliverVoiceTranscript(text,images,metadata,metadata.voiceSelection?.threads??threadSettings.get(),{
+      show:(key,body)=>outgoingBubble(key,body),
+      update:(bubble,body)=>{bubble.querySelector('.conversation-body')?.replaceWith(conversationBody(body,null));},
+      send:(key,envelope,bubble)=>transmitChat(
+        key,envelope,bubble,false,
+        imageReferences.filter(reference=>envelope.includes(`<${reference}>`)),
+        ()=>principalScreenRevision===screenRevision&&voiceScreenshots.enabled(),
+      ),
+      cancelled:()=>dictation.cancelled(metadata.requestId),
+      warning:note=>{byId('chat-voice-status').textContent=note;},
+      imagesAllowed:()=>dictation.screenshotsAllowed(metadata.requestId),
+      attachments:async(samples)=>{
+        draft=await principalScreenComposer.compose(samples,metadata.capturedAt,allowed);
+        const suffix=await voiceScreenshotAttachments(draft.images,{
+          control:voiceScreenshots,allowed,cancelled:()=>dictation.cancelled(metadata.requestId),composed:true,
+          importImage:async raw=>{
+            const imported=await importVoiceScreenshot(raw,'screen.png');
+            imageReferences.push(imported.reference);
+            return imported;
+          },
+        });
+        return allowed()?draft.references+suffix:'';
+      },
+      attachmentsSent:()=>draft?.commit(),
+    });
   },
+  processing:(pending,note)=>{mainVoiceProcessing=pending>0;updateMainVoice(mainVoiceRecording,mainVoiceProcessing);byId('voice-processing-status').textContent=note+(pending?' ('+pending+')':'');},
   state:(recording,note)=>{
-    marcoReader.setEnabled(recording);
-    const button=byId<HTMLButtonElement>('chat-voice');button.setAttribute('aria-pressed',String(recording));
-    button.textContent=recording?'⏹ Stop voice':'🎙 Voice';byId('chat-voice-status').textContent=note;
+    // Speech and microphone are independent; destinations freeze at recording start.
+    voiceDestination.disabled=recording;
+    dictationProviderSelect.disabled=recording||dictation.active();
+    voiceMode?.microphoneChanged();
+    mainVoiceRecording=recording;voiceCycle.listening(recording);updateMainVoice(recording,mainVoiceProcessing,!recording&&dictation.active());byId('chat-voice-status').textContent=note;
   },
 });
+const voiceGraph=mountVoiceGraph(byId('voice-graph'),command=>{if(!tauri)throw Error('Graphe disponible dans le desktop local');return tauri.core.invoke(command);});
+window.addEventListener('beforeunload',()=>voiceGraph.dispose());
+let lastVoiceMode:VoiceModeState|undefined;
+if(tauri)voiceMode=mountVoiceMode((command,args)=>tauri.core.invoke(command,args),{
+ microphoneActive:()=>dictation.active()&&!!dictation.stream()?.getAudioTracks().some(track=>track.readyState==='live'),
+ startMicrophone:()=>dictation.start(),stopMicrophone:discard=>dictation.stop(discard),
+ changed:state=>{const stop=voiceModeStopsDictation(lastVoiceMode,state);lastVoiceMode=state;if(stop){voiceCycle.event({kind:'stop',at:Date.now()});clearPrincipalScreen();dictation.stop(true);}},
+});
+mountVoiceSettingsSwitch(byId<HTMLButtonElement>('voice-switch'),byId('voice-switch-note'),voiceMode);
+window.addEventListener('beforeunload',()=>voiceMode?.dispose());
 byId('chat-voice').addEventListener('click',()=>{if(dictation.active())dictation.stop();else void dictation.start();});
-void tauri?.event?.listen('voice-stop',()=>dictation.stop(true));
-window.addEventListener('beforeunload',()=>dictation.stop(true));
+void tauri?.event?.listen('voice-stop',()=>{clearPrincipalScreen();dictation.stop(true);window.dispatchEvent(new Event('fork-voice-stop'));voiceCycle.event({kind:'stop',at:Date.now()});});
+window.addEventListener('beforeunload',()=>dictation.dispose());
 const chatImages=bindChatImages({
   zone:byId('general-conversation'),field:byId<HTMLTextAreaElement>('chat-text'),
   preview:byId('chat-image-preview'),picker:byId<HTMLInputElement>('chat-image-files'),status:byId('chat-status'),
@@ -875,13 +1007,19 @@ async function sendToAgent(): Promise<void> {
   await transmitChat(key, text, bubble);
 }
 
-async function transmitChat(key: string, text: string, bubble: HTMLLIElement, requestWake = true): Promise<void> {
+async function transmitChat(key: string, text: string, bubble: HTMLLIElement, requestWake = true,
+                            voiceScreenRefs: string[] = [], sharingAllowed = () => true): Promise<boolean> {
   const meta = bubble.querySelector("small")!;
   bubble.querySelector("button")?.remove();
   bubble.dataset["sending"] = "true";
   meta.textContent = tr("Toi · Envoi en cours…");
   try {
-    const envelope = await invoke("wake_reply", { idempotencyKey: key, text });
+    if(voiceScreenRefs.length&&!sharingAllowed()){
+      bubble.dataset["sending"]="false";
+      meta.textContent="Partage écran arrêté · envoi de la planche annulé.";
+      return false;
+    }
+    const envelope = await invoke("wake_reply", { idempotencyKey: key, text, ...(voiceScreenRefs.length?{voiceScreenRefs}:{}) });
     const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
     if (envelope.ok !== true) throw new Error(detail || errorText(envelope));
   } catch (error) {
@@ -890,16 +1028,16 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
     const retry = document.createElement("button");
     retry.type = "button";
     retry.textContent = tr("Réessayer");
-    retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake); });
+    retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake, voiceScreenRefs, sharingAllowed); });
     bubble.append(retry);
-    return;
+    return false;
   }
   bubble.dataset["sending"] = "false";
-  meta.textContent = tr("Toi · Envoyé · en attente de réception");
+  meta.textContent = tr("Toi · Message enregistré");
   if (pendingBump?.key === key) pendingBump = null;
   // Refresh independently: waking the agent must never delay the sent receipt.
   void refreshChat();
-  if (!requestWake) { tick = 0; return; }
+  if (!requestWake) { tick = 0; return true; }
   try {
     const wake = await invoke("wake_now");
     if (wake.ok !== true) {
@@ -910,6 +1048,7 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
     byId("chat-status").textContent = tr("Message envoyé. Pas de réveil : {0}.", [message(error)]);
   }
   tick = 0;
+  return true;
 }
 
 byId("chat-form").addEventListener("submit", (event) => {
@@ -919,7 +1058,7 @@ byId("chat-form").addEventListener("submit", (event) => {
 
 // --- Navigation et événements -------------------------------------------------------------
 
-type Tab = "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
+type Tab = "voice" | "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
 
 let conversationTab: "general" | "second" | "forks" | "coach" = "general";
 function selectConversation(tab: "general" | "second" | "forks" | "coach"): void {
@@ -939,7 +1078,7 @@ function selectTab(tab: Tab): void {
   if (tab === "chat") selectConversation("general");
   document.querySelector("main")?.setAttribute("data-active-tab", tab);
   byId("tab-documents").setAttribute("aria-selected", String(tab === "documents"));
-  for (const name of ["panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects"] as const) {
+  for (const name of ["panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects", "voice"] as const) {
     byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
     byId(`view-${name}`).hidden = name !== "chat" && name !== tab;
   }
@@ -948,9 +1087,8 @@ function selectTab(tab: Tab): void {
   if (tab === "authorizations") void authorizations.open();
   if (tab === "threads") void refreshThreads();
   if (!chatHasOpened || tab === "chat") {
-    const firstOpen=!chatHasOpened;
     chatHasOpened=true;
-    void refreshChat().then(()=>{ if(firstOpen)byId("chat").scrollTop=byId("chat").scrollHeight; });
+    void refreshChat();
   }
   if (tab === "agents") void refreshAgentThreads();
   if (tab === "history") {
@@ -960,6 +1098,7 @@ function selectTab(tab: Tab): void {
   try { localStorage.setItem("mind-wake-active-tab", tab); } catch { /* Display preference only. */ }
 }
 
+byId("tab-voice").addEventListener("click",()=>selectTab("voice"));
 byId("tab-panel").addEventListener("click", () => {
   selectTab("panel");
 });
@@ -990,17 +1129,24 @@ byId("mode-always").addEventListener(
   () => void control("wake_always_on", tr("Always-on activé.")),
 );
 byId("mode-wake").addEventListener("click", () => void control("wake_now", tr("Réveil demandé.")));
-byId("pause").addEventListener("click", () => {dictation.stop(true);void control("wake_pause", tr("Pause appliquée."));});
+byId("pause").addEventListener("click", () => {dictation.stop(true);window.dispatchEvent(new Event("fork-voice-stop"));void voiceMode?.pause(true);void control("wake_pause", tr("Pause appliquée."));});
 byId("mode-off").addEventListener("click", () => {
   // Deux clics rapprochés : l'arrêt d'urgence ne se lève que par une action explicite
   // ultérieure de l'humain, une confirmation évite qu'un clic égaré l'impose.
   if (Date.now() < stopArmedUntil) {
     stopArmedUntil = 0;
+    window.dispatchEvent(new Event("fork-voice-stop"));
     void control("wake_stop", tr("Arrêt d'urgence appliqué."));
   } else {
     stopArmedUntil = Date.now() + 5000;
     render(panelView(lastRead, Date.now()));
   }
+});
+
+// Fil principal On/Off : état lu dans `wake status`, rendu à chaque rafraîchissement.
+const mainThreadView = tauri === undefined ? null : mountMainThread({
+  invoke: async (cmd, args) => invoke(cmd, args),
+  refresh: async () => { tick = 0; await refresh(); },
 });
 
 void refresh();
@@ -1012,6 +1158,13 @@ if (tauri !== undefined) mountCoach({
   decorate: (body,text) => {messageLinks(body);appendMessageImages(body,text,(cmd,args)=>tauri.core.invoke(cmd,args));},
 });
 if (tauri !== undefined) mountForks({
+  liveReply: {
+    read: id => tauri.core.invoke("fork_reply_draft", { id }),
+    show: text => tauri.event?.emitTo?.("paint", "voice-reply-subtitle", text) ?? Promise.resolve(),
+  },
+  voiceScreenshots,
+  ...(tauri?{sampleVoiceScreen}:{}),
+  importVoiceImage:raw=>importVoiceScreenshot(raw,'screen.png'),
   invoke: async (cmd, args) => invoke(cmd, args),
   selectTab: () => selectTab("forks"),
   decorate: (body, text) => {
@@ -1207,7 +1360,8 @@ void showAppVersion();
 byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
 if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
-if (tauri) initElevenLabs((command, args) => tauri.core.invoke(command, args));
+if (tauri) {const voicePlayer=initElevenLabs((command, args) => tauri.core.invoke(command, args), voiceChatPlayback,clip=>{voiceCapture.played(clip);voiceRouteStatus.textContent=" · Dernier vocal : "+(threadSettings.get().find(t=>t.id===clip.threadId)?.label??"non attribué")+" · tes prochains messages vont aux destinataires choisis";},event=>voiceCycle.event(event));
+  voiceChatBargeIn({enabled:()=>bargeInSetting.enabled(),interrupt:()=>{if(bargeInSetting.enabled())voicePlayer.interrupt();}});}
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
 if (tauri) {
@@ -1217,3 +1371,5 @@ byId("tab-authorizations").addEventListener("click", () => { selectTab("authoriz
 
 byId("tab-projects").addEventListener("click",()=>selectTab("projects"));
 if(tauri)initProjects((command,args)=>tauri.core.invoke(command,args));
+
+

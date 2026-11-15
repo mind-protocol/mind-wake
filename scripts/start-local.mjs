@@ -24,6 +24,12 @@ export function nodeArgs(m) {
     pathToFileURL(path.join(m.repoDir, "test/fixtures/store-ledger/ts-hooks.ts")).href,
   ];
 }
+/** Per-installation rendering recovery; agent runtime settings are unchanged. */
+export function desktopRenderEnv(m, role, source = process.env) {
+  if (role !== "desktop" || m.desktopDisableGpu !== true) return {};
+  const flags = [source.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS ?? "", "--disable-gpu", "--disable-gpu-compositing"];
+  return { WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: flags.filter(Boolean).join(" ") };
+}
 /** An explicitly reviewed desktop sidecar must not switch the running agent's CLI. */
 export function desktopRuntimeEnv(m, role) {
   if (role !== "desktop" || m.desktopRepoDir === undefined) return {};
@@ -117,6 +123,7 @@ export function localRuntimeEnv(m, role, options = {}) {
     MIND_WAKE_PEER_TASKS: role === "agent" && peerTasks ? "1" : "0",
     MIND_WAKE_NODE: m.node,
     MIND_WAKE_DESKTOP_SUPERVISED: options.supervised ? "1" : "0",
+    ...desktopRenderEnv(m, role),
     ...(options.startupReceipt
       ? {
           MIND_WAKE_STARTUP_RECEIPT: options.startupReceipt.file,

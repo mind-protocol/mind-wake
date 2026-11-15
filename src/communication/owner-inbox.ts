@@ -3,14 +3,17 @@ import { saveFilAfterSubmit } from "./fil-continuity.js";
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { fastReplyHolds, fastReplyPending } from "./fast-reply-store.js";
 import type { WakeImage } from "../contracts/wake-image.js";
 import { freshWakeImage } from "../adapters/wake-image.js";
+import { ownerMessageText } from "./owner-content.js";
 
 export interface InboxMessage {
   id: string;
   at: string;
   text: string;
   image?: WakeImage;
+  voiceScreens?: readonly string[];
   /** Host envelope, never decoded from message text. Copies are context, not orders. */
   origin?: {
     kind: "context_copy" | "peer_message";
@@ -23,7 +26,16 @@ export interface InboxMessage {
     correlationId: string;
   };
 }
+export const OWNER_HOOK_MAX_CHARS = 8_000;
+export const OWNER_PEER_MAX_CHARS = 1_500;
 const FILE = "owner-inbox.sqlite";
+const MAX_CLAIM_IMAGE_BYTES = 16_000_000;
+
+function decodeAttachment(raw: string | null): Pick<InboxMessage, "image" | "voiceScreens"> {
+  if (raw === null) return {};
+  const stored = JSON.parse(raw) as WakeImage | string[];
+  return Array.isArray(stored) ? { voiceScreens: stored } : { image: stored };
+}
 /** Read-only conversation projection; attachment bytes and delivery claims stay private. */
 export function readOwnerInboxHistory(dataDir: string): InboxMessage[] {
   const file = path.join(dataDir, FILE);
@@ -122,12 +134,30 @@ function sameOrigin(raw: string | null, origin: InboxMessage["origin"]): boolean
   ];
   return fields.every((key) => stored[key] === origin[key]);
 }
+/** Message humain direct encore attendu par sa réponse rapide (règle commune aux fils). */
+export function heldForFastReply(dataDir: string): boolean {
+  if (fastReplyPending(dataDir, "principal")) return true;
+  if (!fs.existsSync(path.join(dataDir, FILE))) return false;
+  const db = open(dataDir);
+  let human: { id: string; at: string }[];
+  try {
+    human = db
+      .prepare("SELECT id, at FROM inbox WHERE emitted_session IS NULL AND origin_json IS NULL")
+      .all() as { id: string; at: string }[];
+  } finally {
+    db.close();
+  }
+  return fastReplyHolds(dataDir, human);
+}
 export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): void {
   if (
     message.image !== undefined &&
     freshWakeImage(message.image, Date.parse(message.image.capturedAt)) === null
   )
     throw new Error("Invalid owner image attachment");
+  if (message.voiceScreens?.length && message.image)
+    throw new Error("Conflicting owner image attachments");
+  const attachment = message.voiceScreens?.length ? message.voiceScreens : message.image;
   const db = open(dataDir);
   try {
     db.prepare(
@@ -136,7 +166,7 @@ export function enqueueOwnerMessage(dataDir: string, message: InboxMessage): voi
       message.id,
       message.at,
       message.text,
-      message.image === undefined ? null : JSON.stringify(message.image),
+      attachment === undefined ? null : JSON.stringify(attachment),
       message.origin === undefined ? null : JSON.stringify(message.origin),
     );
     const stored = db.prepare("SELECT text,origin_json FROM inbox WHERE id=?").get(message.id) as {
@@ -166,7 +196,7 @@ export function readOwnerMessage(dataDir: string, id: string): InboxMessage | nu
       ...(origin_json === null
         ? {}
         : { origin: JSON.parse(origin_json) as NonNullable<InboxMessage["origin"]> }),
-      ...(image_json === null ? {} : { image: JSON.parse(image_json) as WakeImage }),
+      ...decodeAttachment(image_json),
     };
   } finally {
     db.close();
@@ -178,7 +208,7 @@ export function ownerMessagePending(dataDir: string, wakeEligibleOnly = false): 
   const db = open(dataDir);
   try {
     return (
-      db.prepare("SELECT 1 FROM inbox WHERE emitted_session IS NULL" + (wakeEligibleOnly ? " AND id NOT LIKE 'shared-inbox:%'" : "") + " LIMIT 1").get() !== undefined
+      db.prepare("SELECT 1 FROM inbox WHERE emitted_session IS NULL" + (wakeEligibleOnly ? " AND id NOT LIKE 'shared-inbox:%' AND id NOT LIKE 'fast-reply-fyi:%'" : "") + " LIMIT 1").get() !== undefined
     );
   } finally {
     db.close();
@@ -192,15 +222,26 @@ export function claimOwnerMessages(
   claim: string,
 ): InboxMessage[] {
   if (!fs.existsSync(path.join(dataDir, FILE))) return [];
+  // Quel que soit le runtime : le message humain attend sa réponse rapide (attente bornée).
+  if (heldForFastReply(dataDir)) return [];
   const db = open(dataDir);
   try {
     return db
       .transaction(() => {
         const messages = db
           .prepare(
-            "SELECT id,at,text,image_json,origin_json FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid LIMIT 16",
+            `WITH pending AS (
+              SELECT rowid, id, at, text, image_json, origin_json
+              FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL ORDER BY rowid LIMIT 16
+            ), sized AS (
+              SELECT *, SUM(COALESCE(length(CAST(image_json AS BLOB)), 0)) OVER (ORDER BY rowid) AS image_bytes
+              FROM pending
+            )
+            SELECT id, at, text, image_json, origin_json FROM sized
+            WHERE image_bytes <= ? OR rowid = (SELECT MIN(rowid) FROM pending)
+            ORDER BY rowid`,
           )
-          .all() as (InboxMessage & { image_json: string | null; origin_json: string | null })[];
+          .all(MAX_CLAIM_IMAGE_BYTES) as (InboxMessage & { image_json: string | null; origin_json: string | null })[];
         const mark = db.prepare("UPDATE inbox SET claimed_session=?,claim_id=? WHERE id=?");
         for (const message of messages) mark.run(session, claim, message.id);
         return messages.map(({ image_json, origin_json, ...message }) => ({
@@ -208,7 +249,7 @@ export function claimOwnerMessages(
           ...(origin_json === null
             ? {}
             : { origin: JSON.parse(origin_json) as NonNullable<InboxMessage["origin"]> }),
-          ...(image_json === null ? {} : { image: JSON.parse(image_json) as WakeImage }),
+          ...decodeAttachment(image_json),
         }));
       })
       .immediate();
@@ -265,6 +306,7 @@ export function restoreOwnerMessages(
 
 export function takeOwnerMessages(dataDir: string, session: string): InboxMessage[] {
   if (!fs.existsSync(path.join(dataDir, FILE))) return [];
+  if (heldForFastReply(dataDir)) return [];
   const db = open(dataDir);
   try {
     return db
@@ -287,4 +329,100 @@ export function takeOwnerMessages(dataDir: string, session: string): InboxMessag
   } finally {
     db.close();
   }
+}
+
+/** Hook variant: always take human messages, but leave over-budget peer messages pending. */
+export function takeOwnerMessagesForHook(
+  dataDir: string,
+  session: string,
+  maxChars = OWNER_HOOK_MAX_CHARS,
+): { messages: InboxMessage[]; deferred: number } {
+  if (!fs.existsSync(path.join(dataDir, FILE)) || heldForFastReply(dataDir))
+    return { messages: [], deferred: 0 };
+  const db = open(dataDir);
+  try {
+    return db.transaction(() => {
+      const rows = db.prepare(
+        "SELECT id,at,text,origin_json FROM inbox WHERE emitted_session IS NULL AND claim_id IS NULL AND image_json IS NULL ORDER BY rowid",
+      ).all() as (InboxMessage & { origin_json: string | null })[];
+      const chosen: InboxMessage[] = [];
+      const accepted: string[] = [];
+      let size = 0;
+      let deferred = 0;
+      for (const { origin_json, ...row } of rows) {
+        const message: InboxMessage = {
+          ...row,
+          ...(origin_json === null ? {} : { origin: JSON.parse(origin_json) as NonNullable<InboxMessage["origin"]> }),
+        };
+        const human = message.origin === undefined;
+        if (!human && message.text.length > OWNER_PEER_MAX_CHARS)
+          message.text = clipPeerText(message.text, OWNER_PEER_MAX_CHARS);
+        const cost = ownerMessageText(message).length + 2; // exact encoded hook text plus separator
+        if (!human && size + cost > maxChars) {
+          deferred++;
+          continue;
+        }
+        chosen.push(message);
+        accepted.push(message.id);
+        size += cost;
+      }
+      const mark = db.prepare("UPDATE inbox SET emitted_session=?,emitted_at=? WHERE id=? AND emitted_session IS NULL");
+      for (const id of accepted) mark.run(session, new Date().toISOString(), id);
+      return { messages: chosen, deferred };
+    }).immediate();
+  } finally {
+    db.close();
+  }
+}
+
+/** Mark only stale, still-pending Reddit imports as delivered, using persisted source watermarks. */
+export function purgeStaleRedditMessages(dataDir: string): number {
+  const ownerFile = path.join(dataDir, FILE);
+  const redditFile = path.join(dataDir, "reddit-inbox.sqlite");
+  if (!fs.existsSync(ownerFile) || !fs.existsSync(redditFile)) return 0;
+  const reddit = new Database(redditFile, { readonly: true, fileMustExist: true });
+  let watermarks: Map<string, number>;
+  try {
+    const rows = reddit.prepare("SELECT source, synced_at FROM cursors").all() as { source: string; synced_at: number }[];
+    watermarks = new Map();
+    for (const row of rows) {
+      const account = row.source.split(":", 1)[0]!;
+      watermarks.set(account, Math.min(watermarks.get(account) ?? Infinity, row.synced_at));
+    }
+  } finally {
+    reddit.close();
+  }
+  if (watermarks.size === 0) return 0;
+  const db = open(dataDir);
+  try {
+    return db.transaction(() => {
+      const rows = db.prepare(
+        "SELECT id,at,origin_json FROM inbox WHERE emitted_session IS NULL AND origin_json IS NOT NULL",
+      ).all() as { id: string; at: string; origin_json: string }[];
+      const mark = db.prepare("UPDATE inbox SET emitted_session=?,emitted_at=? WHERE id=? AND emitted_session IS NULL");
+      const now = new Date().toISOString();
+      let count = 0;
+      for (const row of rows) {
+        let origin: Record<string, unknown>;
+        try { origin = JSON.parse(row.origin_json) as Record<string, unknown>; } catch { continue; }
+        if (origin["channel"] !== "reddit" || typeof origin["recipientRef"] !== "string") continue;
+        const account = /^reddit:u\/(.+)$/.exec(origin["recipientRef"])?.[1];
+        const watermark = account === undefined ? undefined : watermarks.get(account.toLowerCase());
+        const at = Date.parse(row.at);
+        if (watermark === undefined || !Number.isFinite(at) || at >= watermark) continue;
+        count += mark.run("purged:reddit-watermark", now, row.id).changes;
+      }
+      return count;
+    }).immediate();
+  } finally {
+    db.close();
+  }
+}
+
+function clipPeerText(text: string, limit: number): string {
+  const link = /\n\n(\[[^\]]+\]\(https?:\/\/[^\s)]+\))\s*$/.exec(text)?.[1];
+  if (!link) return `${text.slice(0, limit - 1)}…`;
+  const suffix = `\n\n${link}`;
+  const available = Math.max(0, limit - suffix.length - 1);
+  return `${text.slice(0, available)}…${suffix}`;
 }

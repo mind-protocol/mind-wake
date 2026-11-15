@@ -1,0 +1,3157 @@
+{
+  "agent": 1,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-01",
+  "cuts": [
+    {
+      "cut_id": "N60-Q09-C01",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 1,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "8953085c1c07a16c35c1fc3adca0eb76ce0ff5b57a728327d5bb6131461ec67a"
+      },
+      "source_block_ids": [
+        "N60-Q09-A001",
+        "N60-Q09-B001"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-A001",
+          "text_sha256": "a4cde84824d42f1015345f832d4a21a26dc327579faa824a217d8b7f1cc8beef"
+        },
+        {
+          "id": "N60-Q09-B001",
+          "text_sha256": "0a036c019e3553f43cd8ef3a9c92f253f2333d9f691789d2a4519e8509112ebc"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": null,
+        "next_cut_id": "N60-Q09-C02",
+        "entry": "Entrée de scène : Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "exit": "État à conserver : La reine descend entre Gerardys et Quince, pierre étroite et foule seulement entendue",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "L’impulsion royale naît dans le bruit régulier des attentes",
+      "cadrage": "Plan de trois-quarts en descente, léger accompagnement",
+      "action_visible": "Rhaenyra descend une marche entre Gerardys, registre serré contre lui à sa gauche, et Quince à sa droite. Les trois corps sont cadrés entre les murs étroits de la cage d’escalier.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan de trois-quarts en descente. Rhaenyra descend une marche entre Gerardys, registre serré contre lui à sa gauche, et Quince à sa droite. Les trois corps sont cadrés entre les murs étroits de la cage d’escalier. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B001",
+          "source_block_id": "N60-Q09-B001",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Gerardys et ser robert, vous voila. J'ai une mission pour vous: nous avons plus de 120 requérants. Nous n'allons pas les écouter un par un non, nous allons les diviser en groupes de 10, les laisser penser à des solutions entre eux, et demander a un seul représentant. Nous ferons ensuite discuter les représentants entre eux, et ensuite seulement nous les écouterons, puis nous ferons des aller retours de la sorte. qu'en pensez vous",
+          "intention": "L’impulsion royale naît dans le bruit régulier des attentes",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 785,
+            "char_start": 84,
+            "char_end": 517,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "d88f80cb1f422f97e4134091b13347351ebf9bf96c9ad3347942b0c49c76b1aa"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 37.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 32.9,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "b20facd9bcbc4b3d7b1ab016f8a8a72e209f2931fd6aa455816b1fb3cb4bdfee",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B001",
+          "source_block_id": "N60-Q09-B001",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Gerardys et ser robert, vous voila. J'ai une mission pour vous: nous avons plus de 120 requérants. Nous n'allons pas les écouter un par un non, nous allons les diviser en groupes de 10, les laisser penser à des solutions entre eux, et demander a un seul représentant. Nous ferons ensuite discuter les représentants entre eux, et ensuite seulement nous les écouterons, puis nous ferons des aller retours de la sorte. qu'en pensez vous"
+        }
+      ],
+      "static_framing": "Plan de trois-quarts en descente",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C02",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 2,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "93fe520b8f9060b24fa9b4b44f4ec79971ed86f1023abe1426dd358c5753e8df"
+      },
+      "source_block_ids": [
+        "N60-Q09-B002",
+        "N60-Q09-A002",
+        "N60-Q09-B003"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B002",
+          "text_sha256": "3b8efd1a3319d3eec7376b2b7cc5f067670c7caa026b0babe08c4d3e890ebd98"
+        },
+        {
+          "id": "N60-Q09-A002",
+          "text_sha256": "cd2b0ef2d76b9fad22e88ef3b129159f4eef8eda30b04083f06b8233b4444e00"
+        },
+        {
+          "id": "N60-Q09-B003",
+          "text_sha256": "9ceb7f21bfb45b0fd5c332c5e82676616d3354c06c2d88ccf3f126dd6f916597"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C01",
+        "next_cut_id": "N60-Q09-C03",
+        "entry": "Raccord N60-Q09-C01 : La reine descend entre Gerardys et Quince, pierre étroite et foule seulement entendue",
+        "exit": "État à conserver : Quince ralentit pour souffler au bord de la marche",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "Une foule en délibération ne se tient pas comme une file",
+      "cadrage": "Plan moyen mobile Quince en souffle, autres en amorce",
+      "action_visible": "Quince immobile au bord d’une marche reprend son souffle, une main près de sa ceinture ; la reine et Gerardys sont en amorce plus haut. Rien de la cour publique n’est visible.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan moyen mobile Quince en souffle, autres en amorce. Quince immobile au bord d’une marche reprend son souffle, une main près de sa ceinture ; la reine et Gerardys sont en amorce plus haut. Rien de la cour publique n’est visible. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B002",
+          "source_block_id": "N60-Q09-B002",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Je vais vous dire ce que j'entends, moi, dans votre idée, et ce n'est pas ce que vous y entendez. Cent vingt en douze groupes, ça fait douze conversations. Je peux tenir une file de trois cents personnes avec douze hommes : une file, ça avance et ça se surveille d'un bout. Douze groupes qui discutent entre eux, je ne peux pas. Il me faudrait douze salles et un homme par salle, et je n'ai ni les salles ni les hommes.",
+          "intention": "Une foule en délibération ne se tient pas comme une file",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 787,
+            "char_start": 0,
+            "char_end": 419,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "7b4bb1fb6818a260c80cef99db740082979c23097576ccb4b80b7e227deb270d"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B003",
+          "source_block_id": "N60-Q09-B003",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Et permettez : des gens qui attendent, ça râle. Des gens qui délibèrent, ça s'entend.",
+          "intention": "Une foule en délibération ne se tient pas comme une file",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 787,
+            "char_start": 436,
+            "char_end": 521,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "6f483555d3ebbb6c5181950890076ac2aae1bb7ed23a3be6be9710a4104aa5a3"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 45.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 42.7,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "541647296d9456eb8b53c9e0f2223a2210f27e5d80b30f6969c86b2e680553b3",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "robert-quince"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B002",
+          "source_block_id": "N60-Q09-B002",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Je vais vous dire ce que j'entends, moi, dans votre idée, et ce n'est pas ce que vous y entendez. Cent vingt en douze groupes, ça fait douze conversations. Je peux tenir une file de trois cents personnes avec douze hommes : une file, ça avance et ça se surveille d'un bout. Douze groupes qui discutent entre eux, je ne peux pas. Il me faudrait douze salles et un homme par salle, et je n'ai ni les salles ni les hommes."
+        },
+        {
+          "line_id": "N60-Q09-B003",
+          "source_block_id": "N60-Q09-B003",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Et permettez : des gens qui attendent, ça râle. Des gens qui délibèrent, ça s'entend."
+        }
+      ],
+      "static_framing": "Plan moyen mobile Quince en souffle, autres en amorce",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C03",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 3,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "173ece4d94d8c0d5c96d931511808ec7f6c1ef645c761056fe9ce12e9992dc86"
+      },
+      "source_block_ids": [
+        "N60-Q09-B004",
+        "N60-Q09-A003",
+        "N60-Q09-B005"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B004",
+          "text_sha256": "2b701f60fb299335493f62fb996c6cb07ca524ca8e539f9197d4ba61729e5012"
+        },
+        {
+          "id": "N60-Q09-A003",
+          "text_sha256": "f8c38d9fe21b809592caa245779957cfbf6394623f904f6aae996bc98041b4df"
+        },
+        {
+          "id": "N60-Q09-B005",
+          "text_sha256": "6cc3eeb9e35b61176501ece0be4fee7344ac153546df80eeb63ba7ec669c1a9e"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C02",
+        "next_cut_id": "N60-Q09-C04",
+        "entry": "Raccord N60-Q09-C02 : Quince ralentit pour souffler au bord de la marche",
+        "exit": "État à conserver : Gerardys ralentit, registre contre lui ; la reine écoute",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "Un corps aura mémoire et prendra la parole",
+      "cadrage": "Plan rapproché latéral mestre, descente suspendue",
+      "action_visible": "Gerardys, de profil dans l’escalier, serre son registre et parle à la reine arrêtée près de lui. Quince n’est qu’une épaule au bord du cadre.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan rapproché latéral mestre, descente suspendue. Gerardys, de profil dans l’escalier, serre son registre et parle à la reine arrêtée près de lui. Quince n’est qu’une épaule au bord du cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B004",
+          "source_block_id": "N60-Q09-B004",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Le précédent existe, Votre Grâce, et il est bon : la Citadelle ne fait pas autrement — les archimestres délibèrent en conclave et un seul porte la parole. Braavos aussi, à sa manière. Personne ne pourra dire que c'est une nouveauté.",
+          "intention": "Un corps aura mémoire et prendra la parole",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 788,
+            "char_start": 0,
+            "char_end": 232,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "fa526770772f488ea98975334b95d1dc4973bdc99856673dd1ffa3a416c9817d"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B005",
+          "source_block_id": "N60-Q09-B005",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Mais il faut que vous voyiez ce que vous fabriquez. Une file, c'est cent vingt personnes seules. Douze représentants qui ont parlé ensemble, ce n'est plus une file : c'est un corps. Et un corps a une mémoire. Il redemandera la parole le mois prochain, et l'année d'après il la prendra sans demander.",
+          "intention": "Un corps aura mémoire et prendra la parole",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 788,
+            "char_start": 288,
+            "char_end": 587,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "cbea0a4944567b03d109f38ccb333985bce8ac46a08fdf6a0191ae87bdc58144"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 44.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 41.8,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "a92cf1d25c492eb0c656d1602b3c205f4b9fba22fd3b8be0d9e7f9c292f2b8a6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B004",
+          "source_block_id": "N60-Q09-B004",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Le précédent existe, Votre Grâce, et il est bon : la Citadelle ne fait pas autrement — les archimestres délibèrent en conclave et un seul porte la parole. Braavos aussi, à sa manière. Personne ne pourra dire que c'est une nouveauté."
+        },
+        {
+          "line_id": "N60-Q09-B005",
+          "source_block_id": "N60-Q09-B005",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Mais il faut que vous voyiez ce que vous fabriquez. Une file, c'est cent vingt personnes seules. Douze représentants qui ont parlé ensemble, ce n'est plus une file : c'est un corps. Et un corps a une mémoire. Il redemandera la parole le mois prochain, et l'année d'après il la prendra sans demander."
+        }
+      ],
+      "static_framing": "Plan rapproché latéral mestre, descente suspendue",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C04",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 4,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e70ec45b3a557997e855946f9ac6fefae6afec8d3567a0ca6e2cb188a1ff938b"
+      },
+      "source_block_ids": [
+        "N60-Q09-B006",
+        "N60-Q09-B007",
+        "N60-Q09-A004",
+        "N60-Q09-A005"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B006",
+          "text_sha256": "bde7fcb780c4e9fccbf1af2cca5a2ce8da611066760549805ad9622adbd0d2cc"
+        },
+        {
+          "id": "N60-Q09-B007",
+          "text_sha256": "008ece01d10872d9bfff3a1b153c6e1a05517cd9ab109cf084f2c261edc947ce"
+        },
+        {
+          "id": "N60-Q09-A004",
+          "text_sha256": "9238ebc3310e176d153d45da9e00ab7880bf3bf683357982223ab6e211ea60da"
+        },
+        {
+          "id": "N60-Q09-A005",
+          "text_sha256": "4b2e46681c68e0648532cc1062a26d6f8a64b86ccb8dd369958eec202dd0d3a5"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C03",
+        "next_cut_id": "N60-Q09-C05",
+        "entry": "Raccord N60-Q09-C03 : Gerardys ralentit, registre contre lui ; la reine écoute",
+        "exit": "État à conserver : Gerardys s’arrête, Quince s’écarte pour ne pas le heurter, la reine attend",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "La solution pratique de Quince reçoit l’assentiment royal",
+      "cadrage": "Plan à trois, arrêt puis reprise de marche",
+      "action_visible": "Gerardys est arrêté sur une marche ; Quince s’est décalé contre le mur pour ne pas le heurter. Rhaenyra les regarde, un pied posé sur la marche inférieure.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan à trois, arrêt. Gerardys est arrêté sur une marche ; Quince s’est décalé contre le mur pour ne pas le heurter. Rhaenyra les regarde, un pied posé sur la marche inférieure. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B006",
+          "source_block_id": "N60-Q09-B006",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Alors si vous y tenez — et j'ai bien compris que vous y tenez — ne les mélangez pas au hasard. Groupez-les comme ils sont déjà : par village, par métier, par équipage. Les pêcheurs du nord entre eux, les forgerons entre eux, les gens du bourg entre eux. Ceux-là se connaissent, ils ont déjà quelqu'un qui parle pour eux sans qu'on ait à le désigner, et surtout ils se tiennent les uns les autres — un homme ne fait pas le fou devant ses voisins. Ça me coûte trois hommes au lieu de douze. Et ça vous dit tout de suite qui compte dans chaque métier, ce qui est bien ce que vous cherchez depuis hier soir.",
+          "intention": "La solution pratique de Quince reçoit l’assentiment royal",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 789,
+            "char_start": 0,
+            "char_end": 603,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "8f9e6ba64ff4bad8eb115a1ca239276ceec7dea4af8e987aa88a44f89aaaf4f9"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B007",
+          "source_block_id": "N60-Q09-B007",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "j'y compte bien, gerardys. Très bon point ser robert. Quoi d'autre ?",
+          "intention": "La solution pratique de Quince reçoit l’assentiment royal",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 790,
+            "char_start": 0,
+            "char_end": 68,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "e69400bbee979a9429fb5d9568511ac3b4d2079ba9b6984e22e1792e0dfa8597"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 62.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 57.8,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "e6e992d9bdb8ea73e628bcc756525fd53482c9c0ee61b746c450364ecab33f79",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "robert-quince",
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B006",
+          "source_block_id": "N60-Q09-B006",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Alors si vous y tenez — et j'ai bien compris que vous y tenez — ne les mélangez pas au hasard. Groupez-les comme ils sont déjà : par village, par métier, par équipage. Les pêcheurs du nord entre eux, les forgerons entre eux, les gens du bourg entre eux. Ceux-là se connaissent, ils ont déjà quelqu'un qui parle pour eux sans qu'on ait à le désigner, et surtout ils se tiennent les uns les autres — un homme ne fait pas le fou devant ses voisins. Ça me coûte trois hommes au lieu de douze. Et ça vous dit tout de suite qui compte dans chaque métier, ce qui est bien ce que vous cherchez depuis hier soir."
+        },
+        {
+          "line_id": "N60-Q09-B007",
+          "source_block_id": "N60-Q09-B007",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "j'y compte bien, gerardys. Très bon point ser robert. Quoi d'autre ?"
+        }
+      ],
+      "static_framing": "Plan à trois, arrêt",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C05",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 5,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "68210d1b112b3a26d332685ba1458d0946273c09ea3f883427bb46d58024cc34"
+      },
+      "source_block_ids": [
+        "N60-Q09-B008"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B008",
+          "text_sha256": "b3d5e3b9afec463f577cff358cc0454a58fa8945945f3f7b932e1287725821a0"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C04",
+        "next_cut_id": "N60-Q09-C06",
+        "entry": "Raccord N60-Q09-C04 : Gerardys s’arrête, Quince s’écarte pour ne pas le heurter, la reine attend",
+        "exit": "État à conserver : Gerardys écrit en avançant, aucun registre corrigé comme victoire",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "Une question commune doit remplacer la simple récitation de plaintes",
+      "cadrage": "Plan de marche à hauteur du registre",
+      "action_visible": "À hauteur du registre, la plume de Gerardys touche le papier incliné contre son bras ; la reine est en amorce. Les pieds sont sur les marches, pas dans une salle d’audition.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan de marche à hauteur du registre. À hauteur du registre, la plume de Gerardys touche le papier incliné contre son bras ; la reine est en amorce. Les pieds sont sur les marches, pas dans une salle d’audition. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B008",
+          "source_block_id": "N60-Q09-B008",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Alors une chose, et c'est la plus urgente des trois qui me restent. Douze groupes qui délibèrent, il faut leur donner de quoi délibérer. Si vous les faites asseoir sans question, ils vous rapporteront douze plaintes — une borne, un toit, un frère aux fers, un impôt. Vous aurez inventé un corps pour vous faire réciter des misères. Posez-leur une question, la même à tous, à laquelle ils sachent répondre mieux que vous : comment nourrir six cents hommes de plus sur ce rocher, ou comment tenir la rade l'hiver, ou où passent les barques qu'on ne déclare pas. Ils vous répondront de choses qu'ils font tous les jours, et c'est là qu'on verra les têtes.",
+          "intention": "Une question commune doit remplacer la simple récitation de plaintes",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 793,
+            "char_start": 0,
+            "char_end": 652,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "4796563a63e071fa7f89a3705c94b22630cd7c76de007f219c37f661868617db"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 54.6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 51.6,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "655f9cb22fd30ed75d5e2ff86c51b6d4effdbf2b215e9fac6e52b7af0e0b14a5",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B008",
+          "source_block_id": "N60-Q09-B008",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Alors une chose, et c'est la plus urgente des trois qui me restent. Douze groupes qui délibèrent, il faut leur donner de quoi délibérer. Si vous les faites asseoir sans question, ils vous rapporteront douze plaintes — une borne, un toit, un frère aux fers, un impôt. Vous aurez inventé un corps pour vous faire réciter des misères. Posez-leur une question, la même à tous, à laquelle ils sachent répondre mieux que vous : comment nourrir six cents hommes de plus sur ce rocher, ou comment tenir la rade l'hiver, ou où passent les barques qu'on ne déclare pas. Ils vous répondront de choses qu'ils font tous les jours, et c'est là qu'on verra les têtes."
+        }
+      ],
+      "static_framing": "Plan de marche à hauteur du registre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Accompagner le déplacement à hauteur humaine sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C06",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 6,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e6c6b1aba96110a83ad36a6f8644b11dd57f8b7bdc1e276628ed4aac01d3ad1e"
+      },
+      "source_block_ids": [
+        "N60-Q09-B009",
+        "N60-Q09-A006",
+        "N60-Q09-B010"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B009",
+          "text_sha256": "ea9889679f1d3ea9628b956806dd8302682e77d52b45f009d4f591954fe5af7c"
+        },
+        {
+          "id": "N60-Q09-A006",
+          "text_sha256": "05327d5d9e8bfa8d8f0c5691a27870dab3411012f700fcda26df2397ecef9139"
+        },
+        {
+          "id": "N60-Q09-B010",
+          "text_sha256": "04d990d179656e84b183fa266675f915f17ae7a9ffb3a74c674f6a5f0d4e0aa5"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C05",
+        "next_cut_id": "N60-Q09-C07",
+        "entry": "Raccord N60-Q09-C05 : Gerardys écrit en avançant, aucun registre corrigé comme victoire",
+        "exit": "État à conserver : Quince hésite avant de regarder vers la cour basse humide",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "L’eau et le pain ont été portés sans demander",
+      "cadrage": "Plan en profondeur vers cour, Quince à hauteur reine",
+      "action_visible": "Quince regarde par l’ouverture basse de la cage d’escalier vers une bande de cour humide. Rhaenyra reste à côté de lui ; les requérants ne sont pas regroupés pour une audience dans ce cadre.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan en profondeur vers cour, Quince à hauteur reine. Quince regarde par l’ouverture basse de la cage d’escalier vers une bande de cour humide. Rhaenyra reste à côté de lui ; les requérants ne sont pas regroupés pour une audience dans ce cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B009",
+          "source_block_id": "N60-Q09-B009",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Le lieu, ensuite. Il a plu toute la nuit, la cour est une mare, et la grande salle en tient deux cents debout mais pas assis. Je vous propose la cour du bas sous les auvents des filets, avec les groupes contre les murs — trois hommes me suffisent, on voit tout d'un bout.",
+          "intention": "L’eau et le pain ont été portés sans demander",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 794,
+            "char_start": 0,
+            "char_end": 271,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "de0ebe6be2fcbf2095d861a1019b271cef853957998c835f586a2d083d27456a"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B010",
+          "source_block_id": "N60-Q09-B010",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Et j'ai fait porter de l'eau et du pain à la porte du jardin il y a une heure, Votre Grâce. Sans vous le demander. Ils sont là depuis avant l'aube et j'ai eu ma leçon hier.",
+          "intention": "L’eau et le pain ont été portés sans demander",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 794,
+            "char_start": 299,
+            "char_end": 471,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "ec4b9c25888de287d380b9fc85e9d3c6bd8028c8f398ff716c0b367a54f83a7d"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 43.4,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 40.4,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "ff75eb1105989d47dbb9e16ab2d3757c439710307f59d9add1ea99648070f0a9",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "robert-quince"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B009",
+          "source_block_id": "N60-Q09-B009",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Le lieu, ensuite. Il a plu toute la nuit, la cour est une mare, et la grande salle en tient deux cents debout mais pas assis. Je vous propose la cour du bas sous les auvents des filets, avec les groupes contre les murs — trois hommes me suffisent, on voit tout d'un bout."
+        },
+        {
+          "line_id": "N60-Q09-B010",
+          "source_block_id": "N60-Q09-B010",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Et j'ai fait porter de l'eau et du pain à la porte du jardin il y a une heure, Votre Grâce. Sans vous le demander. Ils sont là depuis avant l'aube et j'ai eu ma leçon hier."
+        }
+      ],
+      "static_framing": "Plan en profondeur vers cour, Quince à hauteur reine",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C07",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 7,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "1ab2e8ab28b4a3be7d982ac986b3ce9b0b163c81ea74e4995714ef5586f853d8"
+      },
+      "source_block_ids": [
+        "N60-Q09-B011",
+        "N60-Q09-A007",
+        "N60-Q09-B012"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B011",
+          "text_sha256": "fc2791ccf4cc581beacc254e7e7bcd20fc6cd8ade89cb25536fce3eafa8d2e34"
+        },
+        {
+          "id": "N60-Q09-A007",
+          "text_sha256": "7cf7c73f2e8236d6e3ab3035d17f370b43d18d31bfa9d04188b7d6ebbe3d9b82"
+        },
+        {
+          "id": "N60-Q09-B012",
+          "text_sha256": "9ce9f7c948d493d6998c6ee86d1e70dc3c729b3f562a8cb6a4571971f1ede3fc"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C06",
+        "next_cut_id": "N60-Q09-C08",
+        "entry": "Raccord N60-Q09-C06 : Quince hésite avant de regarder vers la cour basse humide",
+        "exit": "État à conserver : Gerardys parle bas dans l’escalier ; reine demeure debout sans chaise offerte comme résolution",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "Fatigue et deux hommes promis imposent un coût réel",
+      "cadrage": "Plan rapproché mestre et reine, pas de prisonnier en insert",
+      "action_visible": "Gerardys parle bas, visage proche de la reine debout dans les marches. Le registre reste contre sa robe ; aucune chaise et aucun prisonnier dans le cadre.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan rapproché mestre et reine, pas de prisonnier en insert. Gerardys parle bas, visage proche de la reine debout dans les marches. Le registre reste contre sa robe ; aucune chaise et aucun prisonnier dans le cadre. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B011",
+          "source_block_id": "N60-Q09-B011",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Et la troisième, que je dirai une seule fois. Vous avez trois jours de couches et vous n'avez pas dormi quatre heures. Une cour comme celle-là, c'est six heures assise. Je vous demande deux choses : qu'on vous asseye avec un dossier et non sur un banc, et que vous me laissiez y mettre fin sans discuter si je vous le dis.",
+          "intention": "Fatigue et deux hommes promis imposent un coût réel",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 795,
+            "char_start": 0,
+            "char_end": 322,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "ee44b41bc8176ae6bff27d353aa4ab95bd67cbaa9e07380ce03ef0637d008648"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B012",
+          "source_block_id": "N60-Q09-B012",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Il y a aussi vos deux hommes en geôle, à qui vous avez promis tout haut, devant trois cents témoins, qu'ils seraient entendus aujourd'hui. Je ne sais pas si vous les voulez avant les douze groupes ou après. Mais devant, ils seront vus.",
+          "intention": "Fatigue et deux hommes promis imposent un coût réel",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 795,
+            "char_start": 337,
+            "char_end": 572,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "b66df5b11ef8638bda9ff7dce9fc602ab6492d4916bcfaac52fbb5c681998551"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 50.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 46.7,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "5c173f62fd583e3f31d8acc6c951d00e5a490c97a5e24d31dab5a135ae63d206",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B011",
+          "source_block_id": "N60-Q09-B011",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Et la troisième, que je dirai une seule fois. Vous avez trois jours de couches et vous n'avez pas dormi quatre heures. Une cour comme celle-là, c'est six heures assise. Je vous demande deux choses : qu'on vous asseye avec un dossier et non sur un banc, et que vous me laissiez y mettre fin sans discuter si je vous le dis."
+        },
+        {
+          "line_id": "N60-Q09-B012",
+          "source_block_id": "N60-Q09-B012",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Il y a aussi vos deux hommes en geôle, à qui vous avez promis tout haut, devant trois cents témoins, qu'ils seraient entendus aujourd'hui. Je ne sais pas si vous les voulez avant les douze groupes ou après. Mais devant, ils seront vus."
+        }
+      ],
+      "static_framing": "Plan rapproché mestre et reine, pas de prisonnier en insert",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C08",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 8,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "ba7711d95510d34c186efda25a1f7a1788d8a3f52d1ebd691151dd91edcfb3de"
+      },
+      "source_block_ids": [
+        "N60-Q09-B013",
+        "N60-Q09-A008",
+        "N60-Q09-B014",
+        "N60-Q09-A009",
+        "N60-Q09-B015",
+        "N60-Q09-A010"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-B013",
+          "text_sha256": "acbbe51debb4b2b907e3e5dd7a6afa9f3032cd14eae4e65b5e23eee65c8441f4"
+        },
+        {
+          "id": "N60-Q09-A008",
+          "text_sha256": "ef4c028d38fa65a9f971309a8f335984d2c4fad1c397a60c006ed63d29ae6d2f"
+        },
+        {
+          "id": "N60-Q09-B014",
+          "text_sha256": "a3a62cd25330334722cf756be655cee05311b8f6511659c03d40d69f7d5319c2"
+        },
+        {
+          "id": "N60-Q09-A009",
+          "text_sha256": "abbd82393f826f4011674741718fbaf8c90fafd94a2e09268961ee4f501302ac"
+        },
+        {
+          "id": "N60-Q09-B015",
+          "text_sha256": "217b90727ec0e910141854930343fd00bf3a22148d66a246c51c7d5ad931269d"
+        },
+        {
+          "id": "N60-Q09-A010",
+          "text_sha256": "66c0f6cdf6c8275f89bb72bcba87704c1f5975d50ba4d27a2d360da31b44e7b4"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C07",
+        "next_cut_id": "N60-Q09-C09",
+        "entry": "Raccord N60-Q09-C07 : Gerardys parle bas dans l’escalier ; reine demeure debout sans chaise offerte comme résolution",
+        "exit": "État à conserver : Quince tourne et descend ; reine et mestre restent en haut, trois appels sans noms nouveaux",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "La consigne engage trois hommes mais attend encore la question",
+      "cadrage": "Plan large fixe des volées, départ hors cadre",
+      "action_visible": "Quince occupe la volée inférieure, dos de trois-quarts, visage tourné vers le bas hors champ. Rhaenyra et Gerardys sont restés en haut, petits dans la profondeur de la cage.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan large fixe des volées, départ hors cadre. Quince occupe la volée inférieure, dos de trois-quarts, visage tourné vers le bas hors champ. Rhaenyra et Gerardys sont restés en haut, petits dans la profondeur de la cage. Peyredragon, cage d’escalier de pierre. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B013",
+          "source_block_id": "N60-Q09-B013",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "okay explique le concept a tes hommes, puis allez voir ces requerants",
+          "intention": "La consigne engage trois hommes mais attend encore la question",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 799,
+            "char_start": 0,
+            "char_end": 69,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "86a4eafecf58996742d08d4159ec0011d55eb8b439bf71c9ab947526e067f3b4"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B014",
+          "source_block_id": "N60-Q09-B014",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Grouper les requérants par village, par métier et par équipage, sous les auvents des filets dans la cour du bas. Un homme par trois groupes. Chaque groupe se donne celui qui parlera.",
+          "intention": "La consigne engage trois hommes mais attend encore la question",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 800,
+            "char_start": 74,
+            "char_end": 256,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "5d722e89f26d90ff7579ffda6602a7d6b56f5fb1dba813827d7750f18495f74d"
+          }
+        },
+        {
+          "line_id": "N60-Q09-B015",
+          "source_block_id": "N60-Q09-B015",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Ça, je le fais en une heure. Mais je ne peux pas leur dire de quoi parler, Votre Grâce, et c'est la première chose qu'ils me demanderont. Il me faut votre question avant qu'ils s'assoient. Pas avant qu'ils soient groupés — avant qu'ils s'assoient. Ça vous laisse une heure.",
+          "intention": "La consigne engage trois hommes mais attend encore la question",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 800,
+            "char_start": 282,
+            "char_end": 555,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "replique",
+            "event_mode": null,
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "0d90900f4162407de1b76be6ea8c866e5b73c60a5b20768d3cfa7b05a006fdec"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 48.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 41.3,
+          "action_et_silence_hors_parole": 7,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "a578fdc29582199fa897ceaa3dd151c260d87f24a6fcd59ef503e0ed87c737bc",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B013",
+          "source_block_id": "N60-Q09-B013",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "okay explique le concept a tes hommes, puis allez voir ces requerants"
+        },
+        {
+          "line_id": "N60-Q09-B014",
+          "source_block_id": "N60-Q09-B014",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Grouper les requérants par village, par métier et par équipage, sous les auvents des filets dans la cour du bas. Un homme par trois groupes. Chaque groupe se donne celui qui parlera."
+        },
+        {
+          "line_id": "N60-Q09-B015",
+          "source_block_id": "N60-Q09-B015",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Ça, je le fais en une heure. Mais je ne peux pas leur dire de quoi parler, Votre Grâce, et c'est la première chose qu'ils me demanderont. Il me faut votre question avant qu'ils s'assoient. Pas avant qu'ils soient groupés — avant qu'ils s'assoient. Ça vous laisse une heure."
+        }
+      ],
+      "static_framing": "Plan large fixe des volées, départ hors cadre",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q09-C09",
+      "scene_id": "N60-Q09",
+      "episode_id": "lc-e001",
+      "order": 9,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q09.json",
+        "scene_sha256": "a5e8c94e67e9e92942ad2c31168f40c31be21955f2325ab29a98129806c2504f",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "dca0844adce8d6255b54f5e51599903e5100a7b7537eca132e0ab87071a4fabf"
+      },
+      "source_block_ids": [
+        "N60-Q09-A011",
+        "N60-Q09-B016"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q09-A011",
+          "text_sha256": "6b5be868161c4e5cbb84d9007760328dde15620ae727db2e0d215a933b08dcf0"
+        },
+        {
+          "id": "N60-Q09-B016",
+          "text_sha256": "7cdb927a31586b148ebc6a3a11f766ee76d87b9c9492407f1599d9935e40bd00"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C08",
+        "next_cut_id": "N60-Q01-C01",
+        "entry": "Raccord N60-Q09-C08 : Quince tourne et descend ; reine et mestre restent en haut, trois appels sans noms nouveaux",
+        "exit": "Sortie : PLUS TARD sous les auvents des filets, reine devant les requérants anonymes, Quince plus bas dans la cour ; aucun résultat au-delà du texte adopté.",
+        "axis": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés."
+      },
+      "intention": "Ellipse avant annonce : réception promise demain",
+      "cadrage": "Plan large depuis la cour, rapprochement sur reine",
+      "action_visible": "Dans la cour basse, Rhaenyra fait face aux requérants anonymes sous les auvents de filets. Quince se tient plus bas près du bord du groupe. L’escalier n’est pas montré comme une seconde scène dans l’image.",
+      "light": "Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage.",
+      "location": "Peyredragon, escalier puis cour basse aux auvents des filets",
+      "prompt_image": "Plan large depuis la cour, rapprochement sur reine. Dans la cour basse, Rhaenyra fait face aux requérants anonymes sous les auvents de filets. Quince se tient plus bas près du bord du groupe. L’escalier n’est pas montré comme une seconde scène dans l’image. Peyredragon, cour basse sous les auvents de filets. Jour humide doux, pierre mouillée et lumière de cour remontant dans la cage. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; gerardys — robe grise anthracite usée. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q09-B016",
+          "source_block_id": "N60-Q09-B016",
+          "scene_id": "N60-Q09",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Citoyens de Peyredragon. J'ai promis de tous vous voir aujourd'hui, mais je ne pourrais pas tous vous entendre. Sachez cependant que vos représentants seront  reçus demain dans la grande salle, devant témoins, et régulièrement ci-après. Je demande à tous les représentants de prendre les avis de leur groupe, et de venir  avec des solutions. Ils seront entendus dans la mesure de notre possible, chacun leur tour",
+          "intention": "Ellipse avant annonce : réception promise demain",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 927,
+            "char_start": 9,
+            "char_end": 421,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "source_kind": "exact_written_archive_fragment_not_audio",
+            "text_sha256": "a0c4d830ec0edc9a38c9fce2cbdb672763de683603e80f839108250efecad76e"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 35.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 29.3,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "71457f07b764087c078cf006d491fbd9131a8d2663a594a7b2b063c1848034bd",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "gerardys"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q09-B016",
+          "source_block_id": "N60-Q09-B016",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "gerardys"
+          ],
+          "text_unchanged": "Citoyens de Peyredragon. J'ai promis de tous vous voir aujourd'hui, mais je ne pourrais pas tous vous entendre. Sachez cependant que vos représentants seront  reçus demain dans la grande salle, devant témoins, et régulièrement ci-après. Je demande à tous les représentants de prendre les avis de leur groupe, et de venir  avec des solutions. Ils seront entendus dans la mesure de notre possible, chacun leur tour"
+        }
+      ],
+      "static_framing": "Plan large depuis la cour, rapprochement sur reine",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Deux moments du premier fil ; chronologie de série condensée avant Q01. Dates exactes non portées par ces événements.",
+          "source": "scenes-lc-e001-v8-requerants-20261104",
+          "status": "editorial_direction"
+        },
+        "scene_geography": "Reine entre Quince et Gerardys dans les marches ; sortie Quince vers le bas. Après ellipse : reine au bord de la cour, requérants anonymes sous auvents, pas de douze auditionnés.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q01-C01",
+      "scene_id": "N60-Q01",
+      "episode_id": "lc-e001",
+      "order": 10,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q01.json",
+        "scene_sha256": "eb534b42929ee952ffec3f188fdd145048bfb3a4c4c9a77ebf902dde3f4fa31a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "4f5d7303b0f3b51a0bcb5eab859c2c4938fbf878617262f334b9c262266206c9"
+      },
+      "source_block_ids": [
+        "N60-Q01-CONTEXTE-01",
+        "N60-Q01-B002",
+        "N60-Q01-B003"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q01-CONTEXTE-01",
+          "text_sha256": "f4de373c6e43a9258f9e38fd241b7b2ecf7cb2df5482223662748c73ab5ee77e"
+        },
+        {
+          "id": "N60-Q01-B002",
+          "text_sha256": "c591783001c5a341623dd02695cb4b1f18feb878ea1cf8c30acd622c6e5af598"
+        },
+        {
+          "id": "N60-Q01-B003",
+          "text_sha256": "215d12c872560570132b9d16e661ba73c97b32a69999638ced953e55d9c76b79"
+        }
+      ],
+      "character_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q09-C09",
+        "next_cut_id": "N60-Q01-C02",
+        "entry": "Entrée de scène : Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "exit": "État à conserver : Quince expose sa méthode, la reine écoute sans qu’un candidat ne soit montré",
+        "axis": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image."
+      },
+      "intention": "Distinguer candidat qui peut repartir et engagement à venir",
+      "cadrage": "Plan à trois près de la table, Quince au premier plan",
+      "action_visible": "Quince, mains près de la table, fait face à Rhaenyra au petit bout ; Gerardys écoute de l’autre côté. Aucun candidat ni dragon ne figure dans cette pièce.",
+      "light": "Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien.",
+      "location": "Peyredragon, entretien autour de la table",
+      "prompt_image": "Plan à trois près de la table, Quince au premier plan. Quince, mains près de la table, fait face à Rhaenyra au petit bout ; Gerardys écoute de l’autre côté. Aucun candidat ni dragon ne figure dans cette pièce. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q01-CONTEXTE-01",
+          "source_block_id": "N60-Q01-CONTEXTE-01",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Mais la peur de mourir, je ne sais pas la fouiller. Personne ne dit non à cette question-là devant trois cents personnes qui écoutent. Alors je ne la poserai pas au portillon : je la poserai au bas de l'escalier des fosses, à celui qui a déjà attendu six heures, quand il n'y a plus que lui, moi et le trou. Là, il y en a qui font demi-tour. Ceux-là, je ne les inscris pas et je ne dis leur nom à personne.",
+          "intention": "Distinguer candidat qui peut repartir et engagement à venir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1259,
+            "char_start": 629,
+            "char_end": 1035,
+            "event_type": "replique",
+            "speaker_id": "robert-quince",
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 555
+            },
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B002",
+          "source_block_id": "N60-Q01-B002",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "et ils obtiennent un dragon quand meme",
+          "intention": "Distinguer candidat qui peut repartir et engagement à venir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1270,
+            "char_start": 0,
+            "char_end": 38,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "1973f73186fd1ab319d503f1f163430db4159559b4f006e6b72d918f12ca7c72",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B003",
+          "source_block_id": "N60-Q01-B003",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "J'ai dit qu'ils n'avaient rien à perdre. Un homme qui monte une bête a tout à perdre le jour même : il y a une seule chose au monde qu'il ne retrouvera nulle part ailleurs et vous la tenez. Aucune solde, aucun toit, aucune femme ne vous achète un homme comme ça.",
+          "intention": "Distinguer candidat qui peut repartir et engagement à venir",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1272,
+            "char_start": 120,
+            "char_end": 382,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 563
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "c8ca477c1be7be4a9c238c585be7245d4f4a839dabeea5a746a2acbe703be88b",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 66.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 63.1,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "1865a85fa95d0fbf1535187aac4170050679186c848e39f21d95186cb7f00e16",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "robert-quince",
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q01-CONTEXTE-01",
+          "source_block_id": "N60-Q01-CONTEXTE-01",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "Mais la peur de mourir, je ne sais pas la fouiller. Personne ne dit non à cette question-là devant trois cents personnes qui écoutent. Alors je ne la poserai pas au portillon : je la poserai au bas de l'escalier des fosses, à celui qui a déjà attendu six heures, quand il n'y a plus que lui, moi et le trou. Là, il y en a qui font demi-tour. Ceux-là, je ne les inscris pas et je ne dis leur nom à personne."
+        },
+        {
+          "line_id": "N60-Q01-B002",
+          "source_block_id": "N60-Q01-B002",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "et ils obtiennent un dragon quand meme"
+        },
+        {
+          "line_id": "N60-Q01-B003",
+          "source_block_id": "N60-Q01-B003",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "J'ai dit qu'ils n'avaient rien à perdre. Un homme qui monte une bête a tout à perdre le jour même : il y a une seule chose au monde qu'il ne retrouvera nulle part ailleurs et vous la tenez. Aucune solde, aucun toit, aucune femme ne vous achète un homme comme ça."
+        }
+      ],
+      "static_framing": "Plan à trois près de la table, Quince au premier plan",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après le sacre dans la série ; archive129.3.20",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q01-C02",
+      "scene_id": "N60-Q01",
+      "episode_id": "lc-e001",
+      "order": 11,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q01.json",
+        "scene_sha256": "eb534b42929ee952ffec3f188fdd145048bfb3a4c4c9a77ebf902dde3f4fa31a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "dc522bed6191292338f9e9af08ffcc639bea23c2dd93223bdc0304bd55f23444"
+      },
+      "source_block_ids": [
+        "N60-Q01-B004",
+        "N60-Q01-B005"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q01-B004",
+          "text_sha256": "680cce8c56634fd5c90f5264b80656c3b7d9ca8d0e0f70bf730e72c796269550"
+        },
+        {
+          "id": "N60-Q01-B005",
+          "text_sha256": "8034cef847447d2a908674b8705f5634f6da111bfdb5e3e07e72d666ef4b2134"
+        }
+      ],
+      "character_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q01-C01",
+        "next_cut_id": "N60-Q01-C03",
+        "entry": "Raccord N60-Q01-C01 : Quince expose sa méthode, la reine écoute sans qu’un candidat ne soit montré",
+        "exit": "État à conserver : Gerardys face à la reine ; table nue entre eux, aucun dragon livré dans ce plan",
+        "axis": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image."
+      },
+      "intention": "La propriété de la bête donne un risque plutôt qu’un moyen de reprise",
+      "cadrage": "Plan rapproché du mestre, reine en amorce",
+      "action_visible": "Le visage de Gerardys est net au-dessus de la table nue ; l’épaule de la reine est en amorce. Une feuille attend près de la plume.",
+      "light": "Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien.",
+      "location": "Peyredragon, entretien autour de la table",
+      "prompt_image": "Plan rapproché du mestre, reine en amorce. Le visage de Gerardys est net au-dessus de la table nue ; l’épaule de la reine est en amorce. Une feuille attend près de la plume. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q01-B004",
+          "source_block_id": "N60-Q01-B004",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Si le dragon est à la couronne et seulement prêté, alors ce que vous donnez, vous pouvez le reprendre",
+          "intention": "La propriété de la bête donne un risque plutôt qu’un moyen de reprise",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1273,
+            "char_start": 242,
+            "char_end": 343,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 564
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "b76c8d64e169ba9132b06f83493ad95b4f7915831c68cf6b189bd6665d4eb959",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B005",
+          "source_block_id": "N60-Q01-B005",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "et un homme le sait, et il vous obéira par peur autant que par serment. Si le dragon est à LUI, vous ne pourrez plus jamais le lui retirer, parce qu'on ne retire pas un dragon à quelqu'un : la bête décide, pas vous. Un homme qui a une bête à lui, des armes à lui et un toit n'est plus votre serviteur, Votre Grâce. C'est un vassal, et le plus petit de vos vassaux aura le pouvoir de brûler le plus grand.",
+          "intention": "La propriété de la bête donne un risque plutôt qu’un moyen de reprise",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1273,
+            "char_start": 346,
+            "char_end": 750,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 564
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "c01b74663dd1211483a28f784b29d09fc33e1d8f4cb08a4f58e142f7fd325248",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 47.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 45.3,
+          "action_et_silence_hors_parole": 2,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "70bfd196f3cefd87d86457a0d07eed22da7d7a26e8e589ae22c20ccce40158b0",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q01-B004",
+          "source_block_id": "N60-Q01-B004",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "Si le dragon est à la couronne et seulement prêté, alors ce que vous donnez, vous pouvez le reprendre"
+        },
+        {
+          "line_id": "N60-Q01-B005",
+          "source_block_id": "N60-Q01-B005",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "et un homme le sait, et il vous obéira par peur autant que par serment. Si le dragon est à LUI, vous ne pourrez plus jamais le lui retirer, parce qu'on ne retire pas un dragon à quelqu'un : la bête décide, pas vous. Un homme qui a une bête à lui, des armes à lui et un toit n'est plus votre serviteur, Votre Grâce. C'est un vassal, et le plus petit de vos vassaux aura le pouvoir de brûler le plus grand."
+        }
+      ],
+      "static_framing": "Plan rapproché du mestre, reine en amorce",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après le sacre dans la série ; archive129.3.20",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q01-C03",
+      "scene_id": "N60-Q01",
+      "episode_id": "lc-e001",
+      "order": 12,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q01.json",
+        "scene_sha256": "eb534b42929ee952ffec3f188fdd145048bfb3a4c4c9a77ebf902dde3f4fa31a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e490414628d4cbe09b35a4ba00ff61d3be65b2cbbc6421e47f4488f1292f432c"
+      },
+      "source_block_ids": [
+        "N60-Q01-B006",
+        "N60-Q01-ACTION-SIGNATURE-01"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q01-B006",
+          "text_sha256": "dd04169601053f40f6ba3f56507e825a2b008266d623b67743fa8c4e84e7952d"
+        },
+        {
+          "id": "N60-Q01-ACTION-SIGNATURE-01",
+          "text_sha256": "c19b65469817ad6085904d2ac80afadc9559c3d3bddf7ef82c22f651551828c4"
+        }
+      ],
+      "character_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q01-C02",
+        "next_cut_id": "N60-Q01-C04",
+        "entry": "Raccord N60-Q01-C02 : Gerardys face à la reine ; table nue entre eux, aucun dragon livré dans ce plan",
+        "exit": "État à conserver : La reine signe ; le texte de la feuille reste illisible dans l’image générée",
+        "axis": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image."
+      },
+      "intention": "La phrase royale fait un engagement matériel",
+      "cadrage": "Plan rapproché reine puis main qui signe",
+      "action_visible": "La pointe de la plume de Rhaenyra touche la feuille ; son visage penché reste visible dans le même plan. Ni mots lisibles ni sceau inventé.",
+      "light": "Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien.",
+      "location": "Peyredragon, entretien autour de la table",
+      "prompt_image": "Plan rapproché reine. La pointe de la plume de Rhaenyra touche la feuille ; son visage penché reste visible dans le même plan. Ni mots lisibles ni sceau inventé. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q01-B006",
+          "source_block_id": "N60-Q01-B006",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "on va ecrire la rééalité: la bete est a lui. Mais lui est a nous",
+          "intention": "La phrase royale fait un engagement matériel",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1277,
+            "char_start": 0,
+            "char_end": 64,
+            "event_type": "vous",
+            "event_mode": "dire",
+            "date": null,
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "7f9139109dc3b1dcf0434cace81500858d6fcb5233b9d8c7a3b16cb0252b68fc",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10.7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 6.7,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4d0a9fb6ff70aee22be5153064ea8b2dc0efe3f1d5ebb17f041452d57986b9b2",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q01-B006",
+          "source_block_id": "N60-Q01-B006",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "on va ecrire la rééalité: la bete est a lui. Mais lui est a nous"
+        }
+      ],
+      "static_framing": "Plan rapproché reine",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après le sacre dans la série ; archive129.3.20",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q01-C04",
+      "scene_id": "N60-Q01",
+      "episode_id": "lc-e001",
+      "order": 13,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q01.json",
+        "scene_sha256": "eb534b42929ee952ffec3f188fdd145048bfb3a4c4c9a77ebf902dde3f4fa31a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "79f7bd3c6aa9fd3a79ce6770eb712fb9e36e5e8e9d4aeb10b18f566e7784bdec"
+      },
+      "source_block_ids": [
+        "N60-Q01-B007",
+        "N60-Q01-B008",
+        "N60-Q01-B009"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q01-B007",
+          "text_sha256": "97cc24d1c26bbe80e3156a33064f83e2b7575cafdd2413aa81dab00b3923e216"
+        },
+        {
+          "id": "N60-Q01-B008",
+          "text_sha256": "4dbfa374f20d688d1692dc521ab136ec504c80bf69d6e4924649d6b0636b2c47"
+        },
+        {
+          "id": "N60-Q01-B009",
+          "text_sha256": "eccda561ffc95ad291a2cf2ffa62257f454bb4240add6b722c6d554ab11103d6"
+        }
+      ],
+      "character_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q01-C03",
+        "next_cut_id": "N60-Q01-C05",
+        "entry": "Raccord N60-Q01-C03 : La reine signe ; le texte de la feuille reste illisible dans l’image générée",
+        "exit": "État à conserver : Gerardys laisse la signature dans la profondeur du cadre",
+        "axis": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image."
+      },
+      "intention": "Le lien sans congé engage aussi la reine",
+      "cadrage": "Contrechamp mestre, plume arrêtée",
+      "action_visible": "Gerardys tient sa plume arrêtée devant lui ; la feuille signée est visible au bord de la reine en arrière-plan. Aucun homme recevant un dragon.",
+      "light": "Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien.",
+      "location": "Peyredragon, entretien autour de la table",
+      "prompt_image": "Contrechamp mestre, plume arrêtée. Gerardys tient sa plume arrêtée devant lui ; la feuille signée est visible au bord de la reine en arrière-plan. Aucun homme recevant un dragon. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q01-B007",
+          "source_block_id": "N60-Q01-B007",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "C'est juste, et c'est écrivable, mais pas dans ces mots-là : on ne possède pas un homme dans les Sept Couronnes, et un décret qui a l'air de le dire vous vaudra un sermon de chaque septon du royaume avant la fin de la lune. Ce qui s'écrit, c'est ceci : LE SERMENT DU DRAGONNIER EST SANS TERME ET SANS CONGÉ. Il ne peut ni s'en délier, ni le racheter, ni demander à s'en aller. Le dragon lui appartient parce qu'il ne peut pas ne pas lui appartenir, et lui appartient à la couronne parce qu'il l'a juré une fois pour toute sa vie.",
+          "intention": "Le lien sans congé engage aussi la reine",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1279,
+            "char_start": 84,
+            "char_end": 613,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 571
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "4537865f8e85df230b671cbbc867d17b2d25603fbbddb55779ac9050159f1f19",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B008",
+          "source_block_id": "N60-Q01-B008",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "Mais regardez ce que vous venez de signer de l'autre côté, Votre Grâce, parce que c'est la même phrase : un serment sans congé ne se rompt pas dans un seul sens. Vous ne pouvez pas non plus le renvoyer. Ni le déclarer indigne, ni le remercier, ni le laisser partir le jour où il vous encombre. Vous l'avez pour la vie, celui-là",
+          "intention": "Le lien sans congé engage aussi la reine",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1279,
+            "char_start": 643,
+            "char_end": 970,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 571
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "ab3123bf904d8ffcbb1816dda0b58733795c44b3038b74a6186b9e93dcd2e391",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B009",
+          "source_block_id": "N60-Q01-B009",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "gerardys",
+          "locuteur": "GERARDYS",
+          "texte": "et vous ne savez pas encore qui c'est.",
+          "intention": "Le lien sans congé engage aussi la reine",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1279,
+            "char_start": 973,
+            "char_end": 1011,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 571
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "8083209e1029dc2b15380b5be80d61cfecb4e1e5cc9bff9132da3a7eaa33fbc2",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 80.8,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 77.8,
+          "action_et_silence_hors_parole": 3,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "f77769308cb4b114203a75a4372d46f0f00399e09f65be47e6474cf78bf8a57a",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "gerardys"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q01-B007",
+          "source_block_id": "N60-Q01-B007",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "C'est juste, et c'est écrivable, mais pas dans ces mots-là : on ne possède pas un homme dans les Sept Couronnes, et un décret qui a l'air de le dire vous vaudra un sermon de chaque septon du royaume avant la fin de la lune. Ce qui s'écrit, c'est ceci : LE SERMENT DU DRAGONNIER EST SANS TERME ET SANS CONGÉ. Il ne peut ni s'en délier, ni le racheter, ni demander à s'en aller. Le dragon lui appartient parce qu'il ne peut pas ne pas lui appartenir, et lui appartient à la couronne parce qu'il l'a juré une fois pour toute sa vie."
+        },
+        {
+          "line_id": "N60-Q01-B008",
+          "source_block_id": "N60-Q01-B008",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "Mais regardez ce que vous venez de signer de l'autre côté, Votre Grâce, parce que c'est la même phrase : un serment sans congé ne se rompt pas dans un seul sens. Vous ne pouvez pas non plus le renvoyer. Ni le déclarer indigne, ni le remercier, ni le laisser partir le jour où il vous encombre. Vous l'avez pour la vie, celui-là"
+        },
+        {
+          "line_id": "N60-Q01-B009",
+          "source_block_id": "N60-Q01-B009",
+          "speaker_id": "gerardys",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "et vous ne savez pas encore qui c'est."
+        }
+      ],
+      "static_framing": "Contrechamp mestre, plume arrêtée",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après le sacre dans la série ; archive129.3.20",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "N60-Q01-C05",
+      "scene_id": "N60-Q01",
+      "episode_id": "lc-e001",
+      "order": 14,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/N60-Q01.json",
+        "scene_sha256": "eb534b42929ee952ffec3f188fdd145048bfb3a4c4c9a77ebf902dde3f4fa31a",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "52a524205c7431064fbcd6aec94c2ae776a79f73c6f4fa29500d5badc557b4de"
+      },
+      "source_block_ids": [
+        "N60-Q01-B010",
+        "N60-Q01-B011"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "N60-Q01-B010",
+          "text_sha256": "3a91d073c68f49c04c9d4566b05b2e7028f8aba82352ef2ca7cfe32f39b34c61"
+        },
+        {
+          "id": "N60-Q01-B011",
+          "text_sha256": "71e97c61e2dac964c6603ea64106760ba3890c121307a73e8ca62fa9c7e01dc1"
+        }
+      ],
+      "character_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/gerardys.webp",
+          "sha256": "1dc7519a9aadacb8ad78bd84f568d5e096edbe130769723e7f3c64a13c938db4",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "gerardys"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long creusé, crâne presque rasé gris, maigre ; robe grise et chaîne.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/gerardys.svg",
+          "source_svg_sha256": "714271b856dc399e0c95b64197b3703474e37bf8d9c182be8486716b5aacded0",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\gerardys.webp",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "gerardys",
+          "state": "robe grise anthracite usée"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q01-C04",
+        "next_cut_id": "VER04-C01",
+        "entry": "Raccord N60-Q01-C04 : Gerardys laisse la signature dans la profondeur du cadre",
+        "exit": "Sortie : Quince ne réclame aucun changement de mot, reine et mestre restent devant la feuille ; aucun résultat au-delà du texte adopté.",
+        "axis": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image."
+      },
+      "intention": "Nommer le coût possible sans fabriquer une mort ou un renvoi",
+      "cadrage": "Plan moyen à trois, distance tenue",
+      "action_visible": "La feuille repose entre Rhaenyra, Quince et Gerardys. Les trois restent séparés par les coins de la table, regards contenus, mains immobiles.",
+      "light": "Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien.",
+      "location": "Peyredragon, entretien autour de la table",
+      "prompt_image": "Plan moyen à trois, distance tenue. La feuille repose entre Rhaenyra, Quince et Gerardys. Les trois restent séparés par les coins de la table, regards contenus, mains immobiles. Peyredragon, salle de travail. Fenêtre latérale froide, feu d’appoint contenu ; tenue de reine sombre et bordeaux sans couronne proposée pour entretien. gerardys : 53 ans, visage long, maigre, yeux creusés, cheveux gris presque rasés, silhouette mince, légèrement voûté. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : gerardys — robe grise anthracite usée ; rhaenyra — Robe bleu-noir à manches bordeaux, même coiffure demi-relevée ; sans couronne ni cape de mer. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "N60-Q01-B010",
+          "source_block_id": "N60-Q01-B010",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Un homme dont on ne peut pas reprendre la bête, qu'on ne peut pas chasser et qui ne peut pas s'en aller, il n'y a qu'une seule façon d'en être débarrassé le jour où il tourne mal, et vous la connaissez tous les deux.",
+          "intention": "Nommer le coût possible sans fabriquer une mort ou un renvoi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1280,
+            "char_start": 132,
+            "char_end": 348,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 572
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "00cc5b40194efd4581209ba0dc52f4ff0f1ed4cc5d1a64a608bbe90c08f21f27",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        },
+        {
+          "line_id": "N60-Q01-B011",
+          "source_block_id": "N60-Q01-B011",
+          "scene_id": "N60-Q01",
+          "locuteur_id": "robert-quince",
+          "locuteur": "QUINCE",
+          "texte": "Je ne dis pas de changer un mot. Je dis que le jour viendra où quelqu'un demandera à la reine de faire ce qu'on ne peut plus éviter de faire, et que ce sera peut-être moi qui le lui demanderai. Autant que ce soit dit ce matin, devant le mestre, pendant que ce n'est encore que du papier.",
+          "intention": "Nommer le coût possible sans fabriquer une mort ou un renvoi",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "sources/fil-01.jsonl",
+            "line": 1280,
+            "char_start": 363,
+            "char_end": 650,
+            "event_type": "replique",
+            "event_mode": null,
+            "date": {
+              "annee": 129,
+              "lune": 3,
+              "jour": 20,
+              "minute": 572
+            },
+            "file_sha256": "df22409e55e534955b5ec7927a2b280b1cd2b144eb1d8105b005f879c771f1a1",
+            "text_sha256": "d5ba333d4138a16d5796f3301ee4395ead11072ade0fe379c117a367a416dec4",
+            "source_kind": "exact_written_archive_fragment_not_audio"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 49.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 45.3,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "déjà dans le temps de parole, non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0b5e17de441e00d0ad328fc99e5750be5fa951c86703171a2f7606bd019566c9",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:gerardys"
+      ],
+      "image_subject_ids": [
+        "gerardys",
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "robert-quince"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "N60-Q01-B010",
+          "source_block_id": "N60-Q01-B010",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "Un homme dont on ne peut pas reprendre la bête, qu'on ne peut pas chasser et qui ne peut pas s'en aller, il n'y a qu'une seule façon d'en être débarrassé le jour où il tourne mal, et vous la connaissez tous les deux."
+        },
+        {
+          "line_id": "N60-Q01-B011",
+          "source_block_id": "N60-Q01-B011",
+          "speaker_id": "robert-quince",
+          "image_subject_ids": [
+            "gerardys",
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "Je ne dis pas de changer un mot. Je dis que le jour viendra où quelqu'un demandera à la reine de faire ce qu'on ne peut plus éviter de faire, et que ce sera peut-être moi qui le lui demanderai. Autant que ce soit dit ce matin, devant le mestre, pendant que ce n'est encore que du papier."
+        }
+      ],
+      "static_framing": "Plan moyen à trois, distance tenue",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Après le sacre dans la série ; archive129.3.20",
+          "source": "Archive dates in source_blocks",
+          "status": "series_chronology_condensed"
+        },
+        "scene_geography": "Reine près du petit bout de table, Quince à sa droite, Gerardys face à eux ; feuille de signature sans mots générés, pas de candidat en image.",
+        "movement_intent": "Tenir le cadre au rythme des regards et des gestes, sans déplacement destiné à remplir la durée."
+      },
+      "existing_image": null
+    }
+  ]
+}

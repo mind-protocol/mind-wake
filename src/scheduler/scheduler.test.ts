@@ -166,6 +166,23 @@ describe("fenêtre horaire", () => {
 });
 
 describe("pause, arrêt et conditions inconnues", () => {
+  it("fil principal Off : aucun lancement ni changement d'état ; On : le réveil reprend", async () => {
+    let enabled = false;
+    setup({}, { overrides: { mainThreadEnabled: () => enabled, humanWakePending: () => true } });
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "ready", detail: "main_thread.off" });
+    expect(b.launcher.tickets).toHaveLength(0);
+    expect(b.events()).toHaveLength(0);
+    expect(state()).toBe("ready");
+    enabled = true;
+    expect((await tickFresh()).kind).toBe("launched");
+    expect(b.launcher.tickets).toHaveLength(1);
+  });
+
+  it("fil principal : un réglage illisible (exception) laisse le fil actif", async () => {
+    setup({}, { overrides: { mainThreadEnabled: () => { throw new Error("illisible"); } } });
+    expect((await tickFresh()).kind).toBe("launched");
+  });
+
   it("pause : aucun réveil, aucun événement", async () => {
     setup({ state: "paused" });
     expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "paused" });

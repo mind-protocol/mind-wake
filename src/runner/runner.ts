@@ -1265,7 +1265,8 @@ export class SessionRunner {
       }
     }
     const orphans: OrphanReport[] = [];
-    for (const record of this.#uow.sessions.listOpen(this.#profileId)) {
+    const openSessions = this.#uow.sessions.listOpen(this.#profileId);
+    for (const record of openSessions) {
       if (record.id === this.#active?.ref.sessionId) continue;
       const query = this.#supervisor.query(this.#profileId, record.id);
       const termination =
@@ -1324,7 +1325,10 @@ export class SessionRunner {
           const paused =
             profile.state === "checkpointing" &&
             pauseRequestedSince(tx, this.#profileId, startedSeq ?? 0);
-          this.#moveProfile(tx, profile, paused ? "paused" : "blocked", at, record.id);
+          // A single stale session with a confirmed absent job can safely return
+          // to scheduling. Keep the block when ownership or termination is uncertain.
+          const recovered = openSessions.length === 1 && (query.found === false || termination?.confirmed === true);
+          this.#moveProfile(tx, profile, paused ? "paused" : recovered ? "hibernating" : "blocked", at, record.id);
         }
         return kept;
       });

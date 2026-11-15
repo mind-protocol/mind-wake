@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101a20">
+  <title>Bien utiliser les marchands dans Civ VII</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101a20;--panel:#19272e;--ink:#edf1e9;--muted:#b3c0bd;--gold:#e5bd6b;--teal:#72c7b4;--line:#34464b;--blue:#9dc8e8}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#35453d 0,transparent 38%),var(--bg);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+    main{width:min(980px,calc(100% - 36px));margin:48px auto 80px}header{padding:34px 0 26px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--teal);font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700}h1{font-family:Georgia,serif;font-size:clamp(2.2rem,6vw,4.2rem);line-height:1.08;max-width:780px;margin:14px 0;color:#fbf4df}header p{font-size:1.13rem;color:var(--muted);max-width:720px;margin-bottom:0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:26px 0}.card,.section{background:linear-gradient(145deg,#1b2a30,#162329);border:1px solid var(--line);border-radius:16px;padding:22px}.card strong{color:var(--gold);font-size:1.15rem}.card p{color:var(--muted);margin-bottom:0}.section{margin:18px 0}.section h2{font:700 1.45rem Georgia,serif;color:#fbf4df;margin:0 0 12px}.flow{display:flex;align-items:stretch;gap:10px;margin:18px 0;flex-wrap:wrap}.step{flex:1 1 145px;border:1px solid #50615c;border-radius:12px;background:#202f32;padding:14px}.step b{color:var(--gold);display:block;margin-bottom:3px}.arrow{color:var(--teal);align-self:center;font-size:1.3rem}.callout{border-left:3px solid var(--teal);padding:10px 16px;color:var(--muted);background:#17282a;border-radius:0 8px 8px 0}.badge{display:inline-block;border:1px solid #557065;border-radius:999px;color:var(--teal);padding:2px 9px;font-size:.75rem;margin-right:6px}.badge.infer{color:var(--blue);border-color:#526d7e}code{color:#f0d28f;background:#263237;border-radius:4px;padding:2px 5px;font-size:.88em}.small{font-size:.88rem;color:var(--muted)}footer{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:.85rem;margin-top:24px}.stats,.insights,.resource-types,.tips{display:grid;gap:12px;margin:18px 0}.stats{grid-template-columns:repeat(3,1fr)}.insights,.tips{grid-template-columns:repeat(2,1fr)}.resource-types{grid-template-columns:repeat(3,1fr)}.tile{background:#202f32;border:1px solid #40545a;border-radius:13px;padding:16px}.tile h3{font-size:1rem;color:var(--gold);margin:0 0 6px}.tile p{color:var(--muted);margin:0}.stat{text-align:center;background:linear-gradient(145deg,#263b38,#1d2a2d);border:1px solid #47615a;border-radius:14px;padding:17px 10px}.stat .num{font:700 1.9rem Georgia,serif;color:var(--gold);display:block;line-height:1.2}.stat .label{display:block;color:var(--muted);font-size:.9rem;margin-top:5px}.life{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:20px 0;border:1px solid #40545a;border-radius:13px;overflow:hidden}.life div{padding:14px;background:#202f32;border-right:1px solid #40545a}.life div:last-child{border:0}.life b{display:block;color:var(--teal);font-size:.9rem}.life span{color:var(--muted);font-size:.88rem}.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:18px 0}.vs .panel{background:#202f32;border:1px solid #40545a;border-radius:13px;padding:18px}.vs .panel b{color:var(--gold)}.vs .mark{font-size:1.5rem;color:var(--teal)}.kicker{color:var(--teal);text-transform:uppercase;letter-spacing:.12em;font-weight:700;font-size:.72rem}.reference a{color:var(--blue)}
+    .page-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:20px}.tab-button{font:600 1rem system-ui;background:#19272e;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer}.tab-button[aria-selected="true"]{background:#30423d;border-color:#668778;color:#fbf4df}.tab-button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}.tab-panel[hidden]{display:none}.age-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}.age-card{border:1px solid #40545a;border-radius:15px;padding:18px;background:linear-gradient(150deg,#203333,#19272e)}.age-card .age{color:var(--teal);font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700}.age-card h3{font:700 1.25rem Georgia,serif;color:#fbf4df;margin:7px 0}.age-card p{color:var(--muted);margin:7px 0}.age-card .yield{font:700 1.45rem Georgia,serif;color:var(--gold);margin:12px 0}.target-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0}.target-row div{min-height:78px;display:grid;place-content:center;text-align:center;padding:8px;border:1px solid #49625a;background:#203330;border-radius:10px}.target-row b{font-size:1.1rem;color:var(--gold)}.target-row span{font-size:.78rem;color:var(--muted)}.plan-link{color:var(--blue)}
+    @media(max-width:680px){main{margin-top:22px}.grid,.insights,.tips,.resource-types,.stats,.life,.vs,.age-grid{grid-template-columns:1fr}.target-row{grid-template-columns:repeat(2,1fr)}.life div{border-right:0;border-bottom:1px solid #40545a}.life div:last-child{border:0}.vs .mark{text-align:center;transform:rotate(90deg)}.arrow{transform:rotate(90deg);margin:auto}.section,.card{padding:18px}}
+  </style>
+</head>
+<body>
+<main>
+  <nav class="page-tabs" role="tablist" aria-label="Pages du guide Civ VII">
+    <button class="tab-button" id="tab-guide-button" type="button" role="tab" aria-selected="true" aria-controls="guide-panel">Guide des marchands</button>
+    <button class="tab-button" id="tab-plan-button" type="button" role="tab" aria-selected="false" aria-controls="plan-panel" tabindex="-1">Plan économique</button>
+  </nav>
+  <div class="tab-panel" id="guide-panel" role="tabpanel" aria-labelledby="tab-guide-button">
+  <header>
+    <div class="eyebrow">Petit guide de jeu · Civilization VII</div>
+    <h1>Bien utiliser ses marchands</h1>
+    <p>Un marchand ouvre une route commerciale vers un établissement étranger. Tu reçois des copies de ses ressources exploitées ; le partenaire reçoit de l’or. Le marchand peut aussi construire des routes terrestres entre tes propres établissements.</p>
+  </header>
+
+  <section class="grid" aria-label="Résumé">
+    <article class="card"><strong>Ce que tu reçois</strong><p>Une copie de chaque ressource améliorée dans l’établissement étranger. Les copies entrent dans ton réseau commercial : affecte-les aux établissements qui peuvent en tirer les meilleurs bonus.</p></article>
+    <article class="card"><strong>Ce que reçoit l’autre</strong><p>Le partenaire gagne de l’or de commerce par ressource copiée. C’est donc lui qui reçoit le revenu d’or de base ; toi, tu gagnes surtout les ressources et leurs effets.</p></article>
+  </section>
+
+  <section class="section">
+    <div class="kicker">Or ≠ GDP</div>
+    <h2>Le GDP, c’est quoi ?</h2>
+    <p>GDP signifie « produit intérieur brut » (PIB en français). Dans Civ VII, c’est le score qui mesure ta progression vers la <strong>victoire économique</strong>. Ce n’est pas de l’or : tu ne peux pas le dépenser pour acheter quoi que ce soit.</p>
+    <div class="vs" aria-label="Différence entre or et GDP">
+      <div class="panel"><b>🪙 Or</b><p class="small">Une monnaie dépensable : achats, unités, bâtiments et actions de jeu.</p></div>
+      <div class="mark">≠</div>
+      <div class="panel"><b>📈 GDP</b><p class="small">Des points de score économique qui s’accumulent et te rapprochent de la victoire économique.</p></div>
+    </div>
+    <div class="flow" aria-label="Comment une route aide à gagner du GDP">
+      <div class="step"><b>1 · Importer</b>La route copie les ressources exploitées chez le partenaire.</div><div class="arrow">→</div>
+      <div class="step"><b>2 · Affecter</b>Place une ressource importée dans une cité disposant d’un emplacement.</div><div class="arrow">→</div>
+      <div class="step"><b>3 · Générer du GDP</b>Après la technologie requise, cette ressource affectée rapporte du GDP chaque tour.</div>
+    </div>
+    <p class="callout">Je corrige ma formulation précédente : créer une route ne te donne pas automatiquement du GDP. La route copie des ressources ; selon la Civilopédie installée, une ressource importée affectée à une <strong>cité</strong> rapporte ensuite 1 GDP par tour après la recherche de « Skilled Trades ». Une ressource affectée à un bourg ne compte pas de la même façon. Le panneau Victoire affiche ton score et ton classement.</p>
+  </section>
+
+  <section class="section">
+    <h2>Comment s’en servir en partie</h2>
+    <p>Le marchand est le moyen de créer la route ; il n’est pas un convoi qui livre une ressource unique. Une fois la route créée, il est dépensé et remplacé par une caravane ou un navire commercial automatique. Cette caravane entretient la liaison sans autre action de ta part, mais ne sert pas à lancer une deuxième route. Il faut un autre marchand.</p>
+    <div class="flow" aria-label="Étapes pour utiliser un marchand">
+      <div class="step"><b>1 · Repérer</b>Inspecte les ressources exploitées par les villes étrangères et choisis celles qui te manquent.</div><div class="arrow">→</div>
+      <div class="step"><b>2 · Vérifier</b>Assure-toi que la ville est dans ta portée et que tu as encore une capacité de route avec ce dirigeant.</div><div class="arrow">→</div>
+      <div class="step"><b>3 · Envoyer</b>En Antiquité et en Exploration, le marchand doit atteindre la ville. En Moderne, les routes commencent à distance.</div><div class="arrow">→</div>
+      <div class="step"><b>4 · Affecter</b>Assigne les ressources importées aux établissements où elles procurent le meilleur bonus.</div>
+    </div>
+    <p class="callout">Les ressources de bonus et les ressources de ville ont généralement besoin d’une place de ressource disponible dans un établissement pour fournir leur bonus spécialisé. Si elles restent sans place, elles donnent plutôt de l’or et du bonheur. Les ressources d’empire, elles, apportent leur effet à tout l’empire sans affectation.</p>
+  </section>
+
+  <section class="section">
+    <h2>Portée et limites</h2>
+    <p>Une route doit relier une ville étrangère située à portée d’un établissement déjà dans ton réseau commercial. Les portées de base du jeu sont :</p>
+    <div class="grid">
+      <article class="card"><strong>Antiquité</strong><p>10 cases par terre · 30 par mer</p></article>
+      <article class="card"><strong>Exploration</strong><p>15 cases par terre · 45 par mer</p></article>
+      <article class="card"><strong>Moderne</strong><p>20 cases par terre · 60 par mer</p></article>
+      <article class="card"><strong>Réseau en chaîne</strong><p>Une nouvelle ville peut prolonger le réseau si elle est à portée d’un établissement déjà connecté, même si elle est loin de la capitale.</p></article>
+    </div>
+    <div class="insights">
+      <article class="tile"><h3>🎯 Une cible valable</h3><p>L’établissement étranger doit exploiter au moins une ressource. La route copie les ressources améliorées qui s’y trouvent.</p></article>
+      <article class="tile"><h3>🧭 Distance réelle</h3><p>La portée terrestre suit un trajet praticable, pas seulement la distance à vol d’oiseau. Montagnes et terrain bloquant peuvent rallonger ou fermer le passage.</p></article>
+      <article class="tile"><h3>🤝 Une limite par partenaire</h3><p>Tu as normalement une route active avec chaque dirigeant. « Améliorer les relations commerciales » augmente la limite avec ce partenaire.</p></article>
+      <article class="tile"><h3>⌛ Une route pour l’âge</h3><p>Elle reste active jusqu’au changement d’âge, sauf si la guerre ou un pillage la coupe avant. Une exception de civilisation peut modifier cette règle.</p></article>
+      <article class="tile"><h3>🧑‍💼 Un marchand par route</h3><p>Après création, il devient la caravane ou le navire de la route. Pour ouvrir une autre route, il te faut un autre marchand.</p></article>
+      <article class="tile"><h3>🏗️ Un coût qui grimpe</h3><p>Le coût de base observé est de 40 Production et augmente avec les marchands déjà produits. Vérifie le coût affiché avant d’en lancer un autre.</p></article>
+    </div>
+    <div class="kicker">Deux plafonds différents</div>
+    <div class="vs" aria-label="Différence entre capacité de route et capacité de ressources">
+      <div class="panel"><b>🛣️ Capacité de routes</b><p class="small">Combien de routes tu peux établir avec un même partenaire. Valeur de base : une. La diplomatie ou des bonus peuvent en ajouter.</p></div>
+      <div class="mark">≠</div>
+      <div class="panel"><b>📦 Capacité de ressources</b><p class="small">Combien de ressources tu peux affecter à chaque établissement. Les places déterminent l’usage des ressources, pas le nombre de routes.</p></div>
+    </div>
+    <p class="callout">La limite n’est donc pas « un seul marchand pour toute la partie » : c’est un marchand dépensé par route, plus une limite de routes par partenaire. Tu peux ouvrir des routes avec d’autres dirigeants si tu as les marchands nécessaires, les destinations à portée et les capacités correspondantes.</p>
+    <div class="life" aria-label="Cycle de vie d'une route commerciale">
+      <div><b>Créer</b><span>Un marchand établit une liaison.</span></div>
+      <div><b>Profiter</b><span>La caravane circule automatiquement ; les ressources restent accessibles.</span></div>
+      <div><b>Interruption possible</b><span>Guerre avec le partenaire ou pillage ennemi.</span></div>
+      <div><b>Fin d’âge</b><span>La route prend fin ; il faut la rétablir au nouvel âge.</span></div>
+    </div>
+    <p class="small">Repère communautaire pour le revenu du partenaire : 2 or par ressource copiée en Antiquité, 3 en Exploration et 4 en Moderne ; les routes maritimes le doublent. La Civilopédie locale confirme le revenu par ressource, mais pas ces chiffres : vérifie le montant courant dans l’écran de commerce, car un équilibrage peut les faire évoluer.</p>
+  </section>
+
+  <section class="section">
+    <h2>Ressources : pourquoi elles comptent</h2>
+    <div class="flow" aria-label="De la ressource étrangère au bonus chez soi">
+      <div class="step"><b>Ville partenaire</b>Produit des ressources sur ses cases améliorées.</div><div class="arrow">→</div>
+      <div class="step"><b>Route établie</b>Une copie de chaque ressource améliorée entre dans ton réseau.</div><div class="arrow">→</div>
+      <div class="step"><b>Place chez toi</b>Affecte la copie à une cité, un bourg ou à l’empire selon son type.</div><div class="arrow">→</div>
+      <div class="step"><b>Effet activé</b>Tu reçois ses bonus ; une ressource importée affectée à une cité peut compter pour le GDP après la recherche requise.</div>
+    </div>
+    <div class="resource-types">
+      <article class="tile"><h3>🏙️ Ressource de cité</h3><p>À affecter à une cité. Peut spécialiser sa science, sa culture ou son or ; une ressource importée affectée peut générer du GDP avec la bonne technologie.</p></article>
+      <article class="tile"><h3>🌾 Ressource bonus</h3><p>Peut aller dans une cité ou un bourg. Choisis l’établissement qui a le plus besoin de son bonus.</p></article>
+      <article class="tile"><h3>🌐 Ressource d’empire</h3><p>Son effet s’applique à l’empire sans utiliser de place d’affectation.</p></article>
+    </div>
+    <div class="insights">
+      <article class="tile"><h3>Les copies ne volent rien</h3><p>Le partenaire garde ses ressources. Tu reçois des copies et lui gagne un revenu d’or de commerce.</p></article>
+      <article class="tile"><h3>Une place compte</h3><p>Les ressources de cité et bonus sont plus fortes quand elles sont affectées. Sans place, elles peuvent ne donner qu’or et bonheur.</p></article>
+      <article class="tile"><h3>Les copies peuvent se cumuler</h3><p>Des ressources identiques peuvent renforcer certains bonus. Mais une place occupée par un doublon ne sert plus à une autre ressource.</p></article>
+      <article class="tile"><h3>Planifie tes affectations</h3><p>La réaffectation est contrainte : l’interface permet de redistribuer quand tu gagnes une ressource ou une nouvelle place. Prévois la cité cible à l’avance.</p></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Tactiques utiles</h2>
+    <div class="tips">
+      <article class="tile"><h3>🔎 1. Cherche le manque</h3><p>Compare les ressources visibles dans les villes partenaires avec les bonus dont tes cités ont besoin.</p></article>
+      <article class="tile"><h3>🧩 2. Réserve une place</h3><p>Identifie d’abord la cité ou le bourg qui profitera de la ressource importée.</p></article>
+      <article class="tile"><h3>🗺️ 3. Fais grandir le réseau</h3><p>Relie des établissements bien placés : chaque connexion peut devenir un nouveau point de départ pour étendre la portée.</p></article>
+      <article class="tile"><h3>🛣️ 4. Utilise les marchands comme bâtisseurs</h3><p>Ils peuvent aussi tracer des routes entre tes propres établissements à portée. Une connexion bourg-cité peut aider la cité à recevoir la nourriture de son bourg spécialisé.</p></article>
+      <article class="tile"><h3>🕊️ 5. Protège la route</h3><p>Choisis un partenaire avec qui la paix est probable et évite les lignes exposées au pillage. La guerre peut annuler une route.</p></article>
+      <article class="tile"><h3>📜 6. Débloque une route en plus</h3><p>Si le meilleur partenaire est déjà à sa limite, utilise « Améliorer les relations commerciales » ou un bonus de dirigeant/civilisation.</p></article>
+      <article class="tile"><h3>⛵ 7. Pense mer pour la distance</h3><p>Les routes maritimes couvrent plus loin et augmentent l’or reçu par le partenaire. Vérifie les prérequis côtiers indiqués par le jeu.</p></article>
+      <article class="tile"><h3>🏛️ 8. N’oublie pas les cités-États</h3><p>Elles peuvent être des partenaires ; certaines ressources uniques demandent cependant la suzeraineté pour être obtenues.</p></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>À retenir</h2>
+    <p>Un bon marchand transforme une ville étrangère riche en ressources en avantage pour ton empire. Le meilleur choix est la route dont les ressources importées ont une place utile chez toi, dont le partenaire restera accessible, et qui soutient tes bonus ou objectifs actuels.</p>
+    <p class="small">Les rendements d’or du partenaire et les effets des ressources varient selon les ressources travaillées, les affectations, les traditions, les bâtiments et les capacités de civilisation.</p>
+  </section>
+
+  <section class="section">
+    <h2>Sources et niveau de certitude</h2>
+    <p class="small">Les règles principales, le GDP par ressource affectée et les valeurs de portée viennent de la Civilopédie de la version locale. La référence communautaire décrit le marchand comme se transformant en caravane/navire et chiffre le revenu du partenaire ; Firaxis confirme le partage des ressources et le revenu accru, doublé pour une route maritime. Les montants peuvent varier avec les bonus et les mises à jour.</p>
+    <div class="insights reference">
+      <article class="tile"><h3>Firaxis · Commerce et ressources</h3><p><a href="https://store.steampowered.com/news/posts/?enddate=1736369156&amp;feed=steam_community_announcements">Journal officiel sur diplomatie, influence et commerce</a></p></article>
+      <article class="tile"><h3>Référence communautaire</h3><p><a href="https://civilization.fandom.com/wiki/Trade_Route_(Civ7)">Civilization Wiki · routes commerciales</a> · chiffres d’or à vérifier en jeu.</p></article>
+      <article class="tile"><h3>Score GDP</h3><p><a href="https://civilization.fandom.com/wiki/Economic_Victory_(Civ7)">Civilization Wiki · victoire économique</a> · lecture secondaire, comparée à la Civilopédie installée.</p></article>
+    </div>
+  </section>
+  <footer>Guide de gameplay fondé sur les fichiers de l’installation locale et les sources en ligne consultés le 14 novembre 2026.</footer>
+  </div>
+  <section class="tab-panel" id="plan-panel" role="tabpanel" aria-labelledby="tab-plan-button" hidden>
+    <header><div class="eyebrow">Plan de partie · victoire économique</div><h1>Machiavel et l’empire Chola</h1><p>Commerce, diplomatie et ressources : Chola transforme les routes en or et en influence ; le GDP vient des ressources affectées aux cités et des bâtiments d’or.</p></header>
+    <section class="stats" aria-label="Synergie de départ">
+      <div class="stat"><span class="num">+1</span><span class="label">capacité de route avec un partenaire grâce à Améliorer les relations commerciales</span></div>
+      <div class="stat"><span class="num">+3 / âge</span><span class="label">Influence de Machiavel au début de chaque âge</span></div>
+      <div class="stat"><span class="num">+1 case</span><span class="label">de déplacement pour les marchands Chola</span></div>
+    </section>
+    <section class="section"><div class="kicker">Le moteur de la victoire</div><h2>Commerce → ressources → GDP</h2>
+      <div class="flow" aria-label="Boucle économique Chola"><div class="step"><b>1 · Ouvrir une route</b>Un marchand vers un partenaire utile.</div><div class="arrow">→</div><div class="step"><b>2 · Importer</b>La route copie les ressources exploitées chez lui.</div><div class="arrow">→</div><div class="step"><b>3 · Affecter</b>Place les ressources importées dans des cités.</div><div class="arrow">→</div><div class="step"><b>4 · Générer du GDP</b>Chola ajoute du GDP par tour pour les ressources importées affectées en Exploration et Moderne.</div></div>
+      <div class="vs" aria-label="Or, influence et GDP"><div class="panel"><b>🪙 Or</b><p class="small">Monnaie dépensable ; Chola en reçoit par route active.</p></div><div class="mark">+</div><div class="panel"><b>🕊️ Influence</b><p class="small">Budget diplomatique pour les relations et négociations.</p></div><div class="mark">→</div><div class="panel"><b>📈 GDP</b><p class="small">Score de victoire, distinct de l’or. Les routes ne le donnent pas directement.</p></div></div>
+      <p class="callout">Depuis la refonte officielle de mai 2026, le GDP provient notamment des ressources affectées et bâtiments d’or dans les cités, des convois au trésor revenus et des ressources d’usine affectées. La progression peut commencer dès l’Antiquité.</p>
+    </section>
+    <section class="section"><div class="kicker">Départ conseillé</div><h2>Choisis Machiavel + Chola dès l’Antiquité</h2>
+      <div class="insights"><article class="tile"><h3>👑 Machiavel</h3><p>+3 Influence par âge. Une proposition diplomatique acceptée rapporte 50 Or ; refusée, 100 Or. Propose des accords utiles, tout en sachant qu’un refus peut aussi financer l’économie.</p></article><article class="tile"><h3>🐅 Chola en Antiquité</h3><p>La mise à jour permet de commencer avec n’importe quelle civilisation et de la conserver entre les âges. En Antiquité, chaque route active rapporte +2 Or et +1 Influence ; marchand +1 déplacement.</p></article><article class="tile"><h3>🏙️ Fondation</h3><p>Développe des cités capables d’accueillir des ressources et bâtiments d’or. Repère les partenaires aux ressources exploitées et garde une réserve d’Influence.</p></article><article class="tile"><h3>🛡️ Sécurité</h3><p>Garde assez de défense pour protéger les villes et liaisons. Une guerre peut couper les routes et retarder les aménagements.</p></article></div>
+      <p class="small">Hors de son âge d’apogée, Chola conserve un cadre « éprouvé par le temps ». Son apogée est l’Exploration.</p>
+    </section>
+    <section class="section"><div class="kicker">Feuille de route</div><h2>Adapter le plan à chaque âge</h2><div class="age-grid">
+      <article class="age-card"><div class="age">Antiquité · établir</div><h3>Construis le réseau</h3><div class="yield">+2 Or · +1 Influence</div><p>par route active. Cible des partenaires riches en ressources. Améliore les relations commerciales quand une route supplémentaire a une vraie valeur.</p><p><strong>Priorité :</strong> développer cités et emplacements, commencer le score GDP avec les bâtiments d’or.</p></article>
+      <article class="age-card"><div class="age">Exploration · accélérer</div><h3>Apogée Chola</h3><div class="yield">+3 Or · +2 Influence</div><p>par route active. Chaque ressource importée affectée à une cité ajoute +1 GDP par tour avec la capacité Chola de cet âge.</p><p><strong>Priorité :</strong> routes aux ressources variées, emplacements de cité, bâtiments d’or et convois au trésor ramenés à bon port.</p></article>
+      <article class="age-card"><div class="age">Moderne · convertir</div><h3>Verrouille le score</h3><div class="yield">+4 Or · +3 Influence</div><p>par route active. Chola garde le +1 GDP par tour pour les ressources importées affectées à une cité.</p><p><strong>Priorité :</strong> bâtiments d’or, ressources d’usine affectées, convois protégés et contrôle régulier du rival de tête.</p></article>
+    </div><div class="flow" aria-label="Cycle de décision"><div class="step"><b>Avant</b>Vérifie ressource, partenaire, portée, paix et capacité.</div><div class="arrow">→</div><div class="step"><b>Après</b>Affecte les imports et observe le GDP réel.</div><div class="arrow">→</div><div class="step"><b>Réinvestis</b>Or vers marchands et bâtiments ; Influence vers les meilleures relations.</div><div class="arrow">→</div><div class="step"><b>Protège</b>Défends les routes et garde des options diplomatiques.</div></div></section>
+    <section class="section"><div class="kicker">Diplomatie utile</div><h2>Employer l’Influence sans la gaspiller</h2><div class="insights">
+      <article class="tile"><h3>Priorise les partenaires rentables</h3><p>Améliorer les relations commerciales ajoute une capacité de route avec ce partenaire. Utilise-la quand les ressources supplémentaires auront une affectation utile.</p></article>
+      <article class="tile"><h3>Surveille le coût croissant</h3><p>Le coût en Influence augmente de 25 % à chaque utilisation. Compare le coût affiché au bénéfice avant de recommencer.</p></article>
+      <article class="tile"><h3>Fais des propositions avantageuses</h3><p>Machiavel reçoit de l’or si la proposition est acceptée ou refusée, davantage en cas de refus. Le refus n’est pas une fin en soi : cherche d’abord l’accord utile.</p></article>
+      <article class="tile"><h3>Garde ses options militaires en réserve</h3><p>Il ignore les prérequis de relation pour déclarer une guerre formelle et peut lever les troupes des cités-États sans suzeraineté. À employer pour protéger ou saisir une occasion, la victoire reste économique.</p></article>
+    </div></section>
+    <section class="section"><div class="kicker">Condition de victoire</div><h2>Garde l’avance cinq tours de suite</h2><p>Le seuil dépend de ton GDP par rapport au deuxième joueur et baisse en fin de partie. Une fois le seuil dépassé, maintiens-le pendant le compte à rebours de cinq tours.</p>
+      <div class="target-row" aria-label="Seuils économiques publiés par Firaxis"><div><b>6×</b><span>Exploration<br>50–80 %</span></div><div><b>4×</b><span>Exploration 80 %<br>→ Moderne 20 %</span></div><div><b>3× → 2×</b><span>Moderne<br>20–60 %</span></div><div><b>1,5×</b><span>Moderne<br>60–80 %</span></div><div><b>1,25×</b><span>Moderne<br>80–100 %</span></div></div>
+      <p class="callout">En fin de partie, affecte les ressources déjà disponibles et bâtis pour le GDP ; protège les cités et évite une guerre qui couperait tes routes pendant le compte à rebours. Les seuils et le classement affichés dans le panneau Victoire font foi.</p>
+    </section>
+    <section class="section"><h2>Sources et vérification</h2><div class="insights reference"><article class="tile"><h3>Firaxis · refonte économique</h3><p><a class="plan-link" href="https://support.civilization.com/hc/en-us/articles/51685242291219-Civilization-VII-Patch-Notes-May-19-2026">Notes officielles du 19 mai 2026</a> — choix de civilisation, GDP, seuils et coût des relations commerciales.</p></article><article class="tile"><h3>Jeu installé · Chola</h3><p>Données françaises et effets locaux comparés pour les bonus de route, capacité, déplacement et GDP.</p></article><article class="tile"><h3>Jeu installé · Machiavel</h3><p>Texte français local vérifié : Influence par âge, or diplomatique et options militaires.</p></article></div><p class="small">Coûts, ressources disponibles et modificateurs varient selon carte et règles ; vérifie les valeurs en jeu.</p></section>
+    <footer>Plan de gameplay fondé sur les données du jeu installé et les notes officielles consultées le 14 novembre 2026.</footer>
+  </section>
+</main>
+<script>
+(() => { const tabs=[...document.querySelectorAll('[role="tab"]')]; const panels=tabs.map(t=>document.getElementById(t.getAttribute('aria-controls'))); function activate(n,focus=false){tabs.forEach((t,i)=>{const on=i===n;t.setAttribute('aria-selected',String(on));t.tabIndex=on?0:-1;panels[i].hidden=!on});if(focus)tabs[n].focus()} tabs.forEach((t,i)=>{t.addEventListener('click',()=>activate(i));t.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();activate((i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length,true)}})}) })();
+</script>
+</body>
+</html>

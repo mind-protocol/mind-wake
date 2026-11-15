@@ -21,6 +21,7 @@ test("an already-exited desktop restarts instead of stranding its supervisor", {
     });
     assert.equal(attempts, 2);
     assert.match(readFileSync(path.join(dir, "desktop-supervisor.log"), "utf8"), /desktop exited \(1\); restarting/);
+    assert.match(readFileSync(path.join(dir, "desktop-supervisor.log"), "utf8"), /desktop exited \(0\); supervisor stopped after clean exit/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

@@ -1,0 +1,2940 @@
+{
+  "agent": 2,
+  "episode_id": "lc-e001",
+  "series_root": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie",
+  "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/roles/scenes/image-prompts-e1-e2/prompts-lc-e001.json",
+  "source_sha256": "78f71e404f42d1c801ee7309cdcf4476c998b440cfc8e7fe7beebe7472b4b18b",
+  "output_dir": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02",
+  "cuts": [
+    {
+      "cut_id": "VER04-C01",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 15,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "38237c283490ed05434e250c73e0d205d22ed7ab5b24bb2f8facf0ce5641b06c"
+      },
+      "source_block_ids": [
+        "VER04-B002",
+        "VER04-B003",
+        "VER04-B004",
+        "VER04-B005",
+        "VER04-B006"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B002",
+          "text_sha256": "f57adfa72e8d955b51836b4bc65051b7a9a8826fd2a5ef3e74378f634aaff5f1"
+        },
+        {
+          "id": "VER04-B003",
+          "text_sha256": "4a33b72e4946334c55afdb3bdd3c16b2c6962110733d79672bfbc7cdd14dfd2d"
+        },
+        {
+          "id": "VER04-B004",
+          "text_sha256": "d6e50c82fff2e2b4e8edc26514224441b98d8c5ccdf3d8c09d609e1843074641"
+        },
+        {
+          "id": "VER04-B005",
+          "text_sha256": "19cc0c4cd3dc2f00de93ef19bb2243589cd5a51c651d7219e428604fce13cbbb"
+        },
+        {
+          "id": "VER04-B006",
+          "text_sha256": "fc63e57536ecbd14c392e2b1f2531d4837d8d4384f2a9161c1e367bbd5b0bc06"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit fermé"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "N60-Q01-C05",
+        "next_cut_id": "VER04-C02",
+        "entry": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "exit": "Aegon attend après le serrage de boucle.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "La demande cherche sa place autour du geste indépendant du frère.",
+      "cadrage": "Plan moyen à deux, léger travelling latéral",
+      "action_visible": "Aemond serre la boucle de son gant droit près du mur côté droit ; Aegon au centre gauche tient son pouce taché de cire près de sa taille.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan moyen à deux. Aemond serre la boucle de son gant droit près du mur côté droit ; Aegon au centre gauche tient son pouce taché de cire près de sa taille. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B003",
+          "source_block_id": "VER04-B003",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Il paraît que tu vas partir.",
+          "intention": "La demande cherche sa place autour du geste indépendant du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B003",
+            "text_sha256": "e441c79e508a8c114b48f4f393a83f77d60fa4ce9c9bb78abcbd8b5f17560b26"
+          }
+        },
+        {
+          "line_id": "VER04-B004",
+          "source_block_id": "VER04-B004",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Il paraît beaucoup de choses dans cette cour.",
+          "intention": "La demande cherche sa place autour du geste indépendant du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B004",
+            "text_sha256": "2648401ff4c3bc77c820defff578822950870098ddc033eb52a07a1d47e751bc"
+          }
+        },
+        {
+          "line_id": "VER04-B005",
+          "source_block_id": "VER04-B005",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Tu pourrais me demander.",
+          "intention": "La demande cherche sa place autour du geste indépendant du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B005",
+            "text_sha256": "2530de7aad6ae38ab58c55dcf59bf5eca6df0dd349865731f3c6c5a602609650"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 12,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 8,
+          "action_et_respiration": 4
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Suivre légèrement le déplacement circulaire d’Aegon sans franchir l’axe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0719328aa728eb377b3277c2bcc8e1c6c02ccc32b17d3275cd7b00883ea3cf65",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B003",
+          "source_block_id": "VER04-B003",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Il paraît que tu vas partir."
+        },
+        {
+          "line_id": "VER04-B004",
+          "source_block_id": "VER04-B004",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Il paraît beaucoup de choses dans cette cour."
+        },
+        {
+          "line_id": "VER04-B005",
+          "source_block_id": "VER04-B005",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Tu pourrais me demander."
+        }
+      ],
+      "static_framing": "Plan moyen à deux",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Suivre légèrement le déplacement circulaire d’Aegon sans franchir l’axe."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C02",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 16,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "a67ac162cc243fbb4b6584a2898b068daa12a2216252dab698093767e909416f"
+      },
+      "source_block_ids": [
+        "VER04-B007",
+        "VER04-B008",
+        "VER04-B009",
+        "VER04-B010"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B007",
+          "text_sha256": "3731156f1f8eaf5c4b05b5cf856a25eca6f87748da322523bb2207088c067630"
+        },
+        {
+          "id": "VER04-B008",
+          "text_sha256": "898e8c57021cf386289e8a88b616675441260dc8132e17c32b35b7eba411f0b4"
+        },
+        {
+          "id": "VER04-B009",
+          "text_sha256": "4db49373babcbb921f20ca38ce5e7bb991d4a5e59d69ae49f9aa53deccc401b9"
+        },
+        {
+          "id": "VER04-B010",
+          "text_sha256": "4c1849bbfeca0c38987ca15425a84033ca83f088d5238810f00f3b96d64225fa"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit fermé"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C01",
+        "next_cut_id": "VER04-C03",
+        "entry": "Même axe et lumière. Raccord sur VER04-C01 ; Aegon cesse de tourner, gant serré.",
+        "exit": "Aemond prêt à relever le regard ; Aegon arrêté à gauche.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Retourner la permission contre celui qui exige de la donner.",
+      "cadrage": "Champ serré Aemond avec épaule Aegon au premier plan",
+      "action_visible": "Aemond a le menton légèrement relevé face à l’épaule d’Aegon au premier plan gauche ; son gant droit est encore fermé.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Champ serré Aemond avec épaule Aegon au premier plan. Aemond a le menton légèrement relevé face à l’épaule d’Aegon au premier plan gauche ; son gant droit est encore fermé. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B007",
+          "source_block_id": "VER04-B007",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Me donnerez-vous une destination ?",
+          "intention": "Retourner la permission contre celui qui exige de la donner.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B007",
+            "text_sha256": "7e083fa25beb892dc314b67416da62a3d22c64477f4b63a7b23433405cd2d968"
+          }
+        },
+        {
+          "line_id": "VER04-B008",
+          "source_block_id": "VER04-B008",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Tu en as déjà choisi une.",
+          "intention": "Retourner la permission contre celui qui exige de la donner.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B008",
+            "text_sha256": "dd0355420bb0abe063ca056d0ba888c8f51e4b13901b0e2adb565918471f8300"
+          }
+        },
+        {
+          "line_id": "VER04-B009",
+          "source_block_id": "VER04-B009",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Alors vous savez pourquoi je pars.",
+          "intention": "Retourner la permission contre celui qui exige de la donner.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B009",
+            "text_sha256": "40d2f1ae1ea5a371151472a035606d1615e4ac50d6f75a107341e548e86f604d"
+          }
+        },
+        {
+          "line_id": "VER04-B010",
+          "source_block_id": "VER04-B010",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je sais que tout le monde t’attend les yeux levés. Quand je traverse la cour, on regarde si notre grand-père me suit.",
+          "intention": "Retourner la permission contre celui qui exige de la donner.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B010",
+            "text_sha256": "6a512d77cbbcbef4ee4a4e162c74c6c03074054da6689f422f74754164ab3279"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 19.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 17.3,
+          "action_et_respiration": 2
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0437bab263de78c3564fc756fd84aab3dfbef1361aa5ea51bc10f10b8efd056e",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aemond",
+        "aegon-ii"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B007",
+          "source_block_id": "VER04-B007",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Me donnerez-vous une destination ?"
+        },
+        {
+          "line_id": "VER04-B008",
+          "source_block_id": "VER04-B008",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Tu en as déjà choisi une."
+        },
+        {
+          "line_id": "VER04-B009",
+          "source_block_id": "VER04-B009",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Alors vous savez pourquoi je pars."
+        },
+        {
+          "line_id": "VER04-B010",
+          "source_block_id": "VER04-B010",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Je sais que tout le monde t’attend les yeux levés. Quand je traverse la cour, on regarde si notre grand-père me suit."
+        }
+      ],
+      "static_framing": "Champ serré Aemond avec épaule Aegon au premier plan",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C03",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 17,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "75b1d5f05ef7945cab9273ef0bebf2471aa15378f4315e0d1130e3901f4422e7"
+      },
+      "source_block_ids": [
+        "VER04-B011",
+        "VER04-B012",
+        "VER04-B013",
+        "VER04-B014"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B011",
+          "text_sha256": "cc37c26154afb53af66c0c2a2ef3145b902e90e6b7c8bd8771f25b54a63d5ffe"
+        },
+        {
+          "id": "VER04-B012",
+          "text_sha256": "a3c8336dc697e785a55d8f96cdac4d871b69cbd7e3644189d7a774b9bc220e8a"
+        },
+        {
+          "id": "VER04-B013",
+          "text_sha256": "9566461cbeb2524139c1c5ae8b1601d538bb937d3fb1740fe364d0618f5f4de3"
+        },
+        {
+          "id": "VER04-B014",
+          "text_sha256": "52e14b87b05a28325d24bc17f0ded19c008404eb0b11873b1d9b733840b7e6c8"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond",
+        "palefrenier-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit fermé"
+        },
+        {
+          "character_id": "palefrenier-serie",
+          "state": "tunique ocre simple"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C02",
+        "next_cut_id": "VER04-C04",
+        "entry": "Même axe et lumière. Raccord sur VER04-C02 ; Aemond lève les yeux ; Aegon à gauche.",
+        "exit": "Sangle rendue, palefrenier sort ; deux frères mains libres sauf gant/cire.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Rendre visible son besoin d’échapper à Otto et son geste réflexe avec un serviteur.",
+      "cadrage": "Contrechamp Aegon puis élargissement au passage de la selle",
+      "action_visible": "Aegon tend une sangle au palefrenier portant une selle ordinaire derrière lui ; Aemond le regarde depuis le côté du mur.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Contrechamp Aegon. Aegon tend une sangle au palefrenier portant une selle ordinaire derrière lui ; Aemond le regarde depuis le côté du mur. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. palefrenier-serie : 25–35 ans, visage rond rasé proposé, cheveux châtain court proposé, silhouette petit et agile proposé. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé ; palefrenier-serie — tunique ocre simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B012",
+          "source_block_id": "VER04-B012",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Ne le laissez pas vous suivre.",
+          "intention": "Rendre visible son besoin d’échapper à Otto et son geste réflexe avec un serviteur.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B012",
+            "text_sha256": "38dcf8e7b9611d5be8c9a6084984e5aeae6f35fbd574035fbe8a47284ebfeb4e"
+          }
+        },
+        {
+          "line_id": "VER04-B013",
+          "source_block_id": "VER04-B013",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "C’est facile, quand on peut s’envoler.",
+          "intention": "Rendre visible son besoin d’échapper à Otto et son geste réflexe avec un serviteur.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B013",
+            "text_sha256": "548e9592b93b142fe68ae5f4cf7b438429b2ebf30efd102ec0e1bef6aac832fe"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 10.3,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 5.3,
+          "action_et_respiration": 5
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Élargir pour inclure brièvement le palefrenier puis revenir au roi.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4ebbe4a047efb90e41c98829f8d99c56e1ea39ad33065200b8886c425cc23138",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:palefrenier-serie",
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond",
+        "palefrenier-serie"
+      ],
+      "speaker_ids": [
+        "aemond",
+        "aegon-ii"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B012",
+          "source_block_id": "VER04-B012",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond",
+            "palefrenier-serie"
+          ],
+          "text_unchanged": "Ne le laissez pas vous suivre."
+        },
+        {
+          "line_id": "VER04-B013",
+          "source_block_id": "VER04-B013",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond",
+            "palefrenier-serie"
+          ],
+          "text_unchanged": "C’est facile, quand on peut s’envoler."
+        }
+      ],
+      "static_framing": "Contrechamp Aegon",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Élargir pour inclure brièvement le palefrenier puis revenir au roi."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C04",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 18,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "132f0530a0d30f2ef00989afb2e583c44633db62a6a28b215873d43101a944ba"
+      },
+      "source_block_ids": [
+        "VER04-B015",
+        "VER04-B016",
+        "VER04-B017",
+        "VER04-B018",
+        "VER04-B019"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B015",
+          "text_sha256": "3bdd5db632abbd96f8fd7ba3c9bab568723fe740ab17c7809e2124ae4e822c96"
+        },
+        {
+          "id": "VER04-B016",
+          "text_sha256": "b121d8da00d86c868a5953652412e2a5baf541f08052588f2025c02bf6d0929c"
+        },
+        {
+          "id": "VER04-B017",
+          "text_sha256": "013b06230bc0655d2dd35a8cab21228859e818c581368030970400f4d6e5b28b"
+        },
+        {
+          "id": "VER04-B018",
+          "text_sha256": "0fc6754bec23bbbe68b9737c92811e30e401b3fd530b71040fd24b74f37332c2"
+        },
+        {
+          "id": "VER04-B019",
+          "text_sha256": "37d3228935385ffa2bfe2265b931ece816d915ded62d72822a93820ca7752c47"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit fermé"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C03",
+        "next_cut_id": "VER04-C05",
+        "entry": "Même axe et lumière. Raccord sur VER04-C03 ; Sangle rendue au palefrenier ; aucune nouvelle selle tenue par le roi.",
+        "exit": "Permission prononcée ; Aemond prépare le dégantage droit.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+      "cadrage": "Plan américain à deux, caméra fixe côté cour",
+      "action_visible": "Aegon fait face à Aemond dans la cour, main tachée de cire près du corps. Aemond soutient son regard, gant encore porté.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan américain à deux, caméra fixe côté cour. Aegon fait face à Aemond dans la cour, main tachée de cire près du corps. Aemond soutient son regard, gant encore porté. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B015",
+          "source_block_id": "VER04-B015",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je t’autorise à voler.",
+          "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B015",
+            "text_sha256": "0da6d89f513357fd22dcb46660a1b071303d705e76fdb871015dc238f1b2ff9e"
+          }
+        },
+        {
+          "line_id": "VER04-B016",
+          "source_block_id": "VER04-B016",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Merci, Votre Grâce.",
+          "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B016",
+            "text_sha256": "7d340198035f260ee8adbb294676f442afe154be7be08ace17b3714d30baabda"
+          }
+        },
+        {
+          "line_id": "VER04-B017",
+          "source_block_id": "VER04-B017",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Tu pourrais avoir l’air de recevoir quelque chose.",
+          "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B017",
+            "text_sha256": "5047df31447b2b369b442be632d0186cf779430072cfe047ef65d735e2d82db8"
+          }
+        },
+        {
+          "line_id": "VER04-B018",
+          "source_block_id": "VER04-B018",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "J’ai reçu votre autorisation.",
+          "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B018",
+            "text_sha256": "59e677d68d5cc084cbd45a09fa85c1e002629747cff52f8e2126e9f835b522a1"
+          }
+        },
+        {
+          "line_id": "VER04-B019",
+          "source_block_id": "VER04-B019",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Vhagar ne t’appartient pas davantage que le royaume ne m’appartient. Nous les tenons. Tous deux.",
+          "intention": "Faire de la permission un don reçu plutôt qu’une formalité.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B019",
+            "text_sha256": "50dd335902f5f31abab7e02d85f4b727fa84ee7e1f6e887d8d3775f4a2bf613f"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 18.1,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 15.1,
+          "action_et_respiration": 3
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "801f34ceebbfe8318e395da0f1ab2cd2bf71bf0d13f31e01ceebc6021f4c9734",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B015",
+          "source_block_id": "VER04-B015",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Je t’autorise à voler."
+        },
+        {
+          "line_id": "VER04-B016",
+          "source_block_id": "VER04-B016",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Merci, Votre Grâce."
+        },
+        {
+          "line_id": "VER04-B017",
+          "source_block_id": "VER04-B017",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Tu pourrais avoir l’air de recevoir quelque chose."
+        },
+        {
+          "line_id": "VER04-B018",
+          "source_block_id": "VER04-B018",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "J’ai reçu votre autorisation."
+        },
+        {
+          "line_id": "VER04-B019",
+          "source_block_id": "VER04-B019",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Vhagar ne t’appartient pas davantage que le royaume ne m’appartient. Nous les tenons. Tous deux."
+        }
+      ],
+      "static_framing": "Plan américain à deux, caméra fixe côté cour",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C05",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 19,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "9567cc9d8c40713ad3d28b59b187a78230904e1e97b2bd6fb355f4d680f6fb3f"
+      },
+      "source_block_ids": [
+        "VER04-B020",
+        "VER04-B021",
+        "VER04-B022",
+        "VER04-B023",
+        "VER04-B024"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B020",
+          "text_sha256": "b2fd37290dbfc012d4f67250097c8c3f1540a5d05debc0859f88d2194511a0b3"
+        },
+        {
+          "id": "VER04-B021",
+          "text_sha256": "7bb8f5ba078d1acfbc01d848ab3077f4718047396f6d61ace3e6a18eef74ec97"
+        },
+        {
+          "id": "VER04-B022",
+          "text_sha256": "1e38299133aae677df959bfe130cf3ab0b4d1c968d4ff4e6b978ec5a0654bcf9"
+        },
+        {
+          "id": "VER04-B023",
+          "text_sha256": "d8bb761bb98e52a67798a1a36d96a4e3bbf2e7154d7c701ca8b363caf9e03fb7"
+        },
+        {
+          "id": "VER04-B024",
+          "text_sha256": "c7a7cedb5e543e380faa93e8ec9569b620112c197cf867af0a66f4f669ad473d"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit en cours de retrait"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C04",
+        "next_cut_id": "VER04-C06",
+        "entry": "Même axe et lumière. Raccord sur VER04-C04 ; Aemond porte encore le gant droit avant de le défaire.",
+        "exit": "Gant droit défait, cire écrasée mais collée au pouce.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Distinguer ordre et conversation fraternelle.",
+      "cadrage": "Plan rapproché mains et visages dans la même profondeur",
+      "action_visible": "Les doigts nus d’Aemond ouvrent la boucle de son gant droit ; dans le même cadre, Aegon presse de la cire contre sa paume.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan rapproché mains et visages dans la même profondeur. Les doigts nus d’Aemond ouvrent la boucle de son gant droit ; dans le même cadre, Aegon presse de la cire contre sa paume. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit en cours de retrait. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B021",
+          "source_block_id": "VER04-B021",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Est-ce une instruction ?",
+          "intention": "Distinguer ordre et conversation fraternelle.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B021",
+            "text_sha256": "372978c02f32103a8e1f3d6551a4855efc2ae3252588307168a9fe3c8362ad94"
+          }
+        },
+        {
+          "line_id": "VER04-B022",
+          "source_block_id": "VER04-B022",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "C’est une conversation avec ton frère.",
+          "intention": "Distinguer ordre et conversation fraternelle.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B022",
+            "text_sha256": "31803497e76a55ce0f29c2d37f8ccd9b7f5cc2fe6eb82175b5847f68f605aee2"
+          }
+        },
+        {
+          "line_id": "VER04-B023",
+          "source_block_id": "VER04-B023",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Vous avez commencé par me demander de demander.",
+          "intention": "Distinguer ordre et conversation fraternelle.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B023",
+            "text_sha256": "9cdbf5404516d8c9b6f60a7b26cfbc14adc6d0cc40692efb5dbcf72d33d926ee"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 13,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 8,
+          "action_et_respiration": 5
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "45c2d04db69bc221f1931839b70f0dd69d9cec6c3101a6f2198ea68daccfe2b3",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aemond",
+        "aegon-ii"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B021",
+          "source_block_id": "VER04-B021",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Est-ce une instruction ?"
+        },
+        {
+          "line_id": "VER04-B022",
+          "source_block_id": "VER04-B022",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "C’est une conversation avec ton frère."
+        },
+        {
+          "line_id": "VER04-B023",
+          "source_block_id": "VER04-B023",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Vous avez commencé par me demander de demander."
+        }
+      ],
+      "static_framing": "Plan rapproché mains et visages dans la même profondeur",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C06",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 20,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "586b74285305f5fbefb193a85af199b07d1827240e0def09aff978d6875d3821"
+      },
+      "source_block_ids": [
+        "VER04-B025",
+        "VER04-B026",
+        "VER04-B027",
+        "VER04-B028",
+        "VER04-B029"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B025",
+          "text_sha256": "7edc0655040d738edb1a9855e712e05e1fb13bca8874aa2a16d196bb6be8840b"
+        },
+        {
+          "id": "VER04-B026",
+          "text_sha256": "9c1449a10579d011ce42c372348981c370d4f1eabd00dd0d68504ef59e74ccf6"
+        },
+        {
+          "id": "VER04-B027",
+          "text_sha256": "9f5059299bd4552daf33149f43958daa26fde6bbcf4ba3a8d2f71d5c15ea3ff8"
+        },
+        {
+          "id": "VER04-B028",
+          "text_sha256": "d5ffe40c252b784341b255ad7a8c88ecbbaca4a6e6e5e4db93dc6ef03005801a"
+        },
+        {
+          "id": "VER04-B029",
+          "text_sha256": "3460161b7eb8bfa1da6273d04ea2c5b2e08635e992287abb1daa3513a44f5761"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit retiré, main droite nue"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C05",
+        "next_cut_id": "VER04-C07",
+        "entry": "Même axe et lumière. Raccord sur VER04-C05 ; Gant droit défait ; cire pressée dans la paume Aegon.",
+        "exit": "Aegon ouvre la paume ; Aemond cesse le geste du gant.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Passer de son nom sur un ordre au retour du frère.",
+      "cadrage": "Plan rapproché Aegon, Aemond en amorce nette",
+      "action_visible": "La paume d’Aegon est ouverte devant lui, petite marque rouge visible ; Aemond, main droite nue, a interrompu son geste et le regarde.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan rapproché Aegon, Aemond en amorce nette. La paume d’Aegon est ouverte devant lui, petite marque rouge visible ; Aemond, main droite nue, a interrompu son geste et le regarde. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit retiré, main droite nue. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B025",
+          "source_block_id": "VER04-B025",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Otto veut que tu répètes ses mots. Cole veut que tu passes au-dessus de ses hommes. Moi, je veux qu’ils sachent qui t’a laissé partir.",
+          "intention": "Passer de son nom sur un ordre au retour du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B025",
+            "text_sha256": "5973a60c8d7b85b14167970dfd8a74698135a74803fed3c1753eddcb9c5e98ca"
+          }
+        },
+        {
+          "line_id": "VER04-B026",
+          "source_block_id": "VER04-B026",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Et si je ne reviens pas avec ce qu’ils espèrent ?",
+          "intention": "Passer de son nom sur un ordre au retour du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B026",
+            "text_sha256": "257fa4138f07cda602935d2d283bc0dfa3a780fe7af950e04a0aa9c915f6742a"
+          }
+        },
+        {
+          "line_id": "VER04-B028",
+          "source_block_id": "VER04-B028",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Reviens d’abord.",
+          "intention": "Passer de son nom sur un ordre au retour du frère.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B028",
+            "text_sha256": "f9d46a237737ea2e2017ecd253014c62201cc99a54ddaab2a2410fe0fb8aad06"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 21.9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 16.9,
+          "action_et_respiration": 5
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "0f5f845b8b716cab65af6d2dcd0ba5e4f79b7ae2634b7633a289673376af4d25",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B025",
+          "source_block_id": "VER04-B025",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Otto veut que tu répètes ses mots. Cole veut que tu passes au-dessus de ses hommes. Moi, je veux qu’ils sachent qui t’a laissé partir."
+        },
+        {
+          "line_id": "VER04-B026",
+          "source_block_id": "VER04-B026",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Et si je ne reviens pas avec ce qu’ils espèrent ?"
+        },
+        {
+          "line_id": "VER04-B028",
+          "source_block_id": "VER04-B028",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Reviens d’abord."
+        }
+      ],
+      "static_framing": "Plan rapproché Aegon, Aemond en amorce nette",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C07",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 21,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "cea4ee0859cc2cefed3770233326b99b2f20950fdeecb03dcb835dc211c62f57"
+      },
+      "source_block_ids": [
+        "VER04-B030",
+        "VER04-B031",
+        "VER04-B032",
+        "VER04-B033"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B030",
+          "text_sha256": "6761c6e83f8d1d693664498fc100897a586faff9b9612fe29d366f80b12f3df2"
+        },
+        {
+          "id": "VER04-B031",
+          "text_sha256": "b26cc2c9a1a374c79a98864defd0a523cc7e3dcdf03201fd6b31a5261d6b0a9d"
+        },
+        {
+          "id": "VER04-B032",
+          "text_sha256": "d91cbdf60de67100ca8cf501f4d3b7721de6bc91df992a32ebb5592bbb6b93b3"
+        },
+        {
+          "id": "VER04-B033",
+          "text_sha256": "8f71dfc0c29859cdaa547a8121a3f3a623ceae9dc066a5c9857f6df1171b09bc"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit retiré, main droite nue"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C06",
+        "next_cut_id": "VER04-C08",
+        "entry": "Même axe et lumière. Raccord sur VER04-C06 ; Aemond vient de suspendre le travail du gant ; marque rouge visible sur paume Aegon.",
+        "exit": "Aegon acquiesce ; Aemond va passer près de lui.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Consentir à nommer le roi sans abandonner le reste de sa décision.",
+      "cadrage": "Plan moyen à deux sans changer d’axe",
+      "action_visible": "Les deux frères se regardent de part et d’autre du passage. Aemond garde son gant retiré dans sa main, Aegon n’a plus la paume levée comme un ordre.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan moyen à deux sans changer d’axe. Les deux frères se regardent de part et d’autre du passage. Aemond garde son gant retiré dans sa main, Aegon n’a plus la paume levée comme un ordre. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit retiré, main droite nue. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B030",
+          "source_block_id": "VER04-B030",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Vous aurez votre nom sur l’ordre.",
+          "intention": "Consentir à nommer le roi sans abandonner le reste de sa décision.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B030",
+            "text_sha256": "82260a57383322720e7d549ca38ae2c97854ae4d7c2f4a6dd5f60731cc53f6d1"
+          }
+        },
+        {
+          "line_id": "VER04-B031",
+          "source_block_id": "VER04-B031",
+          "scene_id": "VER04",
+          "locuteur_id": "aegon-ii",
+          "locuteur": "AEGON",
+          "texte": "Je veux l’entendre de ta bouche.",
+          "intention": "Consentir à nommer le roi sans abandonner le reste de sa décision.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B031",
+            "text_sha256": "6a80d6492b600546ddf1bb3f4f7094fbd79b5f447b93ce22857d902a39d62b73"
+          }
+        },
+        {
+          "line_id": "VER04-B032",
+          "source_block_id": "VER04-B032",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Je pars avec l’autorisation du roi.",
+          "intention": "Consentir à nommer le roi sans abandonner le reste de sa décision.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B032",
+            "text_sha256": "9786ef78cae2a622e7b3321c608cbd1fed49ead037cf6172038984674fa403c6"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 11,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 8,
+          "action_et_respiration": 3
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "3f17bc9de5bf071cd0102986d255d5b717a60d179a76b415c3d36f9a00ca7437",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "aemond"
+      ],
+      "speaker_ids": [
+        "aemond",
+        "aegon-ii"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B030",
+          "source_block_id": "VER04-B030",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Vous aurez votre nom sur l’ordre."
+        },
+        {
+          "line_id": "VER04-B031",
+          "source_block_id": "VER04-B031",
+          "speaker_id": "aegon-ii",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Je veux l’entendre de ta bouche."
+        },
+        {
+          "line_id": "VER04-B032",
+          "source_block_id": "VER04-B032",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "aemond"
+          ],
+          "text_unchanged": "Je pars avec l’autorisation du roi."
+        }
+      ],
+      "static_framing": "Plan moyen à deux sans changer d’axe",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Jeu et gestes dans le cadre ; caméra tenue."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "VER04-C08",
+      "scene_id": "VER04",
+      "episode_id": "lc-e001",
+      "order": 22,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/VER04.json",
+        "scene_sha256": "bc921ec95636ca8dc1de08d9d6b6abfea07861f77257dc7d58e08ba8889dfd5b",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "6e4f8c9e6afbc6af325092076327305ccff52ae7a3ab58a43ed0babc688ec8f7"
+      },
+      "source_block_ids": [
+        "VER04-B034",
+        "VER04-B035",
+        "VER04-B036"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "VER04-B034",
+          "text_sha256": "11c933987cad2b5b2166987d1c43b1de3f3e5f832c60af3671dd7ee8261207e2"
+        },
+        {
+          "id": "VER04-B035",
+          "text_sha256": "77ae49b7d2ea2d5635751c2516b5d96a0476e1ba5955e21baa8871e53b03d94d"
+        },
+        {
+          "id": "VER04-B036",
+          "text_sha256": "035f126a12782298da2c9c4edd38192ccea9e552d47ad215a18db32fecebd1a6"
+        }
+      ],
+      "character_ids": [
+        "aegon-ii",
+        "aemond",
+        "porteurs-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "aegon-ii",
+          "state": "pourpoint noir et or"
+        },
+        {
+          "character_id": "aemond",
+          "state": "cuir et armure noirs ; gant droit retiré, main droite nue"
+        },
+        {
+          "character_id": "porteurs-serie",
+          "state": "laines terre et cuir"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C07",
+        "next_cut_id": "BAN01-C01",
+        "entry": "Même axe et lumière. Raccord sur VER04-C07 ; Aegon a acquiescé, main abaissée ; Aemond amorce son passage.",
+        "exit": "Aegon reste dans le passage ; porteurs en attente, aucun vol ni départ de la ville montré.",
+        "axis": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce."
+      },
+      "intention": "Laisser au roi une place qui bloque les autres, après le départ du frère hors du cadre.",
+      "cadrage": "Plan large fixe du passage",
+      "action_visible": "Aegon seul au milieu du passage, deux porteurs arrêtés dans la profondeur attendent qu’il dégage leur trajet. Aemond a quitté le cadre.",
+      "light": "Jour couvert doux de cour",
+      "location": "Cour intérieure de Port-Réal",
+      "prompt_image": "Plan large fixe du passage. Aegon seul au milieu du passage, deux porteurs arrêtés dans la profondeur attendent qu’il dégage leur trajet. Aemond a quitté le cadre. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. porteurs-serie : adultes, visage visages distincts des frères royaux, cheveux variables sans cheveux argent, silhouette silhouettes de travail. Tenues visibles : aegon-ii — pourpoint noir et or ; porteurs-serie — laines terre et cuir. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "VER04-B035",
+          "source_block_id": "VER04-B035",
+          "scene_id": "VER04",
+          "locuteur_id": "aemond",
+          "locuteur": "AEMOND",
+          "texte": "Pour le reste, personne ne répondra à ma place.",
+          "intention": "Laisser au roi une place qui bloque les autres, après le départ du frère hors du cadre.",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "VER04 — Ce que le roi donne",
+            "block": "VER04-B035",
+            "text_sha256": "a5b0d044f7e2ff8d5f00e9f1b50fb4053682ed01f9dedcbe312c3392de26cf09"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 11,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 4,
+          "action_et_respiration": 7
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Tenir le plan pendant la sortie puis l’attente des porteurs.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "38e31e748993d14648533d191066b457fe0456ab9fee27ba7d5aa5a57db73aae",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [
+        "identity_image_missing:porteurs-serie",
+        "film_identity_approval_pending:aegon-ii",
+        "film_identity_approval_pending:aemond"
+      ],
+      "image_subject_ids": [
+        "aegon-ii",
+        "porteurs-serie"
+      ],
+      "speaker_ids": [
+        "aemond"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "VER04-B035",
+          "source_block_id": "VER04-B035",
+          "speaker_id": "aemond",
+          "image_subject_ids": [
+            "aegon-ii",
+            "porteurs-serie"
+          ],
+          "text_unchanged": "Pour le reste, personne ne répondra à ma place."
+        }
+      ],
+      "static_framing": "Plan large fixe du passage",
+      "context_outside_image": {
+        "source_moment": {
+          "value": null,
+          "source": null,
+          "status": "not_delivered"
+        },
+        "scene_geography": "Cour intérieure ; Aemond contre le mur côté droit, gant fermé ; Aegon a de la cire au pouce.",
+        "movement_intent": "Tenir le plan pendant la sortie puis l’attente des porteurs."
+      },
+      "existing_image": null
+    },
+    {
+      "cut_id": "BAN01-C01",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 23,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "80ce72a2e8c5a67df148103a50c8197158b2e024996f94412920c29e1bd530ce"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B001",
+        "lc-e001-s01-B002",
+        "lc-e001-s01-B003",
+        "lc-e001-s01-B004"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B001",
+          "text_sha256": "1d5e7796eb9bd9512f6b3a4d2a2a3503d94d27c1c1280788b596d40a98a0c6b0"
+        },
+        {
+          "id": "lc-e001-s01-B002",
+          "text_sha256": "abd058d35a4a7389dc520897cca13e2c8f68579d0ec4979ce3c2ddee01e9133f"
+        },
+        {
+          "id": "lc-e001-s01-B003",
+          "text_sha256": "c0103500c2397ab9b852576d2dcabcfb2c91852b8f2c3fcd59d2c96eac60ccc7"
+        },
+        {
+          "id": "lc-e001-s01-B004",
+          "text_sha256": "913f7b9d0ed272f44a9d811c7ef4167145d815fea7700363f322bd3b97cbf42f"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "VER04-C08",
+        "next_cut_id": "BAN01-C02",
+        "entry": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "exit": "Coupe royale posée ; Quince se dirige vers l’aiguade hors champ gauche.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "La demande",
+      "cadrage": "Plan moyen de la reine à table ; captifs perceptibles dans la profondeur droite.",
+      "action_visible": "Rhaenyra assise à la table gauche a posé sa coupe et regarde vers le mur droit, où un captif est soutenu par ses voisins. Quince se tient près d’elle ; le banc barre encore le passage de la rampe.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan moyen de la reine à table. Rhaenyra assise à la table gauche a posé sa coupe et regarde vers le mur droit, où un captif est soutenu par ses voisins. Quince se tient près d’elle ; le banc barre encore le passage de la rampe. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B004",
+          "source_block_id": "lc-e001-s01-B004",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "De l’eau. D’abord.",
+          "intention": "La demande",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B004",
+            "text_sha256": "f463417893d6ef1135f22f796e11f593876c40af59fc0fd1bf9e099cbf1f8193"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.3,
+          "action_et_silence_hors_parole": 4,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Petit déplacement de regard ; aucun mouvement de caméra requis pour un aperçu fixe.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "c7998ebf62689d6cb4714a6c91a8d3d68c1348c1501addc91ef19ca0e7fea4b4",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s01-B004",
+          "source_block_id": "lc-e001-s01-B004",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "text_unchanged": "De l’eau. D’abord."
+        }
+      ],
+      "static_framing": "Plan moyen de la reine à table",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Petit déplacement de regard ; aucun mouvement de caméra requis pour un aperçu fixe."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C01.png"
+    },
+    {
+      "cut_id": "BAN01-C02",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 24,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e175536001df8173c62de64e0be1ce6ff43137ae58974f9db9f62ecda5dbd2c8"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B005",
+        "lc-e001-s01-B006"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B005",
+          "text_sha256": "b6501c5478b3e93a75de100fac8d6020e2de883040ca9aeff710bb510be58cb2"
+        },
+        {
+          "id": "lc-e001-s01-B006",
+          "text_sha256": "75b807f1014ee179205090f01f0ad6625e81a43c9b81660d99ef91e1d68a34ab"
+        }
+      ],
+      "character_ids": [
+        "robert-quince"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C01",
+        "next_cut_id": "BAN01-C03",
+        "entry": "Quince rejoint l’aiguade à gauche.",
+        "exit": "Les deux porteurs arrivent à droite au mur ; l’eau n’a pas encore été servie.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "Les deux seaux",
+      "cadrage": "Plan d’ensemble à hauteur de taille ; travelling latéral proposé.",
+      "action_visible": "Quince à gauche et son garde à droite portent chacun un seau de bois entre les bancs ; un convive garde ses jambes ramenées sous lui. Eau renversée près d’une botte, table royale loin derrière.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan d’ensemble à hauteur de taille. Quince à gauche et son garde à droite portent chacun un seau de bois entre les bancs ; un convive garde ses jambes ramenées sous lui. Eau renversée près d’une botte, table royale loin derrière. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 10,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 10,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Trajet tenu, sans coupe interne dans la version jouée ; si média fixe, lent recadrage explicite, pas prétention de travelling filmé.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d37786dfa3778fd8de4d65a5bf3b2b16f8046c5c97c3169be338990f28eec7df",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "robert-quince"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan d’ensemble à hauteur de taille",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Trajet tenu, sans coupe interne dans la version jouée ; si média fixe, lent recadrage explicite, pas prétention de travelling filmé."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C02.png"
+    },
+    {
+      "cut_id": "BAN01-C03",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 25,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "81c86c780c30d937f30e85c7ff0a63f52091d8c113a4689644eb18f42070d1d9"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B007",
+        "lc-e001-s01-B008",
+        "lc-e001-s01-B009",
+        "lc-e001-s01-B010",
+        "lc-e001-s01-B011"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B007",
+          "text_sha256": "d96dfcb923fd6594bff8fb0c30ea6222eaf739855610620232ccd4f89e57605b"
+        },
+        {
+          "id": "lc-e001-s01-B008",
+          "text_sha256": "070519984a9616d04cefce242a5b5e51c15005aa811cb352b80b79bafbdc5a7e"
+        },
+        {
+          "id": "lc-e001-s01-B009",
+          "text_sha256": "a440b7162f95b85433e61d6be4840689abd13815ed6ea39f2859898ccb8f645c"
+        },
+        {
+          "id": "lc-e001-s01-B010",
+          "text_sha256": "b63d68d5b7059ab308301f6c15009dac0e2d739d98cc12b9e156e5c21fc15aa2"
+        },
+        {
+          "id": "lc-e001-s01-B011",
+          "text_sha256": "2631b293ec9d6776197a1bb62ec0020486a1c5dfb39950c7a8cc20d95264a566"
+        }
+      ],
+      "character_ids": [
+        "wat",
+        "willem",
+        "robert-quince",
+        "vieux-captif-serie"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "wat",
+          "state": "tunique taupe déchirée, cordon ; aucune chaîne"
+        },
+        {
+          "character_id": "willem",
+          "state": "cape vert sombre usée ; sans arme"
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "vieux-captif-serie",
+          "state": "loques beige grisé"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C02",
+        "next_cut_id": "BAN01-C04",
+        "entry": "Seaux au pied du mur ; louche dans la main de Quince.",
+        "exit": "Wat a un gobelet vide ; le vieux boit. Willem reste distinct avec son gobelet plein.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "Wat boit",
+      "cadrage": "Plan rapproché de Wat et du vieil homme ; Willem en second plan sans insert du liquide.",
+      "action_visible": "Quince verse de l’eau dans la coupe du vieil homme ; Wat, à droite en tunique taupe, soutient son poignet. Willem debout au second plan garde sa coupe pleine et regarde la reine hors champ gauche.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan rapproché de Wat et du vieil homme. Quince verse de l’eau dans la coupe du vieil homme ; Wat, à droite en tunique taupe, soutient son poignet. Willem debout au second plan garde sa coupe pleine et regarde la reine hors champ gauche. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. willem : 30–40 ans, visage visage plus étroit que Wat, barbe courte, cheveux bruns bouclés, silhouette debout en retrait. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. vieux-captif-serie : 70–80 ans, visage très ridé, barbe blanche, cheveux blancs rares longs, silhouette maigre voûté. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; willem — cape vert sombre usée ; sans arme ; robert-quince — tunique longue brune, ceinture cuir, bottes ; vieux-captif-serie — loques beige grisé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B008",
+          "source_block_id": "lc-e001-s01-B008",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "WAT",
+          "texte": "Doucement. Il en reste.",
+          "intention": "Wat boit",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B008",
+            "text_sha256": "38293f2fe8c4eab7c063af3bae8c1a3852b65f76a0e0a12bcab502c0816005b9"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 7,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.8,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Geste d’aide simple ; ne pas isoler le gobelet plein ni ajouter de signe de poison.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "9103178d03749d56e2b50c1917951453523591c777df0537e91eb6d00750fe05",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "wat",
+        "willem",
+        "robert-quince",
+        "vieux-captif-serie"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s01-B008",
+          "source_block_id": "lc-e001-s01-B008",
+          "speaker_id": null,
+          "image_subject_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "text_unchanged": "Doucement. Il en reste."
+        }
+      ],
+      "static_framing": "Plan rapproché de Wat et du vieil homme",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Geste d’aide simple ; ne pas isoler le gobelet plein ni ajouter de signe de poison."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C03.png"
+    },
+    {
+      "cut_id": "BAN01-C04",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 26,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "fca8d19b3ec54c5b9279b19f473fafaf2e311ba976a13830192ee67403634c99"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B012",
+        "lc-e001-s01-B013",
+        "lc-e001-s01-B014"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B012",
+          "text_sha256": "c8a0873c676be3c0679dcf675b793b8ba44cfe1117ab061d85b7aed4d8a88374"
+        },
+        {
+          "id": "lc-e001-s01-B013",
+          "text_sha256": "2f66041112c414306cbd1aa43c116c8b87011a35759bfd45ffd827a0cbb6c24c"
+        },
+        {
+          "id": "lc-e001-s01-B014",
+          "text_sha256": "254950bee4f3ea1d241fc52b978f49340e04987c2f5d5added10b6a92d3dc2f7"
+        }
+      ],
+      "character_ids": [
+        "daemon",
+        "rhaenyra",
+        "wat"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C04.png",
+          "sha256": "476c06f5ce32d36f8bcf7032562130979ea32753102b1b60d1cd9377eb1b2f76",
+          "role": "identity",
+          "character_ids": [
+            "daemon",
+            "rhaenyra"
+          ],
+          "visually_inspected": true,
+          "inspection": "Daemon à gauche, cheveux courts blond cendré, imberbe, armure sombre et cape lie-de-vin. Âge apparent plus jeune que les 48 ans de fiche : conserver le visage film choisi, ne pas vieillir soudainement.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C04.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "daemon",
+          "state": "armure sombre, cape lie-de-vin"
+        },
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée."
+        },
+        {
+          "character_id": "wat",
+          "state": "tunique taupe déchirée, cordon ; aucune chaîne"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C03",
+        "next_cut_id": "BAN01-C05",
+        "entry": "Le soin a eu un effet réel ; garde toujours près du banc.",
+        "exit": "Les captifs ont entendu ; aucune corde n’est dressée et personne n’est exécuté.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "La corde arrive par la voix",
+      "cadrage": "Plan moyen de Daemon à la table gauche, captifs au mur dans la profondeur droite.",
+      "action_visible": "Daemon assis à la table gauche parle main ouverte ; Rhaenyra écoute près de lui. Au mur droit dans la profondeur, Wat a laissé le gobelet entre les mains du vieil homme.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan moyen de Daemon à la table gauche, captifs au mur dans la profondeur droite.. Daemon assis à la table gauche parle main ouverte ; Rhaenyra écoute près de lui. Au mur droit dans la profondeur, Wat a laissé le gobelet entre les mains du vieil homme. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre daemon : 35–45 ans, visage allongé, anguleux, imberbe, cheveux courts blond cendré, silhouette sec, posture assurée. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : daemon — armure sombre, cape lie-de-vin ; rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B013",
+          "source_block_id": "lc-e001-s01-B013",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": null,
+          "locuteur": "DAEMON",
+          "texte": "Quatre à la corde. Les autres raconteront.",
+          "intention": "La corde arrive par la voix",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B013",
+            "text_sha256": "bc1f553168902719d609f4ac02e357029cc86a597af204e9aadaec45c23b57cd"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 3.1,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Plan tenu sur Daemon ; les captifs au fond interrompent leurs gestes. Ne pas produire une pendaison illustrative.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "4ace3ffe9bd827c2df1c668569a36967bcbbd33dafd56e8d2178df9358168b3f",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "daemon",
+        "rhaenyra",
+        "wat"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s01-B013",
+          "source_block_id": "lc-e001-s01-B013",
+          "speaker_id": null,
+          "image_subject_ids": [
+            "daemon",
+            "rhaenyra",
+            "wat"
+          ],
+          "text_unchanged": "Quatre à la corde. Les autres raconteront."
+        }
+      ],
+      "static_framing": "Plan moyen de Daemon à la table gauche, captifs au mur dans la profondeur droite.",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Plan tenu sur Daemon ; les captifs au fond interrompent leurs gestes. Ne pas produire une pendaison illustrative."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C04.png"
+    },
+    {
+      "cut_id": "BAN01-C05",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 27,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "274cc2bb957088fc124f10ec4631556408e0ce5c4b47beab09716fad96c991b2"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B015",
+        "lc-e001-s01-B016",
+        "lc-e001-s01-B017",
+        "lc-e001-s01-B018"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B015",
+          "text_sha256": "9fa01a39c7dad5c9c30398e2892e520dcf87499bdc2d1ddecd70c13a06ddf5e5"
+        },
+        {
+          "id": "lc-e001-s01-B016",
+          "text_sha256": "57e1141b1973f9f841ebb57a9d7989beb863f6c4c52fa850409d1909cc1879e5"
+        },
+        {
+          "id": "lc-e001-s01-B017",
+          "text_sha256": "8d0676c5e95c6328679376d6bf9ee792d09f6589e4b3f22c79e4e9f393e80b57"
+        },
+        {
+          "id": "lc-e001-s01-B018",
+          "text_sha256": "e68cd09c787512a29dd958cc5fdc531dfa2e0400aa9e696463c302f015394def"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "daemon"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C04.png",
+          "sha256": "476c06f5ce32d36f8bcf7032562130979ea32753102b1b60d1cd9377eb1b2f76",
+          "role": "identity",
+          "character_ids": [
+            "daemon",
+            "rhaenyra"
+          ],
+          "visually_inspected": true,
+          "inspection": "Daemon à gauche, cheveux courts blond cendré, imberbe, armure sombre et cape lie-de-vin. Âge apparent plus jeune que les 48 ans de fiche : conserver le visage film choisi, ne pas vieillir soudainement.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C04.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "daemon",
+          "state": "armure sombre, cape lie-de-vin"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C04",
+        "next_cut_id": "BAN01-C06",
+        "entry": "Rhaenyra assise, coupe déjà posée au premier cut.",
+        "exit": "Rhaenyra et Quince s’approchent des hommes ; Daemon ne les accompagne pas.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "Elle quitte sa table",
+      "cadrage": "Plan américain, puis départ dans la profondeur vers le mur droit.",
+      "action_visible": "La reine est debout avec une main encore posée au bord de table ; Quince la rejoint à droite. Daemon reste assis derrière, aucune corde ni arme brandie.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan américain,. La reine est debout avec une main encore posée au bord de table ; Quince la rejoint à droite. Daemon reste assis derrière, aucune corde ni arme brandie. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. daemon : 35–45 ans, visage allongé, anguleux, imberbe, cheveux courts blond cendré, silhouette sec, posture assurée. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; daemon — armure sombre, cape lie-de-vin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B015",
+          "source_block_id": "lc-e001-s01-B015",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Pas de corde.",
+          "intention": "Elle quitte sa table",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B015",
+            "text_sha256": "b83facaa112011a39fa5605091ba5cf9aa1cfaf604dca832457263572f6c5ead"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 1.3,
+          "action_et_silence_hors_parole": 4.5,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Déplacement gauche vers droite ; conserver sa fatigue sans inventer blessure spectaculaire.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "b76ea65d6fa3fefddb97f8850b65024f4fdb8c75251ddb10782d5748f2fca8b6",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "daemon"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s01-B015",
+          "source_block_id": "lc-e001-s01-B015",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "daemon"
+          ],
+          "text_unchanged": "Pas de corde."
+        }
+      ],
+      "static_framing": "Plan américain,",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Déplacement gauche vers droite ; conserver sa fatigue sans inventer blessure spectaculaire."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C05.png"
+    },
+    {
+      "cut_id": "BAN01-C06",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 28,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "e4e0c4202a0544a42f3a591d6e73ebf7c74842a4056b536b6d78f290c3964004"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B019",
+        "lc-e001-s01-B020",
+        "lc-e001-s01-B021"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B019",
+          "text_sha256": "22f42d01c3904f992772329ab83e5d1f8d29a1cf1c33a1a37458f4215579c219"
+        },
+        {
+          "id": "lc-e001-s01-B020",
+          "text_sha256": "a53273443dc1e3c7f32f821c60db593916181f1726c3ec3fe311598a52b35791"
+        },
+        {
+          "id": "lc-e001-s01-B021",
+          "text_sha256": "2749a2ad046b03e58710b3c1f0020e8afee3e6a00e9495958926005dc47feda2"
+        }
+      ],
+      "character_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "wat"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "rhaenyra",
+          "state": "Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée."
+        },
+        {
+          "character_id": "robert-quince",
+          "state": "tunique longue brune, ceinture cuir, bottes"
+        },
+        {
+          "character_id": "wat",
+          "state": "tunique taupe déchirée, cordon ; aucune chaîne"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C05",
+        "next_cut_id": "BAN01-C07",
+        "entry": "Le banc barre encore le chemin, Wat tient sa coupe vide.",
+        "exit": "Rampe libre, des hommes agenouillés ; Wat encore debout.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "Le prix de la sortie",
+      "cadrage": "Plan à deux : reine à gauche et rang des captifs à droite ; rampe visible entre eux.",
+      "action_visible": "La reine debout à gauche s’adresse aux captifs à droite ; le banc a dégagé la rampe visible entre eux. Quelques hommes sont à genoux, Wat reste debout près du vieux.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan à deux : reine à gauche et rang des captifs à droite. La reine debout à gauche s’adresse aux captifs à droite ; le banc a dégagé la rampe visible entre eux. Quelques hommes sont à genoux, Wat reste debout près du vieux. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [
+        {
+          "line_id": "lc-e001-s01-B019",
+          "source_block_id": "lc-e001-s01-B019",
+          "scene_id": "lc-e001-s01",
+          "locuteur_id": "rhaenyra",
+          "locuteur": "RHAENYRA",
+          "texte": "Jurez-moi fidélité. Vous rentrerez chez vous.",
+          "intention": "Le prix de la sortie",
+          "jeu": "Respecter la retenue et laisser le contradicteur finir ; texte exact sans oralisation des notes.",
+          "mode": "voix_in",
+          "voice_file": null,
+          "source_ref": {
+            "path": "episodes/lc-e001/EPISODE-COMPLET-V4.md",
+            "section": "1. La cour — soir du sacre",
+            "block": "lc-e001-s01-B019",
+            "text_sha256": "29871caca55fe8ada1c50b8fce054ca735b843fa8bee5ea46de80a6a3949d28f"
+          }
+        }
+      ],
+      "adopted_duration": {
+        "seconds": 9,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 2.7,
+          "action_et_silence_hors_parole": 5,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Le retrait du banc doit suivre l’offre, pas annoncer une liberté déjà donnée sans serment.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "d3fd21fbd4ff5c23d86757ecf53cd4f790d4209a5a42ddc60aa3710d94f6749f",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "rhaenyra",
+        "robert-quince",
+        "wat"
+      ],
+      "speaker_ids": [
+        "rhaenyra"
+      ],
+      "dialogue_links": [
+        {
+          "line_id": "lc-e001-s01-B019",
+          "source_block_id": "lc-e001-s01-B019",
+          "speaker_id": "rhaenyra",
+          "image_subject_ids": [
+            "rhaenyra",
+            "robert-quince",
+            "wat"
+          ],
+          "text_unchanged": "Jurez-moi fidélité. Vous rentrerez chez vous."
+        }
+      ],
+      "static_framing": "Plan à deux : reine à gauche et rang des captifs à droite",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Le retrait du banc doit suivre l’offre, pas annoncer une liberté déjà donnée sans serment."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C06.png"
+    },
+    {
+      "cut_id": "BAN01-C07",
+      "scene_id": "lc-e001-s01",
+      "episode_id": "lc-e001",
+      "order": 29,
+      "status": "enrichment_not_officially_validated",
+      "source": {
+        "index_path": "episodes/lc-e001/scenes-json-v8/index.json",
+        "index_sha256": "fd945c3fdd6eba749f0fe244a77ef73be9edb2a471d286b32213d94f18702fa8",
+        "scene_path": "episodes/lc-e001/scenes-json-v8/lc-e001-s01.json",
+        "scene_sha256": "44fec374dad2d39fa9a9be02b2a2891981ac4b141363bb25287f07e179ce700c",
+        "partition_path": "roles/scenes/cuts-episode-lc-e001-v8-v1.json",
+        "partition_sha256": "f310839658d3d12a2a52cfbfd30e1839d2151486ffa704c478fd7fe8552c6f5b",
+        "cut_sha256": "25021a6d5dd80af932178be2870aca46da2d9b04c4de5789a021de75392b76cd"
+      },
+      "source_block_ids": [
+        "lc-e001-s01-B022"
+      ],
+      "source_block_hashes": [
+        {
+          "id": "lc-e001-s01-B022",
+          "text_sha256": "ed1c531bfb52ef58a8b6eae19505a5dcb929fdbaae6f3c3742463ab98640716b"
+        }
+      ],
+      "character_ids": [
+        "wat"
+      ],
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "costume_state": [
+        {
+          "character_id": "wat",
+          "state": "tunique taupe déchirée, cordon ; aucune chaîne"
+        }
+      ],
+      "continuity_links": {
+        "previous_cut_id": "BAN01-C06",
+        "next_cut_id": "BAN01-C08",
+        "entry": "Coupe vide dans sa main ; serment proposé et sortie visible.",
+        "exit": "Wat reste debout, mains désormais vides ; son désir de rentrer a été vu.",
+        "axis": "Banquet en cours, reine assise ; garde devant le passage du mur."
+      },
+      "intention": "Presque rentrer",
+      "cadrage": "Plan moyen sur Wat, autres hommes à genoux et rampe nette en profondeur.",
+      "action_visible": "Wat debout regarde le passage dégagé, sa coupe vide au bord du seau. Un camarade agenouillé touche le bas de sa tunique ; les deux pieds de Wat restent au sol.",
+      "light": "Crépuscule bleu, torches et bougies ambre",
+      "location": "Cour de Peyredragon",
+      "prompt_image": "Plan moyen sur Wat, autres hommes à genoux et rampe nette en profondeur.. Wat debout regarde le passage dégagé, sa coupe vide au bord du seau. Un camarade agenouillé touche le bas de sa tunique ; les deux pieds de Wat restent au sol. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée.",
+      "dialogues_unchanged": [],
+      "adopted_duration": {
+        "seconds": 6,
+        "estimated_not_measured": true,
+        "decomposition": {
+          "parole": 0,
+          "action_et_silence_hors_parole": 6,
+          "gestes_sous_parole": "non additionnés"
+        },
+        "source": "roles/scenes/cuts-episode-lc-e001-v8-v1.json"
+      },
+      "movement_intent": "Ne pas transformer l’hésitation en révérence exécutée : aucun serment dit.",
+      "changes": {
+        "method": "existing_cut_staging_preserved_rewritten_as_single_frame_after_Marco_review",
+        "previous_prompt_sha256": "1ef5d90d3bd7c7b69dda667b73011d8950420ca1c1cf27f44422c984819052be",
+        "retained": "IDs, texte, durées, cadrages, actions et axe conservés. Références identité rendues explicites.",
+        "useful": "Image limitée à l’instant représenté ; progression, ellipses et mouvement uniquement hors prompt. Un seul âge visuel ; tenue précise, sans alternatives conditionnelles. Références identité inspectées conservées."
+      },
+      "missing": [],
+      "image_subject_ids": [
+        "wat"
+      ],
+      "speaker_ids": [],
+      "dialogue_links": [],
+      "static_framing": "Plan moyen sur Wat, autres hommes à genoux et rampe nette en profondeur.",
+      "context_outside_image": {
+        "source_moment": {
+          "value": "Soir du sacre, crépuscule continu, temps condensé de série",
+          "source": "roles/scenes/cuts-episode-adopted-v3-assembly-v1.json",
+          "status": "known"
+        },
+        "scene_geography": "Banquet en cours, reine assise ; garde devant le passage du mur.",
+        "movement_intent": "Ne pas transformer l’hésitation en révérence exécutée : aucun serment dit."
+      },
+      "existing_image": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/BAN01-C07.png"
+    }
+  ]
+}

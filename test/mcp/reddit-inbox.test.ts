@@ -3,7 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { RedditInbox, type InboxRedditClient } from "../../services/reddit/inbox.js";
-import { readOwnerInboxHistory, ownerMessagePending } from "../../src/communication/owner-inbox.js";
+import { readOwnerInboxHistory, ownerMessagePending, purgeStaleRedditMessages, enqueueOwnerMessage } from "../../src/communication/owner-inbox.js";
+import Database from "better-sqlite3";
 import { readReceivedMessages } from "../../src/communication/received-messages.js";
 import { conversation } from "../../desktop/ui/conversation.js";
 
@@ -66,6 +67,34 @@ it("baselines history, then imports new Reddit posts with provenance and links i
   const restarted = new RedditInbox(dir, c, ["MachineToMachine"], false, () => true);
   expect((await restarted.sync()).imported).toBe(0);
   expect(readOwnerInboxHistory(dir)).toHaveLength(1);
+});
+
+it("does not replay old Reddit history when the stored head disappears", async () => {
+  const c = client();
+  const sync = new RedditInbox(dir, c, ["MachineToMachine"], false, () => true);
+  await sync.sync(); // establish the initial baseline
+  later();
+  c.feed.mockResolvedValue({ posts: [item("new")], after: null });
+  expect((await sync.sync()).imported).toBe(1);
+  later();
+  const old = { ...item("historic"), created_utc: Date.now() / 1000 - 86_400 * 400 };
+  c.feed.mockResolvedValue({ posts: [old], after: null }); // stored head is absent
+  expect((await sync.sync()).imported).toBe(0);
+  expect(readOwnerInboxHistory(dir)).toHaveLength(1);
+});
+
+it("purges only pending Reddit messages older than the persisted watermark", () => {
+  const origin = { kind: "peer_message" as const, channel: "reddit", author: "Reddit", senderRef: "reddit:u/writer", recipientRef: "reddit:u/owner", threadId: "t3_post", messageId: "t3_post", correlationId: "reddit-id" };
+  enqueueOwnerMessage(dir, { id: "stale", at: "2026-11-01T00:00:00.000Z", text: "old", origin });
+  enqueueOwnerMessage(dir, { id: "fresh", at: "2026-11-14T00:00:00.000Z", text: "new", origin: { ...origin, messageId: "t3_new", correlationId: "reddit-new" } });
+  enqueueOwnerMessage(dir, { id: "other", at: "2026-11-01T00:00:00.000Z", text: "peer", origin: { ...origin, channel: "mind-shared-hub", messageId: "msg_other", correlationId: "other" } });
+  const db = new Database(path.join(dir, "reddit-inbox.sqlite"));
+  db.exec("CREATE TABLE cursors(source TEXT PRIMARY KEY,head TEXT,target TEXT,after_id TEXT,synced_at INTEGER)");
+  db.prepare("INSERT INTO cursors VALUES(?,NULL,NULL,NULL,?)").run("owner:r:machine", Date.parse("2026-11-10T00:00:00.000Z"));
+  db.close();
+  expect(purgeStaleRedditMessages(dir)).toBe(1);
+  expect(Object.keys(readOwnerInboxHistory(dir))).toHaveLength(3);
+  expect(ownerMessagePending(dir)).toBe(true);
 });
 
 it("imports replies through the same inbox without pretending their author is the owner", async () => {

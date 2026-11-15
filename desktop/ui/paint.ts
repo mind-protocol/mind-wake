@@ -36,12 +36,12 @@ const event = (
   window as unknown as {
     __TAURI__: {
       event: {
-        listen(name: string, callback: (event: { payload: Point }) => void): Promise<unknown>;
+        listen<T>(name: string, callback: (event: { payload: T }) => void): Promise<unknown>;
       };
     };
   }
 ).__TAURI__.event;
-void event.listen("paint-point", ({ payload: point }) => {
+void event.listen<Point>("paint-point", ({ payload: point }) => {
   expirePaint();
   if (point.start || !prior) {
     prior = point;
@@ -59,6 +59,22 @@ void event.listen("paint-point", ({ payload: point }) => {
   mid = next;
   prior = point;
 });
+
+for (const channel of ["voice-dictation-subtitle", "voice-reply-subtitle"]) {
+  const subtitle = document.getElementById(channel)!;
+  let expiry: ReturnType<typeof setTimeout> | undefined;
+  void event.listen<string>(channel, ({ payload }) => {
+    if (typeof payload !== "string") return;
+    clearTimeout(expiry);
+    const text = payload.trim().split(/\s+/u).slice(-24).join(" ").slice(-240);
+    subtitle.textContent = text;
+    subtitle.hidden = !text;
+    if (text) expiry = setTimeout(() => {
+      subtitle.hidden = true;
+      subtitle.textContent = "";
+    }, 5_000);
+  });
+}
 void event.listen("paint-end", () => {
   expirePaint();
   if (prior && mid) {

@@ -1,0 +1,152 @@
+[
+  {
+    "cut_id": "CEL01-C07",
+    "status": "existing_reused",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\CEL01-C07.png",
+    "sha256": "ce86a0bd2c2ae8913822be2f3916d677eed053eed2278857dea2fa2e33cd42c1",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/CEL01-C07.png"
+  },
+  {
+    "cut_id": "CEL01-C08",
+    "status": "existing_reused",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\CEL01-C08.png",
+    "sha256": "16d51bbc29eb055b18205e1e661af1eb8829371c95e6141731a93ff07eae70ea",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": "C:/Users/reyno/AppData/Local/mind-wake-essai/workspace/artifacts/projets/mode-series/serie/media/images/CEL01-C08.png"
+  },
+  {
+    "cut_id": "N60-Q05-C01",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q05-C01.png",
+    "sha256": "b29443ae426ce054679439501ca83b9f88965fb594f369794cd29bb170c600e9",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q05-C02",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q05-C02.png",
+    "sha256": "7b124f68e74e91ae4ed80872c47446528aeabe7c57679958ac3a3037bb59e80a",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q05-C03",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q05-C03.png",
+    "sha256": "5af60c876597aa626707c378616d8084dfc1c01b85699f9e94ed99cea9f86b04",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q05-C04",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q05-C04.png",
+    "sha256": "402c9ef5262dfa2e9b7a0d81125f06c733664bf4d7be6416e58e3048ec48d344",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C01",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C01.png",
+    "sha256": "8b82c95b7f8271c4ecc6f632cc2a014ba83d4da031375d5d631938fa58559a8b",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C02",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C02.png",
+    "sha256": "c959eda558bf6a28edbdd4a208362aabcba1add2ce7db09b3a416334ae041160",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C03",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C03.png",
+    "sha256": "2d763b092aab451d7c7cd5f6460c1413a56e89fa34af308d9527d07111b85004",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C04",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C04.png",
+    "sha256": "c37d73baf24eb374b35108732834c0014f9ea43778265ec73d05edaa5013ab61",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C05",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C05.png",
+    "sha256": "c8ce20b4770bfabb23835ee9947288f96730918c3fd54214ced2b6c20342f7f5",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "VER03-C06",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\VER03-C06.png",
+    "sha256": "6d7a42a3c8e69335d3d09573ba3f1737b3e728995e5d2fb1ae67ce54409e816e",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q02-C01",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q02-C01.png",
+    "sha256": "841fb9ac7848bc4d4bf4b5753fc01f65d2298170104d40a56d1af377f811c16c",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q02-C02",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q02-C02.png",
+    "sha256": "c8ed9362d4fa13fdb3e8176d06a788b0b4c233aa59e823aed5e2d00027835833",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  },
+  {
+    "cut_id": "N60-Q02-C03",
+    "status": "generated",
+    "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-04\\N60-Q02-C03.png",
+    "sha256": "95f07c9155ed186bc9dccb9e859cc878f1eef72740cc0c425eb8124051ee0079",
+    "inspected": true,
+    "inspection": "Image vue individuellement; visages et costumes raccords aux references; action unique lisible. Revue editoriale finale du montage encore ouverte.",
+    "prompt_source": "prompts.json",
+    "source": null
+  }
+]

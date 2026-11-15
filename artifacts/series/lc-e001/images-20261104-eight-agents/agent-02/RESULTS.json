@@ -1,0 +1,604 @@
+{
+  "episode_id": "lc-e001",
+  "results": [
+    {
+      "cut_id": "VER04-C01",
+      "status": "produced",
+      "inspection": "Photoreal two-shot; identities, costumes and glove action visible, thumb wax subtle.",
+      "prompt_final": "Plan moyen à deux. Aemond serre la boucle de son gant droit près du mur côté droit ; Aegon au centre gauche tient son pouce taché de cire près de sa taille. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C01.png",
+      "sha256": "f2e20921dca97b9084a74285307aef97c77bcfa788597b3a12fd040cd9e89f3a"
+    },
+    {
+      "cut_id": "VER04-C02",
+      "status": "produced",
+      "inspection": "Reviewed: chin raised, left eyepatch, closed right glove; matching actor and courtyard.",
+      "prompt_final": "Champ serré Aemond avec épaule Aegon au premier plan. Aemond a le menton légèrement relevé face à l’épaule d’Aegon au premier plan gauche ; son gant droit est encore fermé. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C02.png",
+      "sha256": "cc55c75b81218b2ae8985cc62ad86e4d8a18fc73747cd3103711911a45fd2a8f"
+    },
+    {
+      "cut_id": "VER04-C03",
+      "status": "produced",
+      "inspection": "Reviewed: Aegon passes strap, groom with saddle, Aemond wall; identities and costumes consistent.",
+      "prompt_final": "Contrechamp Aegon. Aegon tend une sangle au palefrenier portant une selle ordinaire derrière lui ; Aemond le regarde depuis le côté du mur. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. palefrenier-serie : 25–35 ans, visage rond rasé proposé, cheveux châtain court proposé, silhouette petit et agile proposé. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé ; palefrenier-serie — tunique ocre simple. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C03.png",
+      "sha256": "a89dd0fadc147623f79f0e09c977457495d81b84a63595743379302f817c7891"
+    },
+    {
+      "cut_id": "VER04-C04",
+      "status": "produced",
+      "inspection": "Reviewed: face-to-face, wax thumb at torso, right glove worn. Aemond gaze slightly downcast.",
+      "prompt_final": "Plan américain à deux, caméra fixe côté cour. Aegon fait face à Aemond dans la cour, main tachée de cire près du corps. Aemond soutient son regard, gant encore porté. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit fermé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C04.png",
+      "sha256": "8010d233222c358273706e579e242214c95341d3b9fdf6cdd2dc6d1216abef91"
+    },
+    {
+      "cut_id": "VER04-C05",
+      "status": "produced",
+      "inspection": "Reviewed: buckle opening and wax pressing clear. Hand laterality appears reversed (glove image-right); editorial continuity caveat.",
+      "prompt_final": "Plan rapproché mains et visages dans la même profondeur. Les doigts nus d’Aemond ouvrent la boucle de son gant droit ; dans le même cadre, Aegon presse de la cire contre sa paume. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit en cours de retrait. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C05.png",
+      "sha256": "e1313837f323c401cffb6af1f771f39b9a9ef4ec1b1bb1ec037dd3309eb14b31"
+    },
+    {
+      "cut_id": "VER04-C06",
+      "status": "produced",
+      "inspection": "Reviewed: open palm small red wax mark, Aemond right hand bare and removed glove held left; matching cast.",
+      "prompt_final": "Plan rapproché Aegon, Aemond en amorce nette. La paume d’Aegon est ouverte devant lui, petite marque rouge visible ; Aemond, main droite nue, a interrompu son geste et le regarde. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit retiré, main droite nue. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C06.png",
+      "sha256": "6e529356e495732761186bda8c8033314f4e884f2aa3f7bea75c3e1268dc4431"
+    },
+    {
+      "cut_id": "VER04-C07",
+      "status": "produced",
+      "inspection": "Reviewed: quiet mutual gaze, Aegon hands lowered, Aemond bare hands holding removed glove.",
+      "prompt_final": "Plan moyen à deux sans changer d’axe. Les deux frères se regardent de part et d’autre du passage. Aemond garde son gant retiré dans sa main, Aegon n’a plus la paume levée comme un ordre. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. aemond : 19 ans, visage long, pommettes aiguës, cheveux longs lisses gris-brun de la référence, silhouette élancé d’épéiste. Tenues visibles : aegon-ii — pourpoint noir et or ; aemond — cuir et armure noirs ; gant droit retiré, main droite nue. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C07.png",
+      "sha256": "756a4fe02aa0dfe8abeed07377b024a1898921aa3df34581106d57838d40fda5"
+    },
+    {
+      "cut_id": "VER04-C08",
+      "status": "produced",
+      "inspection": "Reviewed: wide full Aegon, two waiting crate porters, Aemond absent.",
+      "prompt_final": "Plan large fixe du passage. Aegon seul au milieu du passage, deux porteurs arrêtés dans la profondeur attendent qu’il dégage leur trajet. Aemond a quitté le cadre. Port-Réal, cour intérieure. Jour couvert doux de cour aegon-ii : 22 ans, visage jeune, plein sans lourdeur caricaturale, cheveux argent gris mi-longs ondulés, silhouette souple, instable dans ses appuis. porteurs-serie : adultes, visage visages distincts des frères royaux, cheveux variables sans cheveux argent, silhouette silhouettes de travail. Tenues visibles : aegon-ii — pourpoint noir et or ; porteurs-serie — laines terre et cuir. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aegon-ii.webp",
+          "sha256": "38f86633f194f079f04f3d4997881f2ce02b73ac7c3b8de75c49fb3641c13e7a",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aegon-ii"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage jeune étroit, cheveux argent gris ondulés mi-longs, couronne, tenue or sombre.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aegon-ii.svg",
+          "source_svg_sha256": "c8fe23539ad939fedebfa1dd31139c9be114cdf39b4da89194574ca820d7417f",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aegon-ii.webp",
+          "exists": true
+        },
+        {
+          "path": "roles/scenes/image-prompts-e1-e2/references/identity/aemond.webp",
+          "sha256": "8d50dbd03a0dab065de8f7b323eeecb9f40e486c46d41e1afcc14a95ead06250",
+          "role": "identity_portrait_candidate",
+          "character_ids": [
+            "aemond"
+          ],
+          "visually_inspected": true,
+          "inspection": "Visage long anguleux, cheveux longs gris-brun lisses, cache-œil sur SON œil gauche (droite de l’image frontale). Différence avec cheveux argent de fiche consignée.",
+          "source_svg": "C:/Users/reyno/le-conseil2/ecrans/portraits/aemond.svg",
+          "source_svg_sha256": "04121ececb8a2fe4b5408091b3aca3f2400d558257989839cc595ed570942668",
+          "extraction": "Octets WebP du data URI SVG, sans transformation ni génération",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\roles\\scenes\\image-prompts-e1-e2\\references\\identity\\aemond.webp",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\VER04-C08.png",
+      "sha256": "280081393faaaf114d289160449ae3b9d0e9b758e693d82856f6c9ca3da38257"
+    },
+    {
+      "cut_id": "BAN01-C01",
+      "status": "existing",
+      "inspection": "Individually visually reviewed source film frame; action, cast, costumes and setting match current cut.",
+      "prompt_final": "Plan moyen de la reine à table. Rhaenyra assise à la table gauche a posé sa coupe et regarde vers le mur droit, où un captif est soutenu par ses voisins. Quince se tient près d’elle ; le banc barre encore le passage de la rampe. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C01.png",
+      "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0"
+    },
+    {
+      "cut_id": "BAN01-C02",
+      "status": "produced",
+      "inspection": "Reviewed: Quince left with bucket, helper right has Wat-like face despite guard brief; guest feet retracted. Cast duplication caveat.",
+      "prompt_final": "Plan d’ensemble à hauteur de taille. Quince à gauche et son garde à droite portent chacun un seau de bois entre les bancs ; un convive garde ses jambes ramenées sous lui. Eau renversée près d’une botte, table royale loin derrière. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. Tenues visibles : robert-quince — tunique longue brune, ceinture cuir, bottes. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C02.png",
+      "sha256": "06e201fc361b630c98cfa7693f86f4ec4161aa8db45850def46810b8cf4234b5"
+    },
+    {
+      "cut_id": "BAN01-C03",
+      "status": "existing",
+      "inspection": "Individually visually reviewed source film frame; action, cast, costumes and setting match current cut.",
+      "prompt_final": "Plan rapproché de Wat et du vieil homme. Quince verse de l’eau dans la coupe du vieil homme ; Wat, à droite en tunique taupe, soutient son poignet. Willem debout au second plan garde sa coupe pleine et regarde la reine hors champ gauche. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. willem : 30–40 ans, visage visage plus étroit que Wat, barbe courte, cheveux bruns bouclés, silhouette debout en retrait. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. vieux-captif-serie : 70–80 ans, visage très ridé, barbe blanche, cheveux blancs rares longs, silhouette maigre voûté. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne ; willem — cape vert sombre usée ; sans arme ; robert-quince — tunique longue brune, ceinture cuir, bottes ; vieux-captif-serie — loques beige grisé. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C03.png",
+      "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d"
+    },
+    {
+      "cut_id": "BAN01-C04",
+      "status": "produced",
+      "inspection": "Reviewed: Daemon open hand, queen listens, old captive holds cup background.",
+      "prompt_final": "Plan moyen de Daemon à la table gauche, captifs au mur dans la profondeur droite.. Daemon assis à la table gauche parle main ouverte ; Rhaenyra écoute près de lui. Au mur droit dans la profondeur, Wat a laissé le gobelet entre les mains du vieil homme. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre daemon : 35–45 ans, visage allongé, anguleux, imberbe, cheveux courts blond cendré, silhouette sec, posture assurée. rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : daemon — armure sombre, cape lie-de-vin ; rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C04.png",
+          "sha256": "476c06f5ce32d36f8bcf7032562130979ea32753102b1b60d1cd9377eb1b2f76",
+          "role": "identity",
+          "character_ids": [
+            "daemon",
+            "rhaenyra"
+          ],
+          "visually_inspected": true,
+          "inspection": "Daemon à gauche, cheveux courts blond cendré, imberbe, armure sombre et cape lie-de-vin. Âge apparent plus jeune que les 48 ans de fiche : conserver le visage film choisi, ne pas vieillir soudainement.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C04.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C04.png",
+      "sha256": "cdb0fe54f49aff99ca74e45b94f0614d279579d05b7a265182b44e72ce876c85"
+    },
+    {
+      "cut_id": "BAN01-C05",
+      "status": "existing",
+      "inspection": "Individually visually reviewed source film frame; action, cast, costumes and setting match current cut.",
+      "prompt_final": "Plan américain,. La reine est debout avec une main encore posée au bord de table ; Quince la rejoint à droite. Daemon reste assis derrière, aucune corde ni arme brandie. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. daemon : 35–45 ans, visage allongé, anguleux, imberbe, cheveux courts blond cendré, silhouette sec, posture assurée. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; daemon — armure sombre, cape lie-de-vin. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C04.png",
+          "sha256": "476c06f5ce32d36f8bcf7032562130979ea32753102b1b60d1cd9377eb1b2f76",
+          "role": "identity",
+          "character_ids": [
+            "daemon",
+            "rhaenyra"
+          ],
+          "visually_inspected": true,
+          "inspection": "Daemon à gauche, cheveux courts blond cendré, imberbe, armure sombre et cape lie-de-vin. Âge apparent plus jeune que les 48 ans de fiche : conserver le visage film choisi, ne pas vieillir soudainement.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C04.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C05.png",
+      "sha256": "99f1003ad7d42e453892e4bce8a2115b20793a217e3b7ec85e49c4815931281d"
+    },
+    {
+      "cut_id": "BAN01-C06",
+      "status": "existing",
+      "inspection": "Individually visually reviewed source film frame; action, cast, costumes and setting match current cut.",
+      "prompt_final": "Plan à deux : reine à gauche et rang des captifs à droite. La reine debout à gauche s’adresse aux captifs à droite ; le banc a dégagé la rampe visible entre eux. Quelques hommes sont à genoux, Wat reste debout près du vieux. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre rhaenyra : 30–35 ans, visage ovale, pommettes nettes, peau claire, fatigue contenue, cheveux blond cendré long en torsades demi-relevées, silhouette stature moyenne, maintien droit mais fatigué. robert-quince : 50–60 ans, visage large, carré, ridé, barbe courte grise, cheveux courts gris-brun, silhouette large, robuste. wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : rhaenyra — Robe bleu-noir à manches bordeaux, cercle doré fin, coiffure demi-relevée. ; robert-quince — tunique longue brune, ceinture cuir, bottes ; wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C01.png",
+          "sha256": "7dcef0c71793b57a088337175ae812dcdb90af8e1bbfcf2c024b8811b3c3d5e0",
+          "role": "identity",
+          "character_ids": [
+            "rhaenyra",
+            "robert-quince"
+          ],
+          "visually_inspected": true,
+          "inspection": "Rhaenyra profil gauche, blonde cendrée demi-relevée en torsades, robe bleu-noir à manches bordeaux, cercle fin ; Quince au centre, large, cheveux gris-brun courts, barbe grise, tunique brune.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C01.png",
+          "exists": true
+        },
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C06.png",
+      "sha256": "f4bd910fbefed5349dca4c89dcb5fa3a5c1d537e62dff31a693e8d32f030097b"
+    },
+    {
+      "cut_id": "BAN01-C07",
+      "status": "produced",
+      "inspection": "Reviewed: Wat stands both feet visible, cup above bucket edge, companion touches tunic. Companion resembles Quince, continuity caveat.",
+      "prompt_final": "Plan moyen sur Wat, autres hommes à genoux et rampe nette en profondeur.. Wat debout regarde le passage dégagé, sa coupe vide au bord du seau. Un camarade agenouillé touche le bas de sa tunique ; les deux pieds de Wat restent au sol. Peyredragon, cour du banquet au crépuscule. Crépuscule bleu, torches et bougies ambre wat : 30–40 ans, visage anguleux, barbe brune courte visible, cheveux bruns ondulés désordonnés, silhouette mince et usé, épaules rentrées. Tenues visibles : wat — tunique taupe déchirée, cordon ; aucune chaîne. Photogramme réaliste cinématographique 16:9, lumière motivée, peau et matières physiques, couleur contenue, sans inscription générée. One live-action film frame, 16:9 landscape, no text, no montage or split panels. Maintain supplied character identity and stated costume; exactly the visible action described.",
+      "reference_images": [
+        {
+          "path": "media/images/BAN01-C03.png",
+          "sha256": "2c405218a654ca665b1c2c9df94cfbf7bab8a4cfdc153135271afa2f5e5c917d",
+          "role": "identity",
+          "character_ids": [
+            "wat",
+            "willem",
+            "robert-quince",
+            "vieux-captif-serie"
+          ],
+          "visually_inspected": true,
+          "inspection": "Wat assis à droite, brun ondulé et barbu, tunique taupe déchirée ; Willem debout au centre arrière en cape verte, coupe tenue ; vieil homme blanc au centre avant. Ne pas échanger les visages.",
+          "absolute_path": "C:\\Users\\reyno\\AppData\\Local\\mind-wake-essai\\workspace\\artifacts\\projets\\mode-series\\serie\\media\\images\\BAN01-C03.png",
+          "exists": true
+        }
+      ],
+      "path": "C:\\Users\\reyno\\mind-wake\\artifacts\\series\\lc-e001\\images-20261104-eight-agents\\agent-02\\BAN01-C07.png",
+      "sha256": "0326c2ff2571473da6b8ee994e969345e47b64c4e141bf2f19f0b4ac4fb90804"
+    }
+  ]
+}

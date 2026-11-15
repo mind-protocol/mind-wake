@@ -17,6 +17,12 @@ Le daemon emploie le superviseur Job Object existant : le worker et tous ses des
 
 Après un crash du daemon, les anciennes arborescences sont terminées et les jobs en cours deviennent `interrupted`. Ils ne sont jamais rejoués automatiquement : une action interrompue a pu produire des effets. L'agent peut lire son checkpoint et soumettre explicitement une reprise avec une nouvelle clé. Les jobs encore en file restent en file.
 
+### Boucles longues : `relaunch`
+
+Exception opt-in pour les boucles longues, comme une simulation ou une présence dans le fil : `start_background_job` accepte `relaunch: true`. Un tel job interrompu par une Pause, un Force-off ou la fin du moteur est soumis de nouveau, avec le même script et les mêmes arguments, dès que Wake l'autorise de nouveau. Pour un Force-off, c'est donc après la réactivation par l'humain. Le nouveau job reçoit la clé `relaunch:<ancien id>`, et l'ancien garde `relaunchedAs`. Un job qui échoue, qu'on annule ou qui finit normalement n'est jamais relancé. Le daemon journalise chaque relance (`job relancé après interruption`).
+
+Le script doit supporter ce redémarrage. Il repart de son checkpoint, et un verrou laissé par un processus tué doit être repris, pas bloquer. Lire le `pid` du verrou : s'il ne tourne plus, supprimer le verrou puis le recréer. Essai réel du 6 novembre 2026 : après les redémarrages du moteur de 03:16 UTC, la simulation NLR et VOX v1 sont reparties seules en 5 s.
+
 ## Périmètre
 
 Cette première version fonctionne dans le mode hôte Windows déjà autorisé de Wake. Un Job Object assure la supervision et l'arrêt, pas une isolation du compte utilisateur. Aucun secret ni credential du daemon n'est implicitement hérité ; seules les variables système de démarrage, PATH et les chemins du job sont transmis. Cela ne retire pas les accès disque déjà accordés au compte Windows.

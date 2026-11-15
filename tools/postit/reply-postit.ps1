@@ -2,6 +2,33 @@
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 if (-not ('ReplyPostitForm' -as [type])) { Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing @'
 using System; using System.Windows.Forms; using System.Drawing; using System.Drawing.Drawing2D; using System.Runtime.InteropServices;
+
+// One bounded UI timer per transitioning form. Never attach to the invisible session owner.
+public sealed class OverlayMotion {
+ static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Form,OverlayMotion> states = new System.Runtime.CompilerServices.ConditionalWeakTable<Form,OverlayMotion>();
+ public static int DurationMilliseconds = 140;
+ public static int ActiveTimerCount {get;private set;}
+ public int FrameCount {get;private set;}
+ public bool Running {get {return timer.Enabled;}}
+ public bool Closing {get;private set;}
+ readonly Form form; readonly Timer timer; readonly System.Diagnostics.Stopwatch watch=new System.Diagnostics.Stopwatch();
+ double start,target; int duration; bool finalClose,immediate;
+ OverlayMotion(Form f){form=f;timer=new Timer();timer.Interval=15;timer.Tick+=Tick;form.Opacity=0;form.Shown+=Shown;form.FormClosing+=ClosingForm;form.Disposed+=Disposed;}
+ public static OverlayMotion Attach(Form f){return states.GetValue(f,x=>new OverlayMotion(x));}
+ public static void CloseImmediately(Form f){if(f==null||f.IsDisposed)return;OverlayMotion m;if(states.TryGetValue(f,out m)){m.immediate=true;m.Stop();}f.Close();}
+ void Shown(object s,EventArgs e){Start(1);}
+ void Start(double to){Stop();start=form.Opacity;target=to;duration=Math.Max(0,Math.Min(160,DurationMilliseconds));FrameCount=0;if(duration==0){Finish();return;}watch.Restart();ActiveTimerCount++;timer.Start();}
+ void Stop(){if(timer.Enabled){timer.Stop();ActiveTimerCount--;}watch.Stop();}
+ void Tick(object s,EventArgs e){if(form.IsDisposed){Stop();return;}FrameCount++;double t=Math.Min(1,watch.Elapsed.TotalMilliseconds/duration);double ease=t*t*(3-2*t);form.Opacity=start+(target-start)*ease;if(t>=1)Finish();}
+ void Finish(){Stop();if(form.IsDisposed)return;form.Opacity=target;if(Closing){finalClose=true;form.Close();}}
+ void ClosingForm(object s,FormClosingEventArgs e){
+  // Shutdown, Application.Exit and owner disposal must not wait for animation.
+  if(immediate||finalClose||!form.Visible||e.CloseReason!=CloseReason.UserClosing){Stop();return;}
+  e.Cancel=true;if(Closing)return;Closing=true;Start(0);
+ }
+ void Disposed(object s,EventArgs e){Stop();timer.Tick-=Tick;timer.Dispose();states.Remove(form);}
+}
+
 public static class ReplyGeometry {
  public static GraphicsPath Round(Rectangle r,int radius) { var p=new GraphicsPath();int d=radius*2;p.AddArc(r.X,r.Y,d,d,180,90);p.AddArc(r.Right-d,r.Y,d,d,270,90);p.AddArc(r.Right-d,r.Bottom-d,d,d,0,90);p.AddArc(r.X,r.Bottom-d,d,d,90,90);p.CloseFigure();return p; }
  [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr value);
@@ -30,7 +57,17 @@ public class ReplyCardButton : Button {
  public ReplyCardButton(){SetStyle(ControlStyles.UserPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.AllPaintingInWmPaint,true);}
  protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}
  protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
- protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;var c=BackColor;if(hover&&Enabled)c=ControlPaint.Dark(c,0.04f);using(var p=ReplyGeometry.Round(new Rectangle(0,0,Width-1,Height-1),9))using(var b=new SolidBrush(c)){e.Graphics.FillPath(b,p);}TextRenderer.DrawText(e.Graphics,Text,Font,ClientRectangle,Enabled?ForeColor:Color.FromArgb(125,139,130),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);if(Focused)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-10,Height-10));}
+ protected override void OnPaint(PaintEventArgs e){
+  e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;var c=BackColor;if(hover&&Enabled)c=ControlPaint.Dark(c,0.04f);
+  using(var p=ReplyGeometry.Round(new Rectangle(0,0,Width-1,Height-1),9))using(var b=new SolidBrush(c)){e.Graphics.FillPath(b,p);}
+  var r=new Rectangle(Padding.Left,Padding.Top,Math.Max(0,Width-Padding.Horizontal),Math.Max(0,Height-Padding.Vertical));
+  var flags=TextFormatFlags.WordBreak|TextFormatFlags.NoPrefix|TextFormatFlags.VerticalCenter;
+  if(TextAlign==ContentAlignment.MiddleLeft||TextAlign==ContentAlignment.TopLeft||TextAlign==ContentAlignment.BottomLeft)flags|=TextFormatFlags.Left;
+  else if(TextAlign==ContentAlignment.MiddleRight||TextAlign==ContentAlignment.TopRight||TextAlign==ContentAlignment.BottomRight)flags|=TextFormatFlags.Right;
+  else flags|=TextFormatFlags.HorizontalCenter;
+  TextRenderer.DrawText(e.Graphics,Text,Font,r,Enabled?ForeColor:Color.FromArgb(125,139,130),flags);
+  if(Focused)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(5,5,Width-10,Height-10));
+ }
 }
 public class ReplyReactionButton : Button {
  public string Symbol {get;set;}
@@ -66,11 +103,66 @@ function Start-FreeformPostitReply($state) {
  $info.Arguments='"'+(Join-Path $PSScriptRoot 'postit-reply.mjs')+'" --selection "'+$state.file+'" --cli "'+$state.transport.cli+'" --data-dir "'+$state.transport.data_dir+'"'
  $null=[Diagnostics.Process]::Start($info)
 }
+# Snapshot the explicit per-card destination and transport before any human action.
+function New-PostitCardTransport($Transport, $Mark) {
+ $destination=if($null -eq $Mark.destination){'principal'}else{"$($Mark.destination)"}
+ if($destination -notmatch '^(principal|fork:[2-8])$'){throw 'Destination post-it invalide'}
+ $id=if($Mark.question){"$($Mark.question.id)"}else{"$($Mark.reply_to)"}
+ $receipt=[ordered]@{schema='mind.postit.question.v1';question_id=$id;question="$($Mark.text)";destination=$destination;cli="$($Transport.cli)";data_dir="$($Transport.data_dir)";response_dir="$($Transport.response_dir)";source_json="$($Mark.source_json)"}
+ $hash=[Security.Cryptography.SHA256]::Create()
+ try{$key=([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($id)))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()}
+ [void][IO.Directory]::CreateDirectory($Transport.response_dir)
+ $file=Join-Path $Transport.response_dir ($key+'.question.json')
+ $receipt.received_at=[DateTime]::UtcNow.ToString('o')
+ $json=$receipt|ConvertTo-Json -Compress
+ try{
+  $stream=New-Object IO.FileStream $file,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
+  try{$bytes=[Text.Encoding]::UTF8.GetBytes($json);$stream.Write($bytes,0,$bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+ }catch{
+  $prior=Get-Content -Raw -Encoding UTF8 -LiteralPath $file|ConvertFrom-Json
+  foreach($field in @($receipt.Keys|Where-Object {$_ -ne 'received_at'})){if($prior.$field -cne $receipt[$field]){throw 'Question receipt conflict: destination or source changed'}}
+  $receipt.received_at=$prior.received_at
+ }
+ return [pscustomobject]@{cli=$Transport.cli;data_dir=$Transport.data_dir;response_dir=$Transport.response_dir;destination=$destination;source_receipt=[pscustomobject]$receipt;reply_file=(Join-Path $Transport.response_dir ($key+'.reply.json'))}
+}
+function Read-PostitReplySelection($Transport, $File) {
+ $saved=Get-Content -Raw -Encoding UTF8 -LiteralPath $File|ConvertFrom-Json
+ if($saved.schema -ne 'mind.postit.message.v1' -or $saved.destination -cne $Transport.destination -or $saved.reply_to -cne $Transport.source_receipt.question_id){throw 'Reply receipt conflict'}
+ foreach($field in @('schema','question_id','question','destination','cli','data_dir','response_dir','received_at','source_json')){if($saved.source_receipt.$field -cne $Transport.source_receipt.$field){throw 'Reply source changed'}}
+ return $saved
+}
+# An uncertain interaction keeps its immutable slot; a confirmed interaction opens
+# a deterministic successor slot. Merely opening/cancelling never writes a draft.
+function Resolve-PostitReplyInteractionTransport($Transport) {
+ if(-not $Transport.reply_file){return $Transport}
+ $copy=@{};foreach($property in $Transport.PSObject.Properties){$copy[$property.Name]=$property.Value}
+ $root=$Transport.reply_file;$file=$root;$visited=@{}
+ while(Test-Path -LiteralPath $file){
+  if($visited.ContainsKey($file)){throw 'Reply interaction cycle'};$visited[$file]=$true
+  $saved=Read-PostitReplySelection $Transport $file
+  $confirmed=$false
+  if(Test-Path -LiteralPath ($file+'.delivery.json')){
+   try{
+    $delivery=Get-Content -Raw -Encoding UTF8 -LiteralPath ($file+'.delivery.json')|ConvertFrom-Json
+    $confirmed=$delivery.schema -ceq 'mind.postit.delivery.v1' -and $delivery.status -ceq 'queued' -and $delivery.message_id -ceq $saved.message_id -and $delivery.destination -ceq $Transport.destination
+    foreach($field in @('schema','question_id','question','destination','cli','data_dir','response_dir','received_at','source_json')){
+     if($delivery.source_receipt.$field -cne $saved.source_receipt.$field){$confirmed=$false}
+    }
+   }catch{$confirmed=$false}
+  }
+  if(-not $confirmed){break}
+  $hash=[Security.Cryptography.SHA256]::Create()
+  try{$key=([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($saved.message_id)))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()}
+  $file=$root+'.after-'+$key+'.json'
+ }
+ $copy.reply_file=$file
+ return [pscustomobject]$copy
+}
 function Send-FreeformPostit($form, [bool]$Bumpe=$false) {
  $s=$form.Tag
  if ($s.pending) { return }
  if ($s.questionForm) { Send-QuestionOther $form; return }
- $text=$s.input.Text.Trim()
+ $text=if($s.selection){$s.selection.text}else{$s.input.Text.Trim()}
  if ($Bumpe) {
    $prompt=Join-Path $s.transport.data_dir 'workspace/artifacts/prompts/bump.md'
    if (-not (Test-Path -LiteralPath $prompt)) { $s.status.Text='Prompt Bumpe absent : aucun envoi.'; return }
@@ -78,19 +170,22 @@ function Send-FreeformPostit($form, [bool]$Bumpe=$false) {
    if ($text.Length -gt 3232) { $s.status.Text='Prompt Bumpe trop long : aucun envoi.'; return }
  }
  if (-not $text) { $s.input.Focus(); return }
- if ($s.replyTo) { $text="Reponse au post-it [$($s.replyTo)] :`n"+$text }
+ if ($s.replyTo -and -not $s.selection) { $text="Reponse au post-it [$($s.replyTo)] :`n"+$text }
  if ($text.Length -gt 4000) { $s.status.Text='Message trop long (4000 caracteres maximum).'; return }
  if (-not $s.file) {
    $id=if ($Bumpe) {'ui-bumpe-'+[Guid]::NewGuid().ToString()} else {'postit:'+([Guid]::NewGuid().ToString('N')+[Guid]::NewGuid().ToString('N'))}
-   $s.file=Join-Path $s.transport.response_dir (($id -replace ':','-')+'.json')
-   $s.selection=[ordered]@{schema='mind.postit.message.v1';message_id=$id;text=$text;capture=[bool]$s.point;point=$s.point;reply_to=$s.replyTo;clicked_at=[DateTime]::UtcNow.ToString('o')}
+   $s.file=if($s.transport.reply_file){$s.transport.reply_file}else{Join-Path $s.transport.response_dir (($id -replace ':','-')+'.json')}
+   $s.selection=[ordered]@{schema='mind.postit.message.v1';message_id=$id;text=$text;capture=[bool]$s.point;point=$s.point;reply_to=$s.replyTo;destination=$(if($s.transport.destination){$s.transport.destination}else{'principal'});source_receipt=$s.transport.source_receipt;clicked_at=[DateTime]::UtcNow.ToString('o')}
  }
  try {
    [void][IO.Directory]::CreateDirectory($s.transport.response_dir)
    if (-not (Test-Path -LiteralPath $s.file)) {
+    try {
     $stream=New-Object IO.FileStream $s.file,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
-    try { $bytes=[Text.Encoding]::UTF8.GetBytes(($s.selection | ConvertTo-Json -Compress -Depth 8)); $stream.Write($bytes,0,$bytes.Length) } finally {$stream.Dispose()}
+    try { $bytes=[Text.Encoding]::UTF8.GetBytes(($s.selection | ConvertTo-Json -Compress -Depth 8)); $stream.Write($bytes,0,$bytes.Length);$stream.Flush($true) } finally {$stream.Dispose()}
+    } catch {if(-not $s.transport.reply_file){throw}}
    }
+   if($s.transport.reply_file){$s.selection=Read-PostitReplySelection $s.transport $s.file}
    Start-FreeformPostitReply $s
    $s.pending=$true
    $form.Close()
@@ -98,11 +193,13 @@ function Send-FreeformPostit($form, [bool]$Bumpe=$false) {
  } catch { $s.status.ForeColor=[Drawing.Color]::FromArgb(162,60,44); $s.status.Text='Envoi non confirmé. Ton message est conservé ; réessaie.' }
 }
 function New-ReplyPostit($Transport, [string]$ReplyTo='', $Point=$null, $ParentNote=$null) {
+ $Transport=Resolve-PostitReplyInteractionTransport $Transport
  foreach ($p in @($Transport.cli,$Transport.data_dir,$Transport.response_dir)) {
   if (-not [IO.Path]::IsPathRooted($p) -or "$p".Contains('"')) { throw 'Transport absolu explicite requis' }
  }
  if ($ReplyTo -and $ReplyTo -notmatch '^[A-Za-z0-9_.:-]{1,120}$') { throw 'reply_to invalide' }
  $form=New-Object ReplyPostitForm
+ [void][OverlayMotion]::Attach($form)
  $form.Text='Écrire à Marco'; $form.FormBorderStyle='None'; $form.TopMost=$true
  $form.ShowInTaskbar=$false; $form.StartPosition='Manual'; $form.ClientSize=New-Object Drawing.Size 460,326
  $form.AutoScaleMode=[Windows.Forms.AutoScaleMode]::Dpi
@@ -144,6 +241,15 @@ function New-ReplyPostit($Transport, [string]$ReplyTo='', $Point=$null, $ParentN
  $send.Tag=$form; $send.Add_Click({param($s,$e) Send-FreeformPostit $s.Tag})
  $close.Tag=$form; $close.Add_Click({param($s,$e) $s.Tag.Close()})
  $input.Tag=$form; $input.Add_KeyDown({param($s,$e) if($e.KeyCode -eq 'Enter' -and -not $e.Shift) {$e.SuppressKeyPress=$true; Send-FreeformPostit $s.Tag}})
+ if($Transport.reply_file -and (Test-Path -LiteralPath $Transport.reply_file)){
+  $form.Tag.selection=Read-PostitReplySelection $Transport $Transport.reply_file
+  $form.Tag.file=$Transport.reply_file;$input.Text=$form.Tag.selection.text;$input.ReadOnly=$true;$send.Text='Réessayer';$send.Enabled=$true
+  $status.Text='Réponse conservée pour '+$Transport.destination+'. Réessayer garde le même identifiant.'
+  if(Test-Path -LiteralPath ($Transport.reply_file+'.delivery.json')){
+   $delivery=Get-Content -Raw -Encoding UTF8 -LiteralPath ($Transport.reply_file+'.delivery.json')|ConvertFrom-Json
+   if($delivery.status -eq 'failed'){$status.Text=$delivery.detail}
+  }
+ }
  $form.Add_FormClosed({param($s,$e) $s.Tag.tips.Dispose()})
  if ($Point) {
   $bump=New-Object ReplyCardButton; $bump.Text='Bumpe'; $bump.Bounds=New-Object Drawing.Rectangle 20,221,100,36; $bump.TabIndex=2; $bump.UseVisualStyleBackColor=$false; $bump.FlatStyle='Flat'; $bump.FlatAppearance.BorderColor=$border; $bump.BackColor=[Drawing.Color]::FromArgb(232,240,233); $bump.ForeColor=$green; $bump.Cursor=[Windows.Forms.Cursors]::Hand
