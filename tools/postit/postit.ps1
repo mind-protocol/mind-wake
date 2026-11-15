@@ -103,18 +103,26 @@ $f.Add_Shown({ param($s,$e) $h=$s.Handle; $ex=[PostitW]::GetWindowLong($h,-20)
   [void][PostitW]::SetWindowLong($h,-20,$ex -bor 0x80000 -bor 0x20 -bor 0x08000000 -bor 0x80) })
 # Chaque repère possède sa fenêtre : seuls ses pixels peints interceptent la souris.
 function New-Annotation($k, $rx, $ry, $rw, $rh) {
+  $k=Resolve-PostitActionMark $k
   $af = New-Object PostitForm
+  [void][OverlayMotion]::Attach($af)
   $af.FormBorderStyle='None'; $af.TopMost=$true; $af.ShowInTaskbar=$false; $af.StartPosition='Manual'
   $af.BackColor=[System.Drawing.Color]::Magenta; $af.TransparencyKey=$af.BackColor
-  $color = if ($k.kind -eq 'text') { [System.Drawing.Color]::DarkOrange } else { [System.Drawing.Color]::Firebrick }
+  $color = if ($k.kind -eq 'text') { [System.Drawing.Color]::FromArgb(163,101,32) } else { [System.Drawing.Color]::FromArgb(33,102,77) }
   $label = if ($k.note) { "agent : $($k.note)" } else { '' }
   $font = New-Object System.Drawing.Font 'Segoe UI',11,([System.Drawing.FontStyle]::Bold)
   $size = [System.Windows.Forms.TextRenderer]::MeasureText($label,$font)
   $af.Bounds = New-Object System.Drawing.Rectangle ($scr.X+$rx-6),($scr.Y+$ry-6),([Math]::Max($rw+14,$size.Width+12)),($rh+24+$size.Height)
   $af.Tag = @{ W=$rw; H=$rh; color=$color; label=$label; font=$font; kind=$k.kind }
+  if($k.reply_to -and $m.reply_transport){
+    # Controls live below the caption, never inside the transparent frame.
+    $top=$rh+24+$size.Height
+    $af.Width=[Math]::Max($af.Width,250);$af.Height=$top+38
+    Add-ConversationControls $af $k $top
+  }
   $af.Cursor=[System.Windows.Forms.Cursors]::SizeAll
   $af.Add_Paint({ param($s,$e) $d=$s.Tag; $g=$e.Graphics
-    $pen=New-Object System.Drawing.Pen $d.color,4
+    $pen=New-Object System.Drawing.Pen $d.color,3
     $brush=New-Object System.Drawing.SolidBrush $d.color
     try {
       $g.DrawRectangle($pen,6,6,$d.W,$d.H)
@@ -127,7 +135,7 @@ function New-Annotation($k, $rx, $ry, $rw, $rh) {
 }
 
 # --- Post-its : une petite fenêtre par sticky. Données par fenêtre dans $form.Tag (pas de closures). ---
-$PAL = @{ jaune='255,236,120'; rose='255,182,213'; bleu='170,215,255'; vert='185,240,170'; orange='255,200,130'; violet='215,190,255' }
+$PAL = @{ jaune='250,247,228'; rose='249,237,241'; bleu='234,242,250'; vert='234,245,237'; orange='251,240,226'; violet='242,237,249' }
 function Get-StickyColor($c) {
   if ($c -and "$c" -match '^#[0-9a-fA-F]{6}$') { return [System.Drawing.ColorTranslator]::FromHtml($c) }
   $v = $(if ($c -and $PAL.ContainsKey("$c")) { $PAL["$c"] } else { $PAL.jaune }) -split ','
@@ -144,9 +152,10 @@ $fontX = New-Object System.Drawing.Font 'Segoe UI Symbol',12,([System.Drawing.Fo
 $fontF = New-Object System.Drawing.Font 'Segoe UI',9,([System.Drawing.FontStyle]::Italic)
 
 function New-Sticky($k) {
+  $k=Resolve-PostitActionMark $k
   $W = [int]($(if ($k.w) { [double]$k.w } else { 300 }) * $sx)
-  $shape = if ($k.shape -in 'note','arrondi','bulle') { "$($k.shape)" } else { 'note' }
-  $pad = 14; $close = 30; $tail = if ($shape -eq 'bulle') { 22 } else { 0 }
+  $shape = if ($k.shape -in 'note','arrondi','bulle') { "$($k.shape)" } else { 'arrondi' }
+  $pad = 16; $close = 30; $tail = if ($shape -eq 'bulle') { 22 } else { 0 }
   $lines = New-Object System.Collections.ArrayList; $H = $pad
   foreach ($l in ("$($k.text)" -replace "`r",'' -split "`n")) {
     $font = $fontN; $t = $l
@@ -182,6 +191,7 @@ function New-Sticky($k) {
     $H += 40
   }
   $sf = New-Object PostitForm
+  [void][OverlayMotion]::Attach($sf)
   $sf.FormBorderStyle='None'; $sf.TopMost=$true; $sf.ShowInTaskbar=$false; $sf.StartPosition='Manual'
   $sf.Bounds = New-Object System.Drawing.Rectangle ([int]($scr.X+$k.x*$sx)),([int]($scr.Y+$k.y*$sy)),($W+6),($H+6+$tail)
   $sf.BackColor=[System.Drawing.Color]::Magenta; $sf.TransparencyKey=$sf.BackColor
@@ -193,16 +203,21 @@ function New-Sticky($k) {
     [void][PostitW]::SetWindowLong($h,-20,$ex -bor 0x08000000 -bor 0x80) })
   $sf.Add_Paint({ param($s,$e) try { $d=$s.Tag; $g=$e.Graphics; $g.SmoothingMode='AntiAlias'
     $W=$d.W; $H=$d.H
-    $shadow = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255,90,90,90))
     $fill = New-Object System.Drawing.SolidBrush $d.bg
-    if ($d.shape -eq 'note') { $g.FillRectangle($shadow,5,5,$W,$H); $g.FillRectangle($fill,0,0,$W,$H) }
-    else {
-      $g.FillPath($shadow,(New-RoundPath 4 4 $W $H 16)); $g.FillPath($fill,(New-RoundPath 0 0 $W $H 16))
+    $border = New-Object System.Drawing.Pen ([Drawing.Color]::FromArgb(183,199,189)),1
+    $accent = New-Object System.Drawing.SolidBrush ([Drawing.Color]::FromArgb(33,102,77))
+    $path=$null
+    try {
+      if ($d.shape -eq 'note') { $g.FillRectangle($fill,0,0,$W,$H); $g.DrawRectangle($border,0,0,($W-1),($H-1)) }
+      else { $path=New-RoundPath 0 0 ($W-1) ($H-1) 12; $g.FillPath($fill,$path); $g.DrawPath($border,$path) }
+      $g.FillRectangle($accent,0,18,3,18)
       if ($d.shape -eq 'bulle') {
-        $pts = [System.Drawing.Point[]]@((New-Object System.Drawing.Point 28,($H-3)),(New-Object System.Drawing.Point 64,($H-3)),(New-Object System.Drawing.Point 18,($H+$d.tail)))
-        $g.FillPolygon($fill,$pts) } }
+        $pts=[Drawing.Point[]]@((New-Object Drawing.Point 28,($H-3)),(New-Object Drawing.Point 56,($H-3)),(New-Object Drawing.Point 22,($H+$d.tail-1)))
+        $g.FillPolygon($fill,$pts)
+      }
+    } finally { if($path){$path.Dispose()}; $fill.Dispose(); $border.Dispose(); $accent.Dispose() }
     foreach ($L in $d.lines) {
-      [System.Windows.Forms.TextRenderer]::DrawText($g, $L[0], $L[1], (New-Object System.Drawing.Rectangle $d.pad,$L[2],$L[3],($L[4]+4)), [System.Drawing.Color]::Black, $d.bg, $TF) }
+      [System.Windows.Forms.TextRenderer]::DrawText($g, $L[0], $L[1], (New-Object System.Drawing.Rectangle $d.pad,$L[2],$L[3],($L[4]+4)), [System.Drawing.Color]::FromArgb(34,49,47), $d.bg, $TF) }
     [System.Windows.Forms.TextRenderer]::DrawText($g, [string][char]0x2715, $fontX, (New-Object System.Drawing.Point ($W-26),6), [System.Drawing.Color]::DimGray, $d.bg)
     [System.Windows.Forms.TextRenderer]::DrawText($g, "— agent · s'efface seul", $fontF, (New-Object System.Drawing.Point $d.pad,($H-22)), [System.Drawing.Color]::DimGray, $d.bg) } catch { Write-Log "erreur dessin post-it: $_" } })
   $sf.Add_MouseMove({ param($s,$e) $d=$s.Tag
@@ -212,22 +227,38 @@ function New-Sticky($k) {
   $sf }
 
 # Buttons are child controls: their clicks never start a drag or dismiss the note.
+function Resolve-PostitActionMark($mark) {
+  if(-not $m.reply_transport){return $mark}
+  $copy=[ordered]@{};foreach($property in $mark.PSObject.Properties){$copy[$property.Name]=$property.Value}
+  $copy.source_json=$mark|ConvertTo-Json -Compress -Depth 12
+  if(-not $copy.reply_to){
+    if($mark.question){$copy.reply_to="$($mark.question.id)"}
+    else{
+      # Reference generation is independent from routing; destination remains explicit.
+      $identity="$Marks`n$($copy.source_json)"
+      $hash=[Security.Cryptography.SHA256]::Create()
+      try{$copy.reply_to='overlay-'+([BitConverter]::ToString($hash.ComputeHash([Text.Encoding]::UTF8.GetBytes($identity)))).Replace('-','').ToLowerInvariant()}finally{$hash.Dispose()}
+    }
+  }
+  if(-not $copy.text){$copy.text=if($mark.note){"$($mark.note)"}else{"$($mark.find)"}}
+  return [pscustomobject]$copy
+}
 function Add-ConversationControls($form, $mark, $top) {
-  $reply=New-Object Windows.Forms.Button; $reply.Text='Répondre'; $reply.TabStop=$false
+  $reply=New-Object ReplyCardButton; $reply.Text='Répondre'; $reply.TabStop=$false
   $reply.Bounds=New-Object Drawing.Rectangle 14,$top,110,32; $reply.BackColor=[Drawing.Color]::White
-  $reply.Tag=@{form=$form;id="$($mark.reply_to)";transport=$m.reply_transport}
+  $reply.Tag=@{form=$form;id="$($mark.reply_to)";transport=(New-PostitCardTransport $m.reply_transport $mark)}
   $reply.Add_Click({param($s,$e)
     $d=$s.Tag
     if ($d.form.Tag.editor -and -not $d.form.Tag.editor.IsDisposed) { return }
     $d.form.Tag.editor=New-ReplyPostit $d.transport $d.id $null $d.form
     $d.form.Tag.editor.Show()
   })
-  $emote=New-Object Windows.Forms.Button; $emote.Text='Réagir'; $emote.TabStop=$false
+  $emote=New-Object ReplyCardButton; $emote.Text='Réagir'; $emote.TabStop=$false
   $emote.Bounds=New-Object Drawing.Rectangle 132,$top,100,32; $emote.BackColor=[Drawing.Color]::White
   foreach($action in @($reply,$emote)) {
-    $action.UseVisualStyleBackColor=$false; $action.FlatStyle='Flat'; $action.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185)
+    $action.UseVisualStyleBackColor=$false; $action.FlatStyle='Flat'; $action.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(196,211,202)
     $action.ForeColor=[Drawing.Color]::FromArgb(33,102,77); $action.Cursor=[Windows.Forms.Cursors]::Hand
-    $action.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(232,240,233)
+    $action.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(225,238,230)
   }
   $emote.Tag=$reply.Tag
   $emote.Add_Click({param($s,$e)
@@ -239,7 +270,13 @@ function Add-ConversationControls($form, $mark, $top) {
   $form.Controls.AddRange(@($reply,$emote)); $form.Tag.replyButton=$reply; $form.Tag.emoteButton=$emote
 }
 function New-PostitReactionPicker($route) {
+  $transport=Resolve-PostitReplyInteractionTransport $route.transport
+  # A pending saved response is a retry, never a newly chosen reaction.
+  if($transport.reply_file -and (Test-Path -LiteralPath $transport.reply_file)){
+    return (New-ReplyPostit $transport $route.id $null $route.form)
+  }
   $picker=New-Object ReplyPostitForm
+  [void][OverlayMotion]::Attach($picker)
   $picker.Text='Réagir au message de Marco'; $picker.FormBorderStyle='None'; $picker.TopMost=$true
   $picker.ShowInTaskbar=$false; $picker.StartPosition='Manual'; $picker.AutoScaleMode='Dpi'
   $picker.ClientSize=New-Object Drawing.Size 360,480
@@ -288,19 +325,19 @@ function Add-QuestionControls($form, $mark, $options, $top) {
   finally { $hash.Dispose() }
   [void][IO.Directory]::CreateDirectory($m.reply_transport.response_dir)
   $d.selectionFile = Join-Path $m.reply_transport.response_dir ($key + '.json')
-  $d.question = $mark.question; $d.questionText = "$($mark.text)"; $d.buttons = @(); $d.transport = $m.reply_transport
+  $d.question = $mark.question; $d.questionText = "$($mark.text)"; $d.buttons = @(); $d.transport = New-PostitCardTransport $m.reply_transport $mark
   $d.selection = $null; $d.process = $null
   if (Test-Path -LiteralPath $d.selectionFile) {
     $d.selection = Get-Content -Raw -Encoding UTF8 -LiteralPath $d.selectionFile | ConvertFrom-Json
-    if ($d.selection.question_id -ne $mark.question.id -or $d.selection.question -ne $d.questionText) { throw 'question.id déjà utilisé pour une autre question' }
+    if ($d.selection.question_id -ne $mark.question.id -or $d.selection.question -ne $d.questionText -or $(if($null -eq $d.selection.destination){'principal'}else{$d.selection.destination}) -cne $d.transport.destination) { throw 'question.id déjà utilisé pour une autre question' }
   }
   foreach ($option in $options) {
-    $button = New-Object System.Windows.Forms.Button
+    $button = New-Object ReplyCardButton
     $button.Text = "$($option.label)"; $button.Font = $fontN
     $button.BackColor = [Drawing.Color]::White; $button.ForeColor = [Drawing.Color]::Black
     $button.UseVisualStyleBackColor = $false; $button.FlatStyle = 'Flat'
-    $button.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185)
-    $button.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(232,240,233)
+    $button.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(196,211,202)
+    $button.FlatAppearance.MouseOverBackColor=[Drawing.Color]::FromArgb(225,238,230)
     $button.Cursor=[Windows.Forms.Cursors]::Hand; $button.AutoEllipsis=$true
     $button.TextAlign='MiddleLeft'; $button.Padding=New-Object Windows.Forms.Padding 10,0,10,0
     $button.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),34
@@ -311,9 +348,9 @@ function Add-QuestionControls($form, $mark, $options, $top) {
     $form.Controls.Add($button); $d.buttons += $button; $top += 38
   }
   if($mark.question.allow_other -ne $false) {
-    $other=New-Object Windows.Forms.Button; $other.Text='Autre…'; $other.AccessibleName='Autre réponse'; $other.Font=$fontN
+    $other=New-Object ReplyCardButton; $other.Text='Autre…'; $other.AccessibleName='Autre réponse'; $other.Font=$fontN
     $other.BackColor=[Drawing.Color]::White; $other.ForeColor=[Drawing.Color]::Black; $other.UseVisualStyleBackColor=$false; $other.FlatStyle='Flat'
-    $other.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(180,198,185); $other.Cursor=[Windows.Forms.Cursors]::Hand; $other.TextAlign='MiddleLeft'; $other.Padding=New-Object Windows.Forms.Padding 10,0,10,0
+    $other.FlatAppearance.BorderColor=[Drawing.Color]::FromArgb(196,211,202); $other.Cursor=[Windows.Forms.Cursors]::Hand; $other.TextAlign='MiddleLeft'; $other.Padding=New-Object Windows.Forms.Padding 10,0,10,0
     $other.Bounds=New-Object Drawing.Rectangle 14,$top,($d.W-28),34; $other.Tag=$form; $other.TabStop=$false
     $other.Add_Click({param($s,$e) Open-QuestionOtherEditor $s.Tag})
     $d.otherButton=$other; $d.buttons+=$other; $form.Controls.Add($other); $top+=38
@@ -321,7 +358,7 @@ function Add-QuestionControls($form, $mark, $options, $top) {
   $status = New-Object System.Windows.Forms.Label; $status.Font = $fontF
   $status.Bounds = New-Object Drawing.Rectangle 14,$top,($d.W-28),28
   $status.Text = 'Clique pour répondre à Marco.'; $status.BackColor = $d.bg; $d.status=$status; $form.Controls.Add($status)
-  $retry = New-Object System.Windows.Forms.Button; $retry.Text = "Réessayer l'envoi"; $retry.TabStop=$false
+  $retry = New-Object ReplyCardButton; $retry.Text = "Réessayer l'envoi"; $retry.TabStop=$false
   $retry.BackColor = [Drawing.Color]::White; $retry.ForeColor = [Drawing.Color]::Black
   $retry.UseVisualStyleBackColor = $false; $retry.FlatStyle = 'Flat'
   $retry.Bounds = New-Object Drawing.Rectangle 14,($top+28),($d.W-28),28
@@ -330,18 +367,22 @@ function Add-QuestionControls($form, $mark, $options, $top) {
   if ($d.selection) {
     foreach ($b in $d.buttons) { $b.Enabled = $false }
     $status.Text = 'Choix conservé : ' + $d.selection.option; $retry.Visible = $true
+    if(Test-Path -LiteralPath ($d.selectionFile+'.delivery.json')){
+      $delivery=Get-Content -Raw -Encoding UTF8 -LiteralPath ($d.selectionFile+'.delivery.json')|ConvertFrom-Json
+      if($delivery.status -eq 'failed'){$status.Text=$delivery.detail}
+    }
   }
 }
 function Send-QuestionChoice($form, [string]$OptionId, [string]$OptionText, $Editor=$null) {
   $state=$form.Tag
   if($state.selection){return}
-  $state.selection=[pscustomobject]@{schema='mind.postit.selection.v1';question_id="$($state.question.id)";question=$state.questionText;option_id=$OptionId;option=$OptionText;message_id=('postit:'+[IO.Path]::GetFileNameWithoutExtension($state.selectionFile));clicked_at=[DateTime]::UtcNow.ToString('o')}
+  $state.selection=[pscustomobject]@{schema='mind.postit.selection.v1';question_id="$($state.question.id)";question=$state.questionText;option_id=$OptionId;option=$OptionText;destination=$state.transport.destination;source_receipt=$state.transport.source_receipt;message_id=('postit:'+[IO.Path]::GetFileNameWithoutExtension($state.selectionFile));clicked_at=[DateTime]::UtcNow.ToString('o')}
   try {
     # The same CreateNew slot arbitrates fixed options and free text.
     $stream=New-Object IO.FileStream $state.selectionFile,([IO.FileMode]::CreateNew),([IO.FileAccess]::Write),([IO.FileShare]::None)
-    try{$bytes=[Text.Encoding]::UTF8.GetBytes(($state.selection|ConvertTo-Json -Compress));$stream.Write($bytes,0,$bytes.Length)}finally{$stream.Dispose()}
+    try{$bytes=[Text.Encoding]::UTF8.GetBytes(($state.selection|ConvertTo-Json -Compress -Depth 8));$stream.Write($bytes,0,$bytes.Length)}finally{$stream.Dispose()}
   } catch {
-    try{$state.selection=Get-Content -Raw -Encoding UTF8 -LiteralPath $state.selectionFile|ConvertFrom-Json;if($state.selection.question_id -ne $state.question.id -or $state.selection.question -ne $state.questionText){throw 'Question identity mismatch'}}
+    try{$state.selection=Get-Content -Raw -Encoding UTF8 -LiteralPath $state.selectionFile|ConvertFrom-Json;if($state.selection.question_id -ne $state.question.id -or $state.selection.question -ne $state.questionText -or $(if($null -eq $state.selection.destination){'principal'}else{$state.selection.destination}) -cne $state.transport.destination){throw 'Question identity mismatch'}}
     catch{$state.selection=$null;$state.status.Text='Sauvegarde impossible. Réessaie.';if($Editor){$Editor.Tag.status.Text=$state.status.Text};return}
   }
   foreach($button in $state.buttons){$button.Enabled=$false}
@@ -415,8 +456,8 @@ $r.Add_Tick({ $el = $sw.Elapsed.TotalSeconds
         $d=$st.form.Tag
         try {
           $receipt=Get-Content -Raw -Encoding UTF8 -LiteralPath ($d.selectionFile+'.delivery.json') | ConvertFrom-Json
-          if ($receipt.status -eq 'queued' -and $receipt.message_id -eq $d.selection.message_id) { $d.status.Text='Transmis à Marco : ' + $d.selection.option; $d.retry.Visible=$false }
-          else { $d.status.Text='Conservé localement ; envoi non confirmé.'; $d.retry.Visible=$true }
+          if ($receipt.status -eq 'queued' -and $receipt.message_id -eq $d.selection.message_id) { $d.status.Text='Transmis (' + $d.transport.destination + ') : ' + $d.selection.option; $d.retry.Visible=$false }
+          else { $d.status.Text=if($receipt.detail){$receipt.detail}else{'Conservé localement ; envoi non confirmé.'}; $d.retry.Visible=$true }
         } catch { $d.status.Text='Conservé localement ; envoi non confirmé.'; $d.retry.Visible=$true }
         $d.process.Dispose(); $d.process=$null
       }

@@ -159,6 +159,19 @@
             "type": "string",
             "pattern": "^[A-Za-z0-9_.:-]{1,120}$",
             "description": "Explicit source message ID. Adds Repondre and Emote; no capture. Unique existing message or stable note ID."
+          },
+          "destination": {
+            "enum": [
+              "principal",
+              "fork:2",
+              "fork:3",
+              "fork:4",
+              "fork:5",
+              "fork:6",
+              "fork:7",
+              "fork:8"
+            ],
+            "description": "Stable card destination; absent means principal. Never derived from title, ID or active tab."
           }
         },
         "allOf": [
