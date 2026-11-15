@@ -1,5 +1,6 @@
 import path from "node:path";
 import os from "node:os";
+import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { ProcessTreeSupervisor } from "../runner/process-tree.js";
@@ -12,6 +13,20 @@ export class GitCommandError extends Error {
     super(
       `Git ${operation} failed${transient ? " (temporary network failure; retry in one minute)" : "; inspect the repository locally"}.`,
     );
+  }
+}
+/** Remove only a newly-created lock after the supervised process is confirmed dead. */
+export function cleanupKilledGitIndexLock(
+  indexLock: string,
+  existedBefore: boolean,
+  killedBySupervisor: boolean,
+  processExited: boolean,
+): void {
+  if (existedBefore || !killedBySupervisor || !processExited) return;
+  try {
+    fs.unlinkSync(indexLock);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
 }
 /** No shell. Errors deliberately omit raw Git output, URLs and credentials. */
@@ -59,12 +74,18 @@ export async function git(
     },
   });
   const cancellation = new AbortController();
+  const indexLock = path.join(cwd, ".git", "index.lock");
+  const hadIndexLock = fs.existsSync(indexLock);
+  let killedBySupervisor = false;
   const stop = () => {
     cancellation.abort();
+    killedBySupervisor = true;
     void child.terminateTree();
   };
   signal?.addEventListener("abort", stop, { once: true });
-  const timer = setTimeout(stop, 30_000);
+  const operation = args[0] ?? "operation";
+  const timeoutMs = operation === "add" || operation === "commit" ? 5 * 60_000 : 30_000;
+  const timer = setTimeout(stop, timeoutMs);
   try {
     await child.started();
     const line = await child.readLine();
@@ -85,5 +106,8 @@ export async function git(
     clearTimeout(timer);
     signal?.removeEventListener("abort", stop);
     if (!child.hasExited) await child.terminateTree();
+    // Only remove a lock this invocation could have created, and only after its
+    // process tree has exited. Never clear a pre-existing owner's lock.
+    cleanupKilledGitIndexLock(indexLock, hadIndexLock, killedBySupervisor, child.hasExited);
   }
 }
