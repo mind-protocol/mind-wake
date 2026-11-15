@@ -11,6 +11,10 @@ import { workspaceSync } from "./commands/workspace-sync.js";
 import { wakeOrder } from "./commands/wake-order.js";
 import { wakePassages } from "./commands/wake-passages.js";
 import { secondThread } from "./commands/second-thread.js";
+import { mainThread } from "./commands/main-thread.js";
+import { fastReply } from "./commands/fast-reply.js";
+import { elevenlabs } from "./commands/elevenlabs.js";
+import { patternHolders } from "./commands/pattern-holders.js";
 import { forks } from "./commands/forks.js";
 import { coach } from "./commands/coach.js";
 import { doctor } from "./commands/doctor.js";
@@ -55,6 +59,19 @@ Commandes :
                 Forks Codex 2 à 8 ; on/off/send lisent un objet JSON {id,text?} sur stdin
   wake-order    Réordonne les blocs futurs (JSON sur l’entrée standard)
   wake-passages Importe/valide les passages ou prépare un passage (JSON explicite)
+  elevenlabs status|enable
+                Voix ElevenLabs : état du disjoncteur crédits ; enable réactive
+                (action humaine), sans appel de test
+  fast-reply status|on|off
+                Réponse rapide sans outils à chaque message humain (défaut off),
+                injectée ensuite dans la session principale
+  pattern-holders status|on|off|check|try
+                Accords portés par des conversations-semence qui se réveillent quand
+                le fil touche leur domaine (défaut off) ; try --slug S --since ISO
+                essaie sans publier
+  main-thread status|on|off
+                Fil principal On/Off (défaut On) : Off empêche les prochains réveils
+                de l'agent principal sans toucher aux forks, au second fil ni à la pause
   second-thread status|on|off|send|run
                 Second fil Claude Code (défaut off) : fil séparé, autre ordre de projets ;
                 send lit le message sur l’entrée standard
@@ -145,14 +162,18 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         "wake-screenshot": { type: "string" },
         "exit-after-sessions": { type: "string" },
         "idempotency-key": { type: "string" },
+        "message-id": { type: "string" },
+        slug: { type: "string" },
+        since: { type: "string" },
         "capture-screen": { type: "boolean" },
+        "voice-screen-refs": { type: "string" },
         workspace: { type: "string" },
         "github-url": { type: "string" },
         enabled: { type: "string" },
       },
     });
     const [first, second, ...rest] = positionals;
-    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync" || first === "second-thread" || first === "forks" || first === "coach") && second !== undefined;
+    const grouped = (first === "policy" || first === "daemon" || first === "workspace-sync" || first === "second-thread" || first === "main-thread" || first === "fast-reply" || first === "elevenlabs" || first === "pattern-holders" || first === "forks" || first === "coach") && second !== undefined;
     command = grouped ? `${first} ${second}` : (first ?? "help");
     const args = grouped ? rest : positionals.slice(1);
     // Seuls `export` et `policy configure` prennent un argument positionnel.
@@ -190,7 +211,31 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "forks off":
       case "forks send":
       case "forks run":
+      case "forks assign":
+      case "forks unassign":
         result = await forks(ctx, dataDir, second ?? "status");
+        break;
+      case "elevenlabs status":
+      case "elevenlabs enable":
+        result = elevenlabs(dataDir, second);
+        break;
+      case "fast-reply status":
+      case "fast-reply on":
+      case "fast-reply off":
+      case "fast-reply run":
+        result = await fastReply(ctx, dataDir, second, values["message-id"]);
+        break;
+      case "pattern-holders status":
+      case "pattern-holders on":
+      case "pattern-holders off":
+      case "pattern-holders check":
+      case "pattern-holders try":
+        result = await patternHolders(ctx, dataDir, second, values.slug, values.since);
+        break;
+      case "main-thread status":
+      case "main-thread on":
+      case "main-thread off":
+        result = mainThread(ctx, dataDir, second) as CommandResult<unknown>;
         break;
       case "second-thread status":
       case "second-thread on":
@@ -275,7 +320,8 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         break;
       }
       case "reply":
-        result = (await reply(ctx, dataDir, values["idempotency-key"], values["capture-screen"] === true)) as CommandResult<unknown>;
+        result = (await reply(ctx, dataDir, values["idempotency-key"], values["capture-screen"] === true,
+          undefined, false, values["voice-screen-refs"])) as CommandResult<unknown>;
         break;
       case "policy configure":
         result = policyConfigure(ctx, dataDir, argument ?? "") as CommandResult<unknown>;
@@ -363,7 +409,11 @@ const COMMAND_OPTIONS: Readonly<Record<string, readonly string[]>> = {
   "wake-screenshot": ["daemon run"],
   "exit-after-sessions": ["daemon run"],
   "idempotency-key": ["reply", "broadcast-send"],
+  "message-id": ["fast-reply run"],
+  slug: ["pattern-holders try"],
+  since: ["pattern-holders try"],
   "capture-screen": ["reply"],
+  "voice-screen-refs": ["reply"],
 };
 
 function rejectOptions(command: string, values: Readonly<Record<string, unknown>>): void {

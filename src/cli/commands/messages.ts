@@ -29,11 +29,13 @@ import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import { EXIT_FAILURE, EXIT_OK, EXIT_USAGE, type CommandResult } from "../output.js";
 import type { DataDir } from "../paths.js";
 import { NO_PROFILE_HINT, withReadStore } from "./read.js";
+import { startFastReply } from "./fast-reply.js";
 import { captureClickPoint, captureWakeScreenshot } from "../../daemon/wake-screenshot.js";
 import { freshTargetedClick, pointReplyText } from "../point-context.js";
 import { freshWakeImage } from "../../adapters/wake-image.js";
 import { latestDaemonRun } from "../../daemon/runs.js";
 import { ownerAttachmentRuntimeMatches } from "../../communication/owner-attachment-runtime.js";
+import { readVoiceScreenPayloads, voiceScreenReferences } from "../../communication/voice-screen-images.js";
 
 export const AGENT_NOTE_FILE = "questions-for-human.md";
 export const HUMAN_LOG_FILE = "human-messages.jsonl";
@@ -201,7 +203,7 @@ export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<Messa
   });
   return {
     exitCode: EXIT_OK,
-    data: { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)), publicActivity: readPublicActivity(dataDir.path), agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
+    data: { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)).filter(message=>managed===null||message.source.originKind!=="context_copy"), publicActivity: managed===null ? readPublicActivity(dataDir.path) : [], agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
     human: formatMessages,
   };
 }
@@ -221,6 +223,7 @@ export async function reply(
   captureScreen = false,
   capture: typeof captureWakeScreenshot = captureWakeScreenshot,
   preserveText = false,
+  rawVoiceScreenRefs?: string,
 ): Promise<CommandResult<ReplyData>> {
   if (!profileExists(ctx, dataDir)) return refused(NO_PROFILE_HINT);
   if (idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(idempotencyKey)) {
@@ -236,6 +239,13 @@ export async function reply(
   if (text.length > MAX_REPLY_CHARS) {
     return refused(`texte trop long (${String(MAX_REPLY_CHARS)} caractères au plus)`, EXIT_USAGE);
   }
+  let voiceScreenRefs: string[];
+  try {
+    voiceScreenRefs = voiceScreenReferences(rawVoiceScreenRefs === undefined ? undefined : JSON.parse(rawVoiceScreenRefs));
+  } catch {
+    return refused("Références des planches écran invalides.", EXIT_USAGE);
+  }
+  if (voiceScreenRefs.length && captureScreen) return refused("Choisir un seul type de capture.", EXIT_USAGE);
 
   const id = idempotencyKey ?? `rep-${randomUUID()}`;
   let prior = readReplies(dataDir).find((r) => r.id === id);
@@ -265,10 +275,10 @@ export async function reply(
   }
 
   if (targetedBump && !freshTargetedClick(ctx.env,ctx.now().getTime())) return refused("Point du clic trop ancien ou contexte absent : aucun message envoyé. Refaire un clic droit.");
-  if (captureScreen) {
+  if (captureScreen || voiceScreenRefs.length) {
     const oldDaemon = withReadStore(ctx, dataDir, ({ db }) => {
       const run = db === undefined ? null : latestDaemonRun(db, DEFAULT_PROFILE_ID);
-      return run !== null && run.endedAt === null && !ownerAttachmentRuntimeMatches(dataDir.path, run.id);
+      return run !== null && run.endedAt === null && !ownerAttachmentRuntimeMatches(dataDir.path, run.id, voiceScreenRefs.length > 0);
     });
     if (oldDaemon) return refused("Le moteur en cours doit être redémarré pour recevoir les images. Aucun message envoyé ; brouillon conservé.");
     const supported = withReadStore(ctx, dataDir, ({ uow }) => {
@@ -282,6 +292,12 @@ export async function reply(
   // Explicit Send authorizes this one capture, independently of ambient wake capture.
   const image = captureScreen ? freshWakeImage(await capture("primary")) : null;
   if (captureScreen && image === null) return refused("Capture indisponible : aucun message envoyé. Pour un clic ciblé, choisir un point sur l’écran principal puis réessayer.");
+  let voiceScreens: string[];
+  try {
+    voiceScreens = readVoiceScreenPayloads(workspaceDirFor(dataDir.path), voiceScreenRefs);
+  } catch {
+    return refused("Planche écran indisponible : aucun message envoyé.");
+  }
   const now = ctx.now();
   const entry: HumanReply = { id, at: now.toISOString(), text, ...(image === null ? {} : { screenshotAt: image.capturedAt }) };
   const file = notePath(dataDir);
@@ -294,8 +310,14 @@ export async function reply(
   }
   // Queue ID is unique. A targeted retry can recover it if history append was interrupted.
   const logged: LogEntry = { ...entry, noteMtimeBeforeMs: before };
-  enqueueOwnerMessage(dataDir.path, { ...entry, ...(image === null ? {} : { image }) });
+  enqueueOwnerMessage(dataDir.path, { ...entry, ...(image === null ? {} : { image }), ...(voiceScreens.length ? { voiceScreens } : {}) });
   fs.appendFileSync(path.join(dataDir.path, HUMAN_LOG_FILE), `${JSON.stringify(logged)}\n`);
+  // Optional tool-free fast reply; detached, it never delays or blocks the recording.
+  try {
+    startFastReply(dataDir, id);
+  } catch {
+    // The main thread still receives the message normally.
+  }
   let mirrored = false;
   try {
     fs.mkdirSync(path.dirname(file), { recursive: true });

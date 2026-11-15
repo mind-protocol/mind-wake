@@ -1,3 +1,5 @@
+import { startFastReply } from "./fast-reply.js";
+import { storeThreadMessageId } from "../../communication/fast-reply-store.js";
 import { readProjectWakeObjectives } from "../../daemon/wake-preview.js";
 import {
   readSecondThread,
@@ -88,6 +90,12 @@ export async function secondThread(
     case "send": {
       const raw = (await ctx.readStdin?.()) ?? "";
       const entry = sendToSecondThread(dataDir.path, raw);
+      // Message humain direct : la réponse rapide commune à tous les fils y répond aussi.
+      try {
+        startFastReply(dataDir, storeThreadMessageId("second", entry.id));
+      } catch {
+        // Le second fil reçoit son message normalement.
+      }
       return {
         exitCode: 0,
         data: entry,

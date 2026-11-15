@@ -6,15 +6,16 @@ import { seedSimulatedProfile } from "../../test/demo/harness.js";
 import { processContext } from "./context.js";
 import { runCli } from "./run.js";
 import { executionMode } from "../daemon/execution-mode.js";
+import { mainThreadEnabled } from "../daemon/main-thread.js";
 let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-mode-"));
   seedSimulatedProfile(dir);
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
-async function cli(command: string) {
+async function cli(command: string, ...more: string[]) {
   let output = "";
-  const code = await runCli([command, "--data-dir", dir, "--json"], {
+  const code = await runCli([command, ...more, "--data-dir", dir, "--json"], {
     ...processContext(),
     env: {},
     stdout: (s) => {
@@ -41,4 +42,20 @@ it("never lifts an emergency stop or activates an unconfigured profile", async (
   await cli("stop");
   expect((await cli("always-on")).code).toBe(1);
   expect(executionMode(dir)).toBe("on");
+});
+it("main thread On/Off: persisted, exposed in status, independent from the execution mode", async () => {
+  expect(mainThreadEnabled(dir)).toBe(true);
+  expect((await cli("status")).json.data.mainThread).toEqual({ enabled: true, updatedAt: null });
+  await cli("always-on");
+  const off = await cli("main-thread", "off");
+  expect(off.code).toBe(0);
+  expect(off.json.data).toMatchObject({ enabled: false, changed: true });
+  expect(mainThreadEnabled(dir)).toBe(false);
+  const status = (await cli("status")).json.data;
+  expect(status.mainThread.enabled).toBe(false);
+  expect(status.executionMode).toBe("always-on");
+  expect((await cli("main-thread", "off")).json.data.changed).toBe(false);
+  expect((await cli("main-thread", "on")).json.data).toMatchObject({ enabled: true, changed: true });
+  expect((await cli("main-thread", "status")).json.data.enabled).toBe(true);
+  expect(executionMode(dir)).toBe("always-on");
 });

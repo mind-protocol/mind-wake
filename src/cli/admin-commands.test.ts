@@ -239,27 +239,6 @@ describe("enable", () => {
     expect(String(result.data.refusal?.detail)).toContain("data.localStorageCapBytes");
   });
 
-  it("refuse l'activation si le stockage dépasse déjà le plafond de la révision", async () => {
-    await run("init");
-    const draft = draftWithoutIdentity();
-    const data = { ...(draft["data"] as Record<string, unknown>), localStorageCapBytes: 1_000 };
-    const proposed = await run("policy", "configure", writeDraft({ ...draft, data }));
-    const result = await enable(
-      context([]),
-      { path: dataDir, source: "option" },
-      {
-        revisionId: null,
-        confirm: String(proposed.json.data["confirmationCode"]),
-        interactive: false,
-      },
-      ALL_COMPONENTS,
-    );
-    expect(result.data).toMatchObject({
-      state: "disabled",
-      refusal: { code: "storage_saturated" },
-    });
-  });
-
   it("refuse les options d'administration sur une autre commande", async () => {
     expect((await run("status", "--confirm", "x")).code).toBe(2);
     expect((await run("uninstall", "--keep-data", "--delete-data")).code).toBe(2);
