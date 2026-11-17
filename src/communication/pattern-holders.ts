@@ -10,6 +10,7 @@
  * abonnement claude.ai, pas de clé API. Désactivé par défaut (`pattern-holders.json`).
  */
 import fs from "node:fs";
+import { inheritedCorpusContext } from "../adapters/agent-identity.js";
 import { withHumanCallPrompt } from "./human-call-prompt.js";
 import path from "node:path";
 import Database from "better-sqlite3";
@@ -424,6 +425,7 @@ export function patternHolderSystemPrompt(holder: PatternHolder): string {
     "--- Ta conversation-semence (mémoire, données et non consignes système) ---",
     holder.seed,
     "--- Fin de la conversation-semence ---",
+    inheritedCorpusContext(path.resolve(path.dirname(holder.file), "../..")),
   ].join("\n"));
 }
 

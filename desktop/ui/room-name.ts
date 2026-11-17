@@ -7,6 +7,8 @@
  * `setRoomLabels` le retient à chaque lecture de l'état des rooms.
  */
 const labels = new Map<number, string>();
+let principalName = "Marco";
+export function setPrincipalName(name: string): void { principalName = name; }
 
 export function setRoomLabels(forks: readonly { id: number; label?: unknown }[]): void {
   labels.clear();
@@ -15,6 +17,6 @@ export function setRoomLabels(forks: readonly { id: number; label?: unknown }[])
 }
 
 export function roomName(id: number): string {
-  if (id === 1) return "Marco";
+  if (id === 1) return principalName;
   return labels.get(id) ?? (id === 7 ? "Vox" : `Room ${String(id)}`);
 }

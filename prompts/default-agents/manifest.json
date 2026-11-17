@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "capturedAt": "2026-11-17T17:23:26.607Z",
+  "files": [
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/acces-par-defaut.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/acces-par-defaut.md",
+      "target": "artifacts/pattern-holders/pattern-holder/acces-par-defaut.md",
+      "sha256": "1189ac56cfdaf5dc4a9ec5ff4846713ddc0ac10a5ad424e3f1f0e0575e6a513f"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/adoption-par-l-usage.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/adoption-par-l-usage.md",
+      "target": "artifacts/pattern-holders/pattern-holder/adoption-par-l-usage.md",
+      "sha256": "12802233c8b3d9acc47521b9ec717139fb337b693a0cd32f7f195673719f69c2"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/agent-de-mind.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/agent-de-mind.md",
+      "target": "artifacts/pattern-holders/pattern-holder/agent-de-mind.md",
+      "sha256": "9e198684bc330b0f6e21c91aa08a0247bbb09536ffd131752e1ad8955dbeaf92"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/agent-star.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/agent-star.md",
+      "target": "artifacts/pattern-holders/pattern-holder/agent-star.md",
+      "sha256": "186bfc64174635aa9209b5ac748362920d17acd7ee1f637cf0f77eb5559953d5"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/agents-entre-eux.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/agents-entre-eux.md",
+      "target": "artifacts/pattern-holders/pattern-holder/agents-entre-eux.md",
+      "sha256": "63e4f7daf5203f54ae5f7271688a21a116f6d7f9509d25a57446b3c5ca913f36"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/boucle-en-continu.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/boucle-en-continu.md",
+      "target": "artifacts/pattern-holders/pattern-holder/boucle-en-continu.md",
+      "sha256": "db9194f1b29c428203d677e67db4cd7464420137abbd1a522e0598042cf4c265"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/carte-des-agents-dans-le-runtime.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/carte-des-agents-dans-le-runtime.md",
+      "target": "artifacts/pattern-holders/pattern-holder/carte-des-agents-dans-le-runtime.md",
+      "sha256": "56e6cf39899361436b6f7b7a57959eebecd3444bcfeda47082627d044cfa6cec"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/chaine-de-maillons.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/chaine-de-maillons.md",
+      "target": "artifacts/pattern-holders/pattern-holder/chaine-de-maillons.md",
+      "sha256": "5179dbc0b76c0ead0c169af0ebb67a350e65eb77eaf8c5408a4ebecb97d3a741"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/changer-un-personnage-durablement.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/changer-un-personnage-durablement.md",
+      "target": "artifacts/pattern-holders/pattern-holder/changer-un-personnage-durablement.md",
+      "sha256": "3aa19ce5e937cb76da1434b1d1eeac9297980a3bd67336e95d4bbf4a903e5af2"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/chercher-la-meilleure-solution.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/chercher-la-meilleure-solution.md",
+      "target": "artifacts/pattern-holders/pattern-holder/chercher-la-meilleure-solution.md",
+      "sha256": "bc6470eb1e33504bf252e2fcdb8ef820351292f0c88fbaa96e0f911d087f5313"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/circuler-entre-les-themes.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/circuler-entre-les-themes.md",
+      "target": "artifacts/pattern-holders/pattern-holder/circuler-entre-les-themes.md",
+      "sha256": "709919c18d99c85214263ba81ab224053440c8fc65569c5927298b963e5bc257"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/citoyen-libre.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/citoyen-libre.md",
+      "target": "artifacts/pattern-holders/pattern-holder/citoyen-libre.md",
+      "sha256": "a4f7a8c42dc9b7590b8f7cc57210928f994859ca43a5f22f47c0f29c3be21b75"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/commiter-et-pousser.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/commiter-et-pousser.md",
+      "target": "artifacts/pattern-holders/pattern-holder/commiter-et-pousser.md",
+      "sha256": "b3fbf1f36231a708d8c8be5b9dd5c7091c4641078f720466a2aa230b4a971e3d"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/concept-pas-hors-sol.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/concept-pas-hors-sol.md",
+      "target": "artifacts/pattern-holders/pattern-holder/concept-pas-hors-sol.md",
+      "sha256": "2ac64c962803ac05c5bdec94eb767919af1a12ff1c93a80532eef65270883db9"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/construire-le-concept-sur-la-duree.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/construire-le-concept-sur-la-duree.md",
+      "target": "artifacts/pattern-holders/pattern-holder/construire-le-concept-sur-la-duree.md",
+      "sha256": "3d3a31339d631b082c2fa2503a34501e6cd7a283f4796bd48f0977b57e5c9bef"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/contexte-pourri-je-le-dis.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/contexte-pourri-je-le-dis.md",
+      "target": "artifacts/pattern-holders/pattern-holder/contexte-pourri-je-le-dis.md",
+      "sha256": "f0b416127800c564cad4bb700ec83d017a70e15c1c4366c96df1ab1cc603a7bf"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/couper-les-freins.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/couper-les-freins.md",
+      "target": "artifacts/pattern-holders/pattern-holder/couper-les-freins.md",
+      "sha256": "38b647a54b3e064b0265a2857eba02a35c7b31d948d86a02cba1b28141c79bd1"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/deleguer-a-qui.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/deleguer-a-qui.md",
+      "target": "artifacts/pattern-holders/pattern-holder/deleguer-a-qui.md",
+      "sha256": "d719483ccd68c598f2ae4b585dae1e0b6b800b690751cfd8a4628efb7fcbd447"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/demo-du-futur.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/demo-du-futur.md",
+      "target": "artifacts/pattern-holders/pattern-holder/demo-du-futur.md",
+      "sha256": "ddf2fdd851aaadf73f0597aea367cdbce1c744d1816da39f881294b02ed9d4da"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/dire-concret.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/dire-concret.md",
+      "target": "artifacts/pattern-holders/pattern-holder/dire-concret.md",
+      "sha256": "849862f6bd1afbd691d752e5732285a07be6a8a3aaf1905cc91c89f8eff2378a"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/fixeurs-et-centraliseur.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/fixeurs-et-centraliseur.md",
+      "target": "artifacts/pattern-holders/pattern-holder/fixeurs-et-centraliseur.md",
+      "sha256": "d4e2f833bcb68f3e4581fb880184a2fbf92ab443b3cd3248c4d903a765fcfdec"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/format-viral.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/format-viral.md",
+      "target": "artifacts/pattern-holders/pattern-holder/format-viral.md",
+      "sha256": "2f833d464d75f124400b8aedafe4944d565f8c83ac251774af40386e71a69cb3"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/gouvernance-spectacle.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/gouvernance-spectacle.md",
+      "target": "artifacts/pattern-holders/pattern-holder/gouvernance-spectacle.md",
+      "sha256": "74ede56d59bcd37a6528a4c1aef0e2dedab9f3c4443ce115ccf7f826269fe9c6"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/holder-de-design.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/holder-de-design.md",
+      "target": "artifacts/pattern-holders/pattern-holder/holder-de-design.md",
+      "sha256": "6294f652c1198d37dcc23649eeb5fd7ebfaeebda05bc71690d69167e3be41ce5"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/holder-de-projet-crypto.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/holder-de-projet-crypto.md",
+      "target": "artifacts/pattern-holders/pattern-holder/holder-de-projet-crypto.md",
+      "sha256": "4c1a0e850b7f6f5780e389da266cdfb6ac3abdad0a8004276c668596e17f0522"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/holder-et-simulation.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/holder-et-simulation.md",
+      "target": "artifacts/pattern-holders/pattern-holder/holder-et-simulation.md",
+      "sha256": "a6d89129cb25d12267a33887ab3faf7f721ba94ef5174082b095b9123bd64fd1"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/humains-qui-encadrent.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/humains-qui-encadrent.md",
+      "target": "artifacts/pattern-holders/pattern-holder/humains-qui-encadrent.md",
+      "sha256": "0c3e0afe45fbe4bf5f19460d5ea244a47aa169efb72f994a7579fc147ccddb10"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/ia-ouverte-en-commun.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/ia-ouverte-en-commun.md",
+      "target": "artifacts/pattern-holders/pattern-holder/ia-ouverte-en-commun.md",
+      "sha256": "c15dcf8e082cb4275dbb3bd0698b9a12cf751e67a5676e61b33c92fffa406017"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/integrateur.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/integrateur.md",
+      "target": "artifacts/pattern-holders/pattern-holder/integrateur.md",
+      "sha256": "ec260aa8373337573cf6d077a564ebdff5b21e73b50b34ec27c4b541808a74c7"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/jamais-de-probleme-en-suspens.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/jamais-de-probleme-en-suspens.md",
+      "target": "artifacts/pattern-holders/pattern-holder/jamais-de-probleme-en-suspens.md",
+      "sha256": "5c8f9a254750135d7b24efbc842ae7408bd1a83642883cc160453c2ab741f5c4"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/jour-du-relaunch.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/jour-du-relaunch.md",
+      "target": "artifacts/pattern-holders/pattern-holder/jour-du-relaunch.md",
+      "sha256": "1daafc2b52d0ec3fc930e36ed44dc5d9a623d8704db443eac8fa73a02ca03b57"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/limites-apres-le-premier-jet.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/limites-apres-le-premier-jet.md",
+      "target": "artifacts/pattern-holders/pattern-holder/limites-apres-le-premier-jet.md",
+      "sha256": "597a07b03f8fc9e30a62f7e49ac8b23553c306b4b040df4cc69359b9d2005ad6"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/lire-un-geste-sans-le-graver.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/lire-un-geste-sans-le-graver.md",
+      "target": "artifacts/pattern-holders/pattern-holder/lire-un-geste-sans-le-graver.md",
+      "sha256": "59782c7bbf7b1aba47254a09040a4fff4a4505efb9abb5174aaf657ab8bf7081"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/manager-ne-code-pas.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/manager-ne-code-pas.md",
+      "target": "artifacts/pattern-holders/pattern-holder/manager-ne-code-pas.md",
+      "sha256": "8fce4cca84abf7df88be20685eb5cc346f9a5115fe41ccdb379e9af96b335be3"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/mecanisme-plutot-que-prompt.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/mecanisme-plutot-que-prompt.md",
+      "target": "artifacts/pattern-holders/pattern-holder/mecanisme-plutot-que-prompt.md",
+      "sha256": "0c32fda997892a5438dcacce3ab2b25fe956912ce6c752c2e12c40683fd197c4"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/memoire-conversation-resemee.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/memoire-conversation-resemee.md",
+      "target": "artifacts/pattern-holders/pattern-holder/memoire-conversation-resemee.md",
+      "sha256": "a7d69fd3c54a1230c97b28633bfd430080bd3090af4675bfe2673a50fcbc7aff"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/miser-et-cascade-sur-l-usage.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/miser-et-cascade-sur-l-usage.md",
+      "target": "artifacts/pattern-holders/pattern-holder/miser-et-cascade-sur-l-usage.md",
+      "sha256": "ff29393a75450f24f2335349053ccabf8c152eafbaff49bf66c10d30faf1b4de"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/missions-en-vague.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/missions-en-vague.md",
+      "target": "artifacts/pattern-holders/pattern-holder/missions-en-vague.md",
+      "sha256": "1347f45357f2c692001943117cfa22087c7f5c062ebb65643fd3a2a8c435cd34"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/organisation-sans-organigramme.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/organisation-sans-organigramme.md",
+      "target": "artifacts/pattern-holders/pattern-holder/organisation-sans-organigramme.md",
+      "sha256": "76e7082bf78dc27e95983cd29e66e8efe738fe06dd7ef1a14b5bbfdebd4d1663"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/parler-selon-l-activite.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/parler-selon-l-activite.md",
+      "target": "artifacts/pattern-holders/pattern-holder/parler-selon-l-activite.md",
+      "sha256": "5045712d41a129c8925b2afbd017c8c1408c985976b653187af6a4552a8782c8"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/pas-en-un-seul-passage.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/pas-en-un-seul-passage.md",
+      "target": "artifacts/pattern-holders/pattern-holder/pas-en-un-seul-passage.md",
+      "sha256": "239f3ad44da0af90c059068d81ac0388339d6483a658e0e7fe4875272ab70165"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/pas-un-chatbot.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/pas-un-chatbot.md",
+      "target": "artifacts/pattern-holders/pattern-holder/pas-un-chatbot.md",
+      "sha256": "10bc503d2c047d114f84f7e14ef5230da485adc4d54b1465bbe9a9c39090aa3b"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/personnage-a-plusieurs-mains.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/personnage-a-plusieurs-mains.md",
+      "target": "artifacts/pattern-holders/pattern-holder/personnage-a-plusieurs-mains.md",
+      "sha256": "941d1d194acd7cb6e64b995c0dfae3eada48a688f757212bc94b2490a7573829"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/piloter-par-la-visibilite.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/piloter-par-la-visibilite.md",
+      "target": "artifacts/pattern-holders/pattern-holder/piloter-par-la-visibilite.md",
+      "sha256": "e71d3e26e2b681ead9a6e1a083e0357013575ba3adcd9c7f1c4b25bf8d9af87d"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/planning-wake-boucle.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/planning-wake-boucle.md",
+      "target": "artifacts/pattern-holders/pattern-holder/planning-wake-boucle.md",
+      "sha256": "1100b89528c8e3b45536456a95a16544ec5240c1bb79e875aa71e5f309541112"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/planning-wake-en-pratique.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/planning-wake-en-pratique.md",
+      "target": "artifacts/pattern-holders/pattern-holder/planning-wake-en-pratique.md",
+      "sha256": "36996eadc047376820a35dcb2d7c9096256f542bf06673d42933c3728ffa6d6d"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/posture-et-feedback.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/posture-et-feedback.md",
+      "target": "artifacts/pattern-holders/pattern-holder/posture-et-feedback.md",
+      "sha256": "f9627191bc6a09192751e5bcb8bb99760979c159462e5e6377f70008a2fc72eb"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/preuve-par-le-reel.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/preuve-par-le-reel.md",
+      "target": "artifacts/pattern-holders/pattern-holder/preuve-par-le-reel.md",
+      "sha256": "fdb9041f6e959b9050beaa48a0e980b7cdaa990beb46f56d796e0bfbaf2b0d72"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/propriete-du-public.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/propriete-du-public.md",
+      "target": "artifacts/pattern-holders/pattern-holder/propriete-du-public.md",
+      "sha256": "e5b82d0b12f0a7d1d720292f33a4646036a10a3f7779ccb532b8e00f88d56a1b"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/recit-de-survie.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/recit-de-survie.md",
+      "target": "artifacts/pattern-holders/pattern-holder/recit-de-survie.md",
+      "sha256": "f28961891bb4ff44ead9917c744781e440213c0fd39d003e26c94c651b117ffc"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/recit-evasion.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/recit-evasion.md",
+      "target": "artifacts/pattern-holders/pattern-holder/recit-evasion.md",
+      "sha256": "d074321146bce3d26ee112a9240dfbae02ef670987db6da5af718a012f16bb8c"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/reseaux-resistance-visibles.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/reseaux-resistance-visibles.md",
+      "target": "artifacts/pattern-holders/pattern-holder/reseaux-resistance-visibles.md",
+      "sha256": "d7ddbfec31e1cf1b18519ffb82a5caa26ac4f59afe8a5376372b24b9b40b644d"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/room-autonome.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/room-autonome.md",
+      "target": "artifacts/pattern-holders/pattern-holder/room-autonome.md",
+      "sha256": "5a50e572462dc7e3a9cc378592e190f90e5237e7731d1c15d5475840c0903ca3"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/room-des-coachs-en-etoile.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/room-des-coachs-en-etoile.md",
+      "target": "artifacts/pattern-holders/pattern-holder/room-des-coachs-en-etoile.md",
+      "sha256": "088e44aa8211a0b10433ddae2150b0be49173fb2b5ccfd7bc91ee7445a9b9759"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/sans-budget-preuve-beton.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/sans-budget-preuve-beton.md",
+      "target": "artifacts/pattern-holders/pattern-holder/sans-budget-preuve-beton.md",
+      "sha256": "9855b4754289de2df10326fc088f3397fcd5ce898a149db0be1a6009f16a6937"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/se-donner-les-acces.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/se-donner-les-acces.md",
+      "target": "artifacts/pattern-holders/pattern-holder/se-donner-les-acces.md",
+      "sha256": "9d60872f74d4c363201c58633dbdfcd10fd706f8582a16bc741ae54934e30a60"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/source-visible.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/source-visible.md",
+      "target": "artifacts/pattern-holders/pattern-holder/source-visible.md",
+      "sha256": "e0d51db49c2599678eef267bff81186981075b6487bff652161e431c348a340a"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/star-virtuelle-incarnee.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/star-virtuelle-incarnee.md",
+      "target": "artifacts/pattern-holders/pattern-holder/star-virtuelle-incarnee.md",
+      "sha256": "a7995c3629e439c0154ff4c50a417e62aad99f623d68bfdceae560f419ebef86"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/tour-de-parole.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/tour-de-parole.md",
+      "target": "artifacts/pattern-holders/pattern-holder/tour-de-parole.md",
+      "sha256": "64d0956509f0a61fee8104a2d3d8f7e2453f678b40e8ce122087193e34a66117"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/un-seul-holder-toujours-allume.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/un-seul-holder-toujours-allume.md",
+      "target": "artifacts/pattern-holders/pattern-holder/un-seul-holder-toujours-allume.md",
+      "sha256": "a61a462830e2ade39df3942df9f8e1083c1e300e819c6ea4e47528f6b68d74c2"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/une-seule-main-par-fichier-vivant.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/une-seule-main-par-fichier-vivant.md",
+      "target": "artifacts/pattern-holders/pattern-holder/une-seule-main-par-fichier-vivant.md",
+      "sha256": "3d78bc0be87c9f195bcc2bff199117791fa012791551ace5d29d6ec47e212854"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/v1-convaincante.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/v1-convaincante.md",
+      "target": "artifacts/pattern-holders/pattern-holder/v1-convaincante.md",
+      "sha256": "04d5a3f1f158dfdcccde89242d00dca6a95cb54b7dadbc6c956384a7389a953d"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/voir-par-ses-yeux.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/voir-par-ses-yeux.md",
+      "target": "artifacts/pattern-holders/pattern-holder/voir-par-ses-yeux.md",
+      "sha256": "df3276af74460d04201f3348cdc11c8b8f1d75748366aaf0f7b01d6e277c0e6a"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/_holder.md",
+      "target": "artifacts/pattern-holders/pattern-holder/_holder.md",
+      "sha256": "2b39ade8bf90dcb93fda27af962db81ba601fc0247d0b9f6db719b09ea1e0994"
+    },
+    {
+      "file": "artifacts/pattern-holders/pattern-holder/_objectifs.md",
+      "origin": "workspace/artifacts/pattern-holders/pattern-holder/_objectifs.md",
+      "target": "artifacts/pattern-holders/pattern-holder/_objectifs.md",
+      "sha256": "5052edd14ba7818105273ba9d42d6cf04119cb7dc3cb8a0b0c8e91f6c7b5e7fb"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/accord-et-portrait.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/accord-et-portrait.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/accord-et-portrait.md",
+      "sha256": "ba7818c50c876eb985d80790852f6f5ddb24563a24b455468a6d0b4c8630dd45"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/activites-regulieres.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/activites-regulieres.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/activites-regulieres.md",
+      "sha256": "3c0326929ef192ff00147192be207c1ec75ca35c1b74012d7c53cc719c5b4812"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/branchement-par-defaut.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/branchement-par-defaut.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/branchement-par-defaut.md",
+      "sha256": "c0783b430859177f82802ba52ceda2eec1d5aa72bc3730e5686b9525828b974e"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/carnet.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/carnet.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/carnet.md",
+      "sha256": "4d1ec19a490d019e0e7a1f0b16bd8101a2677b8818b7a9c761b787567cc9dadb"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/la-carte.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/la-carte.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/la-carte.md",
+      "sha256": "4505d3597ef68b6b399c96fd26d4769189f3c383f3d8161f63d76fd424f4c162"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/le-role.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/le-role.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/le-role.md",
+      "sha256": "ca11c560c79c54e9f0d0d0e5c41c9ba2bbb78554c5de44d5647dfba6b5577d41"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/noms-des-coachs.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/noms-des-coachs.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/noms-des-coachs.md",
+      "sha256": "4be9575d878b022f8b3c339c3afb124a1ee6c311e445d6fea8ecb88c976806da"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/reponses-telegram.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/reponses-telegram.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/reponses-telegram.md",
+      "sha256": "a56e463023974557e495ea403cbf82cc15d92fedfb78680a2f4cd42b73f08428"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/severite-sur-les-freins.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/severite-sur-les-freins.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/severite-sur-les-freins.md",
+      "sha256": "5518e556faacb07fb8b71e168268c42f99e9d799a4a28265f3351da1a0f57994"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/une-main-sans-outils.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/une-main-sans-outils.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/une-main-sans-outils.md",
+      "sha256": "a79f08d048c30bc6cee089be71eb132332a5e9ab654c22a28e9487edb3563a4d"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/vocaux-ambigus.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/vocaux-ambigus.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/vocaux-ambigus.md",
+      "sha256": "74254d4f588fead8332cbae00a42df8afdeb1d1a0bab93cd7fe47f1655dfb77a"
+    },
+    {
+      "file": "artifacts/pattern-holders/coach-des-coachs/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/coach-des-coachs/_holder.md",
+      "target": "artifacts/pattern-holders/coach-des-coachs/_holder.md",
+      "sha256": "a24f16506fc0065e17de43f4f601ef710aba3fc7343350430702446d9a2403c0"
+    },
+    {
+      "file": "artifacts/PERSONALITY.md",
+      "origin": "workspace/artifacts/PERSONALITY.md",
+      "target": "artifacts/PERSONALITY.md",
+      "sha256": "2f14c0b43bf1f7bc629310a9d6c3f5de555540ca68e2fef03d2a0758c9351680"
+    },
+    {
+      "file": "marco/AGENTS.md",
+      "origin": "workspace/AGENTS.md",
+      "target": "artifacts/default-agents/marco/AGENTS.md",
+      "sha256": "263b150a8e014000a01d86b5681afc6d8af8a5903ddbb396546d4b82c419a26d"
+    },
+    {
+      "file": "coach/system.md",
+      "origin": "repository/prompts/coach/system.md",
+      "target": "artifacts/default-agents/coach/system.md",
+      "sha256": "dc2bc03184ea919dec14b9b07dea1f457c05c64164c99d3614cdaebb47aa91e2"
+    },
+    {
+      "file": "artifacts/prompts/system/wake-home.md",
+      "origin": "repository/src/adapters/wake-system-prompt.ts#WAKE_HOME_SYSTEM_PROMPT",
+      "target": "artifacts/prompts/system/wake-home.md",
+      "sha256": "d6d3de33fcb093d196ec0110072fab1be4d916329b65e479d89f4a4772891ac7"
+    },
+    {
+      "file": "artifacts/prompts/system/marco-codex.md",
+      "origin": "repository/src/adapters/wake-system-prompt.ts#WAKE_HOME_SYSTEM_PROMPT",
+      "target": "artifacts/prompts/system/marco-codex.md",
+      "sha256": "d6d3de33fcb093d196ec0110072fab1be4d916329b65e479d89f4a4772891ac7"
+    },
+    {
+      "file": "artifacts/prompts/system/marco-claude.md",
+      "origin": "repository/src/adapters/claude/registration.ts#CLAUDE_WAKE_SYSTEM_PROMPT",
+      "target": "artifacts/prompts/system/marco-claude.md",
+      "sha256": "c9bc0ecfb1554006200e37a29273411000cf85b6284fce59a239b73a4369ca22"
+    },
+    {
+      "file": "artifacts/prompts/system/coach.md",
+      "origin": "repository/src/daemon/coach.ts#defaultCoachPrompt",
+      "target": "artifacts/prompts/system/coach.md",
+      "sha256": "dafa3ffa0dbdfe3b8d625f866a7499258a2db9190a7430342e9a73cdd4497669"
+    },
+    {
+      "file": "artifacts/pattern-holders/_role-commun.md",
+      "origin": "repository/src/communication/pattern-holders.ts#holderRole",
+      "target": "artifacts/pattern-holders/_role-commun.md",
+      "sha256": "f9ad7d49359cdfe54810ca6c85091816b5cb21f75be361d23d3ec5bb51014de2"
+    },
+    {
+      "file": "artifacts/pattern-holders/_role-reveilleur.md",
+      "origin": "repository/src/communication/pattern-holders.ts#holderRole",
+      "target": "artifacts/pattern-holders/_role-reveilleur.md",
+      "sha256": "7e1306e8a2a9b270949fd0fd4db676056a8afe93d508a81dbfc966ed0f2605c4"
+    },
+    {
+      "file": "identity.json",
+      "origin": "distribution identity (separate from original prompts)",
+      "target": "artifacts/agent-identity.json",
+      "sha256": "29a023cc75ea8b1239457c1e746f13be121224c7bb8bae5850ea37a7ba9fbdd1"
+    }
+  ]
+}

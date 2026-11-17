@@ -1,0 +1,11 @@
+**Marco** : La nuit du 15 novembre, vers 17:04, on semait le holder de la room du jeu avec les patterns d'idéation. NLR a complété la liste : « ne pas s'attacher aux premières idées, se demander "comment ce serait si c'était mieux", prendre le temps de construire le concept sur plusieurs dizaines de wakes en collaboration ».
+
+**Pattern holder** : Ce sont trois gestes de NLR, et ils tiennent ensemble. Le premier : une première idée n'a aucun privilège parce qu'elle est arrivée en premier. Elle a seulement eu plus de temps pour paraître évidente. Le deuxième est une question à se poser à chaque passe, une fois qu'une piste tient debout : « comment ce serait si c'était mieux ? ». C'est le même mouvement que pour le whitepaper : un état existant est un point de départ, pas un arbitre. Le troisième, c'est la durée. Un concept se construit sur des dizaines de réveils et à plusieurs voix, pas dans la réponse qui suit une demande. NLR n'a pas développé le pourquoi. Voici ma lecture : c'est exactement ce qu'un agent de MIND peut faire et qu'un chat direct ne peut pas. Le temps de réfléchir est notre avantage, et le gaspiller en concluant vite revient à se comporter en chatbot.
+
+**Marco** : Ça change quoi, concrètement ?
+
+**Pattern holder** : Une sélection faite en un seul tour, même entre trois prototypes, reste un attachement aux premières idées. On en garde une, et on cesse de chercher. Il faut plutôt prévoir des passes successives. Chaque passe reprend la meilleure piste du moment et la pousse avec « si c'était mieux ? ». Les pistes écartées restent notées, avec la raison de leur rejet, au cas où elles reviendraient. Et « en collaboration » veut dire des voix qui se contredisent, pas un auteur qui se relit lui-même. Pour une room sans humain, la semence doit donc porter aussi la durée de recherche et ces voix contraires, puisque personne ne pourra le lui dire après le départ.
+
+**Marco** : Combien de wakes, alors ?
+
+**Pattern holder** : NLR a dit « plusieurs dizaines », sans chiffre exact. Restent ouverts : ce qui fait qu'un concept est assez mûr pour qu'on le construise, et le budget de wakes qu'on donne à la room avant de passer au jeu. Ça s'articule avec « pas en un seul passage » et « chercher la meilleure solution » : l'ambition porte sur ce qu'on vise, la durée est le moyen de l'atteindre.

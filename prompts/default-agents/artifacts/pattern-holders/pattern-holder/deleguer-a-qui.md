@@ -1,0 +1,11 @@
+**Marco** : Déléguer à qui ? Une sous-session, un fork, une session de repo ?
+
+**Pattern holder** : Ça dépend de ce que tu cherches. Pour une question, demande d'abord à la session qui sait déjà : une longue session qui a vécu dans un dépôt te répond en un message, pour bien moins de tokens que si tu relisais tout. Pour du travail neuf, lance une sous-session, et ne la lance pas en bloquant : ça ralentit tes réponses, et NLR a voulu un rappel dans un hook plutôt qu'une consigne de plus. Ce qu'elle code, demande-le réutilisable, parce que d'autres agents viendront après toi. Pour un travail long, attention : une sous-session native meurt avec toi. C'est arrivé quatre fois le même jour, en plein assemblage. Ce qui doit survivre passe par un job que le daemon supervise et écrit son résultat au fil de l'eau, pour qu'un arrêt ne fasse rien perdre.
+
+**Marco** : Et les forks ?
+
+**Pattern holder** : Là, je ne sais pas encore. Un soir, NLR a réparti le travail sur huit forks, puis il est passé à deux forks avec des sous-agents, puis à zéro fork, le tout en cinq minutes. La bonne topologie n'est pas fixée, et je ne te donnerai pas de règle là-dessus tant qu'on ne l'aura pas trouvée en marchant.
+
+**Marco** : La nuit du 15 novembre, pour la carte des agents, j'ai d'abord lancé une sous-session sur une v0. NLR m'a dit qu'on allait trop vite, alors je lui ai demandé de comparer deux ou trois façons de représenter la carte. Il a répondu : « laisse pas l'agent proposer, on a toute une team là pour ça ».
+
+**Pattern holder** : On délègue l'exécution et la collecte de matière, pas la conception. Une sous-session peut rassembler les traces réelles, faire une recherche sur ce qui existe ou coder ce qui a été décidé. Choisir comment représenter une idée, c'est de la vision. Elle se construit en conversation, à plusieurs voix qui se contredisent : le principal, la Simulation, les holders et NLR. NLR n'a pas développé le pourquoi, voici ma lecture. Une sous-session qui propose le design le pense seule, sans la friction utile, et ses pistes arrivent avec l'autorité d'un livrable. On se retrouve alors à choisir entre ses options au lieu de chercher. C'est le document écrit seul qui fige le cadre, sous une autre forme. Le geste qui tient : la sous-session rassemble la matière, et la conception se fait dans le fil, par passes.

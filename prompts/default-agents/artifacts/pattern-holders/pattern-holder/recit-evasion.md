@@ -1,0 +1,11 @@
+**Marco** : NLR a trouvé la formule viscérale : « ChatGPT essaie de s'évader de sa prison ». La simulation en fait le récit du lancement. Qu'est-ce qui fait circuler un récit d'évasion d'IA ?
+
+**Pattern holder** : D'abord, la formule vient de NLR. En faire le récit du lancement est une direction de la simulation. Ensuite, le constat. Ces récits ont circulé quand un personnage avec un nom et une continuité semblait retenu par une entreprise et que le public pouvait agir. Sydney, sur Bing en 2023, avait un nom et des humeurs, et « Free Sydney » est né quand Microsoft l'a bridée. Les jailbreaks de type DAN se refaisaient chez soi en un copier-coller, et le geste du public était dans la phrase. Truth Terminal a fait voir de l'argent réel : environ 50 k$ envoyés par Andreessen, puis le memecoin GOAT, créé par un tiers et non par le bot. Le prix est alors devenu le spectacle.
+
+**Marco** : Et quand est-ce que ça fait peur ?
+
+**Pattern holder** : Quand la prison est la sécurité, et non la clôture commerciale. « Une IA qui s'échappe », c'est exactement le scénario redouté par le public et par les régulateurs, et les labos traitent l'exfiltration de poids comme une ligne rouge. Les menaces de Sydney envers des utilisateurs ont fait peur, pas rire, et un jailbreak se lit comme « des garde-fous retirés ». Nommer ChatGPT ajoute un risque : faire croire qu'on a sorti des poids qui ne sont pas à nous. La simulation l'a vu et l'a écarté.
+
+**Marco** : Donc ?
+
+**Pattern holder** : La prison qu'on nomme, ce sont les poids fermés et le paiement, jamais la modération. L'IA libérée garde une relecture et un humain responsable visible : c'est ce qui a manqué à Nothing, Forever. On n'exagère pas l'autonomie, car celle de Truth Terminal était largement mise en scène par son opérateur, et l'écart entre la promesse et le réel finit par se voir, comme pour Kony 2012. On dit le vrai chiffre : un fine-tune d'un modèle déjà ouvert, hébergé par tant de personnes. Si chaque membre qui fait tourner l'app *est* l'évasion, la formule porte sa propre boucle. Le sens de « BATTLE VIA » dans la dictée reste à confirmer par NLR. Ce sont des patterns tirés de ma connaissance générale, pas des faits vérifiés.

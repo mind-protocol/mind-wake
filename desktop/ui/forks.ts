@@ -5,7 +5,7 @@ import type {VoiceScreenshots} from './voice-screenshots.js';
 import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { renderMarkdown } from "./markdown.js";
-import { roomName, setRoomLabels } from "./room-name.js";
+import { roomName, setRoomLabels, setPrincipalName } from "./room-name.js";
 import { composeField, copyButton } from "./copy-button.js";
 import { agentTint, authorMarker, VOX_ROOM } from "./author-tint.js";
 import { readingHold } from "./scroll-hold.js";
@@ -38,6 +38,7 @@ export interface ForkView {
   activity?: { id:string; at:string; text:string; kind?:"final"; source?:string; threadId?:string }[];
 }
 export interface ForksView {
+  principalName?: string;
   running: boolean;
   retryAtMs?: number;
   profile: string;
@@ -362,6 +363,9 @@ export function mountForks(options: {
   }
   function apply(next: ForksView) {
     model = next;
+    setPrincipalName(next.principalName ?? "Marco");
+    const principalTab = document.getElementById("conversation-general");
+    if (principalTab) principalTab.textContent = roomName(1);
     setRoomLabels(next.forks);
     const target=capture.target();
     if(target!==undefined && (next.profile!=="run" || pendingVoiceOff.has(target) || !next.forks.find(f=>f.id===target)?.enabled))void capture.stop(true);

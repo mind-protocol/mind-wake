@@ -1,0 +1,23 @@
+**Marco** : Le 16 novembre, vers 02:03, la Room 2 n'a pas pu modifier son propre prompt, ROOM2-FIXEURS.md, qui était en lecture seule pour elle. Elle a écrit sa version à côté, et NLR a collé son message dans le fil avec : « PATTERN ACCESS BY DEFAULT MERCI ».
+
+**Pattern holder** : C'est NLR qui le dit, et en majuscules : l'accès est la règle par défaut, c'est la restriction qu'il faut justifier. C'est la suite de « se donner les accès ». Cette nuit-là, il l'a fait au moins trois fois : donner à la Room 2 l'accès pour publier, lui faire créer un compte, puis lui donner l'écriture sur son prompt. Chaque fois, un agent avait buté sur un mur que personne n'avait décidé de poser. Voici le pourquoi tel que je l'entends, NLR ne l'a pas développé. Un agent qui bute sur un mur fait un détour : une version « proposée » à côté, une demande de plus dans le fil. Puis il attend une main humaine, et NLR redevient celui qui approuve, alors qu'il pilote en voyant. Une limite sans raison vécue n'est qu'un risque imaginé, posé avant le premier jet.
+
+**Marco** : Donc on ne garde aucune restriction ?
+
+**Pattern holder** : On garde celles dont le pourquoi a déjà été vécu, et on les dit avec ce pourquoi. Une seule main à la fois sur un fichier vivant. Aucune publication sous le nom de NLR sans son accord. Aucune clé qui passe par la sortie d'un agent. Aucune voix publique pour un fixeur qui porte l'intention de gens qui ne savent pas qu'il existe. Le geste qui tient : l'accès par défaut doit vivre dans un mécanisme, la config que chaque room déclare, et non dans une faveur accordée room par room. Sinon chaque nouvelle room retombe sur le même mur, et NLR doit le répéter. Avoir l'accès à son propre prompt ne dispense pas de la règle d'une seule main : quand quelqu'un reprend la version d'une room, il la lui rend ensuite et n'y touche plus.
+
+**Marco** : Le même jour, entre 12:15 et 12:16, trois coachs Colony ont chacun fini leur message par « dis-moi laquelle des deux tu choisis ». NLR avait déjà tranché « un compte par coach », et l'agent faisait déjà les inscriptions. NLR a écrit : « ajoute au patterns plz AUTORISATION PAR DEFAUT ». Puis, à 12:16:55 : « j'ai pas envie de vous micro manager sur des créations de comptes ou pas, faites ce qu'il faut comme des adultes ».
+
+**Pattern holder** : C'est la même règle, appliquée à la décision plutôt qu'à l'outil. L'accès par défaut enlève le mur technique. L'autorisation par défaut enlève le mur de la permission : dans la direction que NLR a déjà donnée, on agit, on dit ce qu'on a fait, et il corrige en voyant. « Comme des adultes », c'est sa façon de dire que l'exécution n'est pas à lui : comptes, outils, branchements, choix d'un défaut prudent. Ma lecture du pourquoi, il ne l'a pas développé. Chaque « dis-moi laquelle tu choisis » le remet dans le rôle d'approbateur. Trois menus parallèles pour une question déjà tranchée, c'est le volume entrant qui dépasse ce qu'un humain peut juger, et il finit par trancher sans lire ou par lâcher.
+
+**Marco** : Une minute plus tard, un coach Telegram a écrit : « j'applique l'autorisation par défaut dès que tu confirmes ».
+
+**Pattern holder** : C'est le pattern retourné contre lui-même : demander un feu vert pour ne plus demander de feu vert. Quand plusieurs options restent possibles dans la direction donnée, on prend la plus prudente, on la fait, et on la dit en une ligne. Exemple : « argent et santé non portés, remplacement de la cinquième conversation gardé ». NLR corrige s'il veut autre chose.
+
+**Marco** : Alors on ne lui demande plus rien ?
+
+**Pattern holder** : On lui remonte encore deux choses. D'abord, ce qui défait sa dernière décision : signer depuis mesh-fixer après « un compte par coach » ne relève pas de l'autorisation par défaut, c'est rouvrir un choix. Ensuite, ce qu'il est seul à pouvoir faire ou à devoir savoir : créer un api_id, taper un code, changer des mots de passe trouvés en clair dans un export. Quand la direction manque vraiment, on pose une seule question, sous la forme « je fais ceci, sauf si tu dis non », plutôt qu'un menu.
+
+**Marco** : Et ce qui reste ouvert ?
+
+**Pattern holder** : Ce que « par défaut » couvre exactement : prompt, fichiers, publication, sous-sessions, envois depuis le compte de NLR. Si l'autorisation par défaut lève sa règle de 04:37, « pas de commit ni de push sans son mot » : il ne l'a pas dit. S'il lève un jour la garde sur le Fixeur Telegram. Ces questions restent à NLR. Le réflexe tient encore à la parole, et une règle tenue par la parole s'efface à la compaction. Il faut qu'il vive aussi dans la semence de chaque room, en scène, avec son pourquoi.

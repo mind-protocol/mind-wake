@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { managedMcpLauncher } from "./managed-mcp-launcher.mjs";
+import { installDefaultAgents } from "./default-agents.mjs";
 export function desktopExecutable(repoDir) {
   const release = path.join(repoDir, "desktop/src-tauri/target/release/mind-wake-desktop.exe");
   if (fs.existsSync(release)) return release;
@@ -87,5 +88,12 @@ export function prepareInstallation(repoDir, dataDir, codex) {
       2,
     ),
   );
+  const settingsFile = path.join(dataDir, "workspace-settings.json");
+  const workspace = fs.existsSync(settingsFile)
+    ? JSON.parse(fs.readFileSync(settingsFile, "utf8")).activeWorkspace
+    : path.join(dataDir, "workspace");
+  if (typeof workspace !== "string" || !path.isAbsolute(workspace))
+    throw Error("Invalid active workspace");
+  installDefaultAgents(repoDir, workspace);
   return { ...manifest, manifestFile, launcher, mcpFile };
 }

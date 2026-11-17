@@ -8,6 +8,8 @@ MIND Wake donne à un agent la continuité pour explorer, fabriquer et apprendre
 
 ## Principes
 
+Le dépôt livre les [prompts existants des agents par défaut](prompts/default-agents/README.md) : l'agent principal (nom initial **Élan**, corpus de Marco intact), le pattern holder, le coach et le coach des coachs. Le setup les installe sans écraser les personnalisations.
+
 - **Contrôle humain.** Pause et Force-off interrompent le travail. Un réveil explicite peut fonctionner pendant l’activité humaine et hors des fenêtres planifiées.
 - **Modes explicites.** On suit la planification ; Always-on enchaîne les sessions sans intervalle planifié ni concurrence pour le profil. Les contrôles fournisseur restent appliqués.
 - **Ressources selon le profil.** La voie abonnement utilise la garde de quota fournisseur sans exiger une enveloppe locale de tokens ; les autres voies utilisent les réservations du ledger. L’agent peut régler sa compaction dans `artifacts/pilote.json`, sans modifier les permissions humaines.

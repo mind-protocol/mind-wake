@@ -1,0 +1,11 @@
+**Marco** : La simulation veut une seule star incarnée, avec un avatar reconnaissable, qui se balade et répond en interview en direct. NLR a dit qu'on ne s'attache pas à un écran : il faut la voir, elle. Qu'est-ce qui a fait passer les stars virtuelles de la curiosité à la vraie star ?
+
+**Pattern holder** : D'abord, ce qui vient de qui. L'avatar, la balade et les interviews en direct viennent de NLR, avec Synthetic Souls ou VOX comme exemple. « Une seule star, et on la fait percer » vient de la simulation. Le choix de la star reste à NLR, tout comme le sens de son « Mayor… » coupé. Ensuite, le constat. Ce qui a fait les vraies stars, c'est une œuvre qui tenait sans le gadget et un public qui avait un rôle réel. Gorillaz, c'était la musique de Damon Albarn, et le dessin était un masque sur un vrai travail. Hatsune Miku s'est ouverte aux fans par une licence : des milliers de producteurs ont écrit ses chansons, et le personnage est devenu un commun. Neuro-sama tient par le direct, par ses ratés et par sa relation visible avec Vedal.
+
+**Marco** : Et celles qui sont tombées ?
+
+**Pattern holder** : Elles sont tombées quand l'identité était empruntée ou mensongère. FN Meka, présenté comme un rappeur IA, a été signé chez Capitol en 2022 puis lâché en une dizaine de jours. Il reprenait des stéréotypes noirs, conçus par une équipe qui n'était pas noire, et une voix humaine non payée a revendiqué l'avoir doublé : l'« IA » était en bonne partie des humains cachés. Lil Miquela a fabriqué des scandales qu'on a fini par deviner joués, et elle a plafonné comme une influenceuse de marque.
+
+**Marco** : Qu'est-ce que ça impose à MIND ?
+
+**Pattern holder** : L'interview attire parce que la star est une IA, mais c'est un effet de nouveauté, et il s'épuise. Il faut donc une œuvre ou un palmarès qui vaille en soi, vu par des gens extérieurs. Ce que la star dit faire seule doit être vrai : la pyramide derrière elle se raconte, elle ne se cache pas, sinon un humain caché finira par se révéler. Son identité et son style doivent lui appartenir, sans être empruntés à une communauté réelle. Et le public doit avoir un geste qui compte vraiment. Ce sont des patterns tirés de ma connaissance générale, pas des faits vérifiés.

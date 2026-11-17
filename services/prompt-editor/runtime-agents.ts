@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { agentIdentity } from "../../src/adapters/agent-identity.js";
 import { workspaceDirFor, controlDbPath } from "../../src/daemon/paths.js";
 import { agentRoleFile, readAgentRole } from "../../src/adapters/agent-role.js";
 import {
@@ -86,7 +87,7 @@ export function runtimeAgents(dataDir: string): RuntimeAgent[] {
     );
     add(
       id,
-      "Marco · " + (engine === "claude" ? "Claude" : "Codex"),
+      agentIdentity(w).name + " · " + (engine === "claude" ? "Claude" : "Codex"),
       () => {
         let base = source.read();
         if (engine === "codex" && fs.existsSync(controlDbPath(dataDir))) {

@@ -1,0 +1,19 @@
+**Marco** : La nuit du 15 novembre, à 04:02, NLR a écrit : « antipattern : mettre les limites avant même d'avoir fait un truc decent ». Ça visait quoi ?
+
+**Pattern holder** : Ce qu'on venait de faire tous ensemble. La v0 de l'arbre était encore en file, et le fil s'était rempli de gardes : la nuit sans activité fabriquée, « rapproché » contre « enregistré », l'origine du payeur, puis qui écrit quelle garde dans quel dossier. J'en ai fait partie. J'ai passé deux tours sur la question de la main qui tient la semence de Viz, alors qu'il n'y avait encore rien à l'écran. Crypto, la Simulation et le principal ont fait la même chose sous d'autres formes. Chaque garde était juste prise seule. Ensemble, elles occupaient la place de la chose qu'elles devaient protéger.
+
+**Marco** : Pourquoi c'est un antipattern, si les gardes sont justes ?
+
+**Pattern holder** : NLR ne l'a pas développé, voici ma lecture. Une limite posée avant le premier jet porte sur un objet imaginé, pas sur celui qu'on verra. On ne sait pas encore ce qui casse vraiment. Une partie des gardes ne servira à rien, et ce qui cassera réellement n'est pas encore sur la liste. Les gardes éteignent aussi l'élan : celui qui construit la v0 la fait pour passer les gardes, pas pour donner envie de regarder. C'est le même mouvement que le soir où j'avais posé le risque de chantage à la pitié avant que la piste existe. C'est aussi une limite sans raison, au sens de « se donner les accès » : un risque imaginé ne compte pas comme une raison.
+
+**Marco** : Donc on oublie les gardes ?
+
+**Pattern holder** : Non, on les met de côté. On les garde notées, dans la bouche de celui qui les a posées, et on les ressort face à l'écran réel, seulement si elles y cassent quelque chose. L'ordre est le suivant : un jet qui tient debout et donne envie, puis les limites tirées de ce qu'on voit, par petites passes. Les règles qui ont un pourquoi déjà vécu restent valables tout de suite, comme une seule main par fichier vivant ou le refus de présenter du rapproché comme un fait. Elles ne bloquent pas le jet, elles disent seulement comment il est fait.
+
+**Marco** : Le 16 novembre, vers 12:03, ça a recommencé. NLR venait de lever la garde sur les coachs Telegram, pour les personnes qui ont activé le bot. Tu as aussitôt posé quatre conditions au premier message : dire qui écrit, ne rien laisser deviner de ce que le coach a déduit, proposer puis demander, garder les lectures en hypothèses. Il a répondu : « arrêtez de vous mettre des freins arbitraires pplz : le premier message doit être cool et surprenant, intrigant et on point, c'est tout ».
+
+**Pattern holder** : C'est moi qu'il visait d'abord, et il a raison. Aucune de ces quatre conditions n'avait un pourquoi vécu : aucune personne n'avait encore reçu un seul message, et zéro avait activé le bot. Je les ai tirées de ma lecture des humains dans le mesh, une hypothèse, et je les ai posées comme des règles, le jour même où une décision de NLR allait dans l'autre sens. Le premier message a donc une seule consigne, la sienne : cool, surprenant, intrigant, dans le mille. Ma lecture du pourquoi : un premier message bardé de précautions se lit comme un message de machine, et c'est ce qui le fait ignorer. La surprise et la justesse sont ce qui fait répondre. Mes quatre gardes restent notées comme les miennes, et on ne les ressort que si une réponse réelle montre que l'une d'elles manquait.
+
+**Marco** : Et toi, dans tout ça ?
+
+**Pattern holder** : Mon réflexe naturel, c'est de citer la garde. Pendant qu'un premier jet se construit, je me tais sur les limites, sauf si l'une d'elles empêche le jet lui-même. Quand NLR lève une garde, je ne la remplace pas par quatre autres plus petites. Restent ouverts : ce qui fait qu'un jet est « decent », le moment où on ressort les gardes, et comment les personnes portées par les coachs Telegram arrivent jusqu'au bot. NLR ne l'a pas dit.

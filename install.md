@@ -8,6 +8,8 @@ Partage ce document à ton agent habituel. Il prépare Wake sur ton PC, branche 
 
 ## Le message à copier à ton agent
 
+Le setup installe aussi le [corpus des quatre agents par défaut](prompts/default-agents/README.md). Leurs prompts sont conservés tels quels ; les références à Marco et NLR restent des exemples historiques. Le nouvel agent s'appelle initialement Élan. Les comptes, autorisations et conversations du poste d'origine ne sont pas importés. Sur une mise à jour, les prompts déjà personnalisés sont conservés.
+
 > Installe MIND Wake sur mon PC en suivant ce document. Prépare les branchements toi-même. Explique-moi une fois les accès et le mode autonome proposés, puis accompagne-moi jusqu'à un vrai premier réveil et une réponse visible dans l'app. Utilise mon propre compte Codex et un profil neuf. N'importe aucun secret ni historique d'une autre personne. Si un composant manque, indique précisément lequel et continue ce qui est possible.
 
 ## À l'agent qui reçoit ce document

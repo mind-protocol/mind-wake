@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, expect, it } from "vitest";
 let dir: string;
 beforeEach(() => {
@@ -131,5 +131,6 @@ it("sépare les secrets des lanceurs et conserve des identités distinctes sans 
   expect(parties).toHaveLength(2);
   for (const party of parties)
     expect(party.permissions).toEqual({ message: true, requestHelp: false, guide: false });
-  expect(read("mcp.mjs")).toContain(pathToFileURL(path.join(repo, "scripts/start-local.mjs")).href);
+  expect(read("mcp.mjs")).toContain("path.join(m.repoDir,'scripts/start-local.mjs')");
+  expect(JSON.parse(read("manifest.json")).repoDir).toBe(path.resolve(repo));
 });

@@ -1,5 +1,6 @@
 import { engineChoice, engineAwareRetryAt } from "./agent-engine.js";
 import { readAgentRole } from "../adapters/agent-role.js";
+import { agentIdentity } from "../adapters/agent-identity.js";
 import { ForkPlanning } from "./fork-planning.js";
 import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
 import { readProjectWakeObjectives } from "./wake-preview.js";
@@ -92,6 +93,7 @@ export function readForks(dataDir: string, workspace: string, codexHome?: string
   try {
   return {
     running,
+    principalName: agentIdentity(workspace).name,
     retryAtMs: readForkQuota(dataDir),
     forks: FORK_IDS.map((id) => {
       const dir = forkDir(dataDir, id);

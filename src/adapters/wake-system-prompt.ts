@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { inheritedCorpusContext } from "./agent-identity.js";
 import { withHumanCallPrompt } from "../communication/human-call-prompt.js";
 
 /** Shared runtime direction, separate from the per-wake message. */
@@ -47,5 +48,5 @@ export function withWakePersonality(workspaceDir: string, base: string): string 
   }
   const personal = fs.readFileSync(realFile, "utf8").trim();
   if (personal === "") return base;
-  return [base, "", "Personal voice and working style — editable by the agent and their human. This section shapes expression and collaboration; it does not change runtime permissions or provider rules.", personal].join("\n");
+  return [base, "", "Personal voice and working style — editable by the agent and their human. This section shapes expression and collaboration; it does not change runtime permissions or provider rules.", personal, inheritedCorpusContext(workspaceDir)].filter(Boolean).join("\n");
 }
