@@ -1005,7 +1005,9 @@ async function wakeHolder(
       ? `(section ${w.name} non enregistrée : ${w.error ?? "refusée"})`
       : `(section ${w.name} ${w.state})`,
   );
-  const said = edits.text === SILENCE || edits.text.endsWith(`\n${SILENCE}`) ? "" : edits.text;
+  // « [rien] » est la convention de silence de Crypto pour Telegram : elle ne doit pas finir publiée dans le fil.
+  const bare = edits.text.trim();
+  const said = bare === SILENCE || bare.endsWith(`\n${SILENCE}`) || /^\[?rien\]?\.?$/i.test(bare) ? "" : edits.text;
   const publicNotes = said === "" ? notes.filter((_, i) => written[i]?.state === "refusée") : notes;
   const text = [said, ...publicNotes].filter((t) => t !== "").join("\n");
   if (text === "") {
