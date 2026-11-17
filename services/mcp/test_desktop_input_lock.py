@@ -66,13 +66,21 @@ class DesktopInputLockTests(unittest.TestCase):
     def entered(self, name):
         return lambda: any(e["event"] == "enter" and e["name"] == name for e in events(self.log))
 
+    def queued(self, name):
+        db = sqlite3.connect(self.path)
+        try:
+            return db.execute("SELECT 1 FROM queue WHERE name=?", (name,)).fetchone() is not None
+        finally:
+            db.close()
+
     def test_mutual_exclusion_and_fifo_across_processes(self):
-        first = spawn(self.path, self.log, "A", 0.8)
+        first = spawn(self.path, self.log, "A", 3)
         self.assertTrue(wait_for(self.entered("A")))
         waiters = []
         for name in "BCD":
             waiters.append(spawn(self.path, self.log, name, 0.15))
-            time.sleep(0.2)  # enqueue in a known order while A still holds
+            # Enqueue in a known order while A still holds.
+            self.assertTrue(wait_for(lambda: self.queued(name)))
         for p in [first, *waiters]:
             self.assertEqual(p.wait(30), 0)
         log = events(self.log)
@@ -139,6 +147,57 @@ class DesktopInputLockTests(unittest.TestCase):
         db = sqlite3.connect(self.path)
         self.assertEqual(db.execute("SELECT COUNT(*) FROM queue").fetchone()[0], 0)
         db.close()
+
+    def test_shared_desktop_lease_waits_then_passes(self):
+        orig = L.LEASE_SECONDS
+        L.LEASE_SECONDS = 1.0
+        try:
+            with L.DesktopInputLock(self.path, owner={"id": "a", "name": "A"}, room="1", tool="desktop_act", slot=-1):
+                pass
+            start = time.monotonic()
+            # Another room on desktop 1 waits for the reservation instead of failing.
+            with L.DesktopInputLock(self.path, owner={"id": "b", "name": "B"}, room="2", tool="desktop_act",
+                                    slot=-1, wait=5):
+                waited = time.monotonic() - start
+            self.assertGreaterEqual(waited, 0.8)
+            self.assertLess(waited, 3)
+        finally:
+            L.LEASE_SECONDS = orig
+
+    def test_shared_desktop_lease_timeout_names_holder(self):
+        with L.DesktopInputLock(self.path, owner={"id": "a", "name": "Agent-A"}, room="1", tool="desktop_act", slot=-1):
+            pass
+        with self.assertRaises(L.DesktopBusy) as ctx:
+            L.DesktopInputLock(self.path, owner={"id": "b", "name": "B"}, room="2", slot=-1, wait=0.5).acquire()
+        message = str(ctx.exception)
+        self.assertIn("bureau virtuel 1", message)
+        self.assertIn("Agent-A", message)
+        self.assertIn("room 1", message)
+
+    def test_lease_holder_and_other_slots_pass_blocked_waiter(self):
+        import threading
+        with L.DesktopInputLock(self.path, owner={"id": "a", "name": "A"}, room="1", slot=-1):
+            pass
+        order, errors = [], []
+
+        def blocked():
+            try:
+                with L.DesktopInputLock(self.path, owner={"id": "b"}, room="2", slot=-1, wait=1.5):
+                    order.append("b")
+            except L.DesktopBusy:
+                errors.append("b")
+        thread = threading.Thread(target=blocked)
+        thread.start()
+        time.sleep(0.3)  # B is queued first
+        with L.DesktopInputLock(self.path, owner={"id": "a"}, room="1", slot=-1, wait=1):
+            order.append("a")  # the lease holder continues its sequence
+        with L.DesktopInputLock(self.path, owner={"id": "c"}, room="3", slot=3, wait=1):
+            order.append("c")  # another room's own desktop is not blocked
+        with L.DesktopInputLock(self.path, owner={"id": "d"}, wait=1):
+            order.append("d")  # read-only live view has no lease
+        thread.join()
+        self.assertEqual(order, ["a", "c", "d"])
+        self.assertEqual(errors, ["b"])
 
 
 if __name__ == "__main__":
