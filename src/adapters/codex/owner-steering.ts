@@ -8,6 +8,7 @@ import {
 import type { RpcClient } from "./rpc.js";
 import { ownerContent } from "../../communication/owner-content.js";
 import { claimProgressReminder, finishProgressReminder } from "../../communication/owner-progress-reminder.js";
+import { claimSessionReminders, finishSessionReminders } from "../../daemon/wake-reminders.js";
 
 /** Deliver to the existing turn. Never interrupts it, starts a second turn or kills a tool. */
 export class CodexOwnerSteering {
@@ -15,6 +16,7 @@ export class CodexOwnerSteering {
   #busy = false;
   #progressClaim: string | null = null;
   #duoClaim: string | null = null;
+  #timedClaim: string | null = null;
   #timer: NodeJS.Timeout;
   constructor(
     private readonly inbox: string,
@@ -36,10 +38,14 @@ export class CodexOwnerSteering {
     try {
       const claim = randomUUID();
       const messages = claimOwnerMessages(this.inbox, this.sessionId, claim);
-      const duo = messages.length ? null : claimDuoReminder(this.inbox, claim);
-      const reminder = duo ?? (messages.length ? null : claimProgressReminder(this.inbox, this.sessionId, claim));
+      // Rappel ponctuel échu (set_reminder) : prioritaire sur les relances duo/progression.
+      const timed = messages.length ? null : claimSessionReminders(this.inbox, claim);
+      const duo = messages.length || timed ? null : claimDuoReminder(this.inbox, claim);
+      const reminder =
+        timed ?? duo ?? (messages.length ? null : claimProgressReminder(this.inbox, this.sessionId, claim));
       if (!messages.length && !reminder) return;
-      if (duo) this.#duoClaim = claim;
+      if (timed) this.#timedClaim = claim;
+      else if (duo) this.#duoClaim = claim;
       else if (reminder) this.#progressClaim = claim;
       const accepted = await this.rpc.request("turn/steer", {
         threadId: this.threadId,
@@ -49,7 +55,10 @@ export class CodexOwnerSteering {
       });
       if (this.#canConfirm() && accepted["turnId"] === this.turnId) {
         if (messages.length) confirmOwnerClaim(this.inbox, this.sessionId, claim);
-        if (duo) {
+        if (timed) {
+          finishSessionReminders(this.inbox, claim, true);
+          this.#timedClaim = null;
+        } else if (duo) {
           finishDuoReminder(this.inbox, claim, true);
           this.#duoClaim = null;
         } else if (reminder) {
@@ -78,6 +87,10 @@ export class CodexOwnerSteering {
     this.#stopped = true;
     clearInterval(this.#timer);
     try {
+      if (this.#timedClaim) {
+        finishSessionReminders(this.inbox, this.#timedClaim, false);
+        this.#timedClaim = null;
+      }
       if (this.#duoClaim) {
         finishDuoReminder(this.inbox, this.#duoClaim, false);
         this.#duoClaim = null;

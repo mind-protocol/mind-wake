@@ -8,6 +8,7 @@ import {
   takeOwnerMessages,
 } from "../../communication/owner-inbox.js";
 import { CodexOwnerSteering } from "./owner-steering.js";
+import { readReminders, setOneShotReminder } from "../../daemon/wake-reminders.js";
 import { OwnerMessages } from "../../communication/owner-messages.js";
 import { OwnerProgressReminder, PROGRESS_REMINDER } from "../../communication/owner-progress-reminder.js";
 let dir: string;
@@ -163,4 +164,23 @@ it("steers screenshot bytes as an image block, including after waiting in the qu
     }),
   );
   expect(readOwnerReceipts(dir)["screen"]).toBeTruthy();
+});
+it("steers a due one-shot reminder once, after human messages; refused steer leaves it for the next wake", async () => {
+  setOneShotReminder(dir, { text: "rappel codex", why: "test", inMinutes: 1 }, new Date(Date.now() - 120_000));
+  add();
+  const request = vi.fn(async () => ({ turnId: "turn" }));
+  steering = new CodexOwnerSteering(dir, "session", "thread", "turn", { request }, () => true);
+  await steering.flush();
+  expect(JSON.stringify(request.mock.calls[0])).toContain("human-1");
+  await steering.flush();
+  expect(JSON.stringify(request.mock.calls[1])).toContain("rappel codex");
+  expect(readReminders(dir).oneShots?.[0]?.deliveredVia).toBe("session");
+  await steering.flush();
+  expect(request).toHaveBeenCalledTimes(2);
+  steering.stop();
+  setOneShotReminder(dir, { text: "refusé", why: "test", inMinutes: 1 }, new Date(Date.now() - 120_000));
+  steering = new CodexOwnerSteering(dir, "s2", "thread", "turn",
+    { request: async () => ({ turnId: "other" }) }, () => true);
+  await steering.flush();
+  expect(readReminders(dir).oneShots?.find((r) => r.text === "refusé")).toMatchObject({ deliveredAt: null, claim: null });
 });

@@ -4,6 +4,7 @@ import { heldForFastReply, takeOwnerMessagesForHook } from "./owner-inbox.js";
 import { ownerMessageText } from "./owner-content.js";
 import { randomUUID } from "node:crypto";
 import { claimProgressReminder, finishProgressReminder } from "./owner-progress-reminder.js";
+import { claimSessionReminders, finishSessionReminders } from "../daemon/wake-reminders.js";
 
 export function ownerInboxHook(
   dataDir: string,
@@ -29,12 +30,16 @@ export function ownerInboxHook(
   const claim = randomUUID();
   const duo = messages.length ? null : claimDuoReminder(dataDir, claim);
   const reminder = duo ?? (messages.length ? null : claimProgressReminder(dataDir, expectedSession, claim));
-  if (messages.length === 0 && reminder === null && batch.deferred === 0) return null;
+  // Rappels ponctuels en minutes échus (set_reminder) : livrés une fois, à côté du reste.
+  const timed = claimSessionReminders(dataDir, claim);
+  if (messages.length === 0 && reminder === null && timed === null && batch.deferred === 0) return null;
   const context = [
+    ...(timed === null ? [] : [timed]),
     ...(reminder === null ? [] : [reminder]),
     messages.map(({ image: _image, ...message }) => ownerMessageText(message)).join("\n\n"),
     ...(batch.deferred > 0 ? [`+${String(batch.deferred)} autres messages en attente`] : []),
   ].filter(Boolean).join("\n\n");
+  if (timed) finishSessionReminders(dataDir, claim, true);
   if (duo) finishDuoReminder(dataDir, claim, true);
   else if (reminder) finishProgressReminder(dataDir, expectedSession, claim, true);
   return name === "Stop"

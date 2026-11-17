@@ -5,14 +5,19 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  ackOneShotReminder,
   addReminder,
+  claimSessionReminders,
+  finishSessionReminders,
   readReminders,
   removeReminder,
   remindersPath,
+  setOneShotReminder,
   takeWakeReminders,
   writeReminders,
 } from "./wake-reminders.js";
 import { composeWake, loadWakeTemplates } from "./wake-prompt.js";
+import { ownerInboxHook } from "../communication/owner-inbox-hook.js";
 
 let dir: string;
 const T0 = new Date("2026-11-16T18:30:00.000Z");
@@ -108,5 +113,132 @@ describe("injection", () => {
     const e = base.text.indexOf("New events (data):");
     expect(r).toBeGreaterThan(-1);
     expect(e).toBeGreaterThan(r);
+  });
+});
+
+describe("rappels ponctuels (set_reminder)", () => {
+  const take = (n: number, h: number) => takeWakeReminders(dir, n, at(h));
+
+  it("en réveils : livré une seule fois, au réveil N + in_wakes", () => {
+    take(10, 0);
+    const r = setOneShotReminder(dir, { text: "relire le lecteur", why: "vérifier la bascule A/B", inWakes: 3 }, T0);
+    expect(r.dueWake).toBe(13);
+    expect(r.dueAt).toBeNull();
+    expect(take(11, 0.1).oneShotsDue).toHaveLength(0);
+    expect(take(12, 0.2).oneShotsDue).toHaveLength(0);
+    const hit = take(13, 0.3);
+    expect(hit.oneShotsDue.map((x) => x.id)).toEqual([r.id]);
+    expect(hit.block).toContain("Rappels ponctuels arrivés à échéance");
+    expect(hit.block).toContain("relire le lecteur");
+    expect(hit.block).toContain("Pourquoi : vérifier la bascule A/B");
+    expect(hit.block).toContain("Posé le 2026-11-16 18:30 UTC pour le réveil n° 13");
+    expect(hit.block).toContain("ack_reminder(id)");
+  });
+
+  it("en réveils sans compteur connu : échéance fixée au premier réveil vu", () => {
+    const r = setOneShotReminder(dir, { text: "x", why: "y", inWakes: 1 }, T0);
+    expect(r.dueWake).toBeNull();
+    expect(take(42, 0.1).oneShotsDue).toHaveLength(1);
+  });
+
+  it("en minutes : pas avant l'échéance, puis au premier réveil après", () => {
+    take(1, 0);
+    const r = setOneShotReminder(dir, { text: "regarder la room", why: "réponse attendue", inMinutes: 30 }, T0);
+    expect(r.dueAt).toBe("2026-11-16T19:00:00.000Z");
+    expect(take(2, 0.25).oneShotsDue).toHaveLength(0);
+    const hit = take(3, 1);
+    expect(hit.oneShotsDue).toHaveLength(1);
+    expect(hit.block).toContain("pour 2026-11-16 19:00 UTC (échu depuis 30 min, livré en retard)");
+  });
+
+  it("livraison unique puis signalement « en souffrance » jusqu'à l'acquittement", () => {
+    take(1, 0);
+    const r = setOneShotReminder(dir, { text: "a", why: "b", inWakes: 1 }, T0);
+    expect(take(2, 0.1).oneShotsDue).toHaveLength(1);
+    const again = take(3, 0.2);
+    expect(again.oneShotsDue).toHaveLength(0);
+    expect(again.oneShotsOverdue.map((x) => x.id)).toEqual([r.id]);
+    expect(again.block).toContain("Rappels en souffrance (livrés mais non acquittés)");
+    expect(again.block).toContain("livré au réveil n° 2");
+    expect(take(4, 0.3).oneShotsOverdue[0]?.overdueSignals).toBe(2);
+    expect(ackOneShotReminder(dir, r.id, at(0.4))).toEqual({ acked: true, wasDelivered: true });
+    const after = take(5, 0.5);
+    expect(after.oneShotsDue).toHaveLength(0);
+    expect(after.oneShotsOverdue).toHaveLength(0);
+    expect(after.block).toBe("");
+    expect(readReminders(dir).oneShots?.[0]?.ackedAt).not.toBeNull();
+    // Acquittés conservés 7 jours puis purgés.
+    take(6, 24 * 8);
+    expect(readReminders(dir).oneShots).toHaveLength(0);
+    expect(ackOneShotReminder(dir, "inconnu")).toEqual({ acked: false, wasDelivered: false });
+  });
+
+  it("persistance : relu depuis le fichier, coexistence avec les rappels martelés", () => {
+    take(7, 0);
+    const m = addReminder(dir, { text: "martelé", every: 1, source: "s" }, T0);
+    const r = setOneShotReminder(dir, { text: "ponctuel", why: "w", inMinutes: 5 }, T0);
+    const raw = JSON.parse(fs.readFileSync(remindersPath(dir), "utf8")) as Record<string, unknown>;
+    expect((raw["oneShots"] as unknown[]).length).toBe(1);
+    expect(readReminders(dir).oneShots?.[0]).toMatchObject({ id: r.id, why: "w", inMinutes: 5, deliveredAt: null });
+    const hit = take(8, 1);
+    expect(hit.due.map((x) => x.id)).toEqual([m.id]);
+    expect(hit.oneShotsDue.map((x) => x.id)).toEqual([r.id]);
+    expect(hit.block.indexOf("Rappels martelés")).toBeLessThan(hit.block.indexOf("Rappels ponctuels"));
+    expect(removeReminder(dir, m.id)).toBe(true);
+    expect(readReminders(dir).oneShots).toHaveLength(1);
+    expect(removeReminder(dir, r.id)).toBe(true);
+    expect(readReminders(dir).oneShots).toHaveLength(0);
+  });
+
+  it("refus : ni délai, les deux, délai < 1, why vide ou multiligne ; fichier illisible non écrasé", () => {
+    expect(() => setOneShotReminder(dir, { text: "x", why: "y" })).toThrow(/exactement un délai/);
+    expect(() => setOneShotReminder(dir, { text: "x", why: "y", inWakes: 1, inMinutes: 1 })).toThrow(
+      /exactement un délai/,
+    );
+    expect(() => setOneShotReminder(dir, { text: "x", why: "y", inWakes: 0 })).toThrow(/in_wakes/);
+    expect(() => setOneShotReminder(dir, { text: "x", why: "y", inMinutes: 1.5 })).toThrow(/in_minutes/);
+    expect(() => setOneShotReminder(dir, { text: "x", why: " ", inWakes: 1 })).toThrow(/why/);
+    expect(() => setOneShotReminder(dir, { text: "x", why: "a\nb", inWakes: 1 })).toThrow(/why/);
+    fs.writeFileSync(remindersPath(dir), "{ cassé");
+    expect(() => setOneShotReminder(dir, { text: "x", why: "y", inWakes: 1 })).toThrow(/illisible/);
+    expect(fs.readFileSync(remindersPath(dir), "utf8")).toBe("{ cassé");
+  });
+
+  it("en cours de session : poussé une fois, puis en souffrance au réveil suivant si non acquitté", () => {
+    take(1, 0);
+    const r = setOneShotReminder(dir, { text: "relancer l'agent", why: "écart de volume", inMinutes: 10 }, T0);
+    expect(claimSessionReminders(dir, "c0", at(0.1))).toBeNull();
+    const text = claimSessionReminders(dir, "c1", at(0.2));
+    expect(text).toContain("rappel ponctuel (posé par toi-même, pas un message de ton humain)");
+    expect(text).toContain("relancer l'agent");
+    // Réservé : un autre consommateur ne le reprend pas.
+    expect(claimSessionReminders(dir, "c2", at(0.2))).toBeNull();
+    finishSessionReminders(dir, "c1", true, at(0.2));
+    expect(readReminders(dir).oneShots?.[0]).toMatchObject({ deliveredVia: "session", claim: null });
+    expect(claimSessionReminders(dir, "c3", at(0.3))).toBeNull();
+    const next = take(2, 0.5);
+    expect(next.oneShotsDue).toHaveLength(0);
+    expect(next.oneShotsOverdue.map((x) => x.id)).toEqual([r.id]);
+    expect(next.block).toContain("livré en cours de session");
+  });
+
+  it("en cours de session : réservation non confirmée → libérée puis livrée au réveil", () => {
+    take(1, 0);
+    setOneShotReminder(dir, { text: "x", why: "y", inMinutes: 1 }, T0);
+    expect(claimSessionReminders(dir, "c1", at(0.1))).not.toBeNull();
+    finishSessionReminders(dir, "c1", false, at(0.1));
+    expect(readReminders(dir).oneShots?.[0]?.deliveredAt).toBeNull();
+    expect(take(2, 0.2).oneShotsDue).toHaveLength(1);
+  });
+
+  it("hook d'inbox Claude : pousse le rappel échu dans additionalContext, une seule fois", () => {
+    take(1, 0);
+    const now = new Date();
+    setOneShotReminder(dir, { text: "rappel hook", why: "test", inMinutes: 1 }, new Date(now.getTime() - 120_000));
+    const ev = { session_id: "s", hook_event_name: "PostToolUse" };
+    const out = ownerInboxHook(dir, "s", ev) as { hookSpecificOutput?: { additionalContext?: string } } | null;
+    expect(out?.hookSpecificOutput?.additionalContext).toContain("rappel hook");
+    expect(readReminders(dir).oneShots?.[0]?.deliveredVia).toBe("session");
+    expect(ownerInboxHook(dir, "s", ev)).toBeNull();
   });
 });

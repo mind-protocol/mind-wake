@@ -137,6 +137,7 @@ import { ownerMessagePending } from "../communication/owner-inbox.js";
 import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
 import { BackgroundJobs } from "./background-jobs.js";
 import { TelegramSupervisor } from "./telegram-supervisor.js";
+import { PontP2PSupervisor } from "./pont-p2p-supervisor.js";
 import { QuotaPacingStore } from "./pacing.js";
 
 export class DaemonError extends Error {
@@ -281,6 +282,7 @@ export class WakeDaemon implements SessionLauncher {
   #fastReply: FastReplyService | null = null;
   #patternHolders: PatternHolderService | null = null;
   #telegram: TelegramSupervisor | null = null;
+  #pontP2P: PontP2PSupervisor | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -731,6 +733,14 @@ export class WakeDaemon implements SessionLauncher {
           log: message => this.#log(message),
         });
         this.#telegram.start();
+        // Pont pair-à-pair ⬡ : lancé seulement si l'interrupteur des Réglages est activé.
+        this.#pontP2P = new PontP2PSupervisor({
+          dataDir: this.#o.dataDir,
+          wakeupsDir: () => path.join(workspaceDirFor(this.#o.dataDir), "wakeups"),
+          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
+          log: message => this.#log(message),
+        });
+        this.#pontP2P.start();
       }
       if (real !== null && real.sandbox === null) {
         const hostWorkAllowed = () => {
@@ -758,6 +768,7 @@ export class WakeDaemon implements SessionLauncher {
       await this.#fastReply?.close();
       await this.#patternHolders?.close();
       this.#telegram?.close();
+      this.#pontP2P?.close();
       await this.#auroreSync?.close();
       await this.#workspaceSync?.close();
       await this.#repairAgent?.close();
@@ -1122,6 +1133,8 @@ export class WakeDaemon implements SessionLauncher {
     const reminders = takeWakeReminders(this.#o.dataDir, wakeNumber);
     if (reminders.due.length + reminders.expired.length > 0)
       this.#log(`réveil ${String(wakeNumber)} : ${String(reminders.due.length)} rappel(s) martelé(s), ${String(reminders.expired.length)} expiré(s)`);
+    if (reminders.oneShotsDue.length + reminders.oneShotsOverdue.length > 0)
+      this.#log(`réveil ${String(wakeNumber)} : ${String(reminders.oneShotsDue.length)} rappel(s) ponctuel(s) livré(s), ${String(reminders.oneShotsOverdue.length)} en souffrance`);
     const composition = composeWake({
       templates: this.#templates,
       reminders: reminders.block,
