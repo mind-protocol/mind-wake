@@ -463,10 +463,10 @@ export function callClaude(
   return startClaude(claude, args, cwd, timeoutMs).answer(prompt);
 }
 
-export function agentTextCall(dataDir: string, native?: typeof callClaude): typeof callClaude {
+export function agentTextCall(dataDir: string, native?: typeof callClaude, canRespond: () => boolean = () => true): typeof callClaude {
   return (claude, originalArgs, prompt, originalCwd, timeoutMs = 90000) => {
     const role = roomVoiceLaunch(dataDir,originalArgs,originalCwd), args=role.args,cwd=role.cwd;
-    const allowed=()=>role.textOnly || roleVoiceMayAct(dataDir);
+    const allowed=()=>canRespond() && (role.textOnly || roleVoiceMayAct(dataDir));
     return launchAgentSession<ClaudeAnswer>(dataDir, "claude", async engine => {
     if (!allowed()) return {error:"Wake is paused or stopped; role actions are not allowed"};
     if (engine === "claude") {

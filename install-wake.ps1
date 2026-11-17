@@ -1,9 +1,10 @@
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-  [string]$Destination = (Join-Path $env:USERPROFILE 'mind-wake'),
+  [string]$Destination,
   [string]$DataDir = (Join-Path $env:LOCALAPPDATA 'mind-wake'),
   [switch]$NoOpen,
+  [switch]$SkipStt,
   [switch]$Login,
   [switch]$Start,
   [switch]$AcceptNative,
@@ -13,7 +14,14 @@ param(
   [string]$CodexHome = $env:CODEX_HOME
 )
 $ErrorActionPreference = 'Stop'
+if (!$Destination) {
+  # Running from a clone must reuse that clone, regardless of the caller's current directory.
+  $Destination = if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.git')) { $PSScriptRoot } else { Join-Path $env:USERPROFILE 'mind-wake' }
+}
 $Destination = [System.IO.Path]::GetFullPath($Destination)
+$DataDir = [System.IO.Path]::GetFullPath($DataDir)
+Write-Host "Depot : $Destination"
+Write-Host "Profil : $DataDir"
 $wakeSource = 'https://github.com/mind-protocol/mind-wake.git'
 function Invoke-WakeCommand {
   param([string]$Executable, [string[]]$Arguments)
@@ -58,6 +66,7 @@ try {
     Write-Host '[5/5] Connecting local MCP and desktop...'
     $setupArgs = @('scripts/setup.mjs', '--apply', '--data-dir', $DataDir)
     if ($NoOpen) { $setupArgs += '--no-open' }
+    if ($SkipStt) { $setupArgs += '--skip-stt' }
     if ($Login) { $setupArgs += '--login' }
     if ($CodexHome) { $setupArgs += @('--codex-home', $CodexHome) }
     if ($Start) { $setupArgs += @('--start', '--accept-native') }

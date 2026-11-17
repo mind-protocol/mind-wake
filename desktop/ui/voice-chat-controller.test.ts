@@ -99,7 +99,7 @@ function fixture(permission?: () => Promise<MediaStream>, asyncStop = false) {
     recorders,
   };
 }
-it("sends a fork dictation once after five seconds of low audio and stays armed", async () => {
+it("sends a fork dictation once after two seconds of low audio and stays armed", async () => {
   const f = fixture();
   const processor = { onaudioprocess: null as ScriptProcessorNode["onaudioprocess"], connect: vi.fn(), disconnect: vi.fn() };
   vi.stubGlobal("AudioContext", class {
@@ -119,14 +119,14 @@ it("sends a fork dictation once after five seconds of low audio and stays armed"
   feed(0, 60);
   expect(f.transcribe).not.toHaveBeenCalled();
   feed(0.08);
-  feed(0, 49);
+  feed(0, 19);
   feed(0.08);
-  feed(0, 49);
+  feed(0, 19);
   expect(f.transcribe).not.toHaveBeenCalled();
   voiceChatPlayback(true);
   feed(0.08, 60);
   voiceChatPlayback(false);
-  feed(0, 49);
+  feed(0, 19);
   expect(f.transcribe).not.toHaveBeenCalled();
   feed(0);
   await vi.advanceTimersByTimeAsync(0);

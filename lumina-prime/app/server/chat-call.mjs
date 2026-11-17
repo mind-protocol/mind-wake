@@ -1,4 +1,5 @@
 import { ChatError } from './chat-server.mjs';
+import { createHash } from 'node:crypto';
 
 /**
  * Mode « Appel » de l'app mobile (NLR, 16 nov. 2026 17:53 et 17:55) : chaque prise de parole
@@ -49,7 +50,7 @@ export const MIRROR_TAG = '[Appel]';
 export const MIRROR_RULE = "(Règle d'appel : Marco répond par défaut ; les autres participants ne parlent que s'ils apportent quelque chose de neuf, sinon SILENCE.)";
 export const MIRROR_MAX_CHARS = 1200;
 /** Préavis d'appel (NLR, 17 nov. 2026) : l'appelé sait que NLR l'appelle avant la première phrase. */
-export const ringText = callId => `${MIRROR_TAG} 📞 NLR t'appelle — prépare-toi à décrocher et envoie-lui ce que tu as à lui dire (appel ${callId}).`;
+export const ringText = (callId, caller = 'NLR') => `${MIRROR_TAG} 📞 ${caller} t'appelle — prépare-toi à décrocher et envoie-lui ce que tu as à lui dire (appel ${callId}).`;
 export const mirrorText = (speaker, text) => {
   const body = String(text).trim();
   const clipped = body.length > MIRROR_MAX_CHARS ? `${body.slice(0, MIRROR_MAX_CHARS - 1)}…` : body;
@@ -77,8 +78,9 @@ const keySafe = value => String(value).replace(/[^A-Za-z0-9_.:-]/g, '_');
 export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HANDLE, handleTable, routeHandle,
   sendMain, wakeMain = () => {}, mainReplies, roomEntries, speak, holders: holderList, owners: ownerMap,
   transcribing: busy = () => false, now = Date.now, cacheSize = 12,
-  noticeMain = null, noticeRoom = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000 } = {}) {
+  noticeMain = null, noticeRoom = null, answerCall = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000 } = {}) {
   let transcribing = busy;
+  let remote = null;
   if (typeof sendMain !== 'function' || typeof mainReplies !== 'function' || typeof speak !== 'function')
     throw new Error('Call service requires main thread and speech');
   const table = () => { try { return handleTable?.() ?? new Map(); } catch { return new Map(); } };
@@ -91,6 +93,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
 
   function resolve(handle) {
     if (typeof handle !== 'string' || !HANDLE.test(handle)) throw new ChatError('call_target_invalid');
+    const distant = remote?.resolve(handle);
+    if (distant) return distant;
     if (handle === MAIN_HANDLE) return { handle, kind: 'main', label: mainLabel, agentId: mainAgentId };
     const target = table().get(handle);
     // Un agent de room reste joint dans sa room, même s'il porte aussi un fichier de holder (coachs).
@@ -152,7 +156,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       const name = roomName(room);
       push(rooms, { handle, label: `Room ${room}${name ? ` · ${name}` : ''}`, kind: 'room', room });
     }
-    return [{ handle: MAIN_HANDLE, label: mainLabel, kind: 'main' }, ...agents, ...rooms].slice(0, 120);
+    return [...[{ handle: MAIN_HANDLE, label: mainLabel, kind: 'main' }, ...agents, ...rooms].slice(0, 120), ...(remote?.targets() ?? [])];
   }
 
   /** `handles` : un handle ou une liste (« room 1 + vox »), `a,b` accepté. */
@@ -170,7 +174,12 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       if(!targets.length) return {status:'empty',at:new Date(now()).toISOString(),label:''};
       current.lastActivity = now();
     } else joinCall(targets);
-    const body = callBody(text);
+    const distant = targets.filter(t => t.kind === 'remote');
+    if (distant.length) {
+      if (!context) throw new ChatError('call_session_required');
+      await remote.deliver(distant, id, text, assertSession(context.owner, context.id, context.epoch),context.speaker);
+    }
+    const body = callBody(context?.speaker ? `[${context.speaker}] ${text}` : text);
     const delivered = []; let at = new Date(now()).toISOString();
     // Fil principal (MIND et holders du fil principal) : un seul message, les holders mentionnés en tête.
     const main = targets.filter(t => t.kind === 'main' || (t.kind === 'holder' && !t.room));
@@ -214,7 +223,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       if (result?.status !== 'routed') throw new ChatError('call_target_unavailable', 503);
       delivered.push(...route.labels.map(label => label ?? result.label ?? route.fallback));
     }
-    return { label: delivered.join(' + '), at };
+    return { label: [...delivered, ...distant.map(t => t.label)].join(' + '), at };
   }
 
   /** Noms des participants connus → voix (id d'agent ou slug de holder). */
@@ -239,7 +248,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   }
 
   /** Réponses d'agent d'un interlocuteur déjà résolu, non découpées (toutes dates). */
-  async function rawItems(target, names = speakers()) {
+  async function rawItems(target, names = speakers(), context = null) {
+    if (target.kind === 'remote') return remote.items(target, context);
     if (target.kind === 'main' || (target.kind === 'holder' && !target.room)) {
       const messages = await mainReplies();
       if (!Array.isArray(messages)) throw new ChatError('wake_unavailable', 503);
@@ -262,12 +272,15 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   }
 
   /** Réponses de l'interlocuteur postérieures à `since` (ISO), les plus anciennes d'abord. */
-  async function replies(handle, since) {
+  async function replies(handle, since, scope = null) {
     const target = resolve(handle);
+    const context=scope?assertSession(scope.owner,scope.id,scope.epoch):null;
+    if(context&&!context.targets.has(handle))throw new ChatError('call_target_not_joined',403);
+    if(target.kind==='remote'&&!context)return [];
     const floor = Date.parse(since);
     if (!Number.isFinite(floor)) throw new ChatError('invalid_request');
     touch(handle);
-    const items = await rawItems(target);
+    const items = await rawItems(target, speakers(), context);
     // Une réponse longue devient des morceaux phrase par phrase : la voix démarre sur la première.
     return items.filter(item => Date.parse(item.at) > floor && item.text.trim())
       .sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(-20)
@@ -281,7 +294,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   // --- Appel = room partagée temporaire -------------------------------------------------------
   /** Appels actifs : id → { targets: Map handle → { target, joinedAt }, lastActivity, seen, sent }. */
   const calls = new Map(); let callSeq = 0;
-  const channelOf = t => (t.kind === 'main' || (t.kind === 'holder' && !t.room) ? 'main' : `room:${t.room}`);
+  const channelOf = t => t.kind === 'remote' ? t.channel : (t.kind === 'main' || (t.kind === 'holder' && !t.room) ? 'main' : `room:${t.room}`);
   const callOf = handle => [...calls.values()].find(c => !c.explicit && c.targets.has(handle)) ?? null;
   /** Le sondage des réponses par l'app garde l'appel ouvert ; sans sondage, il expire (idleMs). */
   function touch(handle) { const c = callOf(handle); if (c) c.lastActivity = now(); }
@@ -326,32 +339,44 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
    * qu'une même si la room et son agent sont appelés. Jamais bloquant pour l'ouverture de l'appel.
    */
   const rung = new Set();
-  function ring(id, targets) {
+  const answered = new Set();
+  function ring(id, targets, caller = 'NLR') {
+    for (const target of targets) {
+      if (target.kind === 'remote' || !answerCall) continue;
+      const key = `${id}:${target.handle}`;
+      if (answered.has(key)) continue;
+      answered.add(key);
+      while (answered.size > 2048) answered.delete(answered.values().next().value);
+      const current = calls.get(id);
+      const active = () => calls.get(id) === current && current?.targets.has(target.handle)
+        && now() - current.lastActivity <= idleMs;
+      Promise.resolve().then(() => active() && answerCall({ id, target, caller, active }))
+        .catch(error => console.error('Call opening response failed:', error.message));
+    }
     const notices = new Map();
     for (const t of targets) {
+      if (t.kind === 'remote') continue;
       const key = t.room ? `call-ring:${keySafe(id)}:room${t.room}` : `call-ring:${keySafe(id)}:${keySafe(t.handle)}`;
       if (rung.has(key) || notices.has(key)) continue;
       const mention = t.room ? '' : (t.mention ?? '');
-      notices.set(key, { channel: t.room ? `room:${t.room}` : 'main', text: mention ? `${mention} ${ringText(id)}` : ringText(id), main: !t.room });
+      notices.set(key, { channel: t.room ? `room:${t.room}` : 'main', text: mention ? `${mention} ${ringText(id, caller)}` : ringText(id, caller), main: !t.room });
     }
-    let wakeNeeded = false;
     for (const [key, n] of notices) {
       rung.add(key);
       while (rung.size > 512) rung.delete(rung.values().next().value);
-      if (n.main) wakeNeeded = true;
       Promise.resolve().then(() => post(n.channel, key.slice(0, 128), n.text))
         .then(ok => { if (!ok) rung.delete(key); }, () => { rung.delete(key); });
     }
-    if (wakeNeeded) try { wakeMain(); } catch { /* Le scheduler décide. */ }
   }
-  function openSession(owner,id,epoch,handles) {
+  function openSession(owner,id,epoch,handles,options = {}) {
     const key=sessionKey(owner,id,epoch);
     if(closedSessions.has(key)) throw new ChatError('call_ended',410);
     const targets=parseTargets(handles); const existing=calls.get(id);
     if(existing) return sessionView(assertSession(owner,id,epoch));
     const at=now();
     const c={id,epoch,owner,revision:1,explicit:true,startedAt:at,lastActivity:at,targets:new Map(targets.map(target=>[target.handle,{target,joinedAt:at}])),seen:new Set(),sent:[]};
-    calls.set(id,c);ring(id,targets);return sessionView(c);
+    c.mirror = options.mirror !== false; c.caller = options.caller ?? 'NLR';
+    calls.set(id,c);ring(id,targets,c.caller);return sessionView(c);
   }
   function addSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);
@@ -360,7 +385,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const next=new Map(c.targets);const at=now();for(const target of targets)if(!next.has(target.handle))next.set(target.handle,{target,joinedAt:at});
     if(next.size>MAX_TARGETS)throw new ChatError('call_target_invalid');
     const added=targets.filter(t=>!c.targets.has(t.handle));
-    c.targets=next;ring(id,added);c.revision++;c.lastActivity=at;return sessionView(c);
+    c.targets=next;ring(id,added,c.caller);c.revision++;c.lastActivity=at;return sessionView(c);
   }
   function removeSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);
@@ -379,7 +404,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   function endSession(owner,id,epoch) {
     const key=sessionKey(owner,id,epoch);const c=calls.get(id);
     if(c && (!c.explicit || c.owner!==owner || c.epoch!==epoch))throw new ChatError('call_session_forbidden',403);
-    rememberClosed(key);if(c)calls.delete(id);return {id,epoch,status:'ended',handles:[]};
+    rememberClosed(key);if(c){calls.delete(id);remote?.end(c);}return {id,epoch,status:'ended',handles:[]};
   }
   /** Caller authority derives from resolved targets and server-owned owner map, never labels. */
   function identityKeys(handles) {
@@ -397,7 +422,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     return { ended };
   }
   const active = () => [...calls.values()].map(c => ({ id: c.id, handles: [...c.targets.keys()] }));
-  async function post(channel, key, text) {
+  async function post(channel, key, text, context = null) {
+    if (channel.startsWith('remote:')) return remote.post(channel, key, text, context);
     if (channel === 'main') { if (typeof noticeMain !== 'function') return false; await noticeMain(key, text); return true; }
     if (typeof noticeRoom !== 'function') return false;
     await noticeRoom(Number(channel.slice(5)), key, text); return true;
@@ -409,22 +435,25 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     ticking = (async () => {
       const at = now();
       for (const [id, c] of calls) if (at - c.lastActivity > idleMs) {
-        if(c.explicit) rememberClosed(sessionKey(c.owner,c.id,c.epoch));calls.delete(id);
+        if(c.explicit) rememberClosed(sessionKey(c.owner,c.id,c.epoch));calls.delete(id);remote?.end(c);
       }
       const names = speakers();
       for (const c of [...calls.values()]) {
+        if (c.mirror === false) continue;
         const channels = [...new Set([...c.targets.values()].map(v => channelOf(v.target)))];
         if (channels.length < 2) continue;
         const fresh = new Map();
         for (const { target, joinedAt } of c.targets.values()) {
-          let items; try { items = await rawItems(target, names); } catch { continue; }
+          let items; try { items = await rawItems(target, names, c); } catch { continue; }
+          if (!c.targets.has(target.handle)) continue;
           const floor = Math.max(c.startedAt, joinedAt);
           for (const item of items)
             if (!c.seen.has(item.id) && Date.parse(item.at) >= floor && item.text.trim() && !item.text.startsWith(MIRROR_TAG))
-              fresh.set(item.id, { ...item, channel: channelOf(target) });
+              fresh.set(item.id, { ...item, channel: channelOf(target), source: target.handle });
         }
         for (const item of [...fresh.values()].sort((x, y) => Date.parse(x.at) - Date.parse(y.at))) {
           if (!calls.has(c.id)) break; // Raccroché pendant le passage.
+          if (!c.targets.has(item.source)) continue;
           const dests = channels.filter(ch => ch !== item.channel);
           c.sent = c.sent.filter(t => now() - t < 60_000);
           // Plafond par appel : au-delà, la copie attend un passage suivant.
@@ -432,9 +461,10 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
           const text = mirrorText(item.speaker, item.text);
           let ok = true;
           for (const dest of dests) {
+            if (!calls.has(c.id) || ![...c.targets.values()].some(v => channelOf(v.target) === dest)) continue;
             // Clé d'idempotence par copie : un nouveau passage ou un redémarrage ne double rien.
-            const key = `call-mirror:${keySafe(c.id)}:${keySafe(item.id)}:${keySafe(dest)}`.slice(0, 128);
-            try { if (await post(dest, key, text)) c.sent.push(now()); } catch { ok = false; }
+            const key = `call-mirror:${keySafe(c.id)}:${createHash('sha256').update(`${item.id}|${dest}`).digest('hex')}`;
+            try { if (await post(dest, key, text, c)) c.sent.push(now()); else ok = false; } catch { ok = false; }
           }
           if (ok) c.seen.add(item.id);
         }
@@ -449,8 +479,14 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   const cache = new Map();
   let queue = Promise.resolve();
   /** Voix d'une réponse retrouvée dans le fil de l'interlocuteur ; synthèses en série, mises en cache. */
-  async function speech(handle, itemId, announce = false) {
-    resolve(handle);
+  async function speech(handle, itemId, announce = false, scope = null) {
+    const target = resolve(handle);
+    if (target.kind === 'remote') {
+      if(!scope)throw new ChatError('call_session_required');
+      const c=assertSession(scope.owner,scope.id,scope.epoch);
+      if(!c.targets.has(handle))throw new ChatError('call_target_not_joined',403);
+      return remote.speech(target, itemId, announce, c);
+    }
     if (typeof itemId !== 'string' || !ITEM.test(itemId)) throw new ChatError('invalid_request');
     const key = `${handle}|${itemId}|${announce ? 1 : 0}`;
     if (cache.has(key)) return cache.get(key);
@@ -473,7 +509,23 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   }
   /** Le serveur HTTP branche ici son état « transcription en cours ». */
   const setTranscribing = fn => { if (typeof fn === 'function') transcribing = fn; };
-  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop };
+  // Federation reads only the lifetime of an explicitly authorized call, never a whole thread.
+  async function sessionItems(owner, id, epoch, handle) {
+    const c = assertSession(owner,id,epoch), joined = c.targets.get(handle);
+    if (!joined) throw new ChatError('call_target_not_joined',403);
+    const items = await rawItems(joined.target, speakers(), c);
+    assertSession(owner,id,epoch);
+    if (!c.targets.has(handle)) throw new ChatError('call_target_not_joined',403);
+    return items.filter(item => Date.parse(item.at) >= c.targets.get(handle).joinedAt && !item.text.startsWith(MIRROR_TAG)).slice(-100);
+  }
+  async function sessionNotice(owner,id,epoch,handle,key,text) {
+    const c=assertSession(owner,id,epoch), joined=c.targets.get(handle);
+    if(!joined)throw new ChatError('call_target_not_joined',403);
+    return post(channelOf(joined.target),key,text,c);
+  }
+  const syncRemote = scope => remote?.sync(assertSession(scope.owner,scope.id,scope.epoch));
+  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop,
+    attachRemote: value => { remote=value; }, syncRemote, sessionItems, sessionNotice, channelOf };
 }
 
 /** Type audio d'après les octets : WAV (voix locale) ou MP3 (ElevenLabs), OGG en dernier recours. */

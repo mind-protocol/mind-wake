@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
 import { startLocal, nodeArgs } from "./start-local.mjs";
 import { codexRuntimeEnv } from "./installation.mjs";
+import { startDesktopCallHost } from "./desktop-call-host.mjs";
 
 export function restartDelay(code, signal, failures) {
   if (code === 75 && !signal) return 0; // Explicit app restart, not a crash.
@@ -132,7 +133,7 @@ export function waitForDesktopExit(child) {
     child.once("exit", (code, signal) => resolve({ code, signal })),
   );
 }
-export async function supervise(manifestFile, startup, launch = startLocal) {
+export async function supervise(manifestFile, startup, launch = startLocal, createCallHost = startDesktopCallHost) {
   const log = (message) =>
     fs.appendFileSync(
       path.join(path.dirname(manifestFile), "desktop-supervisor.log"),
@@ -156,9 +157,18 @@ export async function supervise(manifestFile, startup, launch = startLocal) {
       }
     }, ENGINE_WATCH_MS).unref();
   }
+  let callHost = null;
+  try {
+    if (configured.repoDir && configured.dataDir && configured.node)
+      callHost = createCallHost(configured, log);
+  } catch (error) { log(`call preload: ${error.message}`); }
+  // Prepare the gateway before WebView loads its hidden call frame. This does not
+  // depend on the agent daemon, so Pause and Force-off remain untouched.
+  try {
+  try { await callHost?.ready(); } catch (error) { log(`call preload: ${error.message}`); }
   if (configured.maintenance) {
     const { superviseDesktopMaintenance } = await import("./desktop-maintenance.mjs");
-    return superviseDesktopMaintenance(manifestFile, launch);
+    return await superviseDesktopMaintenance(manifestFile, launch);
   }
   let failures = 0;
   for (;;) {
@@ -181,6 +191,7 @@ export async function supervise(manifestFile, startup, launch = startLocal) {
     }
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
+  } finally { callHost?.stop(); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const { values } = parseArgs({

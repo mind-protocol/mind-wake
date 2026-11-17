@@ -363,7 +363,7 @@ function render(view: PanelView): void {
   off.disabled = !view.canStop;
   byId<HTMLButtonElement>("pause").disabled = !view.canPause;
   const armed = Date.now() < stopArmedUntil;
-  off.textContent = armed ? tr("Confirmer l'arrêt") : "Force-off";
+  off.textContent = armed ? tr("Confirmer l'arrêt") : tr("Arrêt");
   off.dataset["armed"] = String(armed);
 }
 
@@ -1189,7 +1189,8 @@ type DesktopInvite = {id:string; label:string; until:number; ringtone?: "common"
 let incomingCall: DesktopInvite | null = null;
 let callOpenedAt = 0;
 let callFrameLoaded = false;
-const callFrameState = () => ({hidden: callFrame.hidden === true, loaded: callFrameLoaded, openedAt: callOpenedAt, now: Date.now()});
+let callFrameReady = false;
+const callFrameState = () => ({hidden: !callFrameReady, loaded: callFrameLoaded, openedAt: callOpenedAt, now: Date.now()});
 callFrame.addEventListener("load", () => { callFrameLoaded = true; });
 // Rechargement de .reload-stamp différé pendant un appel (sonnerie ou en cours).
 const uiReload = reloadGuard({reload: () => location.reload(), showPending: pendingBadge(document, () => location.reload())});
@@ -1205,6 +1206,7 @@ function releaseCallFrame() {
   clearTimeout(releaseTimer);
   clearTimeout(callTimer);
   callFrame.removeAttribute("src");
+  callFrameReady = false;
   callFrame.hidden = true;
 }
 function openCall() {
@@ -1212,7 +1214,10 @@ function openCall() {
   clearTimeout(callTimer);
   byId("call-status").textContent = "Ouverture de l’appel…";
   byId("call-retry").hidden = true;
-  callFrame.hidden = true;
+  // A display:none iframe can defer React's rendering in WebView2. Waiting for
+  // its mount effect before showing it makes readiness depend on visibility.
+  callFrameReady = false;
+  callFrame.hidden = false;
   callOpenedAt = Date.now();
   callFrameLoaded = false;
   callFrame.src = callOrigin + (tauri ? "/desktop-call?receiver=desktop" : "/desktop-call");
@@ -1233,6 +1238,7 @@ function openCall() {
 }
 window.addEventListener("message", event => {
   if (event.source !== callFrame.contentWindow || event.origin !== callOrigin) return;
+  if (event.data === 'mind.call.recovering') { selectTab('call'); return; }
   if (tauri) {
     const message = event.data;
     if (message?.type === "mind.call.vision" && typeof message.id === "string" && /^[a-f0-9-]{36}$/i.test(message.id)) {
@@ -1264,6 +1270,7 @@ window.addEventListener("message", event => {
   }
   if (!tauri && event.data === "mind.call.closed" && byId("view-call").hidden) releaseCallFrame();
   if (event.data !== "mind.call.ready") return;
+  callFrameReady = true;
   clearTimeout(callTimer);
   byId("call-status").textContent = "";
   byId("call-retry").hidden = true;
@@ -1306,7 +1313,7 @@ function selectTab(tab: Tab): void {
     clearTimeout(releaseTimer);
     if (!callFrame.hasAttribute("src")) openCall();
   }
-  if (tab !== "call" && !byId("view-call").hidden) {
+  if (tab !== "call" && !byId("view-call").hidden && !byId("view-call").classList.contains("call-preloaded")) {
     clearTimeout(callTimer);
     if (tauri) callFrame.contentWindow?.postMessage("mind.call.leave", callOrigin);
     else if (callFrame.hidden) releaseCallFrame();
@@ -1321,6 +1328,15 @@ function selectTab(tab: Tab): void {
   for (const name of ["call", "panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects", "voice", "prompts"] as const) {
     byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
     byId(`view-${name}`).hidden = name !== "chat" && name !== tab;
+  }
+  // WebView2 can suspend a display:none cross-origin frame before React mounts.
+  // Keep the phone receiver laid out behind the desktop, inert and inaccessible.
+  if (tauri) {
+    const callView = byId("view-call");
+    callView.hidden = false;
+    callView.inert = tab !== "call";
+    callView.classList.toggle("call-preloaded", tab !== "call");
+    callView.setAttribute("aria-hidden", String(tab !== "call"));
   }
   byId("view-documents").hidden = tab !== "documents" && tab !== "chat";
   chatOpen = true;
@@ -1373,12 +1389,12 @@ byId("mode-always").addEventListener(
 byId("mode-wake").addEventListener("click", () => void control("wake_now", tr("Réveil demandé.")));
 byId("pause").addEventListener("click", () => {dictation.stop(true);window.dispatchEvent(new Event("fork-voice-stop"));void voiceMode?.pause(true);void control("wake_pause", tr("Pause appliquée."));});
 byId("mode-off").addEventListener("click", () => {
-  // Deux clics rapprochés : l'arrêt d'urgence ne se lève que par une action explicite
+  // Deux clics rapprochés : l'arrêt ne se lève que par une action explicite
   // ultérieure de l'humain, une confirmation évite qu'un clic égaré l'impose.
   if (Date.now() < stopArmedUntil) {
     stopArmedUntil = 0;
     window.dispatchEvent(new Event("fork-voice-stop"));
-    void control("wake_stop", tr("Arrêt d'urgence appliqué."));
+    void control("wake_stop", tr("Arrêt appliqué."));
   } else {
     stopArmedUntil = Date.now() + 5000;
     render(panelView(lastRead, Date.now()));
@@ -1543,7 +1559,12 @@ async function openWakeLocation(kind: "workspace" | "systemPrompt"): Promise<voi
 byId("open-system-prompt").addEventListener("click",()=>void openWakeLocation("systemPrompt"));
 byId("open-agent-folder").addEventListener("click",()=>void openWakeLocation("workspace"));
 setInterval(()=>{if(!byId("view-history").hidden)void refreshWakeHistory();},5000);
-selectTab("documents");
+let initialTab: Tab = "documents";
+try {
+  const saved = localStorage.getItem("mind-wake-active-tab");
+  if (["call", "panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects", "voice", "prompts", "documents"].includes(saved ?? "")) initialTab = saved as Tab;
+} catch { /* Display preference only. */ }
+selectTab(initialTab);
 const onboarding = tauri ? mountOnboarding((command, args) => tauri.core.invoke(command, args), () => selectTab("chat")) : null;
 void onboarding?.refresh();
 setInterval(() => void onboarding?.refresh(), 5000);

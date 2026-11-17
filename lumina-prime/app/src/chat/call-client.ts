@@ -2,7 +2,7 @@ import { call, chatUrl, ChatClientError, type ChatSession } from './client.ts';
 
 export type CallSession = {id:string;epoch:1};
 export type CallSessionState = CallSession & {status:'active'|'ended';revision?:number;handles:string[]};
-export type CallTarget = { handle: string; label: string; kind: 'main' | 'room' | 'agent' | 'holder'; emoji?: string };
+export type CallTarget = { handle: string; label: string; kind: 'main' | 'room' | 'agent' | 'holder' | 'remote'; emoji?: string; available?: boolean };
 export type CallReply = { id: string; at: string; text: string; speaker: string | null; first?: boolean };
 export type CallUtterance = { status: 'queued' | 'empty'; text: string; label?: string; durationSeconds: number; transcribeMs: number };
 const auth = (session: ChatSession) => ({ Authorization: `Bearer ${session.token}` });
@@ -30,6 +30,15 @@ export const callSessionState=(session:ChatSession,scope:CallSession,signal?:Abo
 export const joinCallParticipants=(session:ChatSession,scope:CallSession,targets:string[],revision:number,signal?:AbortSignal)=>sessionRequest(session,scope,'/chat/call/participants','POST',targets,signal,false,revision);
 export const removeCallParticipants=(session:ChatSession,scope:CallSession,targets:string[],revision:number,signal?:AbortSignal)=>sessionRequest(session,scope,'/chat/call/participants/remove','POST',targets,signal,false,revision);
 
+/** Instruction envoyée aux participants, sans bulle dans la transcription. */
+export async function cancelCallMessage(session: ChatSession, scope: CallSession, id: string, text: string, signal?: AbortSignal): Promise<void> {
+  const value = await call(session.url, `/chat/call/cancel-message?${scopeQuery(scope)}`, {
+    method: 'POST', headers: { ...auth(session), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, text }), signal,
+  }) as { schema?: string; status?: string };
+  if (value.schema !== 'mind.chat.call.cancel.v1' || value.status !== 'queued') throw new ChatClientError('invalid_response');
+}
+
 /** Envoie une prise de parole : transcription sur le desktop puis remise à l'interlocuteur. */
 export async function sendCallUtterance(session: ChatSession, targets: string[], id: string, audio: Blob | ArrayBuffer, mime: string, signal?: AbortSignal, scope?:CallSession): Promise<CallUtterance> {
   if (!/^chat-[a-f0-9-]{36}$/.test(id)) throw new ChatClientError('invalid_message');
@@ -51,22 +60,22 @@ export async function endCall(session: ChatSession, targets: string[], signal?: 
   return Number(value.ended) || 0;
 }
 
-export async function callReplies(session: ChatSession, target: string, since: string, signal?: AbortSignal): Promise<CallReply[]> {
-  const value = await call(session.url, `/chat/call/replies?target=${encodeURIComponent(handle(target))}&since=${encodeURIComponent(since)}`,
+export async function callReplies(session: ChatSession, target: string, since: string, signal?: AbortSignal, scope?: CallSession): Promise<CallReply[]> {
+  const value = await call(session.url, `/chat/call/replies?target=${encodeURIComponent(handle(target))}&since=${encodeURIComponent(since)}${scope?'&'+scopeQuery(scope):''}`,
     { headers: auth(session), signal }) as { schema?: unknown; items?: unknown };
   if (value?.schema !== 'mind.chat.call.replies.v1' || !Array.isArray(value.items)) throw new ChatClientError('invalid_response');
   return value.items as CallReply[];
 }
 
 /** Audio d'une réponse (MP3 ElevenLabs ou WAV local), synthétisé sur le desktop. */
-export async function callSpeech(session: ChatSession, target: string, item: string, signal?: AbortSignal, announce = false) {
+export async function callSpeech(session: ChatSession, target: string, item: string, signal?: AbortSignal, announce = false, scope?: CallSession) {
   const controller = new AbortController(); const abort = () => controller.abort();
   signal?.addEventListener('abort', abort, { once: true });
   const timer = setTimeout(abort, 150_000);
   try {
     let response: Response;
     try {
-      response = await fetch(`${chatUrl(session.url)}/chat/call/speech?target=${encodeURIComponent(handle(target))}&item=${encodeURIComponent(item)}${announce ? '&announce=1' : ''}`,
+      response = await fetch(`${chatUrl(session.url)}/chat/call/speech?target=${encodeURIComponent(handle(target))}&item=${encodeURIComponent(item)}${announce ? '&announce=1' : ''}${scope?'&'+scopeQuery(scope):''}`,
         { headers: auth(session), signal: controller.signal, redirect: 'error' });
     } catch (error) { if (signal?.aborted) throw error; throw new ChatClientError('connection_lost'); }
     if (!response.ok) {

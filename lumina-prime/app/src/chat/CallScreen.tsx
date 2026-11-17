@@ -5,7 +5,8 @@ import { colors, styles as s } from '../ui/theme';
 import { MessageRow } from './MessageRow';
 import { useIncomingPhone } from './IncomingPhone';
 import { useWakeChat } from './WakeChatProvider';
-import { callTargets, type CallTarget } from './call-client.ts';
+import { callTargets, endCall, type CallTarget } from './call-client.ts';
+import { callRecovery, type CallRecovery } from './call-recovery.ts';
 import { createCallEngine, type CallLine, type CallPhase } from './call-engine';
 import { clampFloorDb, FLOOR_DB_DEFAULT, FLOOR_DB_MAX, FLOOR_DB_MIN, SILENCE_S_DEFAULT, type BargeMode } from './call-vad.ts';
 import { chatErrorMessage, tintOf } from './client.ts';
@@ -19,12 +20,13 @@ import { createScrollFollow } from './scroll-follow';
 import { createWebScrollFollow } from './scroll-follow-web';
 import { captureLines, type CallCapture } from './call-frames.ts';
 import { pinScrollToEnd } from './call-scroll.ts';
+import { CallPeers } from './CallPeers';
 type ScrollViewInstance = React.ComponentRef<typeof ScrollView>;
 
 const PHASES: Record<CallPhase, string> = { connecting: 'Connexion…', listening: 'À l’écoute', speaking: 'Tu parles…',
   playing: 'Ils répondent', ended: 'Raccroché' };
 const GROUPS: { title: string; kinds: CallTarget['kind'][] }[] = [
-  { title: 'Marco', kinds: ['main'] }, { title: 'Agents', kinds: ['agent', 'holder'] }, { title: 'Rooms', kinds: ['room'] }];
+  { title: 'Marco', kinds: ['main'] }, { title: 'Agents', kinds: ['agent', 'holder'] }, { title: 'Rooms', kinds: ['room'] }, { title: 'Autres PC', kinds: ['remote'] }];
 /** Espacement entre deux réponses arrivées ensemble dans la transcription (NLR, 16 nov. 2026). */
 // NLR, 16 nov. 2026, 21:38 : apparition trois fois plus lente.
 const REVEAL_SPACING_MS = 2100;
@@ -42,6 +44,8 @@ export default function CallScreen() {
   const [targets, setTargets] = useState<CallTarget[]>([{ handle: 'mind', label: 'Marco', kind: 'main' }]);
   // Participants de l'appel (NLR : « room 1 + vox ») ; Marco seul par défaut.
   const [selected, setSelected] = useState<string[]>(['mind']);
+  const [inviteHumans,setInviteHumans]=useState(false);
+  const [humanGuest,setHumanGuest]=useState(false);
   const [adding, setAdding] = useState(false);
   const [joining, setJoining] = useState(false);
   const [silence, setSilence] = useState(SILENCE_S_DEFAULT);
@@ -61,6 +65,31 @@ export default function CallScreen() {
   const voiceRef = useRef(false);
   const transcript = useRef<ScrollViewInstance | null>(null);
   const engine = useRef<ReturnType<typeof createCallEngine> | null>(null);
+  const [recovery] = useState(() => {
+    try { return typeof window !== 'undefined' && window.parent !== window && window.location.pathname === '/desktop-call'
+      ? callRecovery(window.localStorage) : null; } catch { return null; }
+  });
+  const leavingPage = useRef(false);
+  const recoveryAttempted = useRef(false);
+  const [preferencesReady, setPreferencesReady] = useState(false);
+  const cancelling = useRef(new Set<string>());
+  const [cancelled, setCancelled] = useState<Set<string>>(() => new Set());
+  const [cancelPending, setCancelPending] = useState<Set<string>>(() => new Set());
+  async function cancelMessage(item: CallLine) {
+    const current = engine.current;
+    if (!current || !('cancelMessage' in current) || cancelling.current.has(item.key) || cancelled.has(item.key)) return;
+    cancelling.current.add(item.key);
+    setCancelPending(previous => new Set(previous).add(item.key));
+    try {
+      await current.cancelMessage(item.key, item.text);
+      if (engine.current === current) setCancelled(previous => new Set(previous).add(item.key));
+    } catch (reason) {
+      if (engine.current === current) setError(chatErrorMessage(reason));
+    } finally {
+      cancelling.current.delete(item.key);
+      setCancelPending(previous => { const next = new Set(previous); next.delete(item.key); return next; });
+    }
+  }
   const active = phase !== 'ended';
   const canModifyParticipants = canModifyCallParticipants(engine.current, phase);
   const canMute = active && typeof (engine.current as { setMuted?: unknown } | null)?.setMuted === 'function';
@@ -142,26 +171,29 @@ export default function CallScreen() {
     };
     const closeDesktopCall = (event: MessageEvent) => {
       if (window.location?.pathname !== '/desktop-call' || event.source !== window.parent || event.data !== 'mind.call.leave') return;
+      recovery?.clear();
       void Promise.resolve(leave()).finally(() => window.parent.postMessage('mind.call.closed', event.origin));
     };
+    const unloading = () => { leavingPage.current = true; leave(); };
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      window.addEventListener('pagehide', leave);
+      window.addEventListener('pagehide', unloading);
       window.addEventListener('message', closeDesktopCall);
     }
     return () => {
       if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-        window.removeEventListener('pagehide', leave);
+        window.removeEventListener('pagehide', unloading);
         window.removeEventListener('message', closeDesktopCall);
       }
-      leave();
+      leavingPage.current = true; leave(); leavingPage.current = false;
     };
-  }, [session]);
-  useEffect(() => { void loadCallVoice().then(on => { voiceRef.current = on; setVoice(on); }); }, []);
-  useEffect(() => { void loadCallTuning().then(saved => {
+  }, [session, recovery]);
+  useEffect(() => { void Promise.all([loadCallTuning(), loadCallVoice()]).then(([saved, on]) => {
+    voiceRef.current = on; setVoice(on);
     if (saved.silence) setSilence(saved.silence);
     if (saved.bargeMode) setBargeMode(saved.bargeMode);
     if (saved.floorDb !== undefined) setFloorDb(clampFloorDb(saved.floorDb));
     tuningLoaded.current = true;
+    setPreferencesReady(true);
   }); }, []);
   // Réglages appliqués à l'appel en cours sans raccrocher (NLR, 17 nov.), puis conservés.
   useEffect(() => {
@@ -179,23 +211,54 @@ export default function CallScreen() {
   }, [active, setPhoneBusy]);
   useEffect(() => {
     if (!phone?.accepted || !session || engine.current) return;
-    const handles = [phone.accepted.caller];
-    phone.consume(); setSelected(handles); start(handles);
+    const invitation=phone.accepted;
+    const handles = invitation.kind==='peer-human'?[]:[invitation.caller];
+    phone.consume(); setSelected(handles); start(handles,invitation.kind==='peer-human'?invitation:undefined);
   }, [phone, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function start(handles = selected) {
+  useEffect(() => {
+    if (!recovery || !session || !online || !preferencesReady || recoveryAttempted.current || engine.current) return;
+    recoveryAttempted.current = true;
+    const saved = recovery.load();
+    if (!saved) return;
+    let cancelled = false, launched = false;
+    window.parent.postMessage('mind.call.recovering', '*');
+    // Close the abandoned session before redialling, including after a hard crash.
+    // A gateway restart may already have forgotten it.
+    void endCall(session, saved.handles, undefined, false, { id: saved.callId, epoch: 1 })
+      .catch(() => {}).then(() => {
+        if (cancelled || leavingPage.current || engine.current || !recovery.load()) return;
+        setSelected(saved.handles); setInviteHumans(saved.inviteHumans);
+        launched = true;
+        start(saved.handles, undefined, saved);
+      });
+    return () => { cancelled = true; if (!launched) recoveryAttempted.current = false; };
+  }, [session, online, preferencesReady, recovery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!recovery || !active || humanGuest || !engine.current || phase === 'connecting') return;
+    const save = () => { if (engine.current) recovery.save({ handles: inCall.current, muted: engine.current.muted, inviteHumans, callId: engine.current.callId }); };
+    save(); const timer = setInterval(save, 5000);
+    return () => clearInterval(timer);
+  }, [recovery, active, phase, selected, muted, inviteHumans, humanGuest]);
+
+  function start(handles = selected, humanInvite?:{id:string;label:string}, resumed?: CallRecovery) {
     if (!session || engine.current) return;
+    recoveryAttempted.current = true;
+    if (!resumed) recovery?.clear();
     setError(null); setLines([]); setAdding(false); setSettings(false); setMuted(false);
+    setHumanGuest(Boolean(humanInvite));
     if (revealTimer.current) clearTimeout(revealTimer.current);
     revealTimer.current = null; queue.current = []; known.current = new Set(); setVisible(new Set()); scrollFollow.reset(); setUnseen(false);
     inCall.current = handles;
     toneTransitions.current?.reset();
-    const call = createCallEngine({ session, targets: handles,
+    const call = createCallEngine({ session, targets: handles, humanInvite, inviteHumans:resumed?.inviteHumans ?? (inviteHumans&&handles.some(h=>targets.find(t=>t.handle===h)?.kind==='remote')),
       announce: false /* NLR 16 nov. 2026 : ne pas lire à voix haute qui envoie le message */, voice: () => voiceRef.current, silenceMs: silence * 1000, bargeMode, floorDb,
       onPhase: next => {
         if (engine.current !== call) return;
         toneTransitions.current?.phase(next);
         if (next === 'ended') {
+          if (!leavingPage.current) recovery?.clear();
           engine.current = null; setMuted(false);
           if (typeof window !== 'undefined' && window.location?.pathname === '/desktop-call')
             window.parent.postMessage('mind.phone.ended', '*');
@@ -204,6 +267,7 @@ export default function CallScreen() {
       }, onLevel: (db, threshold) => setLevel({ db, threshold }),
       onLine: value => setLines(previous => [...previous.filter(item => item.key !== value.key), ...(value.drop ? [] : [value])].slice(-40)) });
     engine.current = call;
+    if (resumed?.muted) { call.setMuted(true); setMuted(true); }
     // Appel synchrone dans le geste : déverrouillage du son et demande du micro.
     call.start().catch(reason => {
       if (engine.current !== call) return;
@@ -211,6 +275,7 @@ export default function CallScreen() {
     });
   }
   function hangUp() {
+    recovery?.clear();
     engine.current?.stop(); engine.current = null; setPhase('ended'); setMuted(false);
     // The engine ends only its own call_id/epoch.
   }
@@ -246,10 +311,17 @@ export default function CallScreen() {
   const meter = Math.max(0, Math.min(100, (level.db + 80) * 1.4));
 
   const shownLines = lines.filter(item => visible.has(item.key));
-  // Nouvelle bulle visible : suivie si NLR est en bas, sinon bouton « ↓ nouveaux messages ».
-  useLayoutEffect(() => { scrollFollow.contentChanged(); webFollow.invalidate(); if (following) smoothNext.current = true; else if (shownLines.length) setUnseen(true); },
-    [shownLines.length]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (following) setUnseen(false); }, [following]);
+  const transcriptRevision = JSON.stringify(shownLines.map(item => [item.key, item.text]));
+  // Follow each revealed/updated message, even when the capped list keeps the
+  // same length and height. Wait for its layout rather than only arming a flag.
+  useLayoutEffect(() => {
+    scrollFollow.contentChanged(); webFollow.invalidate();
+    const frame = requestAnimationFrame(() => {
+      if (following) { smoothNext.current = true; scrollFollow.recent(); setUnseen(false); }
+      else if (transcriptRevision !== '[]') setUnseen(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [transcriptRevision, following, scrollFollow, webFollow]);
   // Nom de l'expéditeur au-dessus de la bulle, avec son emoji s'il est fourni par la passerelle.
   const senderOf = (item: CallLine) => {
     if (item.who === 'me') return 'Toi';
@@ -304,7 +376,12 @@ export default function CallScreen() {
         <Text style={{ color: colors.paper, fontSize: 22, fontWeight: '800' }}>📞 Appeler</Text>
         <Text numberOfLines={1} style={{ color: colors.paper, fontSize: 12 }}>{label}</Text>
       </Pressable>}
-      {active && phase !== 'connecting' && !canModifyParticipants ? <Text style={s.small}>Pour modifier les participants de cet ancien appel, raccroche puis rappelle.</Text> : null}
+      {!active&&web&&selected.some(h=>targets.find(t=>t.handle===h)?.kind==='remote')?<Pressable accessibilityRole="checkbox" accessibilityState={{checked:inviteHumans}}
+        onPress={()=>setInviteHumans(value=>!value)} style={{padding:8,backgroundColor:colors.soft,borderRadius:10}}>
+        <Text style={s.body}>{inviteHumans?'☑':'☐'} Inviter aussi l’humain de chaque PC distant</Text>
+      </Pressable>:null}
+      {active&&humanGuest?<Text style={s.small}>Tu participes à l’appel. Ton micro et ton raccrochage sont indépendants. La voix des agents suit le réglage de l’appelant.</Text>:null}
+      {active && !humanGuest && phase !== 'connecting' && !canModifyParticipants ? <Text style={s.small}>Pour modifier les participants de cet ancien appel, raccroche puis rappelle.</Text> : null}
       {error ? <Text accessibilityRole="alert" numberOfLines={3} style={{ color: colors.danger, fontSize: 12 }}>{error}</Text> : null}
       <View style={{ flex: 1, minHeight: 0 }} {...(web ? webFollow.inputHandlers : {})}>
       <ScrollView ref={transcript} style={{ flex: 1, minHeight: 0, borderRadius: 14, backgroundColor: colors.soft }} scrollEventThrottle={16}
@@ -316,7 +393,14 @@ export default function CallScreen() {
         onMomentumScrollEnd={scrollFollow.onMomentumScrollEnd} onScrollToTop={scrollFollow.suspend}>
         {!shownLines.length ? <Text style={s.small}>{active ? 'La conversation s’affiche ici.' : 'Appuie sur Appeler pour commencer.'}</Text> : null}
         {shownLines.map(item => { const name = senderOf(item); const mood = moodOf(item); const body = mood ? mood.rest : item.text;
-          const bubble = <View style={{ padding: 10, borderRadius: 14, backgroundColor: bubbleOf(item, name) }}>
+          const canCancel = active && engine.current && 'cancelMessage' in engine.current && item.who === 'me' && !item.capture && !item.error && item.text !== '…' && item.text.trim() && /^chat-[a-f0-9-]{36}$/.test(item.key);
+          const bubble = <View style={{ padding: 10, paddingRight: canCancel ? 34 : 10, borderRadius: 14, backgroundColor: bubbleOf(item, name) }}>
+            {canCancel ? <Pressable accessibilityRole="button" accessibilityLabel={cancelled.has(item.key) ? 'Message annulé' : 'Annuler ce message'}
+              accessibilityState={{ disabled: cancelled.has(item.key) || cancelPending.has(item.key) }}
+              disabled={cancelled.has(item.key) || cancelPending.has(item.key)} onPress={() => { void cancelMessage(item); }}
+              hitSlop={4} style={{ position: 'absolute', top: 3, right: 3, width: 26, height: 26, alignItems: 'center', justifyContent: 'center', opacity: cancelled.has(item.key) ? 0.3 : 0.6 }}>
+              <Text style={{ color: colors.ink, fontSize: 14 }}>{cancelPending.has(item.key) ? '·' : '×'}</Text>
+            </Pressable> : null}
             {item.capture ? <Capture capture={item.capture} onOpen={setLightbox} /> : <RichText text={body} onImagePress={url => setLightbox({ image: url, caption: '' })} />}
             {item.error && item.detail && item.detail !== item.text ? <Text style={[s.small, { fontSize: 11, color: item.error ? colors.danger : colors.muted }]}>{item.detail}</Text> : null}
           </View>;
@@ -386,6 +470,8 @@ export default function CallScreen() {
           <Text style={s.small}>Plus à droite : le bruit de fond est ignoré et tes messages partent ; trop à droite, ta voix n’est plus entendue.{active ? ' Le trait montre ton micro.' : ''}</Text>
         </View>
         {active ? <Text style={s.small}>Les réglages s’appliquent tout de suite à l’appel en cours.</Text> : null}
+        {web && typeof window !== 'undefined' && window.location?.pathname === '/desktop-call' ? <CallPeers session={session}
+          onChanged={() => { void callTargets(session).then(setTargets).catch(reason => setError(chatErrorMessage(reason))); }} /> : null}
       </ScrollView>
     </Overlay> : null}
   </SafeAreaView>;

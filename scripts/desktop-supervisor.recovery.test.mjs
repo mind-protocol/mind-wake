@@ -32,3 +32,17 @@ test("a running desktop is observed until its actual exit", async () => {
   child.emit("exit", 75, null);
   assert.deepEqual(await pending, { code: 75, signal: null });
 });
+
+test("prepares calls before the desktop and stops its host on exit without activating agents", async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "wake-desktop-preload-"));
+  const manifest = path.join(dir, "manifest.json");
+  writeFileSync(manifest, JSON.stringify({repoDir: dir, dataDir: dir, node: process.execPath}));
+  const order = [];
+  try {
+    await supervise(manifest, false, async () => {
+      order.push("desktop");
+      return {pid: 123, exitCode: 0, signalCode: null};
+    }, () => ({ready: async () => {order.push("ready");}, stop: () => {order.push("stop");}}));
+    assert.deepEqual(order, ["ready", "desktop", "stop"]);
+  } finally { rmSync(dir, {recursive: true, force: true}); }
+});

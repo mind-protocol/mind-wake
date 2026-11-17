@@ -47,6 +47,18 @@ powershell.exe -NoProfile -ExecutionPolicy RemoteSigned -File .\install-wake.ps1
 
 Il exige un clone propre sur main avec l’origine MIND Wake, utilise git pull --ff-only, puis s’arrête au premier échec en conservant les fichiers. Il peut aussi cloner vers une nouvelle destination. Ajoute -DataDir pour choisir le profil, -NoOpen pour ne pas ouvrir le panneau ni lancer de connexion, -CodexHome pour conserver un dossier Codex choisi. Si Codex n’est pas connecté, reprends avec -Login dans un terminal visible, sans -NoOpen. Le login officiel est annulable et limité à cinq minutes ; aucun secret n’est demandé dans le chat. Le helper n’active aucun réveil.
 
+Sans `-Destination`, le helper utilise le clone qui contient le script, même depuis un autre dossier de travail. Si le script est utilisé hors d’un clone, la destination reste `%USERPROFILE%\mind-wake`. Il affiche les chemins du dépôt et du profil au démarrage.
+
+Le setup desktop prépare aussi la dictée locale : détection de Python (y compris hors du PATH), installation de Python 3.12 via winget si nécessaire, environnement Python isolé dans le profil, installation de faster-whisper et téléchargement du modèle multilingue `small`. Le modèle fonctionne sur CPU, sans GPU NVIDIA requis. Les chemins absolus sont enregistrés dans `voice-input.json` après un test de chargement et de traitement audio. Le premier téléchargement nécessite Internet ; la transcription reste locale. Ce test technique sur silence ne remplace pas un essai de dictée au microphone.
+
+Une configuration de transcription existante est conservée et vérifiée sans réinstaller ses dépendances. Si elle est invalide, le setup s’arrête avec l’erreur, sans la remplacer. `-SkipStt` (ou `--skip-stt` pour setup) permet de reporter cette étape explicitement ; `--engine-only` ne l’installe pas. Pour préparer uniquement la transcription, depuis le dépôt, sans démarrer Wake :
+
+```powershell
+node scripts/setup-stt.mjs --data-dir "$wakeData"
+```
+
+Utiliser le chemin du profil affiché par l’installation à la place de `$wakeData` s’il n’est pas encore défini. Si winget est absent, installer Python 3.12 puis reprendre la même commande. Les téléchargements sont conservés pour la reprise.
+
 Pour inspecter chaque étape, compile et prépare le setup manuellement :
 
 ```powershell

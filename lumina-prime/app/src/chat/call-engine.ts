@@ -2,7 +2,7 @@ import { AudioModule, createAudioPlayer, RecordingPresets, setAudioModeAsync, ty
 import { File } from 'expo-file-system';
 import { randomUUID } from 'expo-crypto';
 import { AppState, Platform } from 'react-native';
-import { callReplies, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, type CallSession, type CallReply } from './call-client';
+import { callReplies, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, cancelCallMessage, type CallSession, type CallReply } from './call-client';
 import { chatErrorMessage, chatUrl, ChatClientError } from './client';
 import { createBargeIn, createCallVad, muteTransition, MUTED_DB } from './call-vad';
 import type { createCallEngine as webEngine, CallTuning } from './call-engine.web';
@@ -53,7 +53,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
     const next = queue.shift();
     if (!next) return;
     const uri = chatUrl(session.url) + '/chat/call/speech?target=' + encodeURIComponent(next.target)
-      + '&item=' + encodeURIComponent(next.id) + (announce ? '&announce=1' : '');
+      + '&item=' + encodeURIComponent(next.id) + (announce ? '&announce=1' : '') + '&call=' + encodeURIComponent(scope.id) + '&epoch=1';
     player = createAudioPlayer({ uri, headers: { Authorization: 'Bearer ' + session.token } });
     const current = player;playerTarget=next.target;
     player.addListener('playbackStatusUpdate', state => {
@@ -68,7 +68,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
       try {const state=await callSessionState(session,scope,signal);if(state.status==='ended'){stop();return;}if(state.revision)membershipRevision=state.revision;}
       catch(error){if(signal.aborted)return;report('call-state',error);stop();return;}
       const batches = await Promise.allSettled(targets.map(async target =>
-        (await callReplies(session, target, since, signal)).map(reply => ({ ...reply, target }))));
+        (await callReplies(session, target, since, signal,scope)).map(reply => ({ ...reply, target }))));
       if (signal.aborted) return;
       const fresh = batches.flatMap(batch => {
         if (batch.status === 'fulfilled') return batch.value;
@@ -175,6 +175,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
   }
   return {
     get callId() { return scope.id; },
+    cancelMessage(id: string, text: string) { return cancelCallMessage(session, scope, id, text, abort.signal); },
     /** Coupe ou rouvre le micro (NLR, 17 nov.) ; renvoie l'état effectif. */
     setMuted(next: boolean) {
       const change = signal.aborted ? 'none' : muteTransition(muted, next, vad.speaking);

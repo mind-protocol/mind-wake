@@ -1,12 +1,12 @@
 /**
- * Contrôles humains persistés (AGENTS §3.1 et §5) : pause, reprise, arrêt d'urgence.
+ * Contrôles humains persistés (AGENTS §3.1 et §5) : pause, reprise, arrêt.
  * Ces fonctions n'écrivent que l'état de contrôle ; elles sont partagées par le runner
  * en processus et par la CLI, qui agit depuis un autre processus. Le runner observe
  * l'état persisté et termine la session ; la CLI `stop` termine aussi l'arborescence
  * par le nom de son job, sans dépendre du runner.
  *
  * Aucune de ces fonctions n'active l'exploration : la reprise ne fait que lever une
- * pause, après revérification de la policy consentie, et jamais un arrêt d'urgence.
+ * pause, après revérification de la policy consentie, et jamais un arrêt.
  */
 
 import fs from "node:fs";
@@ -24,7 +24,7 @@ import { decideActivation } from "../policy/index.js";
 
 export const PAUSE_REASON = "pause demandée par l'utilisateur";
 export const RESUME_REASON = "reprise demandée par l'utilisateur";
-export const STOP_REASON = "arrêt d'urgence demandé par l'utilisateur";
+export const STOP_REASON = "arrêt demandé par l'utilisateur";
 
 export interface ControlContext {
   readonly uow: UnitOfWork;
@@ -84,7 +84,7 @@ export function requestPause(ctx: ControlContext, reason = PAUSE_REASON): PauseR
       return {
         status: "refused",
         state: profile.state,
-        detail: "profil déjà arrêté (arrêt d'urgence)",
+        detail: "profil déjà arrêté (arrêt)",
       };
     }
     const openSession = tx.sessions.listOpen(profile.id)[0];
@@ -166,7 +166,7 @@ export interface ResumeResult {
 
 /**
  * Reprise : `paused → ready`, après revérification de la policy consentie. Refusée
- * après un arrêt d'urgence verrouillé, qui exige une réactivation explicite distincte.
+ * après un arrêt verrouillé, qui exige une réactivation explicite distincte.
  */
 export function requestResume(ctx: ControlContext): ResumeResult {
   return ctx.uow.transaction((tx) => {
@@ -184,7 +184,7 @@ export function requestResume(ctx: ControlContext): ResumeResult {
         status: "refused",
         state: profile.state,
         reason: "emergency_stop_locked",
-        detail: "arrêt d'urgence verrouillé : la reprise exige une réactivation explicite",
+        detail: "arrêt verrouillé : la reprise exige une réactivation explicite",
       };
     }
     if (profile.state === "ready") {
@@ -234,7 +234,7 @@ export function requestResume(ctx: ControlContext): ResumeResult {
   });
 }
 
-// ── Réactivation après arrêt d'urgence ────────────────────────────────────────────
+// ── Réactivation après arrêt ────────────────────────────────────────────
 
 export type ReactivateStatus = "reactivated" | "not_stopped" | "refused";
 
@@ -245,7 +245,7 @@ export interface ReactivateResult {
   readonly detail: string;
 }
 
-const REACTIVATE_REASON = "réactivation explicite par l'humain après arrêt d'urgence";
+const REACTIVATE_REASON = "réactivation explicite par l'humain après arrêt";
 
 /**
  * Action explicite dédiée de l'humain : `stopped → ready` (gardes `user_action` et
@@ -269,7 +269,7 @@ export function requestReactivate(ctx: ControlContext): ReactivateResult {
         status: "not_stopped",
         state: profile.state,
         reason: "not_stopped",
-        detail: `aucun arrêt d'urgence à lever (état ${profile.state})`,
+        detail: `aucun arrêt à lever (état ${profile.state})`,
       };
     }
     if (tx.sessions.listOpen(profile.id).length > 0) {
@@ -306,15 +306,15 @@ export function requestReactivate(ctx: ControlContext): ReactivateResult {
       status: "reactivated",
       state: "ready",
       reason: "reactivated",
-      detail: "arrêt d'urgence levé : réveils de nouveau permis",
+      detail: "arrêt levé : réveils de nouveau permis",
     };
   });
 }
 
-// ── Arrêt d'urgence ───────────────────────────────────────────────────────────────
+// ── Arrêt ───────────────────────────────────────────────────────────────
 
 /**
- * Marqueur de secours, hors SQLite : écrit seulement si l'arrêt d'urgence n'a pas pu
+ * Marqueur de secours, hors SQLite : écrit seulement si l'arrêt n'a pas pu
  * être persisté. Sa présence impose au démarrage une récupération conservatrice.
  */
 export class StopFlag {
@@ -352,7 +352,7 @@ export interface EmergencyStopPersistence {
 }
 
 /**
- * Première étape du kill switch : persiste `stopped` avec le verrou d'arrêt d'urgence,
+ * Première étape du kill switch : persiste `stopped` avec le verrou d'arrêt,
  * supprime le prochain réveil et journalise. Ne lève jamais : en cas d'échec, le
  * marqueur de secours est écrit et l'appelant termine quand même l'arborescence.
  */

@@ -64,6 +64,7 @@ export function createScrollFollow(scrollToEnd: () => void, changed: (following:
     contentChanged: cancelGesture,
     suspend: () => { cancelGesture(); setFollowing(false); },
     recent: () => { cancelGesture(); setFollowing(true); follow(); },
-    reset: () => { cancelGesture(); height = 0; viewport = 0; setFollowing(true); },
+    // The mounted viewport may not emit onLayout again when a new call starts.
+    reset: () => { cancelGesture(); height = 0; setFollowing(true); },
   };
 }

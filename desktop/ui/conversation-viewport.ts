@@ -6,7 +6,14 @@ interface Anchor {node:HTMLElement;key:string|undefined;offset:number}
 export interface ConversationPosition {follow:boolean;top:number;anchor?:Anchor}
 /** NLR (17 Nov 2026): within 150 px of the bottom, the thread stays pinned to new and growing messages. */
 export const FOLLOW_SLACK_PX=150;
-export function conversationViewport(pane:HTMLElement,options:{observe?:boolean;schedule?:(callback:()=>void)=>void}={}){
+/** After the reader scrolls up, passive re-pins (growth, periodic refresh) wait this long: a gesture is never fought. */
+export const USER_SCROLL_HOLD_MS=1000;
+export function conversationViewport(pane:HTMLElement,options:{observe?:boolean;schedule?:(callback:()=>void)=>void;now?:()=>number}={}){
+ const now=options.now??(()=>Date.now());
+ // NLR (17 Nov 2026) "sometimes I can't scroll at all": every ResizeObserver/load/refresh re-pinned to the bottom while the reader
+ // was still inside the 150 px slack, so an upward drag or wheel was snapped back before it could leave the slack. An upward
+ // move now opens a short hold during which only a NEW message (smooth restore) may pin; growth and refreshes leave the view alone.
+ let holdUntil=0;const held=()=>now()<holdUntil;
  const distance=()=>pane.scrollHeight-pane.scrollTop-pane.clientHeight;
  const nearBottom=()=>distance()<FOLLOW_SLACK_PX;
  // Root cause of the manual scrolling: "near bottom" used to be measured at render time, after late images/ASCII had already
@@ -25,17 +32,17 @@ export function conversationViewport(pane:HTMLElement,options:{observe?:boolean;
  function capture(forceFollow=false):ConversationPosition{const top=pane.getBoundingClientRect().top;const node=[...pane.children].find(n=>n.getBoundingClientRect().bottom>top+1) as HTMLElement|undefined;return{follow:forceFollow||following,top:pane.scrollTop,...(node?{anchor:{node,key:node.dataset['viewportKey']??node.dataset['messageId'],offset:node.getBoundingClientRect().top-top}}:{})};}
  let remembered=capture(),pending=false;const schedule=options.schedule??(callback=>requestAnimationFrame(callback));
  /** smooth: animate to a NEW message; re-pins after late growth stay instant (or retarget a running animation). */
- function restore(position:ConversationPosition,restoreOptions:{smooth?:boolean}={}){if(pane.clientHeight<=0)return;following=position.follow;if(position.follow)pin(restoreOptions.smooth===true||smoothing);else{stopSmoothing();let node=position.anchor?.node;if(node&&!pane.contains(node))node=[...pane.children].find(n=>((n as HTMLElement).dataset['viewportKey']??(n as HTMLElement).dataset['messageId'])===position.anchor?.key) as HTMLElement|undefined;pane.scrollTop=node&&position.anchor?pane.scrollTop+node.getBoundingClientRect().top-pane.getBoundingClientRect().top-position.anchor.offset:position.top;lastTop=pane.scrollTop;}remembered=capture(position.follow);}
- const resized=()=>{if(pane.clientHeight>0&&following)pin(smoothing);if(pending)return;pending=true;schedule(()=>{pending=false;restore(following&&pane.clientHeight>0?{...remembered,follow:true}:remembered);});};
+ function restore(position:ConversationPosition,restoreOptions:{smooth?:boolean}={}){if(pane.clientHeight<=0)return;following=position.follow;if(position.follow&&held()&&restoreOptions.smooth!==true){lastTop=pane.scrollTop;remembered=capture(true);return;}if(position.follow)pin(restoreOptions.smooth===true||smoothing);else{stopSmoothing();let node=position.anchor?.node;if(node&&!pane.contains(node))node=[...pane.children].find(n=>((n as HTMLElement).dataset['viewportKey']??(n as HTMLElement).dataset['messageId'])===position.anchor?.key) as HTMLElement|undefined;pane.scrollTop=node&&position.anchor?pane.scrollTop+node.getBoundingClientRect().top-pane.getBoundingClientRect().top-position.anchor.offset:position.top;lastTop=pane.scrollTop;}remembered=capture(position.follow);}
+ const resized=()=>{if(pane.clientHeight>0&&following&&!held())pin(smoothing);if(pending)return;pending=true;schedule(()=>{pending=false;restore(following&&pane.clientHeight>0?{...remembered,follow:true}:remembered);});};
  const scrolled=()=>{
   if(pane.clientHeight<=0)return;const top=pane.scrollTop;
   if(smoothing){following=true;if(distance()<=1)stopSmoothing();}
-  else if(top<lastTop-1)following=nearBottom();
+  else if(top<lastTop-1){following=nearBottom();if(distance()>1)holdUntil=now()+USER_SCROLL_HOLD_MS;}
   else if(nearBottom())following=true;
   lastTop=top;remembered=capture();
  };
  // A user gesture interrupts our own animation: its scroll events are then judged normally.
- const interrupted=()=>{if(smoothing)stopSmoothing();};
+ const interrupted=(event?:Event)=>{if(smoothing)stopSmoothing();const e=event as (WheelEvent&KeyboardEvent)|undefined;if((typeof e?.deltaY==='number'&&e.deltaY<0)||['ArrowUp','PageUp','Home'].includes(e?.key??''))holdUntil=now()+USER_SCROLL_HOLD_MS;};
  pane.addEventListener('scroll',scrolled,{passive:true});pane.addEventListener('load',resized,true);
  for(const name of ['wheel','touchstart','pointerdown','keydown'])pane.addEventListener(name,interrupted,{passive:true});
  let observer:ResizeObserver|undefined;if(options.observe!==false&&typeof ResizeObserver!=='undefined'){observer=new ResizeObserver(resized);}

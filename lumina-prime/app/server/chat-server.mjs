@@ -27,7 +27,7 @@ export function isPrivateAddress(address) {
 export function createChatServer({ bridge, transcribe = null, pairingCode = randomBytes(12).toString('hex'),
   now = Date.now, pairTtlMs = 300_000, sessionTtlMs = 12 * 60 * 60_000,
   origins = [], hosts = ['127.0.0.1', 'localhost'], pollIntervalMs = 500, maxWaitMs = 25_000,
-  localConnect = false, privateNetworkConnect = false, sessionStore = null, reportStore = null, phones = null, phoneOwner = () => "nlr", desktopCallPage = null, call = null, controls = null, ring = null, files = null, appErrors = null } = {}) {
+  localConnect = false, privateNetworkConnect = false, sessionStore = null, reportStore = null, phones = null, phoneOwner = () => "nlr", desktopCallPage = null, call = null, controls = null, ring = null, files = null, appErrors = null, peers = null } = {}) {
   if (!bridge?.snapshot || !bridge?.send || typeof pairingCode !== 'string' || pairingCode.length < 12)
     throw new Error('A fixed owner bridge and strong pairing code are required');
   let pairUsed = false;
@@ -153,6 +153,23 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         issueSession(origin, res, req.socket.remoteAddress); return;
       }
       const session = sessionFor(req);
+      const localDesktop = ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+      if(peers && req.method==='GET' && url.pathname==='/chat/phone/pending' && url.searchParams.get('desktop')==='1') {
+        if(!localDesktop)throw new ChatError('peer_admin_local_only',403);
+        const invite=peers.humanPending();
+        if(invite||!phones){send(res,200,{invite},origin);return;}
+      }
+      if(peers && req.method==='POST' && url.pathname==='/chat/call/human-guest') {
+        if(!localDesktop)throw new ChatError('peer_admin_local_only',403);
+        send(res,200,peers.humanGuest(session.key,await body(req,30_000)),origin);return;
+      }
+      if (url.pathname === '/chat/call/peers' && req.method === 'POST') {
+        // Pairing/exports are managed by the local desktop, never by LAN owner sessions.
+        if (!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) throw new ChatError('peer_admin_local_only',403);
+        if (!peers) throw new ChatError('peer_unavailable',503);
+        const input=await body(req);
+        send(res,200,await peers.admin(input.action,input),origin);return;
+      }
       if (phones && url.pathname.startsWith('/chat/phone/')) {
         const human = session.human ?? phoneOwner(req.socket.remoteAddress);
         if (req.method === 'GET' && url.pathname === '/chat/phone/ringtone-capabilities') {
@@ -306,6 +323,11 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         }
         return call.assertSession(scope.owner,scope.id,scope.epoch);
       };
+      if(peers && req.method==='POST' && url.pathname==='/chat/call/humans') {
+        if(!localDesktop)throw new ChatError('peer_admin_local_only',403);
+        const input=await body(req,30_000);const scope=callScope({call:input.call,epoch:String(input.epoch)});ensureActive(scope);
+        send(res,200,await peers.humanRequest(scope,input),origin);return;
+      }
       if(req.method==='GET'&&url.pathname==='/chat/call/capabilities') {
         callParams(url,[]);
         const scoped=Boolean(call.openSession&&call.stateSession&&call.endSession);
@@ -323,6 +345,8 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
           try {controls?.registerCall({id:scope.id,epoch:scope.epoch,participants});}
           catch(error){throw new ChatError(error.code??'call_control_failed',error.code==='call_ended'?410:400);}
           state=call.openSession(scope.owner,scope.id,scope.epoch,query.target);
+          try { await call.syncRemote?.(scope); }
+          catch(error) { call.endSession(scope.owner,scope.id,scope.epoch); controls?.markEnded({id:scope.id,epoch:scope.epoch}); throw error; }
         } else {
           // Check owner before consulting or acting on a global control record.
           try {state=call.stateSession(scope.owner,scope.id,scope.epoch);}
@@ -332,6 +356,7 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
             state=call.endSession(scope.owner,scope.id,scope.epoch);
           }
           if(state.status==='active'&&controls?.control({id:scope.id,epoch:scope.epoch})?.status==='ended')state=call.endSession(scope.owner,scope.id,scope.epoch);
+          if(state.status==='active')await call.syncRemote?.(scope);
         }
         send(res,200,{schema:'mind.chat.call.session.v1',...state},origin);return;
       }
@@ -352,11 +377,36 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
           else controls?.addParticipants({id:scope.id,epoch:scope.epoch,participants:call.identityKeys(state.handles)});
         }
         catch(error){if(error.code==='call_ended'){call.endSession(scope.owner,scope.id,scope.epoch);throw new ChatError('call_ended',410);}throw error;}
+        if(state.status==='active')try { await call.syncRemote?.(scope); }
+        catch(error) { call.endSession(scope.owner,scope.id,scope.epoch); controls?.markEnded({id:scope.id,epoch:scope.epoch}); throw error; }
         send(res,200,{schema:'mind.chat.call.session.v1',...state},origin);return;
       }
       if (req.method === 'GET' && url.pathname === '/chat/call/targets') {
         callParams(url, []);
         send(res, 200, { schema: 'mind.chat.call.targets.v1', targets: call.targets() }, origin); return;
+      }
+      if (req.method === 'POST' && url.pathname === '/chat/call/cancel-message') {
+        const scope = callScope(callParams(url, ['call', 'epoch']));
+        ensureActive(scope);
+        const input = await body(req, 80_000);
+        if (!keys(input, ['id', 'text']) || !/^chat-[a-f0-9-]{36}$/.test(input.id)
+          || typeof input.text !== 'string' || !input.text.trim() || input.text.length > 20_000)
+          throw new ChatError('invalid_request');
+        const text = `le user annule ce message ${JSON.stringify(input.text)}`;
+        const key = `cancel:${scope.owner}:${scope.id}:${input.id}`;
+        let previous = sends.get(key);
+        if (previous && previous.text !== text) throw new ChatError('message_conflict', 409);
+        if (!previous) {
+          if (sends.size >= 1000) throw new ChatError('send_limit_reached', 429);
+          const hash = digest(key).toString('hex');
+          const id = `chat-${hash.slice(0,8)}-${hash.slice(8,12)}-${hash.slice(12,16)}-${hash.slice(16,20)}-${hash.slice(20,32)}`;
+          const state = call.stateSession(scope.owner, scope.id, scope.epoch);
+          previous = { text, promise: Promise.resolve().then(() => call.deliver(state.handles.join(','), id, text, scope)) };
+          sends.set(key, previous);
+        }
+        try { await previous.promise; }
+        catch (error) { sends.delete(key); throw error; }
+        send(res, 200, { schema: 'mind.chat.call.cancel.v1', status: 'queued' }, origin); return;
       }
       if (req.method === 'POST' && url.pathname === '/chat/call/utterance') {
         const { target, id, call:callId, epoch } = callParams(url, ['target', 'id', 'call', 'epoch']);
@@ -383,12 +433,16 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         send(res, 200, { schema: 'mind.chat.call.end.v1', ended: result.ended }, origin); return;
       }
       if (req.method === 'GET' && url.pathname === '/chat/call/replies') {
-        const { target, since } = callParams(url, ['target', 'since']);
-        send(res, 200, { schema: 'mind.chat.call.replies.v1', items: await call.replies(target, since) }, origin); return;
+        const { target, since, call:callId, epoch } = callParams(url, ['target', 'since', 'call', 'epoch']);
+        const scope=callId||epoch?callScope({call:callId,epoch}):null;
+        if(scope)ensureActive(scope);
+        send(res, 200, { schema: 'mind.chat.call.replies.v1', items: await call.replies(target, since,scope) }, origin); return;
       }
       if (req.method === 'GET' && url.pathname === '/chat/call/speech') {
-        const { target, item, announce } = callParams(url, ['target', 'item', 'announce']);
-        const audio = await call.speech(target, item, announce === '1');
+        const { target, item, announce, call:callId, epoch } = callParams(url, ['target', 'item', 'announce', 'call','epoch']);
+        const scope=callId||epoch?callScope({call:callId,epoch}):null;
+        if(scope)ensureActive(scope);
+        const audio = await call.speech(target, item, announce === '1',scope);
         if (res.destroyed || res.writableEnded) return;
         res.writeHead(200, { 'Content-Type': audio.mime, 'Content-Length': audio.bytes.length, 'Cache-Control': 'no-store',
           'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',

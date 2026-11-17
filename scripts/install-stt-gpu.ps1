@@ -18,7 +18,8 @@ try { nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,nohea
 if (-not $CheckOnly) {
   Write-Host '== Dépendances Python'
   # Versions relevées sur le portable le 16 nov. 2026 : faster-whisper 1.2.1, ctranslate2 4.8.1 (CUDA 12, cuDNN 9).
-  & $Python -m pip install --upgrade 'faster-whisper==1.2.1' 'ctranslate2>=4.5,<5' 'nvidia-cublas-cu12==12.*' 'nvidia-cudnn-cu12==9.*' 'huggingface_hub'
+  # PyAV 19 is incompatible with the metadata_errors argument used by faster-whisper 1.2.1.
+  & $Python -m pip install --upgrade 'faster-whisper==1.2.1' 'av==18.1.0' 'ctranslate2>=4.5,<5' 'nvidia-cublas-cu12==12.*' 'nvidia-cudnn-cu12==9.*' 'huggingface_hub'
   if ($LASTEXITCODE) { throw 'pip a échoué' }
 
   Write-Host "== Modèle $Model"

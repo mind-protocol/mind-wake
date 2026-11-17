@@ -85,9 +85,9 @@ Commandes :
   journal       Derniers événements (--limit N, --after SÉQUENCE)
   policy show   Révision de policy active, consentement et révocations
   pause         Plus aucun réveil ; la session en cours s'arrête après checkpoint
-  resume        Lève une pause (refusée après un arrêt d'urgence)
-  stop          Arrêt d'urgence : verrouille le profil, termine les processus
-  reactivate    Lève un arrêt d'urgence (action de l'humain), policy revérifiée
+  resume        Lève une pause (refusée après un arrêt)
+  stop          Arrêt : verrouille le profil, termine les processus
+  reactivate    Lève un arrêt (action de l'humain), policy revérifiée
   wake          Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité,
                 budgets revérifiés), refusé en pause, arrêt ou blocage
   messages      Fil avec ton agent : sa note artifacts/questions-for-human.md et tes réponses

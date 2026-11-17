@@ -8,6 +8,7 @@ import { spawnSync } from "node:child_process";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { prepareInstallation, desktopExecutable } from "./installation.mjs";
+import { prepareStt } from "./setup-stt.mjs";
 import { ensureHub } from "./start-local.mjs";
 import { windowsIntegration } from "./windows-integration.mjs";
 import { startSupervised } from "./desktop-supervisor.mjs";
@@ -28,6 +29,7 @@ const { values } = parseArgs({
     "data-dir": { type: "string" },
     "no-open": { type: "boolean" },
     "engine-only": { type: "boolean" },
+    "skip-stt": { type: "boolean" },
     start: { type: "boolean" },
     "accept-native": { type: "boolean" },
     model: { type: "string" },
@@ -115,6 +117,11 @@ try {
           codex: await prepareCodex({ env: codexEnv }),
           firstWelcome: welcomeSettings,
           steps: [
+            ...(!values["engine-only"] && !values["skip-stt"]
+              ? [
+                  "installer et vérifier la transcription locale (Python, faster-whisper, modèle small)",
+                ]
+              : []),
             "vérifier le lancement et l’arrêt du Job Object sur ce poste, sans appel modèle",
             "préparer le profil sans changer son activation",
             "créer ou réutiliser les deux identités locales",
@@ -131,6 +138,7 @@ try {
           apply:
             "npm run setup -- --apply " +
             (values["engine-only"] ? "--engine-only " : "") +
+            (values["skip-stt"] ? "--skip-stt " : "") +
             "--data-dir " +
             quotePowerShell(dataDir) +
             (values["no-open"] ? " --no-open" : "") +
@@ -199,6 +207,10 @@ try {
       executable: codex,
       codexHome: codexEnv.CODEX_HOME,
     });
+    const transcription =
+      values["engine-only"] || values["skip-stt"]
+        ? { ready: false, skipped: true }
+        : prepareStt(dataDir);
     await ensureHub(m);
     const client = new Client({ name: "mind-wake-setup", version: "0.1.0" });
     try {
@@ -229,6 +241,7 @@ try {
       const result = {
         mode: "installed-local",
         codex: preparedCodex,
+        transcription,
         dataDir,
         engine: {
           prepared: true,

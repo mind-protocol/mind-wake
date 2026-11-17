@@ -1,9 +1,11 @@
 import * as Crypto from 'expo-crypto';
 import { ChatClientError, chatErrorMessage, type ChatSession } from './client.ts';
-import { callReplies, callSpeech, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, type CallSession, type CallReply } from './call-client.ts';
+import { callReplies, callSpeech, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, cancelCallMessage, type CallSession, type CallReply } from './call-client.ts';
 import { createBargeIn, createCallVad, levelDb, muteTransition, MUTED_DB, type BargeMode } from './call-vad.ts';
 import { setCaptureSpeaking } from './voice-intent.ts';
 import type { CallCapture } from './call-frames.ts';
+import { createHumanHost } from './human-call-host.ts';
+import { createHumanGuest } from './human-call-guest.ts';
 
 export type CallLine = { key: string; who: 'me' | 'them' | 'info'; text: string; detail: string; error?: boolean; speaker?: string; /** Capture partagée (image ou ASCII), affichée dans le fil. */ capture?: CallCapture; /** Retirer la bulle (parole incompréhensible : rien affiché, rien envoyé). */ drop?: boolean };
 export type CallPhase = 'connecting' | 'listening' | 'speaking' | 'playing' | 'ended';
@@ -23,10 +25,11 @@ type TargetReply = CallReply & {target:string};
  * (seuil plus haut, ~300 ms) coupe la lecture, vide la file et devient une prise de parole.
  * `start` doit être appelé dans le geste utilisateur (micro, son, AudioContext).
  */
-export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel }: Events & {
+export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel, inviteHumans = false, humanInvite }: Events & {
   session: ChatSession; targets: string[]; announce: boolean; silenceMs: number; bargeMode: BargeMode; floorDb?: number;
   /** Voix des réponses (NLR, 16 nov. : off par défaut) ; off, aucune synthèse n'est demandée au desktop. */
-  voice?: () => boolean }) {
+  voice?: () => boolean; inviteHumans?:boolean; humanInvite?:{id:string;label:string} }) {
+  if(humanInvite)return createHumanGuest({session,invite:humanInvite,silenceMs,floorDb,onLine,onPhase,onLevel});
   targets = [...new Set(targets)];
   let joining = false;
   let membershipRevision = 1;
@@ -38,16 +41,18 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
   let recorder: MediaRecorder | null = null; let chunks: Blob[] = []; let mime = '';
   let wakeLock: { release: () => Promise<void> } | null = null;
   let muted = false;
+  let humans:ReturnType<typeof createHumanHost>|null=null;
   const vad = createCallVad({ silenceMs, floorDb }); const barge = createBargeIn(bargeMode);
   const uploads: { blob: Blob; mime: string; spokeAt: number; targets: string[] }[] = []; let uploading = false;
   const seen = new Set<string>(); const playQueue: { reply: TargetReply; audio: Promise<Speech> }[] = [];
   /** Réponses de tous les participants, dans l'ordre d'arrivée (un même fil n'est lu qu'une fois). */
+  let sessionOpened = false;
   const allReplies = async () => (await Promise.all(targets.map(async target =>
-    (await callReplies(session, target, OLD(), abort.signal)).map(reply => ({ ...reply, target })))))
+    (await callReplies(session, target, OLD(), abort.signal, sessionOpened ? scope : undefined)).map(reply => ({ ...reply, target })))))
     .flat().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const shown = (reply: CallReply) => (announce && reply.speaker ? `${reply.speaker} : ${reply.text}` : reply.text);
   let playing: { reply: TargetReply; stop: () => void } | null = null; let pumping = false;
-  const line = (value: CallLine) => { if (!ended) onLine(value); };
+  const line = (value: CallLine) => { if (!ended) {onLine(value);humans?.broadcast(value);} };
   const fail = (key: string, who: CallLine['who'], text: string, error: unknown, speaker?: string) =>
     line({ key, who, text, detail: error instanceof ChatClientError ? chatErrorMessage(error) : String((error as Error)?.message ?? error), error: true, speaker });
 
@@ -133,7 +138,7 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
           seen.add(reply.id);
           if (!voice()) { line({ key: reply.id, who: 'them', text: shown(reply), detail: '', speaker: reply.speaker ?? undefined }); continue; }
           line({ key: reply.id, who: 'them', text: shown(reply), detail: 'voix en préparation sur le desktop…', speaker: reply.speaker ?? undefined });
-          const pending = callSpeech(session, reply.target, reply.id, abort.signal, announce); pending.catch(() => {});
+          const pending = callSpeech(session, reply.target, reply.id, abort.signal, announce,scope); pending.catch(() => {});
           playQueue.push({ reply, audio: pending }); void pumpPlayback();
         }
       } catch (error) { if (ended) return;
@@ -203,6 +208,7 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
   return {
     /** Identifiant de l'appel (captures relayées par le desktop). */
     get callId() { return scope.id; },
+    cancelMessage(id: string, text: string) { return cancelCallMessage(session, scope, id, text, abort.signal); },
     setMuted,
     get muted() { return muted; },
     /** Réglages modifiables pendant l'appel (NLR, 17 nov.) : appliqués à la mesure suivante. */
@@ -234,7 +240,13 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
       for (const reply of await allReplies()) seen.add(reply.id);
       if (ended) return;
       await openCallSession(session,scope,targets,abort.signal);
+      sessionOpened = true;
       if(ended)return;
+      if(inviteHumans) {
+        humans=createHumanHost({session,scope,context,stream,audio,onLine});
+        try{await humans.start();}catch(error){fail('human-invitation','info','Invitation de l’humain non envoyée.',error);}
+        if(ended)return;
+      }
       if (window.location?.pathname === '/desktop-call' && window.parent !== window) {
         window.parent.postMessage({type:'mind.call.vision', id:scope.id}, '*');
       }
@@ -277,6 +289,7 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
   };
   function stop() {
       if (ended) return; ended = true; abort.abort(); clearInterval(ticker);
+      humans?.stop();
       void endCall(session,targets,undefined,true,scope).catch(()=>{});
       document.removeEventListener('visibilitychange', visibility);
       try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch { /* Déjà arrêté. */ }

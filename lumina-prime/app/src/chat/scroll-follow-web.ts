@@ -58,10 +58,13 @@ export function createWebScrollFollow(controller: ReturnType<typeof createScroll
       const before = previous;
       previous = next;
       const bottom = next.height - next.viewport - next.y <= 32;
-      if (!bottom) controller.suspend(); // includes scrollbar/accessibility scrolling
       if (!before || before.height !== next.height || before.viewport !== next.viewport) {
         direction = 0; until = 0; return;
       }
+      // Layout growth and downward programmatic scrolling are not reader gestures.
+      // Wheel/touch/key input already suspends above; an upward movement also
+      // catches dragging the scrollbar or accessibility scrolling.
+      if (!bottom && next.y < before.y - 1) controller.suspend();
       if (direction && now() <= until) {
         // Continue the input's inertial sequence, including RN Web's final tick.
         if (direction * (next.y - before.y) > 0) until = now() + 250;

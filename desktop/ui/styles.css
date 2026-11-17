@@ -1073,6 +1073,7 @@ main > #view-chat { min-width:0; grid-template-columns:minmax(0,1fr); }
 #call-frame { width:100%; flex:1; min-height:320px; border:0; }
 #view-call:has(#call-vision-feed:not([hidden])) { display:grid; grid-template-columns:minmax(320px, 2fr) minmax(360px, 3fr); min-height:0; }
 #view-call[hidden]:has(#call-vision-feed) { display:none; }
+#view-call.call-preloaded { display:flex; position:fixed; left:0; top:0; width:960px; height:680px; opacity:0; pointer-events:none; z-index:-1; }
 #call-vision-feed { overflow:auto; min-width:0; padding:.7rem; }
 #call-vision-feed figure { margin:0 0 1rem; }
 #call-vision-feed figcaption { font-weight:600; margin-bottom:.4rem; }

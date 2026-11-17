@@ -1,5 +1,5 @@
 //! MIND Wake desktop : icône de zone de notification avec voyant, sélecteur
-//! On / Réveil / Force-off, panneau « Que fait mon agent ? » et fils privés (SPEC §21,
+//! On / Réveil / Arrêt, panneau « Que fait mon agent ? » et fils privés (SPEC §21,
 //! §23). Client local des CLI : fermer ou faire planter le panneau n'arrête ni ne relance
 //! Wake ; chaque action est la commande CLI correspondante (ADR-007, agent-first).
 
@@ -300,13 +300,13 @@ impl Light {
             Light::Awake => i18n::text("MIND Wake — éveillé : une session tourne", "MIND Wake — awake: a session is running"),
             Light::On => i18n::text("MIND Wake — allumé : réveils autorisés dans les fenêtres", "MIND Wake — on: wakes allowed in scheduled windows"),
             Light::Off => i18n::text("MIND Wake — éteint (pause, blocage ou désactivé)", "MIND Wake — off (paused, blocked or disabled)"),
-            Light::ForcedOff => i18n::text("MIND Wake — arrêt forcé (arrêt d'urgence)", "MIND Wake — forced off (emergency stop)"),
+            Light::ForcedOff => i18n::text("MIND Wake — arrêt", "MIND Wake — stopped"),
             Light::Unknown => i18n::text("MIND Wake — état indisponible", "MIND Wake — status unavailable"),
         }
     }
 }
 
-/// Sélecteur On / Réveil / Force-off du menu : coché d'après l'état réel, jamais d'après
+/// Sélecteur On / Réveil / Arrêt du menu : coché d'après l'état réel, jamais d'après
 /// le dernier clic.
 struct Switch {
     on: CheckMenuItem<Wry>,
@@ -323,7 +323,7 @@ impl Switch {
         let _ = self.always.set_checked(always_on);
         // Selecting Always-on explicitly reactivates through the validated CLI path.
         let _ = self.always.set_enabled(true);
-        // Après un arrêt d'urgence, seule une commande explicite hors menu peut relancer.
+        // Après un arrêt, seule une commande explicite hors menu peut relancer.
         let _ = self.on.set_enabled(light != Light::ForcedOff);
         let _ = self.wake.set_enabled(light != Light::ForcedOff);
     }
@@ -451,7 +451,7 @@ fn main() {
             let on = CheckMenuItem::with_id(app, "mode_on", i18n::text("On — réveils autorisés", "On — wakes allowed"), true, false, None::<&str>)?;
             let wake = CheckMenuItem::with_id(app, "mode_wake", i18n::text("Réveil — maintenant", "Wake — now"), true, false, None::<&str>)?;
             let always = CheckMenuItem::with_id(app, "mode_always", i18n::text("Always-on — enchaîner les réponses", "Always-on — continue after each response"), true, false, None::<&str>)?;
-            let off = CheckMenuItem::with_id(app, "mode_off", i18n::text("Force-off — arrêt d'urgence", "Force-off — emergency stop"), true, false, None::<&str>)?;
+            let off = CheckMenuItem::with_id(app, "mode_off", i18n::text("Arrêt", "Stop"), true, false, None::<&str>)?;
             let pause = MenuItem::with_id(app, "pause", "Pause", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", i18n::text("Quitter le panneau (Wake continue)", "Quit panel (Wake continues)"), true, None::<&str>)?;
             let menu = Menu::with_items(
@@ -477,7 +477,7 @@ fn main() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "open" => show_panel(app),
                     "windows_startup" => windows_startup::refresh(app, true),
-                    // « On » lève une pause ; la CLI refuse après un arrêt d'urgence.
+                    // « On » lève une pause ; la CLI refuse après un arrêt.
                     "mode_on" => menu_action(app, Verb::On),
                     "mode_always" => menu_action(app, Verb::AlwaysOn),
                     "mode_wake" => menu_action(app, Verb::Wake),
@@ -515,7 +515,7 @@ fn main() {
                 let _ = language_on.set_text(i18n::text("On — réveils autorisés", "On — wakes allowed"));
                 let _ = language_wake.set_text(i18n::text("Réveil — maintenant", "Wake — now"));
                 let _ = language_always.set_text(i18n::text("Always-on — enchaîner les réponses", "Always-on — continue after each response"));
-                let _ = language_off.set_text(i18n::text("Force-off — arrêt d'urgence", "Force-off — emergency stop"));
+                let _ = language_off.set_text(i18n::text("Arrêt", "Stop"));
             });
             app.manage(Switch { on, wake, always, off });
             app.manage(windows_startup::StartupMenu(startup));

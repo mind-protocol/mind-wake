@@ -8,6 +8,30 @@ const id = 'chat-382582c4-90f8-4dfb-910d-6c976ad77247';
 const code = 'pairing-code-123456789012';
 const RIFF = Buffer.from('RIFF0000WAVEfmt ', 'latin1');
 
+test('call cancellation reaches participants once without adding a transcript bubble', async t => {
+  const f = fixture();
+  const service = createChatServer({ bridge: { snapshot: async () => [], send: async () => ({ status: 'recorded' }) }, pairingCode: code, call: f.call });
+  await new Promise(resolve => service.server.listen(0, '127.0.0.1', resolve));
+  t.after(() => service.close());
+  const url = `http://127.0.0.1:${service.server.address().port}`;
+  const session = await (await fetch(url + '/chat/pair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) })).json();
+  const headers = { Authorization: `Bearer ${session.token}`, 'Content-Type': 'application/json' };
+  const scope = 'call=382582c4-90f8-4dfb-910d-6c976ad77247&epoch=1';
+  assert.equal((await fetch(`${url}/chat/call/session?${scope}&target=mind,vox`, { method: 'POST', headers })).status, 200);
+  const endpoint = `${url}/chat/call/cancel-message?${scope}`;
+  const body = JSON.stringify({ id, text: 'Va à "Paris"' });
+  assert.equal((await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })).status, 401);
+  const results = await Promise.all([1, 2].map(() => fetch(endpoint, { method: 'POST', headers, body }).then(r => r.json())));
+  assert.deepEqual(results[0], { schema: 'mind.chat.call.cancel.v1', status: 'queued' });
+  assert.equal(f.sent.length, 1); assert.equal(f.routed.length, 1);
+  assert.equal(f.sent[0].text, callBody(`le user annule ce message ${JSON.stringify('Va à "Paris"')}`));
+  assert.equal(f.routed[0].text, f.sent[0].text);
+  const replies = await (await fetch(`${url}/chat/call/replies?${scope}&target=mind&since=${encodeURIComponent(new Date(0).toISOString())}`, { headers })).json();
+  assert.deepEqual(replies.items, []);
+  await fetch(`${url}/chat/call/session/end?${scope}`, { method: 'POST', headers });
+  assert.equal((await fetch(endpoint, { method: 'POST', headers, body })).status, 410);
+});
+
 function fixture() {
   const main = []; const room7 = []; const sent = []; const routed = []; const spoken = []; let wakes = 0;
   const vox = { room: 7, agent: null, label: 'Room 7 (VOX)' };

@@ -8,12 +8,13 @@ import { phoneToken, phoneRingtoneKeys } from './phone-token';
 import { advertiseRingtoneCapabilities } from './phone-ringtone-registration';
 import { useReportedError } from './app-error-report.ts';
 
-type Invite = { id: string; caller: string; label: string; until: number; ringtone?: 'common' | 'marco' | 'vox' | 'equerre' | 'rose_des_vents' | 'medicis' };
+type Invite = { id: string; caller: string; label: string; until: number; kind?: 'peer-human'; ringtone?: 'common' | 'marco' | 'vox' | 'equerre' | 'rose_des_vents' | 'medicis' };
 const Context = createContext<{accepted: Invite | null; consume: () => void; busy: (on: boolean) => void} | null>(null);
 export function useIncomingPhone() { return useContext(Context); }
 
 export function IncomingPhone({children}: {children: React.ReactNode}) {
   const {session} = useWakeChat();
+  const peerDesktop = typeof window !== 'undefined' && window.location?.pathname === '/desktop-call';
   const desktop = typeof window !== 'undefined' && window.location?.pathname === '/desktop-call'
     && new URLSearchParams(window.location.search).get('receiver') === 'desktop';
   const [invite, setInvite] = useState<Invite | null>(null);
@@ -56,7 +57,7 @@ export function IncomingPhone({children}: {children: React.ReactNode}) {
             {method,headers,...(body?{body:JSON.stringify(body)}:{}),signal:abort.signal}),ringtoneKeys);
           if(advertised)capabilityRegistered=capsKey;
         }
-        const result = await call(session.url, '/chat/phone/pending', {headers, signal: abort.signal}) as {invite: Invite | null};
+        const result = await call(session.url, '/chat/phone/pending' + (peerDesktop ? '?desktop=1' : ''), {headers, signal: abort.signal}) as {invite: Invite | null};
         if (!abort.signal.aborted && !answering.current) setInvite(result.invite?.id === decided.current ? null : result.invite);
       } catch { if (!abort.signal.aborted) setInvite(null); }
       polling = false;
@@ -71,7 +72,7 @@ export function IncomingPhone({children}: {children: React.ReactNode}) {
       abort.abort(); clearTimeout(timer);
       if (desktop) window.removeEventListener('message', pulse);
     };
-  }, [session, desktop]);
+  }, [session, desktop, peerDesktop]);
 
   const ringing = !busy && invite ? invite.id : null;
   useEffect(() => {
@@ -92,9 +93,9 @@ export function IncomingPhone({children}: {children: React.ReactNode}) {
     if (!session || !invite || answering.current) return;
     answering.current = true;
     try {
-      const result = await call(session.url, '/chat/phone/answer', {method:'POST',
+      const result = await call(session.url, invite.kind === 'peer-human' ? '/chat/call/human-guest' : '/chat/phone/answer', {method:'POST',
         headers:{Authorization:'Bearer '+session.token,'Content-Type':'application/json'},
-        body:JSON.stringify({id:invite.id,decision})}) as {caller:string};
+        body:JSON.stringify({id:invite.id,decision,...(invite.kind==='peer-human'?{action:'answer'}:{})})}) as {caller:string};
       decided.current = invite.id;
       setError(''); setInvite(null);
       if (decision === 'accept') {

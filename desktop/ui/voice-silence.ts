@@ -1,4 +1,4 @@
-export const VOICE_SILENCE_MS = 5_000;
+export const VOICE_SILENCE_MS = 2_000;
 const SPEECH_RMS = 0.012;
 
 /** Root-mean-square level of one audio frame (0 for an empty frame). */

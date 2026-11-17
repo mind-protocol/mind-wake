@@ -34,7 +34,7 @@ export const LIGHT_LABELS: Readonly<Record<Light, string>> = {
   awake: tr("Éveillé"),
   on: tr("Allumé"),
   off: tr("Éteint"),
-  forced_off: tr("Arrêt forcé"),
+  forced_off: tr("Arrêt"),
   unknown: tr("Inconnu"),
 };
 
@@ -251,7 +251,7 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
       ["ready", "hibernating", "running", "checkpointing"].includes(state),
     canAlwaysOn:
       state === "stopped" || (!locked && ["ready", "hibernating", "running", "checkpointing", "paused"].includes(state)),
-    reason: profile["stateReason"] === "launch.allowed" ? tr("L’agent travaille sur une session autorisée.") : str(profile["stateReason"]) ?? tr("motif non communiqué"),
+    reason: profile["stateReason"] === "launch.allowed" ? tr("L’agent travaille sur une session autorisée.") : (str(profile["stateReason"]) ?? tr("motif non communiqué")).replace(/arrêt d’urgence|arrêt d'urgence/gi, "arrêt"),
     simulated,
     activity: [
       { label: tr("Exploration"), value: str(experiment?.["title"]) ?? tr("aucune exploration active") },

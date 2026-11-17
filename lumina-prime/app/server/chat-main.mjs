@@ -13,6 +13,8 @@ import { createChatReportStore } from './chat-reports.mjs';
 import { pathToFileURL } from 'node:url';
 import { createCallService } from './chat-call.mjs';
 import { createCallSpeaker } from './chat-speech.mjs';
+import { createCallPeers } from './call-peers.mjs';
+import { openingResponder } from './call-opening-response.mjs';
 import { createCallbackFileStore, createRingFeed } from './chat-ring.mjs';
 
 /** Mode Appel : MIND toujours ; rooms, agents et holders si les modules du runtime se chargent. */
@@ -60,6 +62,7 @@ async function createCall({ wakeRoot, dataDir, bridge }) {
     directoryWorker.once('exit', resolve);
   });
   const service = createCallService({ mainLabel: 'Marco', mainAgentId: 'marco',
+    answerCall: await openingResponder({ wakeRoot, dataDir, bridge }),
     holders: () => directory.holders, owners: () => directory.owners, handleTable: () => directory.table,
     routeHandle: route ? (handle, text, id) => route.routeTelegramHandle(dataDir, handle, text, `call-${id}`, directory.table) : null,
     sendMain: (id, text) => bridge.send(id, text), wakeMain: wake ?? undefined,
@@ -116,6 +119,8 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
   const ringTimer = setInterval(() => { ring.tick().catch(() => {}); }, 15_000); ringTimer.unref();
   const phones = openPhoneBook(dataDir);
   const controls = openCallControls(dataDir);
+  const peers = createCallPeers({ call, controls, file: path.join(dataDir, 'credentials', 'call-peers.json') });
+  await peers.ready();
   const addressMap = JSON.parse(process.env.MIND_WAKE_PHONE_HANDLES ?? '{}');
   const phoneOwner = address => humanHandle(addressMap[String(address).replace(/^::ffff:/, '')] ?? 'nlr');
   let sending = false;
@@ -135,12 +140,12 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
   }, 2000);
   pushTimer.unref();
   const service = createChatServer({ bridge, transcribe, call, ring, phones, phoneOwner, controls, files: createFileReader({ root: path.join(dataDir, 'workspace') }), hosts: allowedHosts, origins: [...origins, `http://127.0.0.1:${port}`], desktopCallPage: serveDesktopCall,
-    reportStore, appErrors,
+    reportStore, appErrors, peers,
     localConnect, privateNetworkConnect, sessionTtlMs: 365 * 24 * 60 * 60_000,
     sessionStore: createChatSessionStore(path.join(dataDir, 'credentials', 'mobile-chat-sessions.json')) });
   try {
     await new Promise((resolve, reject) => { service.server.once('error', reject); service.server.listen(port, host, resolve); });
-  } catch (error) { clearInterval(pushTimer); clearInterval(ringTimer); phones.close(); await call.close(); reportStore.close(); controls.close(); throw error; }
+  } catch (error) { clearInterval(pushTimer); clearInterval(ringTimer); phones.close(); await peers.close(); await call.close(); reportStore.close(); controls.close(); throw error; }
   transcribe?.warm();
   const url = `http://${anyHost ? (hostnames[0] ?? '127.0.0.1') : host}:${port}`;
   fs.writeFileSync(path.join(outputDir, 'pairing.private.json'), JSON.stringify({ url, ...service.pairing,
@@ -150,6 +155,6 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
     pairingExpiresAt: service.pairing.expiresAt, localTranscriptionConfigured: Boolean(transcribe), public: false }, null, 2));
   console.log(JSON.stringify({ status: 'listening', url, bind: host, privateNetworkConnect, transport: 'authenticated long-poll' }));
   const close = service.close;
-  service.close = async () => { clearInterval(pushTimer); clearInterval(ringTimer); try { await close(); } finally { transcribe?.close(); await call.close(); reportStore.close(); phones.close(); controls.close(); } };
+  service.close = async () => { clearInterval(pushTimer); clearInterval(ringTimer); try { await close(); } finally { transcribe?.close(); await peers.close(); await call.close(); reportStore.close(); phones.close(); controls.close(); } };
   return service;
 }

@@ -295,7 +295,7 @@ export function voiceInput(options: Options) {
           if(context===session)options.state(
             running,
             running
-              ? watch ? "Micro actif · envoi après 5 s de silence" : "Micro actif · 30 s + 5 s de chevauchement"
+              ? watch ? "Micro actif · envoi après 2 s de silence" : "Micro actif · 30 s + 5 s de chevauchement"
               : "Dictée envoyée ; micro arrêté.",
           );
         })
@@ -363,7 +363,7 @@ export function voiceInput(options: Options) {
         starting = false;
         running = true;
         silenceWatch = acquired.watchSilence?.(() => rotateOnSilence?.());
-        options.state(true, silenceWatch ? "Micro actif · envoi après 5 s de silence" : options.visualSnapshot
+        options.state(true, silenceWatch ? "Micro actif · envoi après 2 s de silence" : options.visualSnapshot
           ? screenshots.enabled() ? "Micro actif · écran par fenêtres de 30 s" : "Micro actif · partage écran désactivé"
           : "Micro actif · capture au début · 30 s + 5 s de chevauchement");
         segment();
