@@ -4,9 +4,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 // This integration suite launches many real Windows Job Objects and Git processes.
-vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 });
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 import { activateWorkspace, githubUrl, workspaceConfig } from "./workspace-config.js";
 import { workspaceDirFor } from "./paths.js";
+import { openRepairQueue } from "../communication/app-error-relay.js";
+import * as errorRelay from "../communication/app-error-relay.js";
 import {
   configureWorkspaceSync,
   git,
@@ -24,6 +26,14 @@ let root: string,
   allowed: boolean,
   sync: WorkspaceGitSync;
 const url = "https://github.com/wake-fixture/workspace.git";
+function repairIncidents() {
+  const db = openRepairQueue(dir);
+  try {
+    return db.prepare("SELECT report, occurrences, pending FROM incidents ORDER BY rowid").all() as {
+      report: string; occurrences: number; pending: number;
+    }[];
+  } finally { db.close(); }
+}
 async function setupRepo(folder: string) {
   await git(root, ["init", "--initial-branch=main", folder]);
   await git(folder, ["config", "user.name", "Wake Fixture"]);
@@ -135,7 +145,17 @@ it("blocks dirty remote advances without altering staged or working changes and 
   expect(await git(work, ["diff", "--cached"])).toBe(index);
   expect(fs.readFileSync(path.join(work, "shared.txt"), "utf8")).toBe("local WIP");
   expect(await git(work, ["rev-parse", "HEAD"])).toBe(before);
+  const incidents = repairIncidents();
+  expect(incidents).toHaveLength(1);
+  expect(incidents[0]?.pending).toBe(1);
+  expect(JSON.parse(incidents[0]!.report)).toMatchObject({
+    screen: "workspace-git-sync",
+    text: expect.stringContaining(work),
+  });
+  expect(JSON.parse(incidents[0]!.report).text).toContain("Remote advanced");
+  sync = new WorkspaceGitSync(dir, () => allowed);
   await sync.tick();
+  expect(repairIncidents()).toEqual(incidents);
   expect(await git(work, ["rev-parse", "HEAD"])).toBe(before);
 });
 it("retains diverged commits and existing conflict markers without attempting a merge", async () => {
@@ -147,6 +167,7 @@ it("retains diverged commits and existing conflict markers without attempting a 
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("blocked");
   expect(await git(work, ["rev-parse", "HEAD"])).toBe(head);
+  expect(JSON.parse(repairIncidents()[0]!.report).text).toContain("diverged");
   await git(work, ["fetch", "origin", "main"]);
   await expect(git(work, ["merge", "FETCH_HEAD"])).rejects.toThrow();
   const conflicted = fs.readFileSync(path.join(work, "shared.txt"), "utf8");
@@ -155,6 +176,29 @@ it("retains diverged commits and existing conflict markers without attempting a 
   expect(workspaceSyncStatus(dir).state.status).toBe("blocked");
   expect(fs.readFileSync(path.join(work, "shared.txt"), "utf8")).toBe(conflicted);
   expect(fs.existsSync(path.join(work, ".git", "MERGE_HEAD"))).toBe(true);
+  expect(repairIncidents()).toHaveLength(2);
+  expect(JSON.parse(repairIncidents()[1]!.report).text).toContain("unfinished");
+});
+it("retries a failed repair relay after restart without retrying Git", async () => {
+  const state = { ...workspaceSyncStatus(dir).state, status: "blocked", error: "Unresolved Git conflicts" };
+  // Simulate an older persisted block, before the notification flag existed.
+  const { repairNotified: _flag, ...legacy } = state;
+  fs.writeFileSync(path.join(dir, "workspace-sync-state.json"), JSON.stringify(legacy));
+  const relay = vi.spyOn(errorRelay, "relayAppError").mockImplementationOnce(() => {
+    throw Error("Queue temporarily unavailable");
+  });
+  try {
+    await expect(sync.tick()).rejects.toThrow("Queue temporarily unavailable");
+  } finally { relay.mockRestore(); }
+  expect(workspaceSyncStatus(dir).state.status).toBe("blocked");
+  expect(workspaceSyncStatus(dir).state.repairNotified).toBe(false);
+  sync = new WorkspaceGitSync(dir, () => allowed);
+  await sync.tick();
+  expect(repairIncidents()).toHaveLength(1);
+  expect(workspaceSyncStatus(dir).state.repairNotified).toBe(true);
+  expect(workspaceSyncStatus(dir).state.lastAttemptAt).toBeNull();
+  await sync.tick();
+  expect(repairIncidents()[0]?.occurrences).toBe(1);
 });
 it("retains a rejected push as a local commit and sends it after manual resolution", async () => {
   fs.writeFileSync(path.join(remote, "hooks", "pre-receive"), "#!/bin/sh\nexit 1\n");
@@ -162,6 +206,7 @@ it("retains a rejected push as a local commit and sends it after manual resoluti
   requestWorkspaceSync(dir);
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("blocked");
+  expect(repairIncidents()).toHaveLength(1);
   const head = await git(work, ["rev-parse", "HEAD"]);
   expect(await git(remote, ["rev-parse", "main"])).not.toBe(head);
   fs.unlinkSync(path.join(remote, "hooks", "pre-receive"));
@@ -178,6 +223,7 @@ it("respects Pause, disabled settings, mismatched remote and missing upstream", 
   allowed = false;
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("paused");
+  expect(repairIncidents()).toHaveLength(0);
   expect(await git(work, ["status", "--porcelain"])).toContain("new.txt");
   allowed = true;
   await sync.tick();
@@ -237,6 +283,7 @@ it("retries a transient loopback connection failure only after one minute", asyn
   requestWorkspaceSync(dir);
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("error");
+  expect(repairIncidents()).toHaveLength(0);
   await git(work, ["config", "--unset", "url.http://127.0.0.1:1/.insteadOf"]);
   await git(work, ["config", `url.${local}.insteadOf`, url]);
   vi.setSystemTime(Date.now() + WORKSPACE_SYNC_INTERVAL - 1);

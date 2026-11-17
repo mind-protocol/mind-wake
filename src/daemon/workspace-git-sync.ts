@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import * as z from "zod";
+import { relayAppError } from "../communication/app-error-relay.js";
 import {
   atomicLocalJson,
   githubUrl,
@@ -28,6 +29,7 @@ const stateSchema = z.strictObject({
   nextRunAt: z.string().nullable(),
   error: z.string().nullable(),
   fingerprint: z.string(),
+  repairNotified: z.boolean().default(false),
 });
 type SyncState = z.infer<typeof stateSchema>;
 const stateFile = (dir: string) => path.join(dir, "workspace-sync-state.json");
@@ -52,6 +54,7 @@ function emptyState(c: WorkspaceConfig): SyncState {
     nextRunAt: null,
     error: null,
     fingerprint: fingerprint(c),
+    repairNotified: false,
   };
 }
 function readState(dir: string, c: WorkspaceConfig): SyncState {
@@ -169,6 +172,17 @@ export class WorkspaceGitSync {
         saved = next;
       }
     };
+    const notifyRepair = () => {
+      if (state.status !== "blocked" || state.repairNotified) return;
+      relayAppError(this.dir, {
+        app: "desktop",
+        screen: "workspace-git-sync",
+        text: `Synchronisation Git automatique bloquée.\nWorkspace : ${c.workspaceDir}\nCause : ${state.error}`,
+        at: stamp(),
+      }, this.now);
+      state.repairNotified = true;
+      save();
+    };
     if (!c.enabled) {
       state.status = "disabled";
       state.nextRunAt = null;
@@ -188,7 +202,10 @@ export class WorkspaceGitSync {
       return;
     }
     const requested = fs.existsSync(requestFile(this.dir));
-    if (state.status === "blocked" && !requested) return;
+    if (state.status === "blocked" && !requested) {
+      notifyRepair();
+      return;
+    }
     if (!requested && state.nextRunAt === null) {
       state.status = "waiting";
       state.nextRunAt = new Date(this.now() + WORKSPACE_SYNC_INTERVAL).toISOString();
@@ -230,6 +247,7 @@ export class WorkspaceGitSync {
     }, 90_000);
     try {
       guard();
+      state.repairNotified = false;
       const repo = await repository(c, controller.signal);
       guard();
       const lockFile = path.join(repo.gitDir, "mind-wake-workspace-sync.lock");
@@ -320,6 +338,9 @@ export class WorkspaceGitSync {
           : null;
       state.error = e instanceof Error ? e.message : "Workspace Git sync failed";
       save();
+      // Persist the block first: a failed relay is retried on the next poll,
+      // without running Git again. The durable queue also deduplicates retries.
+      notifyRepair();
     } finally {
       clearInterval(monitor);
       clearTimeout(timeout);
