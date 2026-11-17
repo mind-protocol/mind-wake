@@ -1198,7 +1198,12 @@ const uiReload = reloadGuard({reload: () => location.reload(), showPending: pend
 setInterval(() => uiReload.check(), 5000);
 function setPhoneToast(stage: "ringing" | "active" | null, invite: DesktopInvite | null) {
   uiReload.callStage(stage && invite ? stage : null, invite?.until);
-  if (tauri) void tauri.core.invoke("phone_toast_set", {toast: stage && invite ? {stage, id:invite.id, label:invite.label, until:invite.until, ringtone:invite.ringtone ?? "common"} : null}).catch(console.error);
+  // NLR, 17 nov. 2026 : le toast ne sert qu'à la sonnerie. Dès le décroché (stage « active »)
+  // on le retire, sans compter sur la version native : un ancien binaire garderait sinon un
+  // toast « En appel » par-dessus le fil. Le raccrochage se fait dans l'onglet Appel.
+  // (uiReload.callStage ci-dessus garde « active » : le rechargement reste différé pendant l'appel.)
+  const toast = stage === "ringing" && invite ? {stage, id:invite.id, label:invite.label, until:invite.until, ringtone:invite.ringtone ?? "common"} : null;
+  if (tauri) void tauri.core.invoke("phone_toast_set", {toast}).catch(console.error);
 }
 let callTimer: ReturnType<typeof setTimeout> | undefined;
 let releaseTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1241,6 +1246,11 @@ window.addEventListener("message", event => {
   if (event.data === 'mind.call.recovering') { selectTab('call'); return; }
   if (tauri) {
     const message = event.data;
+    if (message?.type === "mind.call.open-url" && typeof message.url === "string") {
+      // Lien d'un message d'appel : l'iframe est sandboxée, le navigateur externe s'ouvre d'ici (comme message-links.ts).
+      try { const u = new URL(message.url); if (u.protocol === "http:" || u.protocol === "https:") void tauri.core.invoke("open_external_url", {url: u.href}).catch(console.error); } catch { /* URL invalide */ }
+      return;
+    }
     if (message?.type === "mind.call.vision" && typeof message.id === "string" && /^[a-f0-9-]{36}$/i.test(message.id)) {
       displayCallVision(message.id);
       return;

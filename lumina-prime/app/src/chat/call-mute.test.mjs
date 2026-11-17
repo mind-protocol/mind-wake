@@ -46,13 +46,13 @@ test('call screen shows a mute toggle with a clear muted state', () => {
   assert.match(screen, /accessibilityLabel=\{muted \? 'Réactiver le micro' : 'Couper le micro'\}/);
 });
 
-test('call transcript follows new messages like the chat, with a jump button when scrolled up', () => {
+test('call transcript auto-scrolls on every new message, observes growth, and has no "new messages" banner', () => {
   const screen = source('CallScreen.tsx');
   assert.match(screen, /createScrollFollow\(/);
   assert.match(screen, /createWebScrollFollow\(scrollFollow\)/);
   assert.match(screen, /onContentSizeChange=\{\(width, height\) => \{ webFollow\.invalidate\(\); scrollFollow\.onContentSizeChange/);
-  assert.match(screen, /unseen && !following \?/);
-  assert.match(screen, /↓ nouveaux messages/);
+  assert.ok(!/unseen|nouveaux messages/.test(screen));
+  assert.match(screen, /observeTranscriptGrowth\(/);
   assert.match(screen, /scrollFollow\.recent\(\)/);
   assert.ok(!screen.includes('atBottom'));
 });
@@ -99,4 +99,48 @@ test('hang-up and mute sit in a fixed bar outside the transcript scroll view', (
   assert.ok(bar > scrollEnd);
   assert.ok(screen.indexOf('accessibilityLabel="Raccrocher"') > bar && screen.indexOf("'Couper le micro'") > bar);
   assert.match(screen.slice(bar, bar + 200), /flexShrink: 0/);
+});
+
+test('observeTranscriptGrowth re-pins on resize, mutation and image load, only while shouldPin', async () => {
+  const { observeTranscriptGrowth } = await import('./call-scroll.ts');
+  const ros = []; const mos = []; const listeners = {};
+  globalThis.ResizeObserver = class { constructor(cb) { this.cb = cb; ros.push(this); } observe() {} disconnect() { this.gone = true; } };
+  globalThis.MutationObserver = class { constructor(cb) { this.cb = cb; mos.push(this); } observe() {} disconnect() { this.gone = true; } };
+  const node = { firstElementChild: {}, addEventListener: (t, f) => { listeners[t] = f; }, removeEventListener: (t) => { delete listeners[t]; } };
+  let pins = 0; let allow = true;
+  const stop = observeTranscriptGrowth(node, () => allow, () => { pins++; });
+  ros[0].cb(); mos[0].cb(); listeners.load();
+  assert.equal(pins, 3);
+  allow = false; ros[0].cb(); assert.equal(pins, 3);
+  stop(); assert.ok(ros[0].gone && mos[0].gone && !listeners.load);
+  delete globalThis.ResizeObserver; delete globalThis.MutationObserver;
+});
+
+test('call links: http(s) only, routed to the desktop parent from the sandboxed iframe', async () => {
+  const { webUrl, openCallLink, CALL_OPEN_URL } = await import('./call-links.ts');
+  assert.equal(webUrl('https://a.io/p?x=1'), 'https://a.io/p?x=1');
+  for (const bad of ['javascript:alert(1)', 'file:///C:/x', 'https://u:p@a.io/', 'https://a.io/ b', 'ms-settings:display', 12]) assert.equal(webUrl(bad), null, String(bad));
+  const sent = []; const opened = []; const self = {};
+  assert.equal(openCallLink('https://a.io/', { parent: { postMessage: (m, t) => sent.push([m, t]) }, self, open: u => opened.push(u) }), true);
+  assert.deepEqual(sent, [[{ type: CALL_OPEN_URL, url: 'https://a.io/' }, '*']]); assert.equal(opened.length, 0);
+  assert.equal(openCallLink('https://b.io/', { parent: self, self, open: u => opened.push(u) }), true); assert.deepEqual(opened, ['https://b.io/']);
+  assert.equal(openCallLink('javascript:1', { open: u => opened.push(u) }), false); assert.equal(opened.length, 1);
+});
+
+test('call screen wires RichText links to openCallLink; desktop handles mind.call.open-url', () => {
+  assert.match(source('CallScreen.tsx'), /<RichText text=\{body\} onLinkPress=\{openLink\}/);
+  assert.match(readFileSync(new URL('../../../../desktop/ui/main.ts', import.meta.url), 'utf8'), /"mind\.call\.open-url"[\s\S]{0,400}open_external_url/);
+});
+
+test('toast d\'appel : retiré dès le décroché, au refus, à l\'expiration et au raccroché', () => {
+  const main = readFileSync(new URL('../../../../desktop/ui/main.ts', import.meta.url), 'utf8');
+  // Seule la sonnerie envoie un toast ; « active » envoie null (retire le toast, même d'un ancien binaire).
+  assert.match(main, /const toast = stage === "ringing" && invite \? \{[^}]*\} : null;/);
+  assert.match(main, /invoke\("phone_toast_set", \{toast\}\)/);
+  // Décroché (ici ou ailleurs : l'invite disparaît du poll → invite null), raccroché : toast retiré.
+  assert.match(main, /"mind\.phone\.accepted"[\s\S]{0,200}setPhoneToast\("active", incomingCall\)/);
+  assert.match(main, /"mind\.phone\.ringing" && !incomingCall\) \{\s*setPhoneToast\(message\.invite \? "ringing" : null/);
+  assert.match(main, /"mind\.phone\.ended"[\s\S]{0,120}setPhoneToast\(null, null\)/);
+  // Le raccroché depuis le bouton de l'écran d'appel prévient aussi le bureau.
+  assert.match(source('CallScreen.tsx'), /function hangUp\(\)[\s\S]{0,500}'mind\.phone\.ended'/);
 });

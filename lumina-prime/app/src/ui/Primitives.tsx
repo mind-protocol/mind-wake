@@ -82,12 +82,12 @@ export function Card({ children, style }: { children: React.ReactNode; style?: V
 
 const open = (url: string) => { void Linking.openURL(url).catch(() => {}); };
 
-function Span({ item }: { item: Inline }) {
+function Span({ item, onLinkPress }: { item: Inline; onLinkPress?: (url: string) => void }) {
   if (item.kind === 'bold') return <Text style={{ fontWeight: '700' }}>{item.text}</Text>;
   if (item.kind === 'italic') return <Text style={{ fontStyle: 'italic' }}>{item.text}</Text>;
   if (item.kind === 'code') return <Text style={{ fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
     backgroundColor: 'rgba(0,0,0,0.07)', fontSize: 13 }}>{item.text}</Text>;
-  if (item.kind === 'link') return <Text accessibilityRole="link" onPress={() => open(item.url!)}
+  if (item.kind === 'link') return <Text accessibilityRole="link" onPress={() => (onLinkPress ?? open)(item.url!)}
     style={{ color: '#1F5FA8', textDecorationLine: 'underline' }}>{item.text}</Text>;
   return <>{item.text}</>;
 }
@@ -120,13 +120,13 @@ function FileCard({ path, name, type }: { path: string; name: string; type: 'md'
 
 /** Texte de bulle (Chat et Appel) : markdown simple (gras, italique, code, liens, sauts de ligne) et images en ligne ; sélectionnable. */
 /** `onImagePress` : ouvrir l'image en grand dans l'écran (Appel) plutôt que dans le navigateur. */
-export function RichText({ text, onImagePress }: { text: string; onImagePress?: (url: string) => void }) {
+export function RichText({ text, onImagePress, onLinkPress }: { text: string; onImagePress?: (url: string) => void; onLinkPress?: (url: string) => void }) {
   const blocks = useMemo(() => parseRich(text), [text]);
   if (!blocks.length) return <Text selectable style={s.body}>{text}</Text>;
   return <View style={{ gap: 6 }}>
     {blocks.map((block, index) => block.kind === 'image'
       ? <InlineImage key={index} url={block.url} alt={block.alt} onPress={onImagePress} />
       : block.kind === 'file' ? <FileCard key={index} path={block.path} name={block.name} type={block.type} />
-      : <Text key={index} selectable style={s.body}>{block.inlines.map((item, i) => <Span key={i} item={item} />)}</Text>)}
+      : <Text key={index} selectable style={s.body}>{block.inlines.map((item, i) => <Span key={i} item={item} onLinkPress={onLinkPress} />)}</Text>)}
   </View>;
 }

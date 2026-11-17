@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Animated, Image, Platform, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
+import { Animated, Image, Linking, Platform, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, styles as s } from '../ui/theme';
 import { MessageRow } from './MessageRow';
@@ -9,7 +9,7 @@ import { callTargets, endCall, type CallTarget } from './call-client.ts';
 import { callRecovery, type CallRecovery } from './call-recovery.ts';
 import { createCallEngine, type CallLine, type CallPhase } from './call-engine';
 import { clampFloorDb, FLOOR_DB_DEFAULT, FLOOR_DB_MAX, FLOOR_DB_MIN, SILENCE_S_DEFAULT, type BargeMode } from './call-vad.ts';
-import { chatErrorMessage, tintOf } from './client.ts';
+import { ChatClientError, chatErrorMessage, tintOf } from './client.ts';
 import { loadCallTuning, loadCallVoice, saveCallTuning, saveCallVoice } from './storage.ts';
 import { RichText } from '../ui/Primitives';
 import { createCallToneTransitions } from './call-tone-transitions';
@@ -19,8 +19,9 @@ import { useReportedError } from './app-error-report.ts';
 import { createScrollFollow } from './scroll-follow';
 import { createWebScrollFollow } from './scroll-follow-web';
 import { captureLines, type CallCapture } from './call-frames.ts';
-import { pinScrollToEnd } from './call-scroll.ts';
+import { pinScrollToEnd, observeTranscriptGrowth, PIN_WINDOW_MS } from './call-scroll.ts';
 import { CallPeers } from './CallPeers';
+import { openCallLink } from './call-links.ts';
 type ScrollViewInstance = React.ComponentRef<typeof ScrollView>;
 
 const PHASES: Record<CallPhase, string> = { connecting: 'Connexion…', listening: 'À l’écoute', speaking: 'Tu parles…',
@@ -102,15 +103,16 @@ export default function CallScreen() {
   const toneTransitions = useRef<ReturnType<typeof createCallToneTransitions> | null>(null);
   if (!toneTransitions.current) toneTransitions.current = createCallToneTransitions(tone => tones.current?.play(tone));
   const [settings, setSettings] = useState(false);
-  // Défilement auto vers la dernière bulle, sauf si NLR est remonté lire (alors bouton « ↓ nouveaux messages »).
+  // Défilement auto vers la dernière bulle à chaque message (NLR : plus de bandeau).
   // NLR, 17 nov. 2026, 16:05 : même suivi que le chat (scroll-follow) ; l'ancien calcul sur onScroll
-  // décrochait pendant le défilement animé et la liste ne descendait plus vers les nouveaux messages.
+  // décrochait pendant le défilement animé et la liste ne descendait plus vers les derniers messages.
   const [following, setFollowing] = useState(true);
   const [scrollFollow] = useState(() => createScrollFollow(() => {}, setFollowing));
   const [webFollow] = useState(() => createWebScrollFollow(scrollFollow));
   const web = Platform.OS === 'web';
+  const openLink = (url: string) => { if (!openCallLink(url, web && typeof window !== 'undefined' ? { parent: window.parent, self: window, open: u => { window.open(u, '_blank', 'noopener,noreferrer'); } } : { open: u => { void Linking.openURL(u).catch(() => {}); } })) return; };
   // Nouveau message : défilement animé (NLR, 17 nov.) ; recalage après une image/ASCII tardive : instantané.
-  const smoothNext = useRef(false); const animatingUntil = useRef(0);
+  const pinUntil = useRef(0); const smoothNext = useRef(false); const animatingUntil = useRef(0);
   useLayoutEffect(() => { scrollFollow.setScrollToEnd(() => {
     const animated = pinScrollToEnd(smoothNext, animatingUntil, Date.now());
     transcript.current?.scrollToEnd({ animated });
@@ -138,7 +140,6 @@ export default function CallScreen() {
     window.addEventListener('message', receive); return () => window.removeEventListener('message', receive);
   }, []);
   const inCall = useRef<string[]>(['mind']);
-  const [unseen, setUnseen] = useState(false);
   // Révélation échelonnée : une bulle nouvelle apparaît tout de suite, les suivantes à REVEAL_SPACING_MS d'intervalle.
   const [visible, setVisible] = useState<Set<string>>(() => new Set());
   const known = useRef<Set<string>>(new Set());
@@ -249,7 +250,7 @@ export default function CallScreen() {
     setError(null); setLines([]); setAdding(false); setSettings(false); setMuted(false);
     setHumanGuest(Boolean(humanInvite));
     if (revealTimer.current) clearTimeout(revealTimer.current);
-    revealTimer.current = null; queue.current = []; known.current = new Set(); setVisible(new Set()); scrollFollow.reset(); setUnseen(false);
+    revealTimer.current = null; queue.current = []; known.current = new Set(); setVisible(new Set()); scrollFollow.reset(); pinUntil.current = Date.now() + PIN_WINDOW_MS;
     inCall.current = handles;
     toneTransitions.current?.reset();
     const call = createCallEngine({ session, targets: handles, humanInvite, inviteHumans:resumed?.inviteHumans ?? (inviteHumans&&handles.some(h=>targets.find(t=>t.handle===h)?.kind==='remote')),
@@ -271,12 +272,14 @@ export default function CallScreen() {
     // Appel synchrone dans le geste : déverrouillage du son et demande du micro.
     call.start().catch(reason => {
       if (engine.current !== call) return;
-      setError(String(reason?.message ?? reason)); call.stop();
+      setError(reason instanceof ChatClientError ? chatErrorMessage(reason) : String(reason?.message ?? reason)); call.stop();
     });
   }
   function hangUp() {
     recovery?.clear();
     engine.current?.stop(); engine.current = null; setPhase('ended'); setMuted(false);
+    // onPhase ignore ce moteur une fois détaché : prévenir le bureau (toast, appel entrant suivant).
+    if (typeof window !== 'undefined' && window.location?.pathname === '/desktop-call') window.parent.postMessage('mind.phone.ended', '*');
     // The engine ends only its own call_id/epoch.
   }
   const labelOf = (handle: string) => targets.find(t => t.handle === handle)?.label ?? handle;
@@ -314,14 +317,27 @@ export default function CallScreen() {
   const transcriptRevision = JSON.stringify(shownLines.map(item => [item.key, item.text]));
   // Follow each revealed/updated message, even when the capped list keeps the
   // same length and height. Wait for its layout rather than only arming a flag.
+  // NLR, 17 nov. 2026 : défilement automatique à chaque nouveau message, aucun bandeau.
+  // Un nouveau message recolle toujours en bas ; ensuite, pendant PIN_WINDOW_MS, toute croissance du fil
+  // (image, capture ASCII) recolle aussi (observers ci-dessous).
   useLayoutEffect(() => {
+    if (transcriptRevision === '[]') return;
     scrollFollow.contentChanged(); webFollow.invalidate();
-    const frame = requestAnimationFrame(() => {
-      if (following) { smoothNext.current = true; scrollFollow.recent(); setUnseen(false); }
-      else if (transcriptRevision !== '[]') setUnseen(true);
-    });
+    pinUntil.current = Date.now() + PIN_WINDOW_MS;
+    const frame = requestAnimationFrame(() => { smoothNext.current = true; scrollFollow.recent(); });
     return () => cancelAnimationFrame(frame);
-  }, [transcriptRevision, following, scrollFollow, webFollow]);
+  }, [transcriptRevision, scrollFollow, webFollow]);
+  // Ouverture de l'écran d'appel et croissance tardive du contenu : recoller en bas.
+  const followingRef = useRef(true); followingRef.current = following;
+  useEffect(() => {
+    if (!session || !web) return;
+    pinUntil.current = Date.now() + PIN_WINDOW_MS;
+    const node = (transcript.current as { getScrollableNode?: () => unknown } | null)?.getScrollableNode?.() as HTMLElement | null | undefined;
+    if (node) node.scrollTop = node.scrollHeight;
+    return observeTranscriptGrowth(node,
+      () => followingRef.current || Date.now() < pinUntil.current,
+      () => { if (node) node.scrollTop = node.scrollHeight; });
+  }, [session, web]);
   // Nom de l'expéditeur au-dessus de la bulle, avec son emoji s'il est fourni par la passerelle.
   const senderOf = (item: CallLine) => {
     if (item.who === 'me') return 'Toi';
@@ -401,7 +417,7 @@ export default function CallScreen() {
               hitSlop={4} style={{ position: 'absolute', top: 3, right: 3, width: 26, height: 26, alignItems: 'center', justifyContent: 'center', opacity: cancelled.has(item.key) ? 0.3 : 0.6 }}>
               <Text style={{ color: colors.ink, fontSize: 14 }}>{cancelPending.has(item.key) ? '·' : '×'}</Text>
             </Pressable> : null}
-            {item.capture ? <Capture capture={item.capture} onOpen={setLightbox} /> : <RichText text={body} onImagePress={url => setLightbox({ image: url, caption: '' })} />}
+            {item.capture ? <Capture capture={item.capture} onOpen={setLightbox} /> : <RichText text={body} onLinkPress={openLink} onImagePress={url => setLightbox({ image: url, caption: '' })} />}
             {item.error && item.detail && item.detail !== item.text ? <Text style={[s.small, { fontSize: 11, color: item.error ? colors.danger : colors.muted }]}>{item.detail}</Text> : null}
           </View>;
           return <FadeIn key={item.key}
@@ -412,11 +428,6 @@ export default function CallScreen() {
           </MessageRow> : <View style={{ alignSelf: 'flex-start', maxWidth: '95%' }}>{bubble}</View>}
         </FadeIn>; })}
       </ScrollView>
-      {unseen && !following ? <Pressable accessibilityRole="button" accessibilityLabel="Aller aux nouveaux messages"
-        onPress={() => { webFollow.invalidate(); setUnseen(false); scrollFollow.recent(); }}
-        style={{ position: 'absolute', bottom: 10, alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 14, borderRadius: 16, backgroundColor: colors.dark }}>
-        <Text style={{ color: colors.paper, fontWeight: '700', fontSize: 13 }}>↓ nouveaux messages</Text>
-      </Pressable> : null}
       </View>
       {/* NLR, 17 nov. 2026 : barre fixe hors de la liste, toujours visible même dans l'iframe courte du desktop. */}
       {active ? <View accessibilityLabel="Commandes de l’appel" style={{ flexShrink: 0, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
