@@ -249,10 +249,10 @@ export default function CallScreen() {
   if (!session) return <SafeAreaView style={s.page}><View style={{ padding: 20 }}>
     <Text style={s.body}>{connectionError ?? 'Connexion à la passerelle…'}</Text>
   </View></SafeAreaView>;
-  return <SafeAreaView style={s.page} edges={['top', 'left', 'right']}>
+  return <SafeAreaView style={[s.page, { overflow: 'hidden' }]} edges={['top', 'left', 'right', 'bottom']}>
     <View style={{ flex: 1, minHeight: 0, padding: 10, gap: 8, maxWidth: 720, width: '100%', alignSelf: 'center' }}>
-      {/* Une seule rangée : participants, « + », phase, réglages, raccrocher. */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      {/* Rangée du haut : participants, « + », phase, réglages. Micro et raccrocher : barre fixe du bas. */}
+      <View style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 1, flexShrink: 1 }}
           contentContainerStyle={{ gap: 4, alignItems: 'center' }}>
           {selected.map(handle => <Chip key={handle} small label={(active ? canModifyParticipants : selected.length > 1) ? `${labelOf(handle)} ✕` : labelOf(handle)} on
@@ -261,23 +261,12 @@ export default function CallScreen() {
         </ScrollView>
         <Text numberOfLines={1} style={[s.small, { flexShrink: 1, maxWidth: active ? 140 : 110 }]}>
           {active ? (muted ? '🔇 Micro coupé' : PHASES[phase]) : online ? 'connectée' : 'hors ligne'}</Text>
-        {canMute ? <Pressable accessibilityRole="switch" accessibilityState={{ checked: muted }}
-          accessibilityLabel={muted ? 'Réactiver le micro' : 'Couper le micro'} onPress={toggleMute}
-          style={{ height: 34, minWidth: 34, paddingHorizontal: muted ? 10 : 0, borderRadius: 17, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center',
-            backgroundColor: muted ? colors.danger : colors.soft }}>
-          <Text style={{ fontSize: 15, color: muted ? colors.paper : colors.ink }}>{muted ? '🔇' : '🎙'}</Text>
-          {muted ? <Text style={{ color: colors.paper, fontWeight: '800', fontSize: 12 }}>Coupé</Text> : null}
-        </Pressable> : null}
         <Pressable accessibilityRole="button" accessibilityLabel="Réglages" onPress={() => { setAdding(false); setSettings(value => !value); }}
           style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: settings ? colors.dark : colors.soft }}>
           <Text style={{ fontSize: 15, color: settings ? colors.paper : colors.ink }}>⚙</Text>
         </Pressable>
-        {active ? <Pressable accessibilityRole="button" accessibilityLabel="Raccrocher" onPress={hangUp}
-          style={{ height: 34, paddingHorizontal: 12, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.danger }}>
-          <Text style={{ color: colors.paper, fontWeight: '800', fontSize: 13 }}>✕ Raccrocher</Text>
-        </Pressable> : null}
       </View>
-      {active ? <View style={{ height: 3, borderRadius: 2, backgroundColor: colors.soft, overflow: 'hidden' }}>
+      {active ? <View style={{ flexShrink: 0, height: 3, borderRadius: 2, backgroundColor: colors.soft, overflow: 'hidden' }}>
         <View style={{ width: muted ? '100%' : `${meter}%`, height: 3, backgroundColor: muted ? colors.danger : level.db > level.threshold ? colors.green : colors.muted }} />
       </View> : <Pressable accessibilityRole="button" accessibilityLabel={`Appeler ${label}`}
         onPress={() => start()} disabled={!online || !selected.length}
@@ -316,6 +305,20 @@ export default function CallScreen() {
         <Text style={{ color: colors.paper, fontWeight: '700', fontSize: 13 }}>↓ nouveaux messages</Text>
       </Pressable> : null}
       </View>
+      {/* NLR, 17 nov. 2026 : barre fixe hors de la liste, toujours visible même dans l'iframe courte du desktop. */}
+      {active ? <View accessibilityLabel="Commandes de l’appel" style={{ flexShrink: 0, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        {canMute ? <Pressable accessibilityRole="switch" accessibilityState={{ checked: muted }}
+          accessibilityLabel={muted ? 'Réactiver le micro' : 'Couper le micro'} onPress={toggleMute}
+          style={{ flex: 1, height: 44, borderRadius: 22, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center',
+            backgroundColor: muted ? colors.danger : colors.soft }}>
+          <Text style={{ fontSize: 17, color: muted ? colors.paper : colors.ink }}>{muted ? '🔇' : '🎙'}</Text>
+          <Text style={{ color: muted ? colors.paper : colors.ink, fontWeight: '800', fontSize: 13 }}>{muted ? 'Micro coupé' : 'Micro ouvert'}</Text>
+        </Pressable> : null}
+        <Pressable accessibilityRole="button" accessibilityLabel="Raccrocher" onPress={hangUp}
+          style={{ flex: 1, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.danger }}>
+          <Text style={{ color: colors.paper, fontWeight: '800', fontSize: 14 }}>✕ Raccrocher</Text>
+        </Pressable>
+      </View> : null}
     </View>
     {adding && (!active || canModifyParticipants) ? <Overlay onClose={() => setAdding(false)} title="Ajouter un participant">
       <ScrollView style={{ maxHeight: '100%' }} contentContainerStyle={{ gap: 8 }}>
