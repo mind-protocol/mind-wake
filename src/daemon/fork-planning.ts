@@ -38,7 +38,7 @@ export class ForkPlanning {
   }
   close(): void { this.db.close(); }
   private row(id: number): PlanRow {
-    if (!Number.isInteger(id) || id < 2 || id > 8) throw Error("Fork attendu : 2 à 8");
+    if (!Number.isInteger(id) || id < 2 || id > 8) throw Error("Room attendue : 2 à 8");
     this.db.prepare("INSERT OR IGNORE INTO plans(fork) VALUES(?)").run(id);
     return this.db.prepare("SELECT * FROM plans WHERE fork=?").get(id) as PlanRow;
   }

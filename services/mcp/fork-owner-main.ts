@@ -1,3 +1,5 @@
+import { coordinatedRoomCallServer } from "./room-call-coordination.js";
+import { trustedRoomRole, registerRoomAgentJobTools } from "./room-agent-jobs.js";
 /**
  * Serveur MCP réduit d'un fork affecté (demande NLR du 6 novembre 2026, VOX / Fork 7) :
  * un seul outil, `message_owner`, pour écrire soi-même dans le fil principal de l'humain.
@@ -15,7 +17,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import * as z from "zod";
+import { registerHumanCall } from "./human-call.js";
 import { registerOwnerTools } from "./owner-tools.js";
+import { MEDIA_TOOLS, defaultImageTitle } from "./media-tools.js";
+import { registerComputerUseTools } from "./computer-use-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import {
   BackgroundJobStore,
@@ -27,6 +32,7 @@ import { registerWakeManagerTools } from "./wake-manager-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
 import { registerColonyTools } from "./colony-tools.js";
 import { registerRedditTools } from "./reddit-tools.js";
+import { registerTelegramCoachTools } from "./telegram-user-tools.js";
 import { redditEnvironment } from "../reddit/config.js";
 import { registerSocietyTools } from "./1f916-tools.js";
 import { societyConnection } from "../1f916/client.js";
@@ -40,7 +46,8 @@ import { openStoreReadOnly } from "../../src/store/index.js";
 import { controlDbPath } from "../../src/daemon/paths.js";
 import { DEFAULT_PROFILE_ID } from "../../src/cli/context.js";
 
-export const FORK_OWNER_TOOLS: ReadonlySet<string> = new Set(["message_owner"]);
+/** Outils médias (`MEDIA_TOOLS`, déclaration commune) : présents dans chaque profil de room. */
+export const FORK_OWNER_TOOLS: ReadonlySet<string> = new Set(["message_owner", ...MEDIA_TOOLS]);
 
 /** Préfixe la signature, sans la doubler si l'auteur l'a déjà écrite. */
 export function signOwnerText(signature: string, text: string): string {
@@ -60,7 +67,7 @@ export function registerSignedOwnerTools(
 ): void {
   const signature = env["MIND_WAKE_OWNER_SIGNATURE"]?.trim();
   if (!signature) throw Error("MIND_WAKE_OWNER_SIGNATURE requis.");
-  const full = FORK_JOB_ORIGINS.has(signature);
+  const full = FORK_JOB_ORIGINS.has(signature) || trustedRoomRole(env, signature)?.capability.mindTools === true;
   // Profil posé par le bloc owner d'une affectation (Room 2, 16 nov. 2026). Les rooms à
   // accès étendu (VOX) gardent le leur : le profil ne s'applique pas à elles.
   const publish = !full ? forkPublishProfile(env) : undefined;
@@ -110,6 +117,23 @@ export function registerSignedOwnerTools(
         (args: Record<string, unknown>, extra: unknown) =>
           handler({ ...args, title: signOwnerText(signature, String(args["title"])) }, extra),
       );
+    if (name === "generate_image")
+      return raw.call(
+        server,
+        name,
+        described(`The image title is published signed « ${signature} ».`),
+        (args: Record<string, unknown>, extra: unknown) =>
+          handler(
+            {
+              ...args,
+              title: signOwnerText(
+                signature,
+                typeof args["title"] === "string" ? args["title"] : defaultImageTitle(String(args["prompt"] ?? "")),
+              ),
+            },
+            extra,
+          ),
+      );
     if (name === "edit_owner_message" || name === "delete_owner_message")
       return raw.call(
         server,
@@ -132,6 +156,10 @@ export function registerSignedOwnerTools(
   }) as unknown as Register;
   registerOwnerTools(filteredServer(server, register), { ...env, MIND_WAKE_OWNER_MESSAGES: "1" });
   registerForkJobTools(server, env, signature);
+  registerRoomAgentJobTools(server, env, signature);
+  // `computer_use` (COMPUTER_USE_TOOLS, déclaration commune) : présent dans chaque profil de room.
+  registerComputerUseTools(server, env);
+  registerHumanCall(coordinatedRoomCallServer(server,env,signature), { ...env, MIND_WAKE_OWNER_MESSAGES: "1" });
   if (full) registerForkReadAndThreadTools(server, env, signature);
   else if (publish) registerForkPublishTools(server, publish, signature);
 }
@@ -140,6 +168,7 @@ export function registerSignedOwnerTools(
 export const FORK_PUBLISH_OWNER_TOOLS: ReadonlySet<string> = new Set([
   "message_owner",
   "list_owner_messages",
+  ...MEDIA_TOOLS,
 ]);
 
 /**
@@ -154,6 +183,14 @@ interface ForkPublishProfile {
   readonly dataDir: string;
   readonly colony: string | null;
   readonly fork: number;
+  /**
+   * Outils externes (`MIND_WAKE_OWNER_TOOLS`, posé pour un agent de room) : `none` (ni Colony
+   * ni Reddit), `read` (Colony et Reddit en lecture), `publish` (défaut, profil historique).
+   */
+  readonly tools: "none" | "read" | "publish";
+  /** Coach Telegram (`MIND_WAKE_OWNER_TELEGRAM_COACH` posé par `roomAgentMcpConfig`). */
+  readonly telegram: boolean;
+  readonly env: Readonly<Record<string, string | undefined>>;
 }
 
 /**
@@ -170,7 +207,11 @@ function forkPublishProfile(
   const fork = Number(env["MIND_WAKE_OWNER_FORK"]);
   if (!dataDir || !Number.isInteger(fork) || fork < 2 || fork > 8)
     throw Error("Profil publish : MIND_WAKE_DATA_DIR et MIND_WAKE_OWNER_FORK (2 à 8) requis.");
-  return { dataDir, colony: forkColonyFile(env["MIND_WAKE_OWNER_COLONY"]), fork };
+  const tools = env["MIND_WAKE_OWNER_TOOLS"] || "publish";
+  if (tools !== "none" && tools !== "read" && tools !== "publish")
+    throw Error(`Outils externes inconnus : ${tools}.`);
+  const telegram = (env["MIND_WAKE_OWNER_TELEGRAM_COACH"] ?? "").trim() !== "";
+  return { dataDir, colony: forkColonyFile(env["MIND_WAKE_OWNER_COLONY"]), fork, tools, telegram, env };
 }
 
 /**
@@ -184,11 +225,17 @@ function registerForkPublishTools(
   profile: ForkPublishProfile,
   signature: string,
 ): void {
-  registerForkRedditTools(server, profile.dataDir, signature);
-  if (profile.colony !== null)
-    registerColonyTools(only(server, new Set(["colony_list_tools", "colony_call_tool"])), {
-      MIND_COLONY_CONFIG_FILE: path.join(profile.dataDir, profile.colony),
-    });
+  // Coach Telegram détecté : envoi depuis le compte de NLR, restreint à son contacts.json.
+  if (profile.telegram) registerTelegramCoachTools(server, profile.env);
+  // Agent sans outils externes (coach Telegram) : ni Reddit, ni Colony.
+  if (profile.tools !== "none") {
+    registerForkRedditTools(server, profile.dataDir, signature);
+    if (profile.colony !== null)
+      registerColonyTools(only(server, new Set(["colony_list_tools", "colony_call_tool"])), {
+        MIND_COLONY_CONFIG_FILE: path.join(profile.dataDir, profile.colony),
+        ...(profile.tools === "read" ? { MIND_COLONY_READ_ONLY: "1" } : {}),
+      });
+  }
   registerPostToForkThread(server, profile.dataDir, signature, profile.fork);
 }
 
@@ -217,6 +264,7 @@ export const FORK_FULL_OWNER_TOOLS: ReadonlySet<string> = new Set([
   "publish_image",
   "edit_owner_message",
   "delete_owner_message",
+  ...MEDIA_TOOLS,
 ]);
 
 /**
@@ -340,7 +388,8 @@ export function registerForkReadAndThreadTools(
   env: Readonly<Record<string, string | undefined>>,
   signature: string,
 ): void {
-  const origin = FORK_JOB_ORIGINS.get(signature);
+  const trusted = trustedRoomRole(env, signature);
+  const origin = FORK_JOB_ORIGINS.get(signature) ?? (trusted?.capability.mindTools ? { fork: trusted.room } : undefined);
   const dataDir = env["MIND_WAKE_DATA_DIR"];
   if (origin === undefined || !dataDir) return;
   const readOnly = { readOnlyHint: true, openWorldHint: false } as const;
@@ -434,7 +483,7 @@ export function registerForkReadAndThreadTools(
     );
   // Reddit : le compte connecté est celui de NLR (u/nicorr). Écriture selon
   // REDDIT_WRITE_SIGNATURES (VOX seule) et reddit.json ; inbox coupée.
-  registerForkRedditTools(server, dataDir, signature);
+  if (FORK_JOB_ORIGINS.has(signature)) registerForkRedditTools(server, dataDir, signature);
   // Colony : son propre compte, jamais colony.json ; pas de synchro vers le fil du principal.
   const colony = FORK_COLONY_CONFIGS.get(signature);
   if (colony !== undefined)

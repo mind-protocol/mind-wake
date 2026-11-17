@@ -1,10 +1,12 @@
-import React from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { useMind } from '../state/AppState';
 import type { Creator } from '../data/types.ts';
 import { colors, styles as s } from './theme';
+import { parseRich, type Inline } from '../chat/client.ts';
 
 export function Button({ title, onPress, secondary = false, disabled = false, icon }: {
   title: string; onPress: () => void; secondary?: boolean; disabled?: boolean; icon?: keyof typeof Ionicons.glyphMap;
@@ -77,3 +79,53 @@ export function EmptyState({ title = 'Ton radar se prépare.', message }: { titl
 }
 
 export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) { return <View style={[s.card, style]}>{children}</View>; }
+
+const open = (url: string) => { void Linking.openURL(url).catch(() => {}); };
+
+function Span({ item }: { item: Inline }) {
+  if (item.kind === 'bold') return <Text style={{ fontWeight: '700' }}>{item.text}</Text>;
+  if (item.kind === 'italic') return <Text style={{ fontStyle: 'italic' }}>{item.text}</Text>;
+  if (item.kind === 'code') return <Text style={{ fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    backgroundColor: 'rgba(0,0,0,0.07)', fontSize: 13 }}>{item.text}</Text>;
+  if (item.kind === 'link') return <Text accessibilityRole="link" onPress={() => open(item.url!)}
+    style={{ color: '#1F5FA8', textDecorationLine: 'underline' }}>{item.text}</Text>;
+  return <>{item.text}</>;
+}
+
+function InlineImage({ url, alt }: { url: string; alt: string }) {
+  const [ratio, setRatio] = useState(4 / 3);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { Image.getSize(url, (w, h) => { if (w > 0 && h > 0) setRatio(w / h); }, () => {}); }, [url]);
+  if (failed) return <Text style={s.small} onPress={() => open(url)}>🖼 {alt || url}</Text>;
+  return <Pressable accessibilityRole="imagebutton" accessibilityLabel={alt || 'Image'} onPress={() => open(url)}>
+    <Image source={{ uri: url }} onError={() => setFailed(true)} resizeMode="contain"
+      style={{ width: 260, maxWidth: '100%', aspectRatio: ratio, borderRadius: 10, backgroundColor: colors.soft }} />
+  </Pressable>;
+}
+
+/** Fichier partagé par un agent : carte touchable → lecteur (.md dans l'app, .pdf dans la visionneuse du téléphone). */
+function FileCard({ path, name, type }: { path: string; name: string; type: 'md' | 'pdf' | 'other' }) {
+  const viewable = type !== 'other';
+  return <Pressable accessibilityRole="button" accessibilityLabel={`Ouvrir ${name}`} disabled={!viewable}
+    onPress={() => router.push({ pathname: '/file', params: { path } })}
+    style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 12, borderWidth: 1,
+      borderColor: colors.line, backgroundColor: pressed ? colors.soft : 'rgba(255,255,255,0.75)', maxWidth: 300 })}>
+    <Ionicons name={type === 'pdf' ? 'document-attach-outline' : 'document-text-outline'} size={24} color={colors.ink} />
+    <View style={{ flexShrink: 1 }}>
+      <Text numberOfLines={2} style={{ color: colors.ink, fontWeight: '700', fontSize: 13 }}>{name}</Text>
+      <Text style={s.small}>{type === 'md' ? 'Document · toucher pour lire' : type === 'pdf' ? 'PDF · toucher pour ouvrir' : 'Fichier · aperçu indisponible'}</Text>
+    </View>
+  </Pressable>;
+}
+
+/** Texte de bulle (Chat et Appel) : markdown simple (gras, italique, code, liens, sauts de ligne) et images en ligne ; sélectionnable. */
+export function RichText({ text }: { text: string }) {
+  const blocks = useMemo(() => parseRich(text), [text]);
+  if (!blocks.length) return <Text selectable style={s.body}>{text}</Text>;
+  return <View style={{ gap: 6 }}>
+    {blocks.map((block, index) => block.kind === 'image'
+      ? <InlineImage key={index} url={block.url} alt={block.alt} />
+      : block.kind === 'file' ? <FileCard key={index} path={block.path} name={block.name} type={block.type} />
+      : <Text key={index} selectable style={s.body}>{block.inlines.map((item, i) => <Span key={i} item={item} />)}</Text>)}
+  </View>;
+}

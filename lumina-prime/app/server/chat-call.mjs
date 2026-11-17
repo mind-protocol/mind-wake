@@ -1,0 +1,459 @@
+import { ChatError } from './chat-server.mjs';
+
+/**
+ * Mode « Appel » de l'app mobile (NLR, 16 nov. 2026 17:53 et 17:55) : chaque prise de parole
+ * transcrite part à l'interlocuteur choisi, et ses réponses sont lues à voix haute sur le
+ * téléphone avec la voix de cet agent.
+ *
+ * Interlocuteurs : MIND (fil principal, par défaut) et la table `@handle` du pont Telegram
+ * (rooms, agents de room, pattern holders du fil principal). La remise réutilise ce chemin
+ * (`routeTelegramHandle`), sans en dupliquer la logique. Rien ne synthétise un texte fourni par
+ * le client : la voix ne lit qu'une réponse retrouvée dans le fil de l'interlocuteur.
+ */
+export const MAIN_HANDLE = 'mind';
+export const CALL_TAG = '[Appel vocal en cours]';
+/** NLR, 16 nov. : réponses rapides et en petits morceaux, lues à voix haute au fil de l'eau. */
+/** NLR, 16 nov. : plusieurs messages courts, chacun pouvant tenir en quelques phrases courtes. */
+export const CALL_INSTRUCTION = `${CALL_TAG} Réponds vite, à l'oral, en plusieurs messages courts : d'abord ce que tu vas faire, tout de suite ; puis des points d'étape si ça prend du temps ; puis la réponse. Chaque message peut tenir en quelques phrases courtes. Pas de listes ni de markdown.`;
+export const callBody = text => `${CALL_INSTRUCTION}\n\n${text.trim()}`;
+const HANDLE = /^[a-z0-9][a-z0-9_.-]{0,60}$/;
+const ITEM = /^(?:m:[A-Za-z0-9_.:-]{1,120}|r[2-9]:\d{1,12})(?:~\d{1,3})?$/;
+export const MAX_TARGETS = 8;
+
+/** Phrases regroupées en morceaux courts ; le premier reste une seule phrase pour que la voix démarre vite. */
+export function speechChunks(text, max = 240) {
+  const sentences = String(text).replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+(?=\S)/).filter(Boolean);
+  const out = [];
+  for (const sentence of sentences) {
+    const last = out.at(-1);
+    if (out.length > 1 && last.length + sentence.length + 1 <= max && last.length < 120) out[out.length - 1] = `${last} ${sentence}`;
+    else out.push(sentence);
+  }
+  return out.slice(0, 40);
+}
+export const PREFIX = /^(?:(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s+)?([^\s:·][^:·\n]{0,48}?)\s*([:·])\s+/u;
+export const shortLabel = label => String(label).replace(/^\p{Extended_Pictographic}[\uFE0F\u200D]*\s*/u, '').replace(/\s*\((?:Room \d+|fil principal)\)\s*$/, '').replace(/^Room \d+ \((.+)\)$/, '$1').trim();
+/** Morceau `~k` d'une réponse découpée. */
+const chunkId = (id, index, count) => (count > 1 ? `${id}~${index}` : id);
+
+/**
+ * Appel = room partagée temporaire (NLR, 16 nov. 2026) : pendant l'appel, chaque réponse d'un
+ * participant est recopiée dans le fil de chaque autre participant, en notice « [Appel] Nom : … ».
+ * Une copie n'est jamais une réponse d'agent (notice de room, message pair au fil principal) :
+ * elle n'est donc jamais recopiée à son tour, ne compte pas comme message humain et ne réveille
+ * personne. Seule la parole de NLR réveille les participants ; les copies sont du contexte lu au
+ * prochain réveil, avec la règle d'appel (Marco répond par défaut, les autres seulement s'ils
+ * apportent du neuf) pour éviter trois réponses à une seule question.
+ */
+export const MIRROR_TAG = '[Appel]';
+export const MIRROR_RULE = "(Règle d'appel : Marco répond par défaut ; les autres participants ne parlent que s'ils apportent quelque chose de neuf, sinon SILENCE.)";
+export const MIRROR_MAX_CHARS = 1200;
+export const mirrorText = (speaker, text) => {
+  const body = String(text).trim();
+  const clipped = body.length > MIRROR_MAX_CHARS ? `${body.slice(0, MIRROR_MAX_CHARS - 1)}…` : body;
+  return `${MIRROR_TAG} ${speaker} : ${clipped}\n${MIRROR_RULE}`;
+};
+/** Convention « pas de réponse » : texte SILENCE, ou dernière ligne SILENCE une fois la règle d'appel retirée. */
+export function isSilence(text) {
+  const lines = String(text).split(MIRROR_RULE).join('').split('\n').map(line => line.trim()).filter(Boolean);
+  return lines.length > 0 && /^\**SILENCE\**\.?$/.test(lines.at(-1));
+}
+const keySafe = value => String(value).replace(/[^A-Za-z0-9_.:-]/g, '_');
+
+/**
+ * deps :
+ * - mainLabel : nom affiché de l'agent principal ; mainAgentId : id pour la voix.
+ * - handleTable() : Map handle → { room, agent: {id,name}|null, holder?, label } (telegramHandleTable).
+ * - routeHandle(handle, text, id) : remise d'une room/agent (routeTelegramHandle).
+ * - sendMain(id, text) : envoi au fil principal (bridge.send) ; wakeMain() : demande de réveil.
+ * - mainReplies() : messages du fil principal (bridge.snapshot) ; roomEntries(room) : entrées de la room.
+ * - speak(text, agentId) : { bytes, mime, provider }.
+ * - holders() : [{ slug, name, emoji, thread: 'principal' | 'fork:<n>' | null }] (pattern holders et leur fil).
+ * - owners() : Map room → { handle, name } : l'agent propriétaire d'une room (VOX pour la room 7).
+ * - transcribing() : vrai pendant une transcription ; la voix attend, la transcription de NLR passe d'abord.
+ */
+export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HANDLE, handleTable, routeHandle,
+  sendMain, wakeMain = () => {}, mainReplies, roomEntries, speak, holders: holderList, owners: ownerMap,
+  transcribing: busy = () => false, now = Date.now, cacheSize = 12,
+  noticeMain = null, noticeRoom = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000 } = {}) {
+  let transcribing = busy;
+  if (typeof sendMain !== 'function' || typeof mainReplies !== 'function' || typeof speak !== 'function')
+    throw new Error('Call service requires main thread and speech');
+  const table = () => { try { return handleTable?.() ?? new Map(); } catch { return new Map(); } };
+  const holders = () => { try { return (holderList?.() ?? []).filter(h => h && HANDLE.test(h.slug) && h.thread); } catch { return []; } };
+  const owners = () => { try { return ownerMap?.() ?? new Map(); } catch { return new Map(); } };
+  const roomOf = thread => (/^fork:\d+$/.test(thread ?? '') ? Number(thread.slice(5)) : 0);
+  /** Holder qui écoute le fil d'une room (champ « holder » de son affectation). */
+  const roomHolder = (room, list = holders()) => list.find(h => roomOf(h.thread) === room) ?? null;
+  const holderLabel = h => (h.emoji ? `${h.emoji} ${h.name}` : h.name);
+
+  function resolve(handle) {
+    if (typeof handle !== 'string' || !HANDLE.test(handle)) throw new ChatError('call_target_invalid');
+    if (handle === MAIN_HANDLE) return { handle, kind: 'main', label: mainLabel, agentId: mainAgentId };
+    const target = table().get(handle);
+    // Un agent de room reste joint dans sa room, même s'il porte aussi un fichier de holder (coachs).
+    if (!target?.agent) {
+      const holder = holders().find(h => h.slug === handle);
+      if (holder) {
+        const room = roomOf(holder.thread);
+        // Holder du fil principal : @slug au fil principal ; holder d'une room : @slug dans le fil de sa room
+        // (c'est le fil qu'il écoute, holderThread).
+        const base = { handle, kind: 'holder', label: holderLabel(holder), agentId: holder.slug, mention: `@${holder.slug}` };
+        return room ? { ...base, room, prefix: `${holder.emoji} ${holder.name} · ` } : base;
+      }
+    }
+    if (!target) throw new ChatError('call_target_unknown', 404);
+    if (target.holder !== undefined)
+      return { handle, kind: 'holder', label: target.label, agentId: target.holder, mention: `@${target.holder}` };
+    const holder = target.agent ? null : roomHolder(target.room);
+    return { handle, kind: target.agent ? 'agent' : 'room', label: target.label, room: target.room,
+      agent: target.agent ? { id: target.agent.id, name: target.agent.name } : null,
+      // Une room appelée réveille aussi son holder (NLR : « donne au gardien de VOX la possibilité de répondre »).
+      holderMention: holder ? `@${holder.slug}` : null,
+      // Voix : id de l'agent, sinon nom de la room (vox) ou alias room-<n> du registre des voix.
+      agentId: target.agent?.id ?? (/^room\d+$/.test(handle) ? `room-${target.room}` : handle) };
+  }
+
+  /**
+   * Marco d'abord, puis les agents (propriétaires de room comme VOX, holders, agents de room),
+   * puis les rooms (handle room<n>). Une ligne par interlocuteur.
+   */
+  function targets() {
+    const current = table(); const entries = [...current];
+    const list = holders();
+    const roomName = room => /^(.*) \(Room \d+\)$/.exec(current.get(`room${room}`)?.label ?? '')?.[1] ?? null;
+    const agents = []; const rooms = []; const seen = new Set([MAIN_HANDLE]);
+    const push = (bucket, item) => { if (seen.has(item.handle)) return; seen.add(item.handle); bucket.push(item); };
+    for (const [room, owner] of [...owners()].sort((a, b) => a[0] - b[0]))
+      if (owner?.handle && current.get(owner.handle)?.room === room)
+        push(agents, { handle: owner.handle, label: owner.name ?? owner.handle, kind: 'agent', room });
+    const agentIds = new Set(entries.filter(([, t]) => t.agent).map(([, t]) => t.agent.id));
+    const listed = new Set();
+    for (const h of list) {
+      if (agentIds.has(h.slug)) continue;
+      const room = roomOf(h.thread); listed.add(h.slug);
+      push(agents, { handle: h.slug, label: holderLabel(h) + (room ? ` · ${roomName(room) ?? `Room ${room}`}` : ''), kind: 'holder', ...(room ? { room } : {}) });
+    }
+    // Holders du fil principal connus de la seule table (sans liste de holders).
+    for (const [handle, t] of entries)
+      if (t.holder !== undefined && handle === t.holder && !listed.has(handle) && !agentIds.has(handle))
+        push(agents, { handle, label: t.label, kind: 'holder' });
+    for (const [handle, t] of entries) {
+      if (!t.agent || handle !== t.agent.id) continue;
+      const h = list.find(item => item.slug === t.agent.id);
+      push(agents, { handle, label: h ? `${holderLabel(h)}${h.name === t.agent.name ? '' : ` · ${t.agent.name}`} (Room ${t.room})` : t.label, kind: 'agent', room: t.room });
+    }
+    const roomIds = [...new Set(entries.filter(([, t]) => !t.agent && t.holder === undefined).map(([, t]) => t.room))].sort((a, b) => a - b);
+    for (const room of roomIds) {
+      const handle = current.has(`room${room}`) ? `room${room}`
+        : entries.find(([, t]) => t.room === room && !t.agent && t.holder === undefined)[0];
+      const name = roomName(room);
+      push(rooms, { handle, label: `Room ${room}${name ? ` · ${name}` : ''}`, kind: 'room', room });
+    }
+    return [{ handle: MAIN_HANDLE, label: mainLabel, kind: 'main' }, ...agents, ...rooms].slice(0, 120);
+  }
+
+  /** `handles` : un handle ou une liste (« room 1 + vox »), `a,b` accepté. */
+  function parseTargets(handles) {
+    const list = [...new Set((Array.isArray(handles) ? handles : String(handles ?? '').split(',')).map(h => String(h).trim()).filter(Boolean))];
+    if (!list.length || list.length > MAX_TARGETS) throw new ChatError('call_target_invalid');
+    return list.map(resolve);
+  }
+  /** Une seule transcription, une remise par fil ; la consigne « réponds vite » précède le texte. */
+  async function deliver(handles, id, text, context = null) {
+    let targets = parseTargets(handles);
+    if (context) {
+      const current = assertSession(context.owner, context.id, context.epoch);
+      targets = targets.filter(t => current.targets.has(t.handle));
+      if(!targets.length) return {status:'empty',at:new Date(now()).toISOString(),label:''};
+      current.lastActivity = now();
+    } else joinCall(targets);
+    const body = callBody(text);
+    const delivered = []; let at = new Date(now()).toISOString();
+    // Fil principal (MIND et holders du fil principal) : un seul message, les holders mentionnés en tête.
+    const main = targets.filter(t => t.kind === 'main' || (t.kind === 'holder' && !t.room));
+    if (main.length) {
+      const mentions = main.filter(t => t.kind === 'holder').map(t => t.mention).join(' ');
+      const invitation = mentions && main.some(t => t.kind === 'main')
+        ? `Participants appelés : ${targets.map(t => t.label).join(', ')}. ${mainLabel}, réponds dans ce fil : l’app y lit tes messages.\n`
+        : '';
+      const receipt = await sendMain(id, mentions ? `${mentions} ${invitation}${body}` : body);
+      try { wakeMain(); } catch { /* Le message reste enregistré ; le scheduler décide du réveil. */ }
+      at = receipt?.at ?? at; delivered.push(...main.map(t => t.label));
+    }
+    // Rooms : un message par room, son holder et les holders choisis de cette room mentionnés en tête.
+    function routesFor(list) {
+      const byRoom = new Map();
+      for (const t of list.filter(t => t.kind === 'room'))
+        if (!byRoom.has(t.room)) byRoom.set(t.room, { key:`room:${t.room}`,handle: t.handle, fallback: t.label, mentions: new Set(t.holderMention ? [t.holderMention] : []), labels: [null] });
+      for (const t of list.filter(t => t.kind === 'holder' && t.room)) {
+        const slot = byRoom.get(t.room) ?? { key:`room:${t.room}`,handle: `room${t.room}`, fallback: t.label, mentions: new Set(), labels: [] };
+        slot.mentions.add(t.mention); slot.labels.push(t.label); byRoom.set(t.room, slot);
+      }
+      const routes = [...byRoom.values()].map(slot => ({ ...slot, text: slot.mentions.size ? `${[...slot.mentions].join(' ')} ${body}` : body }));
+      for (const t of list.filter(t => t.kind === 'agent')) routes.push({ key:`agent:${t.handle}`,handle: t.handle, fallback: t.label, labels: [null], text: body });
+      return routes;
+    }
+    const planned = routesFor(targets);
+    for (const initial of planned) {
+      // Rebuild grouped mentions immediately before each handoff. A retained room/holder
+      // does not authorise mentioning a different participant removed during an earlier await.
+      let route=initial;
+      if(context) {
+        const current=assertSession(context.owner,context.id,context.epoch);
+        const retained=targets.filter(t=>current.targets.has(t.handle));
+        route=routesFor(retained).find(candidate=>candidate.key===initial.key);
+        if(!route)continue;
+      }
+      if (typeof routeHandle !== 'function') throw new ChatError('call_target_unavailable', 503);
+      // Stable grouped destination under scoped retries, even when one mention was removed.
+      const key=context?`${id}:${route.key}`:targets.length>1?`${id}:${route.handle}`:id;
+      const result = await routeHandle(route.handle, route.text, key);
+      if (result?.status !== 'routed') throw new ChatError('call_target_unavailable', 503);
+      delivered.push(...route.labels.map(label => label ?? result.label ?? route.fallback));
+    }
+    return { label: delivered.join(' + '), at };
+  }
+
+  /** Noms des participants connus → voix (id d'agent ou slug de holder). */
+  function speakers() {
+    const names = new Map();
+    for (const target of table().values()) {
+      if (target.agent) names.set(target.agent.name.toLowerCase(), target.agent.id);
+      else if (target.holder !== undefined) names.set(shortLabel(target.label).toLowerCase(), target.holder);
+    }
+    return names;
+  }
+  /** Qui parle : « Nom : » d'un agent connu, ou « 🪙 Nom · » d'un holder ; sinon l'interlocuteur lui-même. */
+  function speakerOf(text, target, names) {
+    const match = PREFIX.exec(text);
+    if (match) {
+      const name = match[2].trim(); const known = names.get(name.toLowerCase());
+      if (known || (match[3] === '·' && match[1]))
+        // NLR, 16 nov. 2026 : l'emoji du holder reste à côté de son nom (« 🪙 Crypto »).
+        return { speaker: match[1] ? `${match[1].trim()} ${name}` : name, voice: known ?? name, text: text.slice(match[0].length) };
+    }
+    return { speaker: shortLabel(target.label), voice: target.agentId, text };
+  }
+
+  /** Réponses d'agent d'un interlocuteur déjà résolu, non découpées (toutes dates). */
+  async function rawItems(target, names = speakers()) {
+    if (target.kind === 'main' || (target.kind === 'holder' && !target.room)) {
+      const messages = await mainReplies();
+      if (!Array.isArray(messages)) throw new ChatError('wake_unavailable', 503);
+      const mainSpeaker = { label: mainLabel, agentId: mainAgentId };
+      return messages.filter(m => m.role === 'agent' && typeof m.text === 'string')
+        .map(m => ({ id: `m:${m.id}`, at: m.at, ...speakerOf(m.text, mainSpeaker, names) }))
+        .filter(item => !isSilence(item.text));
+    }
+    if (typeof roomEntries !== 'function') throw new ChatError('call_target_unavailable', 503);
+    const prefix = target.agent ? `${target.agent.name} :` : null;
+    // Les copies d'appel sont des notices (rôle humain) : jamais relues comme réponses d'agent.
+    return (await roomEntries(target.room) ?? []).filter(e => e.role === 'agent' && typeof e.text === 'string'
+      && (!prefix || e.text.trim().toLowerCase().startsWith(prefix.toLowerCase()))
+      && (!target.prefix || e.text.startsWith(target.prefix)))
+      .map(e => ({ id: `r${target.room}:${e.id}`, at: e.at, ...(prefix
+        ? { speaker: target.agent.name, voice: target.agent.id, text: e.text.trim().slice(prefix.length).trim() }
+        : speakerOf(e.text, target, names)) }))
+      // SILENCE n'est ni lu à voix haute, ni affiché dans l'app, ni recopié aux autres participants.
+      .filter(item => !isSilence(item.text));
+  }
+
+  /** Réponses de l'interlocuteur postérieures à `since` (ISO), les plus anciennes d'abord. */
+  async function replies(handle, since) {
+    const target = resolve(handle);
+    const floor = Date.parse(since);
+    if (!Number.isFinite(floor)) throw new ChatError('invalid_request');
+    touch(handle);
+    const items = await rawItems(target);
+    // Une réponse longue devient des morceaux phrase par phrase : la voix démarre sur la première.
+    return items.filter(item => Date.parse(item.at) > floor && item.text.trim())
+      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at)).slice(-20)
+      .flatMap(item => {
+        const chunks = speechChunks(item.text);
+        return chunks.map((text, index) => ({ id: chunkId(item.id, index, chunks.length), at: item.at, text,
+          speaker: item.speaker, voice: item.voice, first: index === 0 }));
+      });
+  }
+
+  // --- Appel = room partagée temporaire -------------------------------------------------------
+  /** Appels actifs : id → { targets: Map handle → { target, joinedAt }, lastActivity, seen, sent }. */
+  const calls = new Map(); let callSeq = 0;
+  const channelOf = t => (t.kind === 'main' || (t.kind === 'holder' && !t.room) ? 'main' : `room:${t.room}`);
+  const callOf = handle => [...calls.values()].find(c => !c.explicit && c.targets.has(handle)) ?? null;
+  /** Le sondage des réponses par l'app garde l'appel ouvert ; sans sondage, il expire (idleMs). */
+  function touch(handle) { const c = callOf(handle); if (c) c.lastActivity = now(); }
+  /** Une prise de parole ouvre l'appel, ou met à jour ses participants s'il en partage un. */
+  function joinCall(targets) {
+    const at = now();
+    let call = targets.map(t => callOf(t.handle)).find(Boolean);
+    if (!call) {
+      call = { id: `c${at.toString(36)}${(callSeq++).toString(36)}`, startedAt: at, targets: new Map(), seen: new Set(), sent: [] };
+      calls.set(call.id, call);
+    }
+    const next = new Map();
+    for (const t of targets) next.set(t.handle, call.targets.get(t.handle) ?? { target: t, joinedAt: at });
+    for (const other of calls.values()) if (other !== call && !other.explicit) for (const t of targets) other.targets.delete(t.handle);
+    for (const [id, other] of calls) if (other !== call && !other.explicit && !other.targets.size) calls.delete(id);
+    call.targets = next; call.lastActivity = at;
+    return call;
+  }
+  const sessionId = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  const closedSessions = new Map();
+  function sessionKey(owner, id, epoch) {
+    if (typeof owner !== 'string' || !owner || !sessionId.test(id) || epoch !== 1) throw new ChatError('call_session_invalid');
+    return `${owner}|${id}|${epoch}`;
+  }
+  function rememberClosed(key) {
+    closedSessions.set(key, now());
+    // UUIDs are not reused. The durable control store retains terminal state beyond this bound.
+    while (closedSessions.size > 1024) closedSessions.delete(closedSessions.keys().next().value);
+  }
+  function assertSession(owner, id, epoch) {
+    const key = sessionKey(owner,id,epoch);
+    if (closedSessions.has(key)) throw new ChatError('call_ended', 410);
+    const c = calls.get(id);
+    if (!c || !c.explicit) throw new ChatError('call_session_unknown', 404);
+    if (c.owner !== owner || c.epoch !== epoch) throw new ChatError('call_session_forbidden', 403);
+    return c;
+  }
+  function sessionView(c) { return { id:c.id, epoch:c.epoch, status:'active', revision:c.revision, handles:[...c.targets.keys()] }; }
+  function openSession(owner,id,epoch,handles) {
+    const key=sessionKey(owner,id,epoch);
+    if(closedSessions.has(key)) throw new ChatError('call_ended',410);
+    const targets=parseTargets(handles); const existing=calls.get(id);
+    if(existing) return sessionView(assertSession(owner,id,epoch));
+    const at=now();
+    const c={id,epoch,owner,revision:1,explicit:true,startedAt:at,lastActivity:at,targets:new Map(targets.map(target=>[target.handle,{target,joinedAt:at}])),seen:new Set(),sent:[]};
+    calls.set(id,c);return sessionView(c);
+  }
+  function addSession(owner,id,epoch,handles,revision) {
+    const c=assertSession(owner,id,epoch);
+    if(revision!==c.revision)throw new ChatError('call_revision_conflict',409);
+    const targets=parseTargets(handles);
+    const next=new Map(c.targets);const at=now();for(const target of targets)if(!next.has(target.handle))next.set(target.handle,{target,joinedAt:at});
+    if(next.size>MAX_TARGETS)throw new ChatError('call_target_invalid');
+    c.targets=next;c.revision++;c.lastActivity=at;return sessionView(c);
+  }
+  function removeSession(owner,id,epoch,handles,revision) {
+    const c=assertSession(owner,id,epoch);
+    if(revision!==c.revision)throw new ChatError('call_revision_conflict',409);
+    const removals=parseTargets(handles).map(t=>t.handle);
+    if(removals.some(handle=>!c.targets.has(handle)))throw new ChatError('call_target_not_joined',409);
+    const next=new Map(c.targets);for(const handle of removals)next.delete(handle);
+    if(!next.size)return endSession(owner,id,epoch);
+    c.targets=next;c.revision++;c.lastActivity=now();return sessionView(c);
+  }
+  function stateSession(owner,id,epoch) {
+    const key=sessionKey(owner,id,epoch);
+    if(closedSessions.has(key))return {id,epoch,status:'ended',handles:[]};
+    const c=assertSession(owner,id,epoch);c.lastActivity=now();return sessionView(c);
+  }
+  function endSession(owner,id,epoch) {
+    const key=sessionKey(owner,id,epoch);const c=calls.get(id);
+    if(c && (!c.explicit || c.owner!==owner || c.epoch!==epoch))throw new ChatError('call_session_forbidden',403);
+    rememberClosed(key);if(c)calls.delete(id);return {id,epoch,status:'ended',handles:[]};
+  }
+  /** Caller authority derives from resolved targets and server-owned owner map, never labels. */
+  function identityKeys(handles) {
+    const keys=new Set();for(const t of parseTargets(handles)) {
+      keys.add(t.handle);if(t.agentId&&HANDLE.test(t.agentId))keys.add(t.agentId);
+      if(t.kind==='main'){keys.add('mind');keys.add('marco');}
+      if(t.room && t.kind==='room') {keys.add(`room${t.room}`);const owner=owners().get(t.room);if(owner?.handle&&HANDLE.test(owner.handle))keys.add(owner.handle);}
+    }return [...keys];
+  }
+  /** Raccrocher : fin de l'appel de ces participants ; plus aucune copie ensuite. */
+  function end(handles) {
+    const list = (Array.isArray(handles) ? handles : String(handles ?? '').split(',')).map(h => String(h).trim()).filter(Boolean);
+    let ended = 0;
+    for (const handle of list) { const c = callOf(handle); if (c) { calls.delete(c.id); ended++; } }
+    return { ended };
+  }
+  const active = () => [...calls.values()].map(c => ({ id: c.id, handles: [...c.targets.keys()] }));
+  async function post(channel, key, text) {
+    if (channel === 'main') { if (typeof noticeMain !== 'function') return false; await noticeMain(key, text); return true; }
+    if (typeof noticeRoom !== 'function') return false;
+    await noticeRoom(Number(channel.slice(5)), key, text); return true;
+  }
+  let ticking = null;
+  /** Un passage : fin des appels inactifs, puis copie des nouvelles réponses vers les autres fils. */
+  function mirrorTick() {
+    if (ticking) return ticking;
+    ticking = (async () => {
+      const at = now();
+      for (const [id, c] of calls) if (at - c.lastActivity > idleMs) {
+        if(c.explicit) rememberClosed(sessionKey(c.owner,c.id,c.epoch));calls.delete(id);
+      }
+      const names = speakers();
+      for (const c of [...calls.values()]) {
+        const channels = [...new Set([...c.targets.values()].map(v => channelOf(v.target)))];
+        if (channels.length < 2) continue;
+        const fresh = new Map();
+        for (const { target, joinedAt } of c.targets.values()) {
+          let items; try { items = await rawItems(target, names); } catch { continue; }
+          const floor = Math.max(c.startedAt, joinedAt);
+          for (const item of items)
+            if (!c.seen.has(item.id) && Date.parse(item.at) >= floor && item.text.trim() && !item.text.startsWith(MIRROR_TAG))
+              fresh.set(item.id, { ...item, channel: channelOf(target) });
+        }
+        for (const item of [...fresh.values()].sort((x, y) => Date.parse(x.at) - Date.parse(y.at))) {
+          if (!calls.has(c.id)) break; // Raccroché pendant le passage.
+          const dests = channels.filter(ch => ch !== item.channel);
+          c.sent = c.sent.filter(t => now() - t < 60_000);
+          // Plafond par appel : au-delà, la copie attend un passage suivant.
+          if (c.sent.length + dests.length > mirrorPerMinute) break;
+          const text = mirrorText(item.speaker, item.text);
+          let ok = true;
+          for (const dest of dests) {
+            // Clé d'idempotence par copie : un nouveau passage ou un redémarrage ne double rien.
+            const key = `call-mirror:${keySafe(c.id)}:${keySafe(item.id)}:${keySafe(dest)}`.slice(0, 128);
+            try { if (await post(dest, key, text)) c.sent.push(now()); } catch { ok = false; }
+          }
+          if (ok) c.seen.add(item.id);
+        }
+      }
+    })().finally(() => { ticking = null; });
+    return ticking;
+  }
+  const timer = mirrorIntervalMs > 0 ? setInterval(() => { mirrorTick().catch(() => {}); }, mirrorIntervalMs) : null;
+  timer?.unref?.();
+  const stop = () => { if (timer) clearInterval(timer); calls.clear(); };
+
+  const cache = new Map();
+  let queue = Promise.resolve();
+  /** Voix d'une réponse retrouvée dans le fil de l'interlocuteur ; synthèses en série, mises en cache. */
+  async function speech(handle, itemId, announce = false) {
+    resolve(handle);
+    if (typeof itemId !== 'string' || !ITEM.test(itemId)) throw new ChatError('invalid_request');
+    const key = `${handle}|${itemId}|${announce ? 1 : 0}`;
+    if (cache.has(key)) return cache.get(key);
+    const item = (await replies(handle, new Date(0).toISOString())).find(value => value.id === itemId);
+    if (!item) throw new ChatError('call_reply_unknown', 404);
+    const run = queue.then(async () => {
+      // La transcription de NLR passe avant la voix : la synthèse attend qu'elle soit finie (60 s au plus).
+      for (let waited = 0; waited < 60_000 && transcribing(); waited += 150) await new Promise(r => setTimeout(r, 150));
+      const started = now();
+      // Nom annoncé brièvement au début d'une réponse quand plusieurs voix se succèdent.
+      const result = await speak(announce && item.first && item.speaker ? `${item.speaker.replace(/^\p{Extended_Pictographic}[️‍]*\s*/u, '')}. ${item.text}` : item.text, item.voice);
+      if (!result?.bytes?.length) throw new ChatError('nothing_to_speak', 422);
+      return { ...result, ms: now() - started };
+    });
+    queue = run.catch(() => {});
+    cache.set(key, run);
+    run.catch(() => cache.delete(key));
+    while (cache.size > cacheSize) cache.delete(cache.keys().next().value);
+    return run;
+  }
+  /** Le serveur HTTP branche ici son état « transcription en cours ». */
+  const setTranscribing = fn => { if (typeof fn === 'function') transcribing = fn; };
+  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop };
+}
+
+/** Type audio d'après les octets : WAV (voix locale) ou MP3 (ElevenLabs), OGG en dernier recours. */
+export function audioMime(bytes) {
+  const head = bytes.subarray(0, 4).toString('latin1');
+  if (head === 'RIFF') return 'audio/wav';
+  if (head === 'OggS') return 'audio/ogg';
+  if (head.startsWith('ID3') || (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)) return 'audio/mpeg';
+  return 'application/octet-stream';
+}

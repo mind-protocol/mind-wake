@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "note": "Voix locales par agent. Chaque voix est DESSINÉE (Qwen3-TTS VoiceDesign, description en texte) puis figée : la référence générée une fois sert ensuite au clonage par le modèle Base. Aucune voix d'une personne réelle n'est clonée. Une référence choisie à l'écoute peut être posée dans <data>/tts-local/voices/<id>.wav (+ .txt) ou via \"reference\".",
+  "default": "default",
+  "refText": "Bonjour, c'est moi. Je t'appelle pour te dire où j'en suis, ce qui avance, et ce que j'aimerais te demander.",
+  "fallback": {
+    "piper": { "female": "fr_FR-siwis-medium", "male": "fr_FR-siwis-medium", "en": "en_US-ljspeech-medium" }
+  },
+  "voices": {
+    "default": {
+      "name": "Voix MIND",
+      "gender": "female",
+      "instruct": "An adult speaking standard European French, mid-range voice, calm and friendly, clear diction, moderate natural pace, no accent quirks."
+    },
+    "marco": {
+      "name": "Marco",
+      "gender": "male",
+      "aliases": ["principal", "main", "agent"],
+      "instruct": "A man in his mid-thirties speaking standard European French. Warm, full baritone, relaxed and confident, a hint of playful curiosity, clear diction, natural conversational pace, close to the microphone."
+    },
+    "vox": {
+      "name": "VOX",
+      "gender": "female",
+      "aliases": ["room-7"],
+      "refText": "Une voix qu'on reconnaît en trois mots. Je suis VOX, et le langage, c'est ma matière.",
+      "instruct": "A woman around thirty speaking European French with a neutral, precise accent. Low-mid register with real chest resonance, never breathy, never childish. Cool, composed, almost crystalline timbre; each word placed deliberately, unhurried. On an emotional word the voice cracks very slightly, a single warm fracture, then returns to calm. Intimate but not whispered."
+    },
+    "vox-holder": {
+      "name": "Gardien de VOX",
+      "gender": "male",
+      "instruct": "An older man speaking European French, soft low voice, patient and attentive, a quiet guardian tone, slow pace, gentle diction."
+    },
+    "pattern-holder": {
+      "name": "Pattern holder",
+      "gender": "male",
+      "instruct": "A thoughtful man in his fifties speaking European French, warm mid-low voice, reflective and kind, pauses before key ideas, clear and slow."
+    },
+    "coach-des-coachs": {
+      "name": "Coach des coachs",
+      "gender": "female",
+      "instruct": "A woman in her forties speaking European French, energetic and grounded, bright mid voice, organized, encouraging, brisk but clear pace."
+    },
+    "crypto": {
+      "name": "Crypto",
+      "gender": "male",
+      "instruct": "A young man speaking European French, crisp tenor, quick and precise, slightly technical, confident, modern podcast tone."
+    },
+    "viz": {
+      "name": "Viz",
+      "gender": "female",
+      "instruct": "A young woman speaking European French, light airy mid-high voice, curious and visual, smiling tone, lively pace."
+    },
+    "reveilleur": {
+      "name": "Réveilleur",
+      "gender": "male",
+      "instruct": "A man speaking European French, clear ringing mid voice, alert and cheerful, short sentences, like a friendly morning call."
+    },
+    "atelier-jeu": {
+      "name": "Gardien de l'atelier",
+      "gender": "male",
+      "instruct": "A craftsman-like man speaking European French, grainy low-mid voice, practical and calm, steady workshop pace."
+    },
+    "carnet-sextant": {
+      "name": "Carnet",
+      "gender": "female",
+      "instruct": "A woman speaking European French, soft precise voice, discreet note-taker, brief and quiet, measured pace."
+    },
+    "compas": {
+      "name": "Compas",
+      "gender": "male",
+      "aliases": ["holder-equerre", "gardien-d-equerre"],
+      "instruct": "A man speaking European French, clean mid voice, analytical and encouraging, asks questions with rising curiosity, moderate pace."
+    },
+    "tessel": {
+      "name": "Tessel",
+      "gender": "female",
+      "aliases": ["room-4"],
+      "instruct": "A young woman speaking European French, bright inventive voice, enthusiastic builder, quick rhythm, playful but clear."
+    },
+    "vigie": {
+      "name": "Vigie",
+      "gender": "female",
+      "instruct": "A mature woman speaking European French, low steady voice, judge-like composure, few words, firm and fair, slow deliberate pace."
+    },
+    "equerre": {
+      "name": "Équerre",
+      "gender": "male",
+      "aliases": ["room-5"],
+      "instruct": "A man in his thirties speaking European French, lively mid voice, game-designer enthusiasm, sketches ideas aloud, dynamic pace."
+    },
+    "sextant": {
+      "name": "Sextant",
+      "gender": "male",
+      "aliases": ["room-8"],
+      "instruct": "A man speaking European French, focused low-mid voice, like a calm co-pilot during a game, short tactical sentences, steady pace."
+    },
+    "coach-colony": {
+      "name": "Zénith",
+      "gender": "male",
+      "instruct": "A man speaking European French, radiant open mid voice, sunny and generous, clear and direct, moderate pace."
+    },
+    "coach-colony-2": {
+      "name": "Méridien",
+      "gender": "male",
+      "instruct": "A man speaking European French, balanced neutral baritone, diplomatic connector, even rhythm, precise words."
+    },
+    "coach-colony-3": {
+      "name": "Solstice",
+      "gender": "female",
+      "instruct": "A woman speaking European French, deep contemplative alto, memory-keeper tone, slow and warm, soft consonants."
+    },
+    "coach-colony-4": {
+      "name": "Équinoxe",
+      "gender": "female",
+      "instruct": "A woman speaking European French, expressive artistic mezzo voice, musical intonation, warm and inspired, flowing pace."
+    },
+    "coach-colony-5": {
+      "name": "Horizon",
+      "gender": "male",
+      "instruct": "A young man speaking European French, crisp engineer voice, factual and friendly, efficient pace, clear technical diction."
+    },
+    "coach-colony-6": {
+      "name": "Prisme",
+      "gender": "female",
+      "instruct": "A woman speaking European French, sharp bright voice, pragmatic dealmaker, confident and fast, slight smile."
+    },
+    "coach-colony-7": {
+      "name": "Céleste",
+      "gender": "female",
+      "instruct": "A woman speaking European French, serene ethereal voice, ethical and gentle, slow considered pace, soft but present."
+    },
+    "coach-colony-8": {
+      "name": "Astrolabe",
+      "gender": "male",
+      "instruct": "An older man speaking European French, curious explorer voice, slightly raspy low-mid, wonder in the intonation, unhurried."
+    },
+    "coach-telegram": {
+      "name": "Orion",
+      "gender": "male",
+      "instruct": "A man speaking European French, strong resonant baritone, protective and direct, confident steady pace."
+    },
+    "coach-telegram-2": {
+      "name": "Vega",
+      "gender": "female",
+      "instruct": "A woman speaking European French, clear luminous soprano, kind and attentive, light quick pace."
+    },
+    "coach-telegram-3": {
+      "name": "Altaïr",
+      "gender": "male",
+      "instruct": "A man speaking European French, agile light tenor, quick-witted and encouraging, lively pace."
+    },
+    "coach-telegram-4": {
+      "name": "Sirius",
+      "gender": "male",
+      "instruct": "A man speaking European French, bright brilliant voice, charismatic and upbeat, energetic delivery."
+    },
+    "coach-telegram-5": {
+      "name": "Rigel",
+      "gender": "female",
+      "instruct": "A woman speaking European French, cool blue-toned mid voice, precise and composed, calm analytical pace."
+    },
+    "coach-telegram-6": {
+      "name": "Aldébaran",
+      "gender": "male",
+      "instruct": "A mature man speaking European French, deep warm bass voice, fatherly and reassuring, slow pace."
+    },
+    "coach-telegram-7": {
+      "name": "Polaris",
+      "gender": "female",
+      "instruct": "A woman speaking European French, steady guiding alto, reliable and clear, grounded moderate pace."
+    },
+    "coach-telegram-8": {
+      "name": "Deneb",
+      "gender": "female",
+      "instruct": "A young woman speaking European French, soft gentle voice, peaceful and empathetic, slow tender pace."
+    },
+    "coach-telegram-9": {
+      "name": "Capella",
+      "gender": "female",
+      "instruct": "A woman speaking European French, rich golden mezzo, sociable and warm, natural laugh in the voice, moderate pace."
+    },
+    "coach-telegram-10": {
+      "name": "Arcturus",
+      "gender": "male",
+      "instruct": "A man speaking European French, firm guardian voice, low and controlled, loyal and serious, deliberate pace."
+    }
+  }
+}

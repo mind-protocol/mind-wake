@@ -24,7 +24,7 @@ export function registerForkPlannerTools(server: McpServer, env: Readonly<Record
         if(policy.status!=="active" || !profile)throw Error("Profil Wake indisponible");
         const enabled=(JSON.parse(fs.readFileSync(path.join(dataDir,"forks",String(id),"enabled.json"),"utf8")) as {enabled?:boolean}).enabled;
         if(mutate && (!enabled || new StopFlag(dataDir).exists() || profile.emergencyStopLocked || ["paused","checkpointing","stopped","disabled"].includes(profile.state)))
-          throw Error("Fork désactivé, Wake en pause ou arrêté : réassignation refusée");
+          throw Error("Room désactivée, Wake en pause ou arrêté : réassignation refusée");
       } finally {control.close();}
       planner=new ForkPlanning(dataDir);
       const value=planner.db.transaction(()=>{planner!.assertSession(id,token);return action(planner!);}).immediate();

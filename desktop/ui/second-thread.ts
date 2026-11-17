@@ -1,5 +1,9 @@
 import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
+import { copyButton } from "./copy-button.js";
+import { agentTint, authorMarker } from "./author-tint.js";
+import { readingHold } from "./scroll-hold.js";
+import { browserStorage, DraftStore, sendOnEnter } from "./composer-kit.js";
 /**
  * Second fil Claude Code : sélecteur de la vue d'ensemble (défaut Off) et onglet dédié.
  * Sa transcription vient de `mind-wake second-thread status --json`, séparée de la
@@ -134,6 +138,7 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
   let model: SecondThreadModel | null = null,
     lastEnsure = 0,
     signature = "";
+  const hold = readingHold(list);
 
   const render = () => {
     if (model === null) return;
@@ -149,7 +154,7 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
     const next = JSON.stringify([model.entries.map((e) => [e.id, e.delivered]),model.projectWakes]);
     if (next === signature) return;
     signature = next;
-    const follow = list.scrollHeight - list.scrollTop - list.clientHeight < 100;
+    const follow = list.scrollHeight - list.scrollTop - list.clientHeight < 80, reading = list.scrollTop;
     list.replaceChildren(
       ...model.entries.map((e) => {
         const li = document.createElement("li"),
@@ -173,13 +178,15 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
           body = document.createElement("p");
           body.textContent = e.text;
         }
-        li.append(meta, body);
+        const marker = authorMarker(li, e.notice ? null : e.role === "human" ? "owner" : e.role === "agent" ? agentTint(e.text) : null);
+        if (marker) meta.prepend(marker);
+        li.append(meta, body, copyButton(() => e.text));
         return li;
       }),
     );
     const objectives = projectWakesCard(model.projectWakes, "claude");
     if (objectives) list.append(objectives);
-    if (follow) list.scrollTop = list.scrollHeight;
+    if (follow) { hold.keep(null); list.scrollTop = list.scrollHeight; } else hold.keep(reading);
   };
 
   const refresh = async () => {
@@ -223,10 +230,18 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
     options.selectTab();
     list.scrollTop = list.scrollHeight;
   });
+  // Brouillon gardé localement ; Entrée envoie, Maj+Entrée va à la ligne.
+  const draft = new DraftStore(browserStorage(), "mind-wake.second-thread-draft.");
+  if (text.value === "") text.value = draft.get("main");
+  text.addEventListener("input", () => { draft.set("main", text.value); });
+  sendOnEnter(text, () => { (form as HTMLFormElement).requestSubmit(); });
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const value = text.value.trim();
     if (value === "") return;
+    // Champ vidé tout de suite ; le texte revient en cas d'échec.
+    text.value = "";
+    draft.set("main", "");
     sendStatus.textContent = tr("Envoi…");
     void options
       .invoke("second_thread", { action: "send", text: value })
@@ -235,15 +250,25 @@ export function mountSecondThread(options: SecondThreadMount): { refresh: () => 
           throw new Error(
             typeof envelope.error?.message === "string" ? envelope.error.message : tr("refusé"),
           );
-        text.value = "";
         sendStatus.textContent = tr("Ajouté au second fil ; Claude Code le lira au prochain tour.");
         return refresh();
       })
       .catch((error: unknown) => {
+        if (text.value.trim() === "") { text.value = value; draft.set("main", value); }
         sendStatus.textContent = tr("Non envoyé : {0}", [error instanceof Error ? error.message : String(error)]);
       });
   });
   void refresh();
-  setInterval(() => void refresh(), 5000);
+  // Vue masquée : relue toutes les 30 s au lieu de 5 s (chaque lecture lance un processus node,
+  // 16 nov. 2026) ; dès qu'elle redevient visible, relecture immédiate.
+  let lastPoll = Date.now(), wasHidden = false;
+  setInterval(() => {
+    const hidden = typeof document !== "undefined" && document.getElementById("view-second")?.hidden === true;
+    const due = Date.now() - lastPoll >= (hidden ? 30_000 : 5000) || (wasHidden && !hidden);
+    wasHidden = hidden;
+    if (!due) return;
+    lastPoll = Date.now();
+    void refresh();
+  }, 1000);
   return { refresh };
 }

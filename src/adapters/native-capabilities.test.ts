@@ -16,6 +16,9 @@ describe('native CLI capabilities', () => {
     expect(args).not.toContain('--setting-sources');
     expect(args).not.toContain('--settings');
     expect(args).toContain('mind.json');
+    expect(args).not.toContain('--add-dir');
+    const withDirs=claudeRunArgs({...base,nativeCapabilities:true,addDirs:['C:/export a','D:/b']});
+    expect(withDirs.slice(withDirs.indexOf('--add-dir'),withDirs.indexOf('--add-dir')+3)).toEqual(['--add-dir','C:/export a','D:/b']);
   });
   it('keeps an explicitly restricted runtime and quota probes separate', () => {
     const args=claudeRunArgs(base);

@@ -111,6 +111,42 @@ export function registerColonyTools(
       }),
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: true },
     },
-    ({ name, arguments: args }) => run(() => client.callTool(name, args)),
+    ({ name, arguments: args }) =>
+      env["MIND_COLONY_READ_ONLY"] === "1"
+        ? readOnlyCall(client, name, args, run)
+        : run(() => client.callTool(name, args)),
   );
+}
+
+/**
+ * Lecture seule (agent de room au réglage `read`) : seul un outil Colony annoncé
+ * `readOnlyHint: true` par le serveur distant est appelé ; tout autre est refusé sans appel.
+ */
+async function readOnlyCall<T>(
+  client: Pick<ColonyClient, "listTools" | "callTool">,
+  name: string,
+  args: Record<string, unknown>,
+  run: (work: () => Promise<unknown>) => Promise<T>,
+): Promise<T | { isError: true; content: { type: "text"; text: string }[] }> {
+  if (await colonyToolIsReadOnly(client, name)) return run(() => client.callTool(name, args));
+  return {
+    isError: true,
+    content: [{ type: "text", text: `Lecture seule : l'outil Colony « ${name} » n'est pas annoncé en lecture, il n'est pas appelé.` }],
+  };
+}
+
+/** Vrai si l'outil distant est annoncé `readOnlyHint: true` (au plus 10 pages lues). */
+export async function colonyToolIsReadOnly(
+  client: Pick<ColonyClient, "listTools">,
+  name: string,
+): Promise<boolean> {
+  let cursor: string | undefined;
+  for (let page = 0; page < 10; page++) {
+    const result = await client.listTools(cursor);
+    const tool = result.tools.find((t) => t.name === name);
+    if (tool !== undefined) return tool.annotations?.readOnlyHint === true;
+    if (!result.nextCursor) return false;
+    cursor = result.nextCursor;
+  }
+  return false;
 }

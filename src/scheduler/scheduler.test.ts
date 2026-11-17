@@ -819,3 +819,17 @@ it('runs maintenance even when AI wake eligibility is paused',async()=>{
   await b.scheduler.run(controller.signal);
   expect(polls).toBe(1);expect(b.launcher.tickets).toHaveLength(0);
 });
+it("revérifie le moteur après une bascule et conserve le refus tant que le moteur diffère", async () => {
+  setup();
+  const original = b.environment.adapterFacts;
+  if (typeof original !== "object") throw Error("faits d'adapter attendus");
+  const revision = store.uow.policies.listRevisions(PROFILE)[0]!;
+  store.uow.profiles.setActivePolicyRevision(PROFILE, revision.id);
+  b.environment.adapterFacts = { ...original, probe: { ...original.probe, adapterId: "claude" as typeof original.probe.adapterId } };
+  expect(await tickFresh()).toMatchObject({ state: "blocked", decision: { detail: "runtime.adapterId_mismatch" } });
+  expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "blocked" });
+  b.environment.adapterFacts = original;
+  expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "ready" });
+  expect(b.launcher.tickets).toHaveLength(0);
+  expect(await tickFresh()).toMatchObject({ kind: "launched" });
+});

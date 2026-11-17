@@ -24,6 +24,19 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/ring.wav",
+            "./assets/ring_marco.wav",
+            "./assets/ring_vox.wav",
+            "./assets/ring_equerre.wav",
+            "./assets/ring_rose_des_vents.wav",
+            "./assets/ring_medicis.wav"
+          ]
+        }
+      ],
       "expo-web-browser",
       "expo-secure-store",
       [
@@ -35,7 +48,9 @@
         }
       ],
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "./plugins/with-ringtone-capabilities.cjs",
+      "expo-sharing"
     ],
     "scheme": "mindlumina"
   }

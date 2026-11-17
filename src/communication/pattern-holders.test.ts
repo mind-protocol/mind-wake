@@ -22,6 +22,8 @@ import {
   readPatternHolderState,
   savePatternHoldersEnabled,
   tickPatternHolders,
+  wakeReason,
+  type FilMessage,
   extractSections,
   writeHolderSections,
 } from "./pattern-holders.js";
@@ -102,6 +104,60 @@ function writeSections(slug: string, sections: Record<string, string>) {
   return dir;
 }
 
+const MENTION_HOLDER = (wake: string) =>
+  `\`\`\`json pattern-holder
+{ "name": "Coach Colony", "wake": ${wake} }
+\`\`\`
+`;
+
+it("parses the optional wake field and rejects unknown values", () => {
+  const file = "x/coach-colony.md";
+  const ok = parsePatternHolder(file, MENTION_HOLDER('"mention"'));
+  expect("holder" in ok && ok.holder.wake).toBe("mention");
+  const none = parsePatternHolder(file, HOLDER);
+  expect("holder" in none && none.holder.wake).toBeUndefined();
+  for (const bad of ['"fil"', '"tout"', "true", "null"]) {
+    const res = parsePatternHolder(file, MENTION_HOLDER(bad));
+    expect("error" in res && res.error).toContain("`wake` inconnu");
+    expect("error" in res && res.error).toContain('valeur admise : "mention"');
+  }
+});
+
+it("wakes a mention-only holder by @slug, name, handle or reply, never by the fil", () => {
+  const parsed = parsePatternHolder("x/coach-colony.md", MENTION_HOLDER('"mention"'));
+  if (!("holder" in parsed)) throw Error("holder attendu");
+  const holder = parsed.holder;
+  const msg = (id: string, at: string, text: string, who: Partial<FilMessage> = {}): FilMessage => ({
+    id,
+    at,
+    author: "humain",
+    text,
+    ...who,
+  });
+  const T = "2026-11-16T10:00:00.000Z";
+  const T2 = "2026-11-16T10:01:00.000Z";
+  const ordinary = msg("a", T, "bonjour tout le monde");
+  expect(wakeReason(holder, [ordinary], [ordinary])).toBeNull();
+  const byAll = parsePatternHolder("x/autre.md", HOLDER);
+  if (!("holder" in byAll)) throw Error("holder attendu");
+  expect(wakeReason(byAll.holder, [ordinary], [ordinary])).toEqual({ reason: "fil" });
+
+  const slug = msg("b", T, "dis-nous @coach-colony ?");
+  expect(wakeReason(holder, [slug], [slug])).toEqual({ reason: "mention" });
+  const name = msg("c", T, "Coach Colony, ton avis ?");
+  expect(wakeReason(holder, [name], [name])).toEqual({ reason: "mention" });
+
+  const hit = msg("d", T, "salut @spark-the-cat");
+  expect(wakeReason(holder, [hit], [hit], false, (m) => m.id === "d")).toEqual({ reason: "handle" });
+  expect(wakeReason(holder, [hit], [hit])).toBeNull();
+
+  const own = msg("e", T, "Un conseil.", { author: "agent", holder: "coach-colony" });
+  const answer = msg("f", T2, "merci, et pour la suite ?");
+  expect(wakeReason(holder, [own, answer], [answer])).toEqual({ reason: "reply" });
+  const other = msg("g", T, "autre voix", { author: "agent", holder: "autre" });
+  expect(wakeReason(holder, [other, answer], [answer])).toBeNull();
+});
+
 it("reads a folder holder: sections sorted by name, joined, json from the first file holding it", () => {
   const dir = writeSections("sections", {
     "zz-objectif.md": "Objectif.\n",
@@ -154,6 +210,17 @@ it("matches whole words without accents and reads dictation envelopes", () => {
   expect(
     humanText(JSON.stringify({ schema: "mind.voice.part.v1", text: "Bonjour @orga-agents" })),
   ).toBe("Bonjour @orga-agents");
+});
+
+it("an @slug mention does not match a longer slug, a name keeps its word boundary", () => {
+  expect(mentionsTopic("@coach-telegram-2 — ce message", "@coach-telegram")).toBe(false);
+  expect(mentionsTopic("@coach-telegram_2 bonjour", "@coach-telegram")).toBe(false);
+  expect(mentionsTopic("@coach-telegram2 bonjour", "@coach-telegram")).toBe(false);
+  expect(mentionsTopic("@coach-telegram — ce message", "@coach-telegram")).toBe(true);
+  expect(mentionsTopic("voir @coach-telegram.", "@coach-telegram")).toBe(true);
+  expect(mentionsTopic("@coach-telegram-2 — ce message", "@coach-telegram-2")).toBe(true);
+  // Mention par nom : `-` reste une frontière, comme avant.
+  expect(mentionsTopic("le Dossier-2 avance", "Dossier")).toBe(true);
 });
 
 it("stays off by default, then ignores history on its first pass", async () => {
@@ -307,12 +374,13 @@ it("lets a folder holder write its own sections, within its guardrails", async (
   expect(published).not.toContain("```");
 });
 
-it("refuses sections for a single-file holder, bad names, and more than two per wake", () => {
+it("promotes a single file on first write and refuses bad names or more than two sections", () => {
   const single = loadPatternHolders(dataDir).holders.find((h) => h.slug === "orga-agents");
   if (single === undefined) throw Error("holder attendu");
   expect(writeHolderSections(dataDir, single, [{ name: "a.md", content: "x" }])[0]?.state).toBe(
-    "refusée",
+    "ajoutée",
   );
+  expect(loadPatternHolders(dataDir).holders.find(h => h.slug === single.slug)?.seed).toContain(HOLDER.trim());
   writeSections("dossier", {
     "_holder.md": '```json pattern-holder\n{ "name": "Dossier" }\n```\n',
   });
@@ -377,4 +445,88 @@ it("keeps an assigned holder quiet while its fork is disabled instead of falling
   expect(await tick(replying("ne doit pas répondre", seen))).toEqual([]);
   expect(seen).toEqual([]);
   expect(readOwnerMessages(dataDir) ?? []).toEqual([]);
+});
+
+it("routes one live batch after a section moves and records privately in the chosen holder", async () => {
+  const general = writeSections("orga-agents", {
+    "_holder.md": HOLDER, "scene.md": "Mémoire du spécialiste uniquement.",
+  });
+  writeSections("reveilleur", { "_holder.md": HOLDER, "qui.md": "Souvenir du routage." });
+  const calls: string[] = [];
+  const call: typeof CallClaude = async (_, args, input, dir) => {
+    const slug = path.basename(dir);
+    calls.push(slug);
+    const prompt = fs.readFileSync(args[args.indexOf("--system-prompt-file") + 1]!, "utf8");
+    if (slug === "reveilleur") {
+      expect(prompt).toContain("Souvenir du routage.");
+      expect(input).toContain("Qui soutient encore la ville ?");
+      expect(input).toContain("financement du collectif");
+      expect(prompt + input).not.toContain("Mémoire du spécialiste uniquement.");
+      return { text: '["crypto"]' };
+    }
+    expect(slug).toBe("crypto");
+    expect(prompt).toContain("Mémoire du spécialiste uniquement.");
+    expect(input).toContain("Qui soutient encore la ville ?");
+    return { text: "SILENCE\n```section suite.md\nQuestion à reprendre.\n```" };
+  };
+  savePatternHoldersEnabled(dataDir, true);
+  const service = new PatternHolderService({ dataDir, claude, call, now });
+  await service.tick();
+  const crypto = writeSections("crypto", {
+    "_holder.md": '```json pattern-holder\n{"name":"Crypto","wakeHint":"financement du collectif"}\n```',
+  });
+  fs.renameSync(path.join(general, "scene.md"), path.join(crypto, "scene.md"));
+  human("new", "Qui soutient encore la ville ?", iso(-30_000));
+  await service.tick();
+  await service.tick();
+  expect(calls).toEqual(["reveilleur", "crypto"]);
+  expect(fs.readFileSync(path.join(crypto, "suite.md"), "utf8")).toContain("Question à reprendre");
+  expect(readOwnerMessages(dataDir) ?? []).toEqual([]);
+  expect(loadPatternHolders(dataDir).holders.find(h => h.slug === "orga-agents")?.seed).not.toContain("Mémoire du spécialiste uniquement.");
+  clock += 60_000;
+  human("direct", "@crypto : Qui soutient encore la ville ?", iso(-30_000));
+  await service.tick();
+  expect(calls).toEqual(["reveilleur", "crypto", "crypto"]);
+  await service.close();
+});
+
+it.each(['[]', '["inconnu"]'])("keeps the fil silent for a router result %s", async selection => {
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  await tick(replying(""));
+  human("new", "Du nouveau ?", iso(-30_000));
+  const calls: string[] = [];
+  const results = await tick(replying(selection, calls));
+  expect(calls).toHaveLength(2);
+  expect(results).toEqual(selection === "[]" ? [] : [expect.objectContaining({slug:"reveilleur", state:"failed"})]);
+  expect(readOwnerMessages(dataDir) ?? []).toEqual([]);
+  expect(await tick(replying(""))).toEqual([]);
+});
+
+it("sends a holder's reply to a Telegram @mention back to NLR once, prefixed, and ignores other messages", async () => {
+  await tick(replying("x"));
+  const sent: { text: string; key: string }[] = [];
+  const telegramReply = async (text: string, key: string) => {
+    sent.push({ text, key });
+  };
+  const run = (text: string) => tickPatternHolders({ dataDir, claude, call: replying(text), now, telegramReply });
+  // Message du desktop qui le mentionne : réponse dans le fil seulement.
+  human("ui-1", "@orga-agents ton avis ?", iso(-60_000));
+  expect((await run("Pas d'organigramme."))[0]?.state).toBe("spoke");
+  expect(sent).toEqual([]);
+  // Message Telegram de NLR qui le mentionne : la réponse part aussi vers son téléphone.
+  clock += 60_000;
+  human("tg-42-1001", "@orga-agents tu es là ?", iso(-30_000));
+  expect((await run("Oui, je suis là."))[0]).toEqual(expect.objectContaining({ state: "spoke", reason: "mention" }));
+  expect(sent).toEqual([{ text: "🧭 Organisation des agents : Oui, je suis là.", key: "holder-orga-agents-reply-tg-42-1001" }]);
+  // Message Telegram de NLR sans mention : la réponse part aussi (NLR, 16 nov. 2026, 11412).
+  clock += 60_000;
+  human("tg-42-1002", "et sinon, quoi de neuf ?", iso(-30_000));
+  await run("Rien de neuf.");
+  expect(sent).toHaveLength(2);
+  expect(sent[1]?.key).toBe("holder-orga-agents-reply-tg-42-1002");
+  // Message d'un autre holder : rien vers Telegram.
+  clock += 60_000;
+  agent("@orga-agents réponds-moi", "pattern-holder:autre:x1", iso(-30_000));
+  await run("Non.");
+  expect(sent).toHaveLength(2);
 });

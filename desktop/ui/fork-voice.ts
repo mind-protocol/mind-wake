@@ -8,6 +8,7 @@ import {
 import {
   selectedDictationProvider,
 } from "./dictation-provider.js";
+import { roomName } from "./room-name.js";
 
 /** Each capture owns its target and epoch, including permission and transcription latency. */
 export function forkVoice(options: {
@@ -56,7 +57,7 @@ export function forkVoice(options: {
     const composer = composers.get(id) ?? voiceScreenComposer();
     if (options.visualSnapshot) composers.set(id, composer);
     const input = voiceChatController({
-      owner: `Fork ${String(captured)}`,
+      owner: roomName(captured),
       provider: () => provider,
       invoke: call,
       screenshots: options.screenshots,
@@ -113,7 +114,7 @@ ${text}${suffix}`;
           options.recover(captured, body);
           options.status(
             captured,
-            `Échec Fork ${String(captured)} : ${String(error)} · transcription en brouillon, aucun retry automatique`,
+            `Échec ${roomName(captured)} : ${String(error)} · transcription en brouillon, aucun retry automatique`,
           );
           throw error;
         }
@@ -123,13 +124,13 @@ ${text}${suffix}`;
       state: (active, note) => {
         recording = active;
         options.presentation?.(recording, pendingSegments > 0, !recording && input.active());
-        options.status(captured, `Fork ${String(captured)} · ${note}`);
+        options.status(captured, `${roomName(captured)} · ${note}`);
       },
       processing: (pending, note) => {
         pendingSegments = pending;
         options.presentation?.(recording, pending > 0, !recording && input.active());
         if (pending)
-          options.status(captured, `Fork ${String(captured)} · ${note}`);
+          options.status(captured, `${roomName(captured)} · ${note}`);
       },
     });
     controller = input;

@@ -1,3 +1,4 @@
+import { readAgentRole } from "../agent-role.js";
 import fs from "node:fs";
 import { observeClaudeTools } from "../../communication/runtime-activity.js";
 /**
@@ -176,7 +177,7 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
             context.workspaceDir,
             withWakePersonality(
               context.workspaceDir,
-              config.systemPrompt ?? CLAUDE_WAKE_SYSTEM_PROMPT,
+              config.systemPrompt ?? readAgentRole(context.workspaceDir,"marco-claude",CLAUDE_WAKE_SYSTEM_PROMPT),
             ),
           ),
         systemPromptMode: "append",

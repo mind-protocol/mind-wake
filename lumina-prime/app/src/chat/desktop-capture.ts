@@ -37,7 +37,7 @@ export function createDesktopCapture(options: Parameters<typeof createVoiceContr
   }
   return{
     async start(){if(wanted||disposed)return;wanted=true;const version=++generation;abort=new AbortController();state('requesting');await capture(version);},
-    pause(){pause('Micro en pause. Aucun nouvel audio envoyé.');},
+    pause(){pause('Micro en pause.');},
     dispose(){disposed=true;pause();},
   };
 }

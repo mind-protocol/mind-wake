@@ -311,6 +311,9 @@ export class Scheduler {
     if (this.#mainThreadOff()) {
       return { kind: "inactive", state: profile.state, detail: "main_thread.off" };
     }
+    if (profile.state === "blocked" && profile.stateReason === "not_consented: runtime.adapterId_mismatch") {
+      return this.#recheckAdapter(profile);
+    }
     if (profile.state === "blocked" && this.#blockedOnUnknownQuota()) {
       return this.#recheckBlockedQuota(profile);
     }
@@ -338,6 +341,27 @@ export class Scheduler {
     const result = this.#o.uow.transaction(() => this.#decide(this.#o.clock.now(), facts));
     if (result.kind === "launched") this.#startSession(result.ticket);
     return result;
+  }
+
+  async #recheckAdapter(blocked: ProfileRecord): Promise<TickResult> {
+    const { environment, uow, profileId, state, clock } = this.#o;
+    const adapter = await guarded(() => environment.adapter(), this.#factTimeoutMs);
+    return uow.transaction(() => {
+      const profile = this.#profile();
+      const inactive = {kind: "inactive" as const, state: profile.state, detail: profile.stateReason ?? "profile.blocked"};
+      const policy = resolvePolicy(uow.policies, profileId);
+      if (profile.state !== "blocked" || profile.stateReason !== blocked.stateReason ||
+          profile.emergencyStopLocked || !adapter?.probe.available || policy.status !== "active" ||
+          policy.revision.id !== profile.activePolicyRevisionId) return inactive;
+      const runtime = policy.revision.groups.runtime;
+      if (adapter.probe.adapterId !== runtime.adapterId ||
+          !(["adapterId", "provider", "model", "authMode"] as const).every(key => runtime[key] === adapter.runtime[key])) return inactive;
+      const at = iso(clock.now());
+      transitionProfile(uow, {profileId, from:"blocked", to:"ready", at,
+        reason:"Moteur chargé conforme à la révision active", metadata:{by:"scheduler"}});
+      state.save({...state.get(profileId),lastDenial:null},at);
+      return {kind:"inactive",state:"ready",detail:"runtime.adapter_matched"};
+    });
   }
 
   /** Lecture défensive : un réglage illisible ou en erreur laisse le fil principal On. */
@@ -394,6 +418,7 @@ export class Scheduler {
     await this.recover();
     while (!signal.aborted) {
       this.#o.maintenance?.();
+      if (signal.aborted) break;
       const result = await this.tick();
       const completion = this.#o.alwaysOn?.() === true ? this.#inFlight : null;
       if (completion !== null) await Promise.race([completion, sleep(this.#delayAfter(result), signal)]);

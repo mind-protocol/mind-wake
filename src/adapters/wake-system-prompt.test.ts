@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PERSONALITY_FILE, withWakePersonality } from './wake-system-prompt.js';
+import { withHumanCallPrompt } from '../communication/human-call-prompt.js';
 
 let root: string;
 beforeEach(() => { root = fs.mkdtempSync(path.join(os.tmpdir(), 'mind-wake-personality-')); });
@@ -17,7 +18,7 @@ function writePersonality(text: string): void {
 
 describe('personal system prompt', () => {
   it('starts with the shared voice when there is no personal file', () => {
-    expect(withWakePersonality(root, 'shared direction')).toBe('shared direction');
+    expect(withWakePersonality(root, 'shared direction')).toBe(withHumanCallPrompt('shared direction'));
   });
   it('reloads edits at the next wake while preserving the base', () => {
     writePersonality('A warm, playful voice; concise and candid.');
@@ -31,7 +32,7 @@ describe('personal system prompt', () => {
   });
   it('lets the human clear the personal voice', () => {
     writePersonality('  \n');
-    expect(withWakePersonality(root, 'shared direction')).toBe('shared direction');
+    expect(withWakePersonality(root, 'shared direction')).toBe(withHumanCallPrompt('shared direction'));
   });
   it('does not load a personal prompt redirected outside the workspace', () => {
     const workspace = path.join(root, 'workspace');

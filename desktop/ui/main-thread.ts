@@ -73,7 +73,7 @@ export function mountMainThread(options: MainThreadMount): { update: (statusData
   on.id = "main-thread-on";
   on.type = "button";
   on.textContent = tr("Fil principal");
-  on.title = tr("Réveils de ton agent principal (conversation « Toi et ton agent »)");
+  on.title = tr("Réveils de ton agent principal (conversation « Marco »)");
   on.setAttribute("aria-pressed", "false");
   group.append(off, on);
   section.append(group);

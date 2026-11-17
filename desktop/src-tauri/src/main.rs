@@ -6,6 +6,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cli;
+mod phone_toast;
 mod disk_assets;
 mod runtime_paths;
 mod quick_input;
@@ -57,9 +58,17 @@ where
 }
 
 #[tauri::command]
-async fn wake_status() -> Result<CliRun, String> {
-    // Lecture partagée avec l'icône : réutilisée si elle date de moins de 1,5 s.
-    blocking(|| cli::shared_status(Duration::from_millis(1500))).await
+async fn wake_status(app: AppHandle) -> Result<CliRun, String> {
+    // Lecture partagée avec l'icône ; âge maximal selon la visibilité du panneau.
+    let max_age = cli::status_max_age(panel_visible(&app));
+    blocking(move || cli::shared_status(max_age)).await
+}
+
+/// Panneau principal affiché et non réduit : sinon les lectures d'état peuvent vieillir.
+fn panel_visible(app: &AppHandle) -> bool {
+    app.get_webview_window("main").is_some_and(|w| {
+        w.is_visible().unwrap_or(true) && !w.is_minimized().unwrap_or(false)
+    })
 }
 
 #[tauri::command]
@@ -109,13 +118,18 @@ async fn wake_now() -> Result<CliRun, String> {
 }
 
 #[tauri::command]
+async fn agent_prompts(request: serde_json::Value) -> Result<CliRun, String> {
+    tauri::async_runtime::spawn_blocking(move || cli::agent_prompts(request)).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn voice_graph() -> Result<CliRun, String> {
     blocking(cli::voice_graph).await
 }
 
 #[tauri::command]
-async fn wake_messages() -> Result<CliRun, String> {
-    blocking(|| cli::wake(Verb::Messages)).await
+async fn wake_messages(limit: Option<u32>) -> Result<CliRun, String> {
+    blocking(move || cli::wake_messages(limit)).await
 }
 
 #[tauri::command]
@@ -142,8 +156,9 @@ async fn wake_coach(action: String, text: Option<String>) -> Result<CliRun, Stri
 }
 
 #[tauri::command]
-async fn wake_forks(action: String, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
-    blocking(move || cli::wake_forks(&action, id, text, voice_screen_refs)).await
+async fn wake_forks(app: AppHandle, action: String, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
+    let max_age = cli::forks_max_age(panel_visible(&app));
+    blocking(move || cli::wake_forks(&action, id, text, voice_screen_refs, max_age)).await
 }
 
 #[tauri::command]
@@ -156,6 +171,15 @@ async fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Resul
     blocking(move || cli::elevenlabs(action, payload)).await
 }
 
+#[tauri::command]
+async fn telegram_user(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    blocking(move || cli::telegram_user(action, payload)).await
+}
+
+#[tauri::command]
+async fn app_error_report(screen: String, text: String, at: Option<String>) -> Result<CliRun, String> {
+    blocking(move || cli::app_error(screen, text, at)).await
+}
 #[tauri::command]
 async fn fast_reply_status() -> Result<CliRun, String> { blocking(|| cli::fast_reply("status")).await }
 #[tauri::command]
@@ -306,8 +330,8 @@ impl Switch {
 }
 
 fn refresh_light(tray: &TrayIcon<Wry>, switch: &Switch) {
-    // Quand le panneau relit toutes les 2 s, l'icône reprend sa lecture au lieu d'en lancer une.
-    let status = cli::shared_status(Duration::from_millis(2500));
+    // L'icône reprend la lecture du panneau au lieu d'en lancer une (même âge maximal).
+    let status = cli::shared_status(cli::status_max_age(panel_visible(tray.app_handle())));
     let light = Light::of(&status);
     let always_on = status.as_ref().ok().and_then(|r| serde_json::from_str::<serde_json::Value>(&r.stdout).ok()).map(|j| j["data"]["executionMode"] == "always-on" && matches!(light, Light::On | Light::Awake)).unwrap_or(false);
     if let Ok(icon) = Image::from_bytes(light.icon()) {
@@ -348,6 +372,7 @@ fn main() {
         context.set_assets(Box::new(disk_assets::DiskAssets::new(root, embedded)));
     }
     tauri::Builder::default()
+        .manage(phone_toast::PhoneState::default())
         .on_page_load(|_webview, payload| {
             if let Some(file) = std::env::var_os("MIND_WAKE_STARTUP_RECEIPT") {
                 let file = std::path::PathBuf::from(file).with_extension("page.json");
@@ -358,7 +383,12 @@ fn main() {
         // Un seul panneau : relancer l'application (menu Démarrer) rouvre le panneau existant.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_panel(app)))
         .invoke_handler(tauri::generate_handler![
+            phone_toast::phone_toast_set,
+            phone_toast::phone_toast_action,
+            phone_toast::phone_toast_state,
+            phone_toast::phone_ringtone_keys,
             app_restart,
+            app_error_report,
             wake_restart,
             app_fullscreen,
             documents::document_browse,
@@ -379,6 +409,7 @@ fn main() {
             wake_now,
             wake_on,
             wake_always_on,
+            agent_prompts,
             voice_graph,
             wake_messages,
             wake_history,
@@ -391,6 +422,7 @@ fn main() {
             workspace_sync_status,
             workspace_sync_configure,
             elevenlabs,
+            telegram_user,
             fast_reply_status,
             fast_reply_set,
             workspace_sync_now,
@@ -410,6 +442,7 @@ fn main() {
             owner_reply
         ])
         .setup(move |app| {
+            phone_toast::start(app.handle().clone());
             if let Some(root)=reload_root.clone() {disk_assets::watch_reload(app.handle().clone(), root);}
             if let Err(error)=paint::start(app.handle()) {eprintln!("Paint : {error}");}
             // Legacy right-click WebView retired; the supervised post-it observer owns this interaction.

@@ -160,7 +160,8 @@ function fixture(initialEnabled = true, sendFailure = false) {
   });
   const form = required(required(ids.get("view-forks")).children.find(child => child.tag === "form"));
   return {
-    text: required(form.children[0]),
+    // La zone de saisie est dans son cadre avec le bouton « copier » (NLR, 15 nov. 2026).
+    text: required(required(form.children[0]).children[0]),
     voice: required(form.children[2]),
     toggle: required(required(required(ids.get("fork-controls")).children[0]).children[1]),
     sends,

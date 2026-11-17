@@ -118,6 +118,7 @@ export async function daemonRun(
     }
   });
   let summary: DaemonSummary;
+  let switchEngine = false;
   const isOwnedEngine = !!process.env["MIND_WAKE_OWNED_INSTANCE"];
   const ownedStop = (message: unknown): void => {
     if (
@@ -144,13 +145,15 @@ export async function daemonRun(
   process.on("disconnect", disconnected);
   try {
     summary = await daemon.run();
+    switchEngine = summary.reason === "changement du moteur des agents" && interrupts === 0;
   } finally {
     detach?.();
     process.removeListener("message", ownedStop);
     process.removeListener("disconnect", disconnected);
     ownedInput?.close();
-    if (isOwnedEngine && process.connected) process.disconnect();
+    if (!switchEngine && isOwnedEngine && process.connected) process.disconnect();
   }
+  if (switchEngine) return daemonRun(ctx, dataDir, options);
   return {
     exitCode: EXIT_OK,
     data: {

@@ -160,3 +160,66 @@ describe("fil humain ↔ agent", () => {
     expect(agentText(text)).toBe("A\n\nB");
   });
 });
+
+describe("messages --limit (fenêtre du desktop)", () => {
+  it("garde les N éléments les plus récents, signale l'omission et ne garde que leurs accusés", async () => {
+    await cli(["init"]);
+    const rows = Array.from({ length: 30 }, (_, i) => ({ id: `human-limit-${String(i).padStart(2, "0")}`, at: new Date(Date.UTC(2026, 10, 1, 10, 0, i)).toISOString(), text: `h${i}`, noteMtimeBeforeMs: null }));
+    fs.writeFileSync(path.join(dir, HUMAN_LOG_FILE), rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
+    const full = data((await cli(["messages"])).json);
+    expect(full["replies"]).toHaveLength(30);
+    expect(full["truncated"]).toBeUndefined();
+    const limited = await cli(["messages", "--limit", "5"]);
+    expect(limited.code).toBe(EXIT_OK);
+    const result = data(limited.json);
+    expect((result["replies"] as { id: string }[]).map((r) => r.id)).toEqual(rows.slice(-5).map((r) => r.id));
+    expect(result["truncated"]).toBe(true);
+    const all = data((await cli(["messages", "--limit", "50"])).json);
+    expect(all["replies"]).toHaveLength(30);
+    expect(all["truncated"]).toBe(false);
+  });
+
+  it("filtre les accusés de livraison sur les réponses gardées", async () => {
+    const { latestMessages } = await import("./commands/messages.js");
+    const base = { profileId: "default", hint: null, agentNote: null,
+      replies: [{ id: "a", at: "2026-11-01T10:00:00.000Z", text: "a" }, { id: "b", at: "2026-11-01T11:00:00.000Z", text: "b" }],
+      agentMessages: [{ id: "m1", text: "x", createdAt: "2026-11-01T09:00:00.000Z", updatedAt: "2026-11-01T12:00:00.000Z", version: 2 },
+        { id: "m0", text: "y", createdAt: "2026-11-01T08:00:00.000Z", updatedAt: "2026-11-01T08:00:00.000Z", version: 1 }],
+      deliveryReceipts: { a: "2026-11-01T10:00:01.000Z", b: "2026-11-01T11:00:01.000Z" } };
+    const out = latestMessages(base, 2);
+    expect(out.replies.map((r) => r.id)).toEqual(["a", "b"]);
+    expect(out.deliveryReceipts).toEqual(base.deliveryReceipts);
+    // Message ancien mais modifié récemment : gardé pour que « nouveau » reste juste.
+    expect(out.agentMessages?.map((m) => m.id)).toEqual(["m1"]);
+    const one = latestMessages(base, 1);
+    expect(one.replies.map((r) => r.id)).toEqual(["b"]);
+    expect(one.deliveryReceipts).toEqual({ b: "2026-11-01T11:00:01.000Z" });
+    expect(one.truncated).toBe(true);
+  });
+
+  it("refuse une limite invalide et --limit sur une autre commande", async () => {
+    await cli(["init"]);
+    expect((await cli(["messages", "--limit", "0"])).code).toBe(EXIT_USAGE);
+    expect((await cli(["messages", "--limit", "abc"])).code).toBe(EXIT_USAGE);
+    expect((await cli(["status", "--limit", "5"])).code).toBe(EXIT_USAGE);
+  });
+});
+
+describe("sessionLaunching", () => {
+  it("is true between budget_reserved and session_started, false afterwards or on a missing table", async () => {
+    const { default: Database } = await import("better-sqlite3");
+    const { sessionLaunching } = await import("./commands/messages.js");
+    const db = new Database(":memory:");
+    expect(sessionLaunching(db, "default", "s1")).toBe(false);
+    db.exec("CREATE TABLE journal_events (profile_id TEXT, sequence INTEGER, type TEXT, session_id TEXT, PRIMARY KEY (profile_id, sequence))");
+    const add = db.prepare("INSERT INTO journal_events VALUES ('default', ?, ?, ?)");
+    add.run(1, "session_started", "s0");
+    add.run(2, "budget_reserved", "s1");
+    add.run(3, "profile_state_changed", "s1");
+    expect(sessionLaunching(db, "default", "s1")).toBe(true);
+    add.run(4, "session_started", "s1");
+    expect(sessionLaunching(db, "default", "s1")).toBe(false);
+    expect(sessionLaunching(db, "default", "unknown")).toBe(false);
+    db.close();
+  });
+});

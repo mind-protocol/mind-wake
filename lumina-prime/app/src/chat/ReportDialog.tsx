@@ -6,11 +6,13 @@ import { Button } from '../ui/Primitives';
 import { styles as s } from '../ui/theme';
 import type { ChatMessage, ChatSession } from './client.ts';
 import { draftReport, reportError, reportReasons, sendReport } from './report.ts';
+import { useReportedError } from './app-error-report.ts';
 
 export function ReportDialog({ message, session, visible, onClose }: { message: ChatMessage; session: ChatSession | null; visible: boolean; onClose: () => void }) {
   const [draft, setDraft] = useState(() => draftReport(message, `report-${Crypto.randomUUID()}`));
   const [step, setStep] = useState<'edit' | 'review' | 'sending' | 'failed' | 'sent'>('edit');
   const [error, setError] = useState('');
+  useReportedError('signalement', error);
   const [receipt, setReceipt] = useState('');
   const busy = useRef(false);
   async function submit() {

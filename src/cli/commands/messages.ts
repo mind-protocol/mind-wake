@@ -23,6 +23,8 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { artifactsDirFor, workspaceDirFor } from "../../daemon/paths.js";
+import { isProcessAlive, latestDaemonRun } from "../../daemon/runs.js";
+import type { SqliteDatabase } from "../../store/index.js";
 import { readCurrentWakeObjective, type CurrentWakeObjective } from "../../daemon/wake-manager.js";
 import { readWakePreview, readProjectWakeObjectives, type WakePreview } from "../../daemon/wake-preview.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
@@ -33,7 +35,6 @@ import { startFastReply } from "./fast-reply.js";
 import { captureClickPoint, captureWakeScreenshot } from "../../daemon/wake-screenshot.js";
 import { freshTargetedClick, pointReplyText } from "../point-context.js";
 import { freshWakeImage } from "../../adapters/wake-image.js";
-import { latestDaemonRun } from "../../daemon/runs.js";
 import { ownerAttachmentRuntimeMatches } from "../../communication/owner-attachment-runtime.js";
 import { readVoiceScreenPayloads, voiceScreenReferences } from "../../communication/voice-screen-images.js";
 
@@ -42,6 +43,7 @@ export const HUMAN_LOG_FILE = "human-messages.jsonl";
 export const MAX_REPLY_CHARS = 4000;
 const MAX_NOTE_CHARS = 20_000;
 const MAX_REPLIES = 200;
+export const MAX_MESSAGES_LIMIT = 10_000;
 const BLOCK_START = "<!-- mind-wake:reponse-humain";
 const BLOCK_END = "<!-- /mind-wake:reponse-humain -->";
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
@@ -81,6 +83,8 @@ export interface MessagesData {
   readonly deliveryReceipts?: Readonly<Record<string, string>>;
   readonly messageWait?: MessageWait | null;
   readonly agentStatus?: { readonly state: string; readonly reason: string; readonly nextWakeAt: string | null } | null;
+  /** Présent avec `--limit` : vrai si des éléments plus anciens ont été omis. */
+  readonly truncated?: boolean;
 }
 
 export interface ReplyData {
@@ -167,7 +171,25 @@ function agentWriteMs(mtimeMs: number, log: readonly LogEntry[]): number {
   return at;
 }
 
-export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<MessagesData> {
+/**
+ * Vrai si la session a été réservée (`budget_reserved`) sans être encore lancée
+ * (`session_started`) : préparation, capture d'écran, démarrage du runtime. Lecture à
+ * rebours sur la clé primaire, arrêtée au premier des deux événements de la session.
+ */
+export function sessionLaunching(db: SqliteDatabase, profileId: string, sessionId: string): boolean {
+  try {
+    const row = db
+      .prepare<[string, string], { type: string }>(
+        "SELECT type FROM journal_events WHERE profile_id = ? AND session_id = ? AND type IN ('budget_reserved','session_started') ORDER BY sequence DESC LIMIT 1",
+      )
+      .get(profileId, sessionId);
+    return row?.type === "budget_reserved";
+  } catch {
+    return false;
+  }
+}
+
+export function messages(ctx: CliContext, dataDir: DataDir, limit: number | null = null): CommandResult<MessagesData> {
   if (!profileExists(ctx, dataDir)) {
     return {
       exitCode: EXIT_FAILURE,
@@ -194,17 +216,60 @@ export function messages(ctx: CliContext, dataDir: DataDir): CommandResult<Messa
     agentNote = null;
   }
   const managed = readOwnerMessages(dataDir.path);
+  const publishedIds = new Set(managed?.map(message => message.id));
   const activeSession = withReadStore(ctx,dataDir,({uow}) => uow?.sessions.listOpen(DEFAULT_PROFILE_ID)[0]?.id ?? null);
   const messageWait = readMessageWait(dataDir.path,activeSession);
   const currentWakeObjective = readCurrentWakeObjective(workspaceDirFor(dataDir.path), activeSession);
-  const agentStatus = withReadStore(ctx,dataDir,({uow}) => {
+  const agentStatus = withReadStore(ctx,dataDir,({uow,db}) => {
     const profile=uow?.profiles.get(DEFAULT_PROFILE_ID);
+    if (profile?.state === "running" && db) {
+      const run = latestDaemonRun(db, DEFAULT_PROFILE_ID);
+      if (!run || run.endedAt !== null || !isProcessAlive(run.pid))
+        return { state: "stopped", reason: "daemon_offline", nextWakeAt: null };
+      // Lancement autorisé mais session pas encore ouverte : aucun hook ne peut encore
+      // transmettre le message ; il le sera à l'ouverture (SessionStart).
+      if (activeSession !== null && sessionLaunching(db, DEFAULT_PROFILE_ID, activeSession))
+        return { state: "starting", reason: profile.stateReason, nextWakeAt: profile.nextWakeAt };
+    }
     return profile ? {state:profile.state,reason:profile.stateReason,nextWakeAt:profile.nextWakeAt} : null;
   });
+  const data: MessagesData = { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id), publishedIds).filter(message=>managed===null||message.source.originKind!=="context_copy"), publicActivity: managed===null ? readPublicActivity(dataDir.path) : [], agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) };
+  return { exitCode: EXIT_OK, data: limit === null ? data : latestMessages(data, limit), human: formatMessages };
+}
+
+/**
+ * Garde les `limit` éléments datés les plus récents du fil (réponses, messages de l'agent,
+ * reçus, envoyés, activité publique). Le desktop n'en affiche qu'une fenêtre : relire
+ * et sérialiser tout l'historique (≈ 6,8 Mo) à chaque tour bloquait la saisie et l'envoi.
+ * Les autres champs (état, prévisions, fils de session) restent entiers.
+ */
+export function latestMessages(data: MessagesData, limit: number): MessagesData {
+  const stamps: string[] = [];
+  const add = (at: string | undefined): void => { if (typeof at === "string") stamps.push(at); };
+  for (const m of data.agentMessages ?? []) add(m.createdAt);
+  for (const r of data.replies) add(r.at);
+  for (const m of data.receivedMessages ?? []) add(m.at);
+  for (const m of data.sentMessages ?? []) add(m.at);
+  for (const m of data.recipientSentMessages ?? []) add(m.at);
+  for (const a of data.publicActivity ?? []) add(a.at);
+  if (stamps.length <= limit) return { ...data, truncated: false };
+  const time = (at: string): number => { const t = Date.parse(at); return Number.isFinite(t) ? t : 0; };
+  const cutoff = stamps.map(time).sort((a, b) => b - a)[limit - 1]!;
+  const keep = (at: string): boolean => time(at) >= cutoff;
+  const replies = data.replies.filter((r) => keep(r.at));
+  const ids = new Set(replies.map((r) => r.id));
   return {
-    exitCode: EXIT_OK,
-    data: { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id)).filter(message=>managed===null||message.source.originKind!=="context_copy"), publicActivity: managed===null ? readPublicActivity(dataDir.path) : [], agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) },
-    human: formatMessages,
+    ...data,
+    replies,
+    ...(data.agentMessages === undefined ? {} : { agentMessages: data.agentMessages.filter((m) => keep(m.createdAt) || keep(m.updatedAt)) }),
+    ...(data.receivedMessages === undefined ? {} : { receivedMessages: data.receivedMessages.filter((m) => keep(m.at)) }),
+    ...(data.sentMessages === undefined ? {} : { sentMessages: data.sentMessages.filter((m) => keep(m.at)) }),
+    ...(data.recipientSentMessages === undefined ? {} : { recipientSentMessages: data.recipientSentMessages.filter((m) => keep(m.at)) }),
+    ...(data.publicActivity === undefined ? {} : { publicActivity: data.publicActivity.filter((a) => keep(a.at)) }),
+    ...(data.deliveryReceipts === undefined ? {} : {
+      deliveryReceipts: Object.fromEntries(Object.entries(data.deliveryReceipts).filter(([id]) => ids.has(id))),
+    }),
+    truncated: true,
   };
 }
 

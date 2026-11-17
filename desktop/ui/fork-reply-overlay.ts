@@ -1,3 +1,4 @@
+import { roomName } from "./room-name.js";
 interface Snapshot {
   turn: string;
   text: string;
@@ -45,7 +46,7 @@ export function watchForkReply(
       const now = Date.now();
       showIncoming((state?.incoming ?? [])
         .filter(draft => draft.at <= now && now - draft.at < 15_000)
-        .map(draft => `Fork ${draft.from} écrit… ${draft.text}`).join("\n"));
+        .map(draft => `${roomName(draft.from)} écrit… ${draft.text}`).join("\n"));
       const raw = state?.reply;
       if (
         selected() !== id ||
@@ -60,7 +61,7 @@ export function watchForkReply(
       }
       const lines = raw.text.trim().split(/\s+/u).join(" ");
       const tail = lines.length > 210 ? lines.slice(-210).replace(/^\S*\s/u, "") : lines;
-      await render(tail ? `Fork ${id} · ${tail}` : "");
+      await render(tail ? `${roomName(id)} · ${tail}` : "");
     } catch {
       showIncoming("");
       await render("");

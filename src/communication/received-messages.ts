@@ -104,6 +104,7 @@ function readReceivedJournal(dataDir: string): ReceivedMessage[] {
 export function readReceivedMessages(
   dataDir: string,
   humanIds: readonly string[] = [],
+  publishedIds: ReadonlySet<string> = new Set(),
 ): ReceivedMessage[] {
   const receipts = readOwnerReceipts(dataDir);
   const messages = readReceivedJournal(dataDir);
@@ -156,6 +157,9 @@ export function readReceivedMessages(
     if (known.has(m.id) || !Number.isFinite(Date.parse(m.at))) continue;
     const deliveredAt = receipts[m.id];
     const origin = m.origin;
+    // Le fil a déjà la publication originale. La remise interne reste dans l’inbox
+    // pour le destinataire, même quand son enveloppe contient des instructions en plus.
+    if (origin && publishedIds.has(origin.messageId)) continue;
     if (origin && messages.some((entry) => entry.source.channel === origin.channel && entry.source.messageId === origin.messageId)) continue;
     const channel = origin?.channel;
     messages.push({

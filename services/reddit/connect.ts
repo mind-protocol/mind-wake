@@ -13,6 +13,8 @@ const optionsSchema = z.strictObject({
   port: z.int().min(0).max(65535).default(8765),
   webApp: z.boolean().default(false),
   enableReplies: z.boolean().default(false),
+  /** Requests submit/edit scopes and stores allowWrite=true. Explicit human choice only. */
+  enableWrite: z.boolean().default(false),
 });
 const tokenSchema = z.object({
   access_token: z.string().min(1),
@@ -33,7 +35,7 @@ export async function startRedditConnect(
       throw new Error("Fichier de connexion invalide");
   }
   const previousText = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : undefined;
-  if (previousText !== undefined && !options.enableReplies)
+  if (previousText !== undefined && !options.enableReplies && !options.enableWrite)
     throw new Error("Une connexion existe déjà ; aucun identifiant remplacé.");
   const previous =
     previousText === undefined ? undefined : redditConnectionSchema.parse(JSON.parse(previousText));
@@ -91,8 +93,8 @@ export async function startRedditConnect(
           <p>Il sera transmis uniquement à Reddit pour OAuth et conservé dans le fichier privé de cette connexion.</p>
           <form method="post" action="/prepare"><input type="hidden" name="state" value="${state}">
           <label>Client secret <input type="password" name="client_secret" required maxlength="1000" autocomplete="off"></label>
-          <button type="submit">Continuer vers Reddit (lecture seule)</button></form>
-          <p>L'autorisation demandée permet de lire Reddit et de vérifier votre pseudo. Aucune publication.</p></html>`);
+          <button type="submit">Continuer vers Reddit${options.enableWrite ? " (lecture et publication)" : " (lecture seule)"}</button></form>
+          <p>${options.enableWrite ? "L'autorisation demandée permet de lire Reddit, de vérifier votre pseudo et de publier posts et commentaires en votre nom." : "L'autorisation demandée permet de lire Reddit et de vérifier votre pseudo. Aucune publication."}</p></html>`);
         return;
       }
       if (options.webApp && req.method === "POST" && url.pathname === "/prepare" && !consumed) {
@@ -139,7 +141,9 @@ export async function startRedditConnect(
         page(
           res,
           200,
-          "Reddit est connecté à MIND Wake en lecture seule. Vous pouvez fermer cet onglet.",
+          options.enableWrite
+            ? "Reddit est connecté à MIND Wake en lecture et publication. Vous pouvez fermer cet onglet."
+            : "Reddit est connecté à MIND Wake en lecture seule. Vous pouvez fermer cet onglet.",
         );
         setTimeout(() => {
           void close();
@@ -206,7 +210,8 @@ export async function startRedditConnect(
       if (
         !scopes.has("identity") ||
         !scopes.has("read") ||
-        (options.enableReplies && !scopes.has("privatemessages"))
+        (options.enableReplies && !scopes.has("privatemessages")) ||
+        (options.enableWrite && !scopes.has("submit"))
       )
         throw new Error("Missing scopes");
       const meResponse = await fetcher("https://oauth.reddit.com/api/v1/me", {
@@ -231,7 +236,7 @@ export async function startRedditConnect(
         ...(options.webApp ? { clientSecret } : {}),
         refreshToken: tokens.refresh_token,
         userAgent: agent,
-        allowWrite: false,
+        allowWrite: options.enableWrite,
         scopes: [...scopes],
         syncReplies: options.enableReplies,
         subscriptions: previous?.subscriptions ?? [],
@@ -294,7 +299,12 @@ export async function startRedditConnect(
     state,
     redirect_uri: redirectUri,
     duration: "permanent",
-    scope: options.enableReplies ? "identity read privatemessages" : "identity read",
+    scope: [
+      "identity",
+      "read",
+      ...(options.enableReplies ? ["privatemessages"] : []),
+      ...(options.enableWrite ? ["submit", "edit"] : []),
+    ].join(" "),
   }).toString();
   authorizationUrl = authorize.href;
   const timer = setTimeout(() => {
@@ -325,6 +335,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       configFile: file,
       webApp: args.includes("--web-app"),
       enableReplies: args.includes("--enable-replies"),
+      enableWrite: args.includes("--enable-write"),
     });
     process.stdout.write(`Connectez Reddit dans votre navigateur :\n${connection.setupUrl}\n`);
     process.once("SIGINT", () => {

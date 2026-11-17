@@ -1,3 +1,9 @@
+import {callMcpConfig,type HumanCallIdentity} from '../communication/human-call-capability.js';
+import {spawnAgentProcess} from "./agent-process.js";
+import {voiceScreenBlock} from "../communication/voice-screen-images.js";
+import { launchAgentSession, providerFailure } from "./agent-engine.js";
+import { codexRoleTurn } from "./codex-role-turn.js";
+import { readAgentRole } from "../adapters/agent-role.js";
 import { fastReplyHolds, fastReplyPending, type FastReplyThread } from "../communication/fast-reply-store.js";
 import { tryProjectLease } from "./project-lease.js";
 /**
@@ -19,6 +25,7 @@ import {
   claudeEnvironment,
   claudeRunArgs,
   hostProfileEnv,
+  type ClaudeRunArgs,
   userMessageLine,
 } from "../adapters/claude/command.js";
 import {
@@ -59,6 +66,11 @@ export function saveSecondThreadEnabled(dataDir: string, enabled: boolean): void
     JSON.stringify({ version: 1, enabled, updatedAt: new Date().toISOString() }) + "\n",
   );
   fs.renameSync(tmp, file);
+}
+
+/** Marque d'origine humaine : « telegram » pour un message routé depuis Telegram. */
+function humanOriginTag(key: string): string {
+  return key.startsWith("telegram-route:") ? "telegram" : "1";
 }
 
 export interface SecondThreadEntry {
@@ -149,7 +161,7 @@ export class SecondThreadStore {
     );
   }
   /** Receipt and inbox entry commit together; retries survive delivery and lost ACKs. */
-  addHumanOnce(key: string, text: string, provenance: string, senderFork?: number): {status: "recorded" | "duplicate"; entryId: number} {
+  addHumanOnce(key: string, text: string, provenance: string, senderFork?: number, humanOrigin = false): {status: "recorded" | "duplicate"; entryId: number} {
     if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(key)) throw Error("Invalid idempotency key");
     return this.#db.transaction(() => {
       const slot = `human-receipt:${key}`;
@@ -163,6 +175,7 @@ export class SecondThreadStore {
       this.set(slot, JSON.stringify({text, provenance, entryId}));
       if (senderFork !== undefined) this.set(`entry-sender-fork:${entryId}`, String(senderFork));
       else if (provenance) this.set(`entry-application:${entryId}`, "1");
+      if (humanOrigin && senderFork === undefined) this.set(`entry-human-origin:${entryId}`, humanOriginTag(key));
       return {status: "recorded" as const, entryId};
     }).immediate();
   }
@@ -170,7 +183,7 @@ export class SecondThreadStore {
    * Notice runtime livrée au prochain tour ou en steering, une seule fois par clé. Son
    * étiquette remplace « message humain » ; `hidden` la retire de l'affichage du fil.
    */
-  addNoticeOnce(key: string, text: string, label: string, hidden = false): {status: "recorded" | "duplicate"; entryId: number} {
+  addNoticeOnce(key: string, text: string, label: string, hidden = false, humanOrigin = false): {status: "recorded" | "duplicate"; entryId: number} {
     if (!/^[A-Za-z0-9_.:-]{8,128}$/.test(key)) throw Error("Invalid idempotency key");
     return this.#db.transaction(() => {
       const slot = `notice-receipt:${key}`;
@@ -179,6 +192,7 @@ export class SecondThreadStore {
       const entryId = this.add("human", text);
       this.set(slot, String(entryId));
       this.set(`entry-notice:${String(entryId)}`, JSON.stringify({label, hidden}));
+      if (humanOrigin) this.set(`entry-human-origin:${String(entryId)}`, humanOriginTag(key));
       return {status: "recorded" as const, entryId};
     }).immediate();
   }
@@ -222,6 +236,20 @@ export class SecondThreadStore {
       .all() as { id: number; at: string }[];
     return fastReplyHolds(dataDir, direct.map((e) => ({ id: `${thread}:${String(e.id)}`, at: e.at })));
   }
+  /**
+   * Message écrit par NLR lui-même : saisie directe du desktop (ni notice, ni room émettrice, ni
+   * application), ou remise humaine marquée à l'écriture (routage Telegram, réveil @handle d'un
+   * message humain). Jamais un message d'agent (`post_to_fork_thread`, autre room, relais).
+   */
+  isHumanOrigin(entry: Pick<SecondThreadEntry, "id" | "role" | "notice" | "senderFork">): boolean {
+    if (entry.role !== "human" || entry.senderFork !== undefined) return false;
+    if (this.get(`entry-human-origin:${String(entry.id)}`) !== null) return true;
+    return entry.notice === undefined && this.get(`entry-application:${String(entry.id)}`) === null;
+  }
+  /** Message de NLR routé depuis Telegram : la réponse de l'agent repart vers son téléphone. */
+  isTelegramRouted(id: number): boolean {
+    return this.get(`entry-human-origin:${String(id)}`) === "telegram";
+  }
   pendingHuman(): SecondThreadEntry[] {
     return this.entries(10_000).filter((e) => e.role === "human" && !e.delivered);
   }
@@ -250,6 +278,27 @@ export class SecondThreadStore {
         clear.run(`entry-screen:${id}`);
       }
     })();
+  }
+  /**
+   * Écarte sans les supprimer les entrées en attente reçues avant `before` (ISO) : elles sont
+   * marquées livrées (plus jamais remises au fork), gardent leur texte et leur date, et
+   * reçoivent une trace `entry-discarded:<id>` plus un événement lisible dans le fil.
+   */
+  discardPendingBefore(before: string, reason: string): number[] {
+    const limit = Date.parse(before);
+    if (!Number.isFinite(limit)) throw Error("Date d'écart invalide");
+    return this.#db.transaction(() => {
+      const ids = this.pendingHuman().filter((e) => Date.parse(e.at) < limit).map((e) => e.id);
+      if (ids.length === 0) return ids;
+      const at = new Date().toISOString();
+      const update = this.#db.prepare("UPDATE entries SET delivered=1 WHERE id=?");
+      for (const id of ids) {
+        update.run(id);
+        this.set(`entry-discarded:${String(id)}`, JSON.stringify({ at, before, reason }));
+      }
+      this.add("event", `Écartées sans livraison (antérieures au ${before}) : entrées ${ids.join(", ")}. ${reason}`);
+      return ids;
+    }).immediate();
   }
   beginTurn(projectId: string | null): number {
     const last = this.#db.prepare("SELECT MAX(n) AS n FROM turns").get() as { n: number | null };
@@ -394,9 +443,9 @@ export const SECOND_THREAD_SYSTEM_NOTE = [
 
 export function secondThreadSystemPrompt(workspace: string): string {
   return [
-    withWakePersonality(workspace, WAKE_HOME_SYSTEM_PROMPT),
+    withWakePersonality(workspace, readAgentRole(workspace,"wake-home",WAKE_HOME_SYSTEM_PROMPT)),
     "",
-    SECOND_THREAD_SYSTEM_NOTE,
+    readAgentRole(workspace,"second-thread",SECOND_THREAD_SYSTEM_NOTE),
   ].join("\n");
 }
 
@@ -435,6 +484,8 @@ export function secondThreadTurnMessage(input: {
 export type SecondThreadControl = "run" | "hold" | "stop";
 
 export interface SecondThreadTurnResult {
+  engine?: "codex" | "claude";
+  performedWork?: boolean;
   readonly outcome: "completed" | "error" | "rate_limited" | "interrupted";
   readonly text: string;
   readonly sessionConfirmed: boolean;
@@ -478,7 +529,8 @@ const SYSTEM_ENV_KEYS = [
   "CLAUDE_CODE_GIT_BASH_PATH",
 ];
 
-function killTree(child: ChildProcess): void {
+function killTree(child: ChildProcess | ReturnType<typeof spawnAgentProcess>): void {
+  if (!("pid" in child)) { void child.kill(); return; }
   if (child.pid === undefined || child.exitCode !== null) return;
   if (process.platform === "win32")
     spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
@@ -489,7 +541,12 @@ function killTree(child: ChildProcess): void {
 }
 
 /** Un tour Claude Code : ouvre ou reprend la session, envoie la relance, lit le flux. */
-export function runClaudeTurn(input: {
+type RoleTurnInput = {
+  webSearch?: "live" | "cached" | "disabled";
+  nativeDelegation?: boolean;
+  humanCall?:HumanCallIdentity;
+  screen?: readonly string[];
+  dataDir?: string;
   claude: SecondThreadClaude;
   workspace: string;
   promptFile: string;
@@ -499,15 +556,41 @@ export function runClaudeTurn(input: {
   maxMs?: number;
   /** Configuration MCP explicite (JSON ou fichier), posée par le runtime pour ce seul tour. */
   mcpConfig?: string;
-}): Promise<SecondThreadTurnResult> {
+  /** Dossiers en plus du dossier de travail (`--add-dir`), ex. export Telegram d'un coach. */
+  addDirs?: readonly string[];
+  /** Hook de la boîte de réception d'une room (messages arrivés pendant le tour). */
+  roomInboxHook?: ClaudeRunArgs["roomInboxHook"];
+};
+export async function runClaudeTurn(input: RoleTurnInput): Promise<SecondThreadTurnResult> {
+  if(input.humanCall)input={...input,mcpConfig:callMcpConfig(input.mcpConfig,input.humanCall)};
+  if (!input.dataDir) return nativeClaudeTurn(input);
+  const dir = input.dataDir;
+  return launchAgentSession(dir, "claude", async engine => {
+    if (engine === "claude") return nativeClaudeTurn(input);
+    const result = await codexRoleTurn({dataDir:dir, cwd:input.workspace,
+      instructions:fs.readFileSync(input.promptFile,"utf8"), message:input.message, key:input.session.id,
+      ...(input.mcpConfig ? {mcpConfig:input.mcpConfig} : {}), ...(input.addDirs ? {addDirs:input.addDirs} : {}),
+      ...(input.webSearch === undefined ? {} : {webSearch:input.webSearch}),
+      ...(input.nativeDelegation === undefined ? {} : {nativeDelegation:input.nativeDelegation}),
+      allowed:()=>input.control()==="run", timeoutMs:input.maxMs ?? 3_600_000});
+    return {...result, engine: "codex" as const};
+  }, result => result.outcome === "rate_limited" || (result.outcome === "error" && providerFailure(result.detail ?? ""))
+    ? {retryAt:result.retryAtMs, replay:!result.performedWork && (!result.text || result.outcome === "rate_limited" || providerFailure(result.text))} : null, ()=>input.control()==="run");
+}
+export function nativeClaudeTurn(input: RoleTurnInput): Promise<SecondThreadTurnResult> {
+  if (input.control() !== "run") return Promise.resolve({outcome:"interrupted",text:"",detail:null,tokens:null,retryAtMs:null,sessionConfirmed:false});
   const args = claudeRunArgs({
     model: input.claude.model,
+    ...(input.humanCall ? {humanCall:input.humanCall} : {}),
     systemPromptFile: input.promptFile,
     tools: [],
     nativeCapabilities: true,
+    strictMcpConfig: input.mcpConfig !== undefined || input.humanCall !== undefined,
     permission: "skip_permissions_unsandboxed",
     session: input.session,
     ...(input.mcpConfig === undefined ? {} : { mcpConfigFile: input.mcpConfig }),
+    ...(input.addDirs === undefined || input.addDirs.length === 0 ? {} : { addDirs: input.addDirs }),
+    ...(input.roomInboxHook === undefined ? {} : { roomInboxHook: input.roomInboxHook }),
   });
   const system = Object.fromEntries(
     SYSTEM_ENV_KEYS.flatMap((k) => {
@@ -517,13 +600,14 @@ export function runClaudeTurn(input: {
   );
   const env = { ...system, ...claudeEnvironment({ inherited: hostProfileEnv() }) };
   return new Promise((resolve) => {
-    const child = spawn(input.claude.executable, [...(input.claude.prefixArgs ?? []), ...args], {
+    const child = input.dataDir && process.platform === "win32" ? spawnAgentProcess(input.dataDir, {executable:input.claude.executable,args:[...(input.claude.prefixArgs ?? []),...args],cwd:input.workspace,env}) : spawn(input.claude.executable, [...(input.claude.prefixArgs ?? []), ...args], {
       cwd: input.workspace,
       env,
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     });
     const texts: string[] = [];
+    let performedWork = false;
     let confirmed = false,
       tokens: number | null = null,
       retryAtMs: number | null = null,
@@ -577,6 +661,7 @@ export function runClaudeTurn(input: {
             const content = (JSON.parse(line) as { message?: { content?: unknown } }).message
               ?.content;
             if (Array.isArray(content)) {
+              performedWork ||= content.some(b => b?.type === "tool_use");
               const text = content
                 .filter(
                   (b): b is { type: "text"; text: string } =>
@@ -612,6 +697,7 @@ export function runClaudeTurn(input: {
         );
       resolve({
         outcome: outcome ?? "error",
+        performedWork,
         text: texts.at(-1) ?? "",
         sessionConfirmed: confirmed,
         tokens,
@@ -620,7 +706,12 @@ export function runClaudeTurn(input: {
       });
     });
     child.stdin.on("error", () => undefined);
-    child.stdin.write(userMessageLine(input.message) + "\n");
+    const line = userMessageLine(input.message);
+    if (input.screen?.length) {
+      const payload = JSON.parse(line);
+      payload.message.content = [{type:"text",text:input.message}, ...input.screen.map(base64 => voiceScreenBlock(base64,"claude"))];
+      child.stdin.write(JSON.stringify(payload) + "\n");
+    } else child.stdin.write(line + "\n");
   });
 }
 
@@ -715,6 +806,8 @@ export async function runSecondThread(
         `second fil : tour ${String(n)} sur ${position.projectId ?? "exploration libre"} (${resume ? "reprise" : "nouvelle session"})`,
       );
       const result = await turnFn({
+        dataDir:options.dataDir,
+        humanCall:{dataDir:options.dataDir,signature:"Claude chat"},
         claude,
         workspace,
         promptFile,
@@ -730,8 +823,8 @@ export async function runSecondThread(
         control,
       });
       turns++;
-      if (result.sessionConfirmed) store.set("confirmed", sessionId);
-      else if (result.outcome === "error" && resume) {
+      if (result.engine !== "codex" && result.sessionConfirmed) store.set("confirmed", sessionId);
+      else if (result.engine !== "codex" && result.outcome === "error" && resume) {
         // Session introuvable avant `init` : nouvelle génération, la mémoire du projet assure la reprise.
         store.set("generation", String(generation + 1));
       }

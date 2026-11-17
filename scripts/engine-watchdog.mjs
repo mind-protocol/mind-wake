@@ -11,6 +11,7 @@ import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { restartCrashedEngine } from "./desktop-supervisor.mjs";
+import { engineCliArgs } from "./engine-supervisor.mjs";
 
 const { values } = parseArgs({ options: { manifest: { type: "string" } } });
 if (!values.manifest) throw Error("--manifest required");
@@ -39,11 +40,10 @@ try {
 }
 fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
 
-const cli = path.join(m.repoDir, "dist/cli/main.js");
 const env = { ...process.env, MIND_WAKE_DATA_DIR: m.dataDir };
 
 function forkWorker() {
-  const status = spawnSync(m.node, [cli, "forks", "status", "--json", "--data-dir", m.dataDir], {
+  const status = spawnSync(m.node, engineCliArgs(m, ["forks", "status", "--json", "--data-dir", m.dataDir]), {
     env,
     cwd: m.repoDir,
     windowsHide: true,
@@ -55,7 +55,7 @@ function forkWorker() {
   if (data.running || data.profile !== "run" || !data.forks.some((f) => f.enabled)) return;
   const out = fs.openSync(path.join(m.dataDir, "forks.log"), "a");
   try {
-    spawn(m.node, [cli, "forks", "run", "--data-dir", m.dataDir], {
+    spawn(m.node, engineCliArgs(m, ["forks", "run", "--data-dir", m.dataDir]), {
       env,
       cwd: m.repoDir,
       detached: true,

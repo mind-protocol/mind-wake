@@ -1,0 +1,5 @@
+{
+  "$schema":"../gen/schemas/desktop-schema.json",
+  "identifier":"phone-toast", "windows":["phone-toast"],
+  "permissions":["core:event:allow-listen","core:event:allow-unlisten","allow-phone-toast-action","allow-phone-toast-state"]
+}

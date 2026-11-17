@@ -120,3 +120,62 @@ test('voice upload requires a session, enforces type and size, and only returns 
   assert.equal(response.status, 200); assert.equal(result.status, 'draft'); assert.equal(result.sentToWake, false);
   assert.equal(result.text, 'À relire'); assert.equal(transcriptions, 1); assert.equal(h.sends(), 0);
 });
+
+test('isPrivateAddress accepts loopback, RFC 1918 and Tailscale only', async () => {
+  const { isPrivateAddress } = await import('./chat-server.mjs');
+  for (const ok of ['127.0.0.1', '::1', '::ffff:192.168.1.50', '10.2.3.4', '172.16.0.1', '172.31.255.255', '100.64.0.1', '100.76.130.63', '100.127.255.255'])
+    assert.equal(isPrivateAddress(ok), true, ok);
+  for (const no of ['8.8.8.8', '172.32.0.1', '100.63.255.255', '100.128.0.1', '192.169.0.1', '2a02:8424::1', '', undefined, '1.2.3'])
+    assert.equal(isPrivateAddress(no), false, String(no));
+});
+
+test('no-pairing mode: private peers get a session without code or Origin; public peers are refused everywhere', async t => {
+  const { request } = await setup(t, { privateNetworkConnect: true });
+  const response = await request('/chat/connect-local', { method: 'POST', body: {} });
+  assert.equal(response.status, 200);
+  const session = await response.json();
+  assert.equal((await request('/chat/messages', { token: session.token })).status, 200);
+  assert.equal((await request('/chat/connect-local', { method: 'POST', origin: 'https://attacker.invalid', body: {} })).status, 403);
+  // Simulated public peer: the socket address decides, not headers.
+  const { Readable } = await import('node:stream');
+  const { service } = await setup(t, { privateNetworkConnect: true });
+  const fakeCall = (remoteAddress, path) => new Promise(resolve => {
+    const req = Object.assign(Readable.from([Buffer.from('{}')]), { method: 'POST', url: path,
+      headers: { host: '127.0.0.1', 'content-type': 'application/json', 'x-forwarded-for': '192.168.1.2' }, socket: { remoteAddress } });
+    let status = 0;
+    const res = { destroyed: false, writableEnded: false, writeHead(code) { status = code; },
+      end(body) { this.writableEnded = true; resolve({ status, body: JSON.parse(body) }); } };
+    service.server.emit('request', req, res);
+  });
+  const refused = await fakeCall('203.0.113.9', '/chat/connect-local');
+  assert.equal(refused.status, 403); assert.equal(refused.body.error, 'network_forbidden');
+  assert.equal((await fakeCall('203.0.113.9', '/chat/pair')).status, 403);
+  const lan = await fakeCall('192.168.1.40', '/chat/connect-local');
+  assert.equal(lan.status, 200); assert.match(lan.body.token, /^[a-f0-9]{64}$/);
+  assert.equal((await fakeCall('100.80.1.2', '/chat/connect-local')).status, 200);
+});
+
+test('without no-pairing mode, a private non-loopback peer still cannot connect without a code', async t => {
+  const { Readable } = await import('node:stream');
+  const { service } = await setup(t, { localConnect: true });
+  const status = await new Promise(resolve => {
+    const req = Object.assign(Readable.from([Buffer.from('{}')]), { method: 'POST', url: '/chat/connect-local',
+      headers: { host: '127.0.0.1', 'content-type': 'application/json' }, socket: { remoteAddress: '192.168.1.40' } });
+    const res = { destroyed: false, writableEnded: false, writeHead(code) { this.code = code; }, end() { resolve(this.code); } };
+    service.server.emit('request', req, res);
+  });
+  assert.equal(status, 403);
+});
+
+test('client candidates keep LAN then Tailscale order and connectChat falls through to the first gateway that answers', async () => {
+  const { chatCandidates, connectChat } = await import('../src/chat/client.ts');
+  assert.deepEqual(chatCandidates('http://192.168.1.183:8789', 'http://100.76.130.63:8789, https://example.com', 'http://192.168.1.183:8789/'),
+    ['http://192.168.1.183:8789', 'http://100.76.130.63:8789']);
+  const tried = [];
+  const token = 'a'.repeat(64);
+  const fetchImpl = async url => { tried.push(String(url)); if (String(url).startsWith('http://192.168')) throw new Error('down');
+    return new Response(JSON.stringify({ schema: 'mind.chat.session.v1', token, expiresAt: Date.now() + 60_000 }), { status: 200 }); };
+  const session = await connectChat(['http://192.168.1.183:8789', 'http://100.76.130.63:8789'], undefined, fetchImpl);
+  assert.equal(session.url, 'http://100.76.130.63:8789');
+  assert.deepEqual(tried, ['http://192.168.1.183:8789/chat/connect-local', 'http://100.76.130.63:8789/chat/connect-local']);
+});

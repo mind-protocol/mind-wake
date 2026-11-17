@@ -336,7 +336,10 @@ export function saveFilAfterSubmit(dataDir: string): void {
 }
 /** Loaded automatically by both runtime registrations, including a brand new thread. */
 export function withFilResume(dataDir: string, workspace: string, base: string): string {
-  const doc = reconcileFil(dataDir, workspace);
+  return appendFilDocument(base, reconcileFil(dataDir, workspace));
+}
+
+export function appendFilDocument(base:string, doc:FilDocument):string {
   const context = {
     recent: doc.recent,
     recentTruncated: doc.recentTruncated,

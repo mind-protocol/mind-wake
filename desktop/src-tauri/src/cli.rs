@@ -108,12 +108,39 @@ pub fn elevenlabs(action: String, payload: Option<serde_json::Value>) -> Result<
     run_with_timeout(args, Some(input), Duration::from_secs(75))
 }
 
+/// Réglages « Telegram — mon compte » : `services/telegram/user-account-desktop-main.ts`, qui pilote
+/// le sidecar Telethon. La saisie (téléphone, code, 2FA, api_id/api_hash) passe par stdin.
+pub fn telegram_user(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "status" | "configure" | "login_phone" | "login_code" | "login_password" | "logout") {
+        return Err("Action Telegram inconnue".into());
+    }
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/telegram/user-account-desktop-main.ts").into());
+    let input = serde_json::json!({"action": action, "payload": payload}).to_string();
+    run_with_timeout(args, Some(input), Duration::from_secs(75))
+}
+
 pub fn fast_reply(action: &str) -> Result<CliRun, String> {
     let verb = match action { "status" => "status", "on" => "on", "off" => "off", _ => return Err("Action réponse rapide inconnue".into()) };
     run(wake_args(&["fast-reply", verb])?, None)
 }
 
+/// Erreur affichée dans le panneau : relayée au principal (`mind-wake app-error`, JSON sur stdin).
+/// Seuls `screen`, `text` et `at` viennent du webview ; `app` est fixé ici. La CLI masque les secrets.
+pub fn app_error(screen: String, text: String, at: Option<String>) -> Result<CliRun, String> {
+    let input = serde_json::json!({"app": "desktop", "screen": screen, "text": text, "at": at}).to_string();
+    run(wake_args(&["app-error"])?, Some(input))
+}
+
 /// Fixed read-only projection. No action/path comes from the webview.
+pub fn agent_prompts(request: serde_json::Value) -> Result<CliRun, String> {
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/prompt-editor/desktop-main.ts").into());
+    run(args, Some(request.to_string()))
+}
+
 pub fn voice_graph() -> Result<CliRun, String> {
     run_with_timeout(vec![repo().join("services/voice-graph/desktop-main.mjs").into()], None, Duration::from_secs(75))
 }
@@ -141,6 +168,16 @@ fn wake_args(verb_args: &[&str]) -> Result<Vec<OsString>, String> {
     Ok(args)
 }
 
+/// Fil principal : seulement les `limit` éléments les plus récents (`messages --limit`).
+/// Lecture seule : le statut mis en cache reste valable. Sans limite, tout le fil (≈ 6,8 Mo).
+pub fn wake_messages(limit: Option<u32>) -> Result<CliRun, String> {
+    let mut args = wake_args(Verb::Messages.args())?;
+    if let Some(limit) = limit {
+        args.extend(["--limit".into(), limit.clamp(1, 10_000).to_string().into()]);
+    }
+    run(args, None)
+}
+
 pub fn wake(verb: Verb) -> Result<CliRun, String> {
     if matches!(verb, Verb::On | Verb::Resume) {
         let status = run(wake_args(Verb::Status.args())?, None)?;
@@ -165,13 +202,31 @@ struct StatusCache {
     generation: std::sync::atomic::AtomicU64,
 }
 
-static STATUS: StatusCache = StatusCache {
-    turn: std::sync::Mutex::new(()),
-    last: std::sync::Mutex::new(None),
-    generation: std::sync::atomic::AtomicU64::new(0),
-};
+static STATUS: StatusCache = StatusCache::new();
+/// `forks status` (≈ 0,9 Mo de JSON, un processus Node) : même partage que `STATUS`.
+static FORKS: StatusCache = StatusCache::new();
+
+/// Âge maximal d'une lecture d'état partagée. Panneau visible : le panneau relit `status`
+/// toutes les 2 s et l'icône toutes les 3 s ; 3,5 s fait servir une lecture sur deux par
+/// le cache. Panneau masqué ou réduit : seule l'icône compte, 10 s suffisent. Toute action
+/// qui change l'état vide le cache (`forget`), le prochain lecteur relit aussitôt.
+pub fn status_max_age(panel_visible: bool) -> Duration {
+    if panel_visible { Duration::from_millis(3500) } else { Duration::from_secs(10) }
+}
+/// Rooms relues toutes les 5 s par le panneau : 4,5 s fusionne les lectures doublées sans
+/// retarder le rythme normal ; panneau masqué, 30 s.
+pub fn forks_max_age(panel_visible: bool) -> Duration {
+    if panel_visible { Duration::from_millis(4500) } else { Duration::from_secs(30) }
+}
 
 impl StatusCache {
+    const fn new() -> Self {
+        StatusCache {
+            turn: std::sync::Mutex::new(()),
+            last: std::sync::Mutex::new(None),
+            generation: std::sync::atomic::AtomicU64::new(0),
+        }
+    }
     fn fresh(&self, max_age: Duration) -> Option<CliRun> {
         let last = self.last.lock().unwrap_or_else(|e| e.into_inner());
         last.as_ref()
@@ -484,7 +539,18 @@ pub fn second_thread(action: &str, text: Option<String>) -> Result<CliRun, Strin
     Ok(result)
 }
 
-pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
+pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>, max_age: Duration) -> Result<CliRun, String> {
+    if action == "status" {
+        // Lecture seule : partagée et fusionnée entre lecteurs simultanés (cf. `FORKS`).
+        return FORKS.get(max_age, || wake_forks_uncached(action, id, text, voice_screen_refs));
+    }
+    // on/off/send/ensure peuvent changer l'état (ensure peut démarrer le worker).
+    let result = wake_forks_uncached(action, id, text, voice_screen_refs);
+    FORKS.forget();
+    result
+}
+
+fn wake_forks_uncached(action: &str, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
     let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action inconnue".into()) };
     let body = if matches!(action, "on" | "off" | "send") {
         let slot = id.filter(|n| (2..=8).contains(n)).ok_or("Fork attendu : 2 à 8")?;
@@ -717,10 +783,48 @@ fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Optio
 mod tests {
     use super::*;
 
-    fn cache() -> StatusCache {
-        StatusCache { turn: std::sync::Mutex::new(()), last: std::sync::Mutex::new(None), generation: std::sync::atomic::AtomicU64::new(0) }
-    }
+    fn cache() -> StatusCache { StatusCache::new() }
     fn status(stdout: &str) -> Result<CliRun, String> { Ok(CliRun { exit_code: 0, stdout: stdout.into() }) }
+
+    #[test]
+    fn simultaneous_readers_share_one_spawn() {
+        let c = std::sync::Arc::new(cache());
+        let reads = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let threads: Vec<_> = (0..6).map(|_| {
+            let (c, reads) = (c.clone(), reads.clone());
+            std::thread::spawn(move || c.get(Duration::from_secs(5), || {
+                reads.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                std::thread::sleep(Duration::from_millis(100));
+                status("forks")
+            }).unwrap().stdout)
+        }).collect();
+        for t in threads { assert_eq!(t.join().unwrap(), "forks"); }
+        assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    /// Spawns par minute avec le rythme réel du panneau (status 2 s + icône 3 s, Rooms 5 s
+    /// lues deux fois) : simulation sur une horloge fictive de la règle « relire si âge ≥ max ».
+    fn spawns_per_minute(periods_ms: &[u64], max_age: Duration) -> usize {
+        let mut events: Vec<u64> = periods_ms.iter().flat_map(|p| (0..60_000).step_by(*p as usize)).collect();
+        events.sort_unstable();
+        let mut last: Option<u64> = None;
+        events.into_iter().filter(|t| {
+            let stale = last.is_none_or(|l| t - l >= max_age.as_millis() as u64);
+            if stale { last = Some(*t); }
+            stale
+        }).count()
+    }
+
+    #[test]
+    fn polling_budget_with_visible_and_hidden_panel() {
+        // Avant : status 1,5 s (panneau) — chaque tick du panneau relançait Node.
+        assert_eq!(spawns_per_minute(&[2000, 3000], Duration::from_millis(1500)), 30);
+        assert_eq!(spawns_per_minute(&[2000, 3000], status_max_age(true)), 15);
+        assert_eq!(spawns_per_minute(&[2000, 3000], status_max_age(false)), 6);
+        // Rooms : deux lecteurs à 5 s, avant sans cache = 24/min.
+        assert_eq!(spawns_per_minute(&[5000, 5000], forks_max_age(true)), 12);
+        assert_eq!(spawns_per_minute(&[5000, 5000], forks_max_age(false)), 2);
+    }
 
     #[test]
     fn shared_status_reuses_a_fresh_read_and_rereads_after_a_change() {

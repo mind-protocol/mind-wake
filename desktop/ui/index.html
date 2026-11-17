@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="series-director-notes.css" />
     <link rel="stylesheet" href="loading.css" />
     <script defer src="loading.js"></script>
+    <script type="module" src="build/app-error-report.js"></script>
     <script type="module" src="build/i18n-dom.js"></script>
     <script type="module" src="build/series-assembly-boot.js"></script>
     <script type="module" src="build/main.js"></script>
@@ -92,16 +93,24 @@
          data-i18n="Rencontres">
           Rencontres <span id="unread" class="count" hidden></span>
         </button>
+        <button id="tab-call" role="tab" type="button" aria-selected="false" aria-controls="view-call">Appel</button>
         <button id="tab-voice" role="tab" type="button" aria-selected="false" aria-controls="view-voice">Voice</button>
         <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history" data-i18n="Réveils">Réveils</button>
         <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents" data-i18n="Conseils">Conseils <span id="agents-count" class="count" hidden></span></button>
         <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects" data-i18n="Projets et tâches">Projets et tâches</button>
         <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents" data-i18n="Documents">Documents</button>
+        <button id="tab-prompts" role="tab" type="button" aria-selected="false" aria-controls="view-prompts">Prompts système</button>
         <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations" data-i18n="Autorisations">Autorisations</button>
         <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings" data-i18n="Réglages">Réglages</button>
         </div>
       </nav>
 
+      <section id="view-call" role="tabpanel" aria-labelledby="tab-call" hidden>
+        <p id="call-status" role="status"></p>
+        <button id="call-retry" type="button" hidden>Réessayer</button>
+        <iframe id="call-frame" title="Appel vocal" allow="microphone; autoplay; screen-wake-lock; local-network-access; loopback-network" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" hidden></iframe>
+        <section id="call-vision-feed" aria-label="Captures des participants" hidden></section>
+      </section>
       <section id="view-voice" role="tabpanel" aria-labelledby="tab-voice" hidden>
         <div class="voice-mode-controls"><button id="voice-mode-toggle" type="button" aria-pressed="false">Play</button><span id="voice-mode-status" role="status">Voice Mode en pause</span></div>
         <div id="voice-graph" aria-label="Graphe des sessions et messages"></div>
@@ -130,6 +139,29 @@
         <iframe id="projects-frame" title="Cartes des projets et tâches" sandbox="allow-same-origin" referrerpolicy="no-referrer" data-i18n-title="Cartes des projets et tâches"></iframe>
       </div>
 
+      <section id="view-prompts" role="tabpanel" aria-labelledby="tab-prompts" hidden>
+        <h2>Prompts système</h2>
+        <div class="prompt-controls" role="group" aria-label="Vue de l’agent">
+          <button type="button" id="prompt-edit-view" aria-pressed="true">Prompt</button>
+          <button type="button" id="prompt-vision-view" aria-pressed="false">Vision</button>
+        </div>
+        <div class="prompt-controls">
+          <label>Agent <select id="prompt-agent"></select></label>
+          <label id="prompt-source-label">Partie affichée <select id="prompt-part"></select></label>
+          <button id="prompt-reload" type="button">Recharger</button>
+        </div>
+        <div id="prompt-vision" hidden>
+          <p id="prompt-vision-status" role="status"></p>
+          <div id="prompt-vision-grid"></div>
+          <dialog id="prompt-vision-dialog"><button type="button" id="prompt-vision-close">Fermer</button><pre></pre></dialog>
+        </div>
+        <div id="prompt-edit-panel">
+        <div id="prompt-fields" hidden></div>
+        <textarea id="prompt-text" aria-label="Texte du prompt" spellcheck="false" readonly></textarea>
+        <div class="prompt-controls"><button id="prompt-save" disabled type="button">Enregistrer</button>
+          <span id="prompt-status" role="status"></span></div>
+        </div>
+      </section>
       <div id="view-authorizations" role="tabpanel" aria-labelledby="tab-authorizations" hidden>
         <h1 data-i18n="Autorisations de mon agent">Autorisations de mon agent</h1>
         <p data-i18n="Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.">Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
@@ -182,6 +214,16 @@
       </aside>
 
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <section aria-labelledby="h-agent-engine">
+          <h2 id="h-agent-engine">Moteur des agents</h2>
+          <label for="agent-engine">Moteur prioritaire</label>
+          <select id="agent-engine" disabled>
+            <option value="" disabled>Selon l’agent</option>
+            <option value="claude">Claude</option><option value="codex">Codex</option>
+          </select>
+          <p class="hint">Le choix s’applique aux prochains réveils. Si le moteur est indisponible, l’autre prend le relais.</p>
+          <p id="agent-engine-status" role="status"></p>
+        </section>
         <section aria-labelledby="h-voice-switch">
           <h2 id="h-voice-switch">Voice</h2>
           <div class="fork-control"><button id="voice-switch" type="button" role="switch" aria-checked="false" aria-labelledby="h-voice-switch" aria-describedby="voice-switch-hint voice-switch-note">Off</button>
@@ -207,6 +249,27 @@
           <textarea id="elevenlabs-test" rows="2" maxlength="5000">Bonjour ! Je suis là, et ma voix fonctionne.</textarea>
           <button id="elevenlabs-generate" type="button">Générer et écouter</button>
           <p id="elevenlabs-feedback" role="status"></p>
+        </section>
+        <section aria-labelledby="h-telegram-user" class="telegram-user">
+          <h2 id="h-telegram-user">Telegram — mon compte</h2>
+          <p id="telegram-user-state" role="status">Chargement…</p>
+          <p class="hint">Cet outil envoie depuis ce compte les messages des coachs, et lit seulement les conversations des personnes qu’un coach porte.</p>
+          <form id="telegram-user-config" class="workspace-sync-form" hidden>
+            <p class="hint">Créer une application sur <a id="telegram-user-api-link" href="https://my.telegram.org">my.telegram.org</a> (API development tools), puis copier ses deux valeurs. Elles restent dans les données locales et ne sont plus affichées.</p>
+            <label for="telegram-user-api-id">api_id</label>
+            <input id="telegram-user-api-id" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" required />
+            <label for="telegram-user-api-hash">api_hash</label>
+            <input id="telegram-user-api-hash" type="password" autocomplete="new-password" spellcheck="false" required />
+            <button type="submit">Enregistrer</button>
+          </form>
+          <button id="telegram-user-connect" type="button" hidden>Connecter</button>
+          <form id="telegram-user-login" class="workspace-sync-form" hidden>
+            <label id="telegram-user-input-label" for="telegram-user-input">Numéro de téléphone du compte</label>
+            <input id="telegram-user-input" type="tel" spellcheck="false" required />
+            <button id="telegram-user-submit" type="submit">Valider</button>
+          </form>
+          <button id="telegram-user-logout" type="button" hidden>Déconnecter</button>
+          <p id="telegram-user-feedback" role="status"></p>
         </section>
         <h1 data-i18n="Réglages">Réglages</h1>
         <section aria-labelledby="h-language">
@@ -312,8 +375,8 @@
         </section>
         <p id="second-thread-feedback" class="hint" role="status"></p>
         <section aria-labelledby="h-forks">
-          <h2 id="h-forks">Forks Codex</h2>
-          <p class="hint" data-i18n="Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.">Jusqu’à 8 agents Codex : le fil principal et 7 forks. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
+          <h2 id="h-forks">Rooms Codex</h2>
+          <p class="hint" data-i18n="Jusqu’à 8 agents Codex : le fil principal et 7 rooms. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.">Jusqu’à 8 agents Codex : le fil principal et 7 rooms. Chacun suit une partie des projets de la rotation. Pause et Force-off s’appliquent à tous.</p>
           <div id="fork-controls"></div>
           <p id="fork-feedback" role="status"></p>
         </section>
@@ -354,15 +417,13 @@
       <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
         <div class="view-heading">
           <div class="conversation-tabs" role="tablist" aria-label="Conversation" data-i18n-aria-label="Conversation">
-            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation" data-i18n="Toi et ton agent">Toi et ton agent</button>
+            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation">Marco</button>
             <button id="tab-coach" role="tab" type="button" aria-selected="false" aria-controls="view-coach">Coach</button>
             <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden data-i18n="Fil Claude">Fil Claude<span id="second-thread-tab-presence" hidden data-i18n="· Travaille"> · Travaille</span></button>
           </div>
         </div>
         <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
-        <p id="fast-reply-indicator" class="hint" role="status" hidden>⚡ coupée · l’agent principal continue de répondre</p>
-        <p class="hint conversation-description" data-i18n="Votre conversation, au fil des réveils.">Votre conversation, au fil des réveils.</p>
-        <button id="chat-older" class="link" type="button" hidden data-i18n="Afficher les messages précédents">Afficher les messages précédents</button>
+        <button id="chat-older" class="link" type="button" hidden title="Afficher les messages précédents" aria-label="Afficher les messages précédents" data-i18n-title="Afficher les messages précédents" data-i18n-aria-label="Afficher les messages précédents"><span aria-hidden="true">↑</span></button>
         <ol id="chat" class="messages" aria-live="polite"></ol>
         <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden data-i18n-aria-label="Ton agent travaille"><span aria-hidden="true">•••</span><span class="sr-only" data-i18n="Ton agent travaille">Ton agent travaille</span></div>
         <div id="chat-progress-reminder" role="status" hidden></div>
@@ -377,10 +438,9 @@
             aria-label="Message à ton agent"
             placeholder="Écris à ton agent…"
            data-i18n-aria-label="Message à ton agent" data-i18n-placeholder="Écris à ton agent…"></textarea>
-          <div class="chat-actions"><button id="chat-voice" type="button" aria-pressed="false" title="Extrait toutes les 30 secondes, fenêtre audio de 35 secondes ; transcription ensuite ; capture de l’écran au début si activée.">🎙 Voice</button><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
+          <div class="chat-actions"><span class="chat-action-row"><button id="chat-voice" type="button" aria-pressed="false" title="Extrait toutes les 30 secondes, fenêtre audio de 35 secondes ; transcription ensuite ; capture de l’écran au début si activée.">🎙 Voice</button><label class="chat-image-picker" title="Joindre des images" data-i18n-title="Joindre des images"><span aria-hidden="true">📎</span><input id="chat-image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple aria-label="Joindre des images" data-i18n-aria-label="Joindre des images"></label></span><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
           </div>
           <p id="chat-voice-status" class="hint" role="status">Dictée actuelle · prête. ElevenLabs reste un choix explicite.</p>
-          <label class="chat-image-picker">Joindre des images<input id="chat-image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple></label>
           <div id="chat-image-preview" class="chat-image-preview" aria-label="Images du brouillon" hidden></div>
           <p id="chat-status" class="hint" role="status"></p>
         </form>

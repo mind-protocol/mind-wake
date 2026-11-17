@@ -30,7 +30,7 @@ export function createLocalSpeech(options: {
   function record(version: number) {
     if (!active || version !== generation || !options.visible()) { pause('Micro en pause · app masquée'); return; }
     const Constructor = options.constructor!; const current = new Constructor();
-    if (!('processLocally' in current)) { pause(); state('unsupported', 'Reconnaissance locale indisponible sur ce navigateur. Aucun audio envoyé au PC.'); return; }
+    if (!('processLocally' in current)) { pause(); state('unsupported', 'Dictée indisponible sur ce navigateur.'); return; }
     current.processLocally = true; current.lang = 'fr-FR'; current.continuous = true; current.interimResults = false;
     recognition = current; const seen = new Set<number>(); let failed = false;
     current.onresult = event => {
@@ -53,17 +53,17 @@ export function createLocalSpeech(options: {
     };
     current.onstart = () => {
       if (!active || version !== generation) { current.abort(); return; }
-      state('recording', 'Micro ON · local · 30 s enchaînées');
+      state('recording', 'Je t’écoute…');
       timer = setTimeout(() => { if (recognition === current) current.stop(); }, options.segmentMs ?? 30_000);
     };
-    try { state('checking', 'Autorisation et démarrage du micro local…'); current.start();
+    try { state('checking', 'Autorisation du micro…'); current.start();
     } catch { pause('Impossible de démarrer le micro local. Réessaie avec le bouton.'); }
   }
   async function start(install = false) {
     if (active) return;
     const Constructor = options.constructor;
     if (!options.secure || !Constructor?.available) { state('unsupported', 'Transcription sur cet appareil indisponible ici. Aucun repli distant.'); return; }
-    active = true; const version = ++generation; state('checking', install ? 'Téléchargement du modèle français sur cet appareil…' : 'Vérification du français local…');
+    active = true; const version = ++generation; state('checking', install ? 'Téléchargement du modèle français sur cet appareil…' : 'Préparation du micro…');
     try {
       let availability = await Constructor.available({ langs: ['fr-FR'], processLocally: true, quality: 'dictation' });
       if (!active || version !== generation) return;
@@ -74,7 +74,7 @@ export function createLocalSpeech(options: {
       }
       if (!active || version !== generation) return;
       if (availability === 'downloadable' || availability === 'downloading') { active = false; state('download', 'Le modèle français doit être téléchargé sur cet appareil.'); return; }
-      if (availability !== 'available') { active = false; state('unsupported', 'Français local indisponible sur ce navigateur. Aucun audio envoyé au PC.'); return; }
+      if (availability !== 'available') { active = false; state('unsupported', 'Dictée en français indisponible sur ce navigateur.'); return; }
       record(version);
     } catch { if (version === generation) pause('Reconnaissance locale indisponible ou permission refusée.'); }
   }

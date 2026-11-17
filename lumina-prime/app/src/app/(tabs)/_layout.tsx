@@ -9,6 +9,7 @@ export default function TabLayout() {
     tabBarInactiveTintColor: colors.muted, tabBarStyle: { backgroundColor: colors.paper, borderTopColor: colors.line, height: 58, paddingTop: 4, paddingBottom: 6 },
     tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: 4 } }}>
     <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: ({focused,size}) => <Ionicons name="chatbubble-outline" color={focused?colors.ink:colors.muted} size={size} /> }} />
+    <Tabs.Screen name="call" options={{ title: 'Appel', tabBarIcon: ({focused,size}) => <Ionicons name="call-outline" color={focused?colors.ink:colors.muted} size={size} /> }} />
     <Tabs.Screen name="index" options={{ title: 'Radar', tabBarIcon: ({ focused, size }) => <Ionicons name="planet-outline" color={focused ? colors.ink : colors.muted} size={size} /> }} />
     <Tabs.Screen name="supports" options={{ title: 'Soutiens', tabBarIcon: ({ focused, size }) => <Ionicons name="sparkles-outline" color={focused ? colors.ink : colors.muted} size={size} /> }} />
     <Tabs.Screen name="activity" options={{ title: 'Activité', tabBarIcon: ({ focused, size }) => <Ionicons name="receipt-outline" color={focused ? colors.ink : colors.muted} size={size} /> }} />

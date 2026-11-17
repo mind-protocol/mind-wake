@@ -96,15 +96,15 @@ it("carries header names from channel metadata and retains ref-only peers withou
 
 it("renders one author-attributed FYI with its existing delivery receipt", () => {
  const at = "2026-11-05T19:50:26.004Z";
- const status = {id:"inbox:status:42", at, text:"FYI — Fork 4 : Carte analysée.",
+ const status = {id:"inbox:status:42", at, text:"FYI — Room 4 : Carte analysée.",
   state:"delivered", deliveredAt:"2026-11-05T19:50:26.877Z",
-  source:{channel:"local-inbox", kind:"cluster-status", originKind:"peer_message", name:"Fork 4"}};
+  source:{channel:"local-inbox", kind:"cluster-status", originKind:"peer_message", name:"Room 4"}};
  const ordinary = {...status, id:"inbox:ordinary", source:{...status.source, kind:"pair"}};
  const model = conversation(envelope({profileId:"default", receivedMessages:[status, status, ordinary]}))!;
  const items = model.items.filter(item => item.from === "received");
  expect(items).toHaveLength(2);
  expect(items[0]).toMatchObject({text:"Carte analysée.", clusterStatus:true, delivery:"delivered", deliveredAt:status.deliveredAt});
- expect(renderMeta(items[0]!).textContent).toContain("FYI · Fork 4");
+ expect(renderMeta(items[0]!).textContent).toContain("FYI · Room 4");
  expect(conversationReceipt(items[0]!)?.text).toBe(" ✓✓");
  expect(items[1]).toMatchObject({text:ordinary.text});
  expect(items[1]?.clusterStatus).toBeUndefined();
@@ -211,6 +211,12 @@ function envelope(data: unknown): unknown {
 }
 
 describe("conversation", () => {
+  it("signale un fil tronqué par la CLI (messages --limit) pour garder « messages précédents »", () => {
+    const data = {profileId:"default",agentMessages:[],replies:[{id:"r1",at:"2026-11-03T12:00:00Z",text:"Salut"}]};
+    expect(conversation(envelope({...data,truncated:true}))?.truncated).toBe(true);
+    expect(conversation(envelope({...data,truncated:false}))?.truncated).toBeUndefined();
+    expect(conversation(envelope(data))?.truncated).toBeUndefined();
+  });
   it("shows runtime final responses as agent messages among activity and human replies",()=>{
     const at="2026-11-03T12:00:00Z";
     const c=conversation(envelope({profileId:"default",agentMessages:[],publicActivity:[
@@ -248,6 +254,12 @@ describe("conversation", () => {
     expect(c?.items[0]?.pendingReason).toContain("Bash");
     expect(c?.items[0]?.pendingReason).toContain("depuis 2 min");
     expect(c?.items[0]?.pendingReason).toContain("3 appels en cours");
+  });
+  it("says the session is opening instead of 'active' while no hook can deliver yet",()=>{
+    const now=Date.parse("2026-10-29T10:05:00Z");
+    const c=conversation(envelope({profileId:"default",agentMessages:[],replies:[{id:"a",at:"2026-10-29T10:04:00Z",text:"Hello"}],agentStatus:{state:"starting"}}),null,now);
+    expect(c?.items[0]?.pendingReason).toContain("ouvre sa session");
+    expect(c?.items[0]?.pendingReason).not.toContain("prochain point de réception");
   });
   it("explains pause, quota blocking and planned wake, ignoring obsolete tool activity",()=>{
     const now=Date.parse("2026-10-29T10:05:00Z");

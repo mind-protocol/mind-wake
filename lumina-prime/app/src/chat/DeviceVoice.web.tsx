@@ -24,11 +24,11 @@ export default function DeviceVoice({session,onTranscript}:{session:ChatSession;
   },[]);
   const running=state.phase!=='idle';
   return <View style={{backgroundColor:colors.paper,paddingHorizontal:10,paddingVertical:4,gap:4}}>
-    <Pressable accessibilityRole="button" accessibilityLabel={running?'Pause micro':'Activer le micro, transcription sur le desktop'}
+    <Pressable accessibilityRole="button" accessibilityLabel={running?'Pause micro':'Activer le micro'}
       onPress={()=>running?control.current?.pause():void control.current?.start()}
       style={{minHeight:44,padding:10,borderRadius:14,backgroundColor:running?colors.green:colors.soft}}>
       <Text style={s.strong}>{running?'■ Pause micro':'● Parler à Marco'}</Text>
     </Pressable>
-    <Text accessibilityLiveRegion="polite" style={s.small}>{state.phase==='recording'?'Micro ON · tranches de 30 s · transcription sur le desktop':state.phase==='transcribing'?'Transcription sur le desktop…':state.phase==='requesting'?'Autorisation du micro…':state.message??'Audio transmis au desktop pour transcription. Pause arrête la capture.'}</Text>
+    <Text accessibilityLiveRegion="polite" style={s.small}>{state.phase==='recording'?'Je t’écoute…':state.phase==='transcribing'?'Transcription…':state.phase==='requesting'?'Autorisation du micro…':state.message??''}</Text>
   </View>;
 }

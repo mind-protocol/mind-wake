@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { captureWakeScreenshot } from "../../dist/daemon/wake-screenshot.js";
 import { externalInboxSyncAllowed } from "../../dist/communication/external-inbox-policy.js";
 import { vocabularyArguments } from "./transcription-vocabulary.mjs";
+import { transcriptionOptionArguments } from "../telegram/transcriber.mjs";
 import { compactScreenshot } from "./compact-image.mjs";
 const dir =
   process.env.MIND_WAKE_DATA_DIR ??
@@ -51,7 +52,7 @@ try {
       data = await new Promise((resolve, reject) => {
         const child = spawn(
           config.python ?? "python",
-          [path.join(repo, "services/telegram/transcribe.py"), file, config.model, "--allow-empty", ...vocabularyArguments(dir)],
+          [path.join(repo, "services/telegram/transcribe.py"), file, config.model, "--allow-empty", ...vocabularyArguments(dir), ...transcriptionOptionArguments(config)],
           { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] },
         );
         let out = "";

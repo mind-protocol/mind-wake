@@ -112,7 +112,9 @@ it("answers in the owner channel at once, then hands the reply to the main sessi
     ["Sur la voix desktop, je regarde ça.", `reply:${readOwnerMessages(dataDir)?.[0]?.id ?? "?"}`],
   ]);
   expect(seen[0]).toContain('"tu bosses sur quoi ?"');
-  expect(seen[1]).toContain("--tools  --strict-mcp-config");
+  expect(seen[1]).toContain("--tools  --mcp-config");
+  expect(seen[1]).toContain("--strict-mcp-config");
+  expect(seen[1]).toContain("mind_calls");
   expect(readOwnerMessages(dataDir)?.map((m) => m.text)).toEqual([
     "⚡ Sur la voix desktop, je regarde ça.",
   ]);
@@ -291,7 +293,7 @@ it("answers a fork's human in that fork and hands the reply to every session", a
   try {
     for (const store of [fork5, second]) {
       const [fyi] = store.pendingHuman();
-      expect(fyi?.notice).toEqual({ label: "FYI · réponse rapide de Fork 3", hidden: false });
+      expect(fyi?.notice).toEqual({ label: "FYI · réponse rapide de Room 3", hidden: false });
       expect(fyi?.text).toContain("n'y réponds pas");
     }
   } finally {
@@ -335,15 +337,15 @@ it("alerts a mentioned active session with an actionable notice, the others stay
   try {
     const pending = fork5.pendingHuman();
     expect(pending).toHaveLength(1);
-    expect(pending[0]?.notice).toEqual({ label: "Mention · voix rapide de Fork 3", hidden: false });
+    expect(pending[0]?.notice).toEqual({ label: "Mention · voix rapide de Room 3", hidden: false });
     expect(pending[0]?.text).toBe(
-      `MIND runtime — la voix rapide de Fork 3 te mentionne dans sa réponse à l'humain (pas un message humain) :\n${JSON.stringify(text)}\nVérifie et traite ce qui te concerne ; tes autorisations sont inchangées.`,
+      `MIND runtime — la voix rapide de Room 3 te mentionne dans sa réponse à l'humain (pas un message humain) :\n${JSON.stringify(text)}\nVérifie et traite ce qui te concerne ; tes autorisations sont inchangées.`,
     );
     // Prise au prochain tour (pendingHuman) ou injectée dans un tour en cours (steering).
     expect(fork5.pendingSteering(0)?.id).toBe(pending[0]?.id);
     expect(fork5.heldForFastReply(dataDir, "fork:5")).toBe(false);
     const [fyi] = second.pendingHuman();
-    expect(fyi?.notice?.label).toBe("FYI · réponse rapide de Fork 3");
+    expect(fyi?.notice?.label).toBe("FYI · réponse rapide de Room 3");
     expect(second.pendingHuman()).toHaveLength(1);
   } finally {
     fork5.close();
@@ -387,7 +389,7 @@ it("keeps other threads' fast replies out of a fork whose inbox is explicit", ()
     expect(fork7.pendingHuman().map((e) => e.notice?.label)).toEqual(["Réponse rapide (ta voix immédiate)"]);
     expect(fork8.pendingHuman().map((e) => e.notice?.label)).toEqual([
       "FYI · réponse rapide de Fil principal",
-      "FYI · réponse rapide de Fork 7",
+      "FYI · réponse rapide de VOX", // nom de la room (signature historique), plus « Room 7 »
     ]);
   } finally {
     fork7.close();
@@ -425,7 +427,7 @@ it("speaks with an assigned fork's own system prompt, the main thread keeps its 
   expect(prompts[0]).toContain("la réponse rapide de MIND Wake");
   // Décision Simulation NLR 6 nov. 04:31 : ⚡ garde son identité ; le fork n'est qu'un contexte.
   expect(prompts[0]!.startsWith("Identité : tu es ⚡")).toBe(true);
-  expect(prompts[0]).toContain("=== Contexte : instructions de l'agent du Fork 7 (pas ton identité) ===");
+  expect(prompts[0]).toContain("=== Contexte : instructions de l'agent de la Room 7 (pas ton identité) ===");
   expect(prompts[0]).toContain("à la troisième personne");
   expect(prompts[0]).not.toContain("le même agent pour ton humain");
   // NLR 6 nov. 04:28 : ⚡ ne prend pas pour lui un message adressé au gardien 🤍.

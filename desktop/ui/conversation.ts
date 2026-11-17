@@ -48,6 +48,8 @@ export interface Conversation {
   /** Horodatage de la note de l'agent, pour repérer une nouvelle écriture. */
   readonly agentUpdatedAt: string | null;
   readonly note: string | null;
+  /** CLI `messages --limit` : des éléments plus anciens existent mais n'ont pas été lus. */
+  readonly truncated?: boolean;
 }
 
 /** The same checkmark UI for humans and agents, with route-specific evidence labels. */
@@ -204,6 +206,7 @@ function waiting(data: Rec, sentAt: string, now: number): string | null {
     const tool=str(wait["tool"]);
     return tr("L’agent exécute un outil{0}{1}{2} ; ton message sera transmis à sa fin.", [tool ? ` (${tool})` : "", duration, count]);
   }
+  if(state==="starting")return tr("L’agent ouvre sa session ; le message lui sera remis à l’ouverture.{0}", [suffix]);
   if(state==="running")return tr("L’agent est actif ; transmission au prochain point de réception.{0}", [suffix]);
   if(state==="checkpointing")return tr("L’agent sauvegarde son état avant de s’arrêter.{0}", [suffix]);
   if(state==="ready")return tr("Wake est prêt pour le prochain réveil.{0}", [suffix]);
@@ -375,6 +378,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
   }
   return {
     projectWakes: data["projectWakes"],
+    ...(data["truncated"] === true ? { truncated: true } : {}),
     items,
     agentUpdatedAt: agentAt,
     note:

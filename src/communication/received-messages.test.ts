@@ -1,3 +1,4 @@
+import {tr} from "../../desktop/ui/i18n.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -49,8 +50,8 @@ it("projects host peer/context envelopes into distinct conversation roles, never
  const target={textContent:""};renderConversationMeta(target,model.items[0]!);
  expect(target.textContent).toContain("Correspondant <b>literal</b>");
  expect(target.textContent).toContain("msg_source");
- expect(target.textContent).not.toContain("Ton agent");
- renderConversationMeta(target,model.items[1]!);expect(target.textContent).toContain("Copie de contexte");
+ expect(target.textContent).not.toContain(tr("Ton agent"));
+ renderConversationMeta(target,model.items[1]!);expect(target.textContent).toContain(tr("Copie de contexte · {0}", [""]).trim());
  } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });
 
@@ -98,4 +99,19 @@ it("does not infer NLR or a reply route from an unattributed inbox body",()=>{
  expect(m.source.assurance).toBe("channel_record");
  expect(readReceivedMessages(dir,["relay"])).toEqual([]);
  } finally {fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+it("shows the published holder message once while delivering its internal relay", () => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"holder-relay-"));
+  try {
+    for(const id of ["published","private"]) {
+      enqueueOwnerMessage(dir,{
+        id:"pattern-holder:crypto:"+id,at:"2026-11-15T02:30:00.000Z",text:"Même remarque",
+        origin:{kind:"peer_message",channel:"pattern-holder",author:"Pattern holder · Crypto",senderRef:"pattern-holder:crypto",
+          recipientRef:"principal",threadId:"principal",messageId:id,correlationId:"trigger"},
+      });
+    }
+    expect(readReceivedMessages(dir,[],new Set(["published"])).map(m=>m.source.messageId)).toEqual(["private"]);
+    expect(readOwnerInboxHistory(dir)).toHaveLength(2);
+  } finally {fs.rmSync(dir,{recursive:true,force:true});}
 });

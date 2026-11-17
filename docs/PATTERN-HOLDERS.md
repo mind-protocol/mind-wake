@@ -2,28 +2,41 @@
 
 Désactivé par défaut : `mind-wake pattern-holders status|on|off|check|try`.
 
-Un accord pris avec l'humain vit dans une conversation-semence portée par un agent : le
-pattern holder. Il n'y en a qu'un, toujours allumé (décision de NLR, 6 novembre 2026). Sa
-semence est un fichier de données de l'agent, `artifacts/pattern-holders/<slug>.md` dans le
-workspace : un bloc ```` ```json pattern-holder ```` (`name`, `emoji`, `quietMinutes`
-facultatif) puis la conversation, réplique par réplique, chacune avec sa source. Le moteur
-lit ce fichier sans exécuter de code. Il le relit à chaque réveil : une modification compte
-dès le message suivant. Les fichiers qui commencent par `_` sont ignorés.
+## Conversations-semences et réveilleur
 
-## Réveil
+Le moteur découvre à chaque passage les fichiers et dossiers de `artifacts/pattern-holders/`.
+Le slug correspond au nom du fichier ou du dossier. Exemple d’en-tête pour `crypto.md`
+ou `crypto/_holder.md` :
 
-Le moteur (`daemon run`) héberge `PatternHolderService`
-(`src/communication/pattern-holders.ts`), à côté de la réponse rapide. Il n'y a pas de
-mots-clés : chaque nouveau message du fil principal, de l'humain ou d'un agent, réveille le
-holder. Une série de dictées est lue d'un bloc, après 8 s de calme. Le holder relit sa semence
-et le fil récent, puis il intervient ou répond `SILENCE`. Une mention `@<slug>` ou une réponse
-humaine à son dernier message l'oblige à répondre. Ses propres messages ne le réveillent pas.
-`quietMinutes` lui permet de se donner une pause après avoir parlé ; cette pause ne s'applique
-ni aux mentions ni aux réponses.
+````markdown
+```json pattern-holder
+{"name":"Crypto","emoji":"🪙","wakeHint":"Financement, propriété et soutien d’un collectif."}
+```
+````
 
-Le premier passage place le curseur au dernier message : l'historique ancien ne réveille
-personne. Le curseur avance avant l'appel, si bien qu'un échec ne relance pas le holder en
-boucle. L'état est dans `pattern-holders-state.json`.
+La conversation-semence suit cet en-tête. Dans un dossier, les sections Markdown sont
+assemblées dans l’ordre des noms. Déplacer une section transfère cette mémoire au
+destinataire dès le prochain échange, sans déclencher d’appel. Le dossier a priorité sur
+le fichier du même nom. Au premier souvenir écrit par un holder mono-fichier, Wake crée
+son dossier avec une copie de la semence et la nouvelle section. Le fichier initial reste
+disponible. Les entrées racine commençant par un souligné sont ignorées.
+
+Le holder réservé `reveilleur.md` ou `reveilleur/` contient les conversations sur **qui
+appeler et quand**. Son appel reçoit sa propre semence, les noms, slugs et présentations
+(`wakeHint`) des candidats et l’échange du fil. Il renvoie un tableau JSON de destinataires,
+éventuellement vide. Le moteur ne publie pas cette sélection. Chaque destinataire reçoit
+l’échange d’origine et sa propre semence. Une réponse `SILENCE` accompagnée d’une section
+valide enregistre cette section discrètement.
+
+Le routage groupé intervient après huit secondes de calme, une fois par fil et par lot.
+Un `@slug` ou une réponse humaine au dernier message d’un holder le réveille directement.
+Les messages des holders ne relancent pas la boucle. Les affectations aux forks et les
+pauses spontanées (`quietMinutes`) sont conservées. Avec plusieurs holders et aucune
+semence de réveilleur, Wake utilise le catalogue seul. Une installation historique à un
+seul holder sans réveilleur conserve son comportement. Le premier passage ignore le passé ;
+un nouveau spécialiste hérite du dernier curseur connu du fil.
+
+Le champ optionnel `"wake": "mention"` de l’en-tête `pattern-holder` limite le réveil d’un holder à la mention (`@slug` ou nom), au `@handle` d’une personne qu’il coache et à la réponse humaine qui suit son message ; jamais à un simple message du fil (autre valeur : holder invalide).
 
 ## Appel et publication
 
@@ -46,8 +59,7 @@ s'arrête avec Force-off et avec le moteur ; comme ⚡, il ne suit pas la Pause.
 
 ## Limites
 
-- Chaque message du fil coûte un appel court sur le quota de l'abonnement, même quand le
-  holder se tait.
-- Le holder ne voit que le fil principal, pas le second fil ni les forks.
+- Un lot ordinaire coûte un appel de routage, puis un appel par spécialiste choisi.
+- Un holder écoute le fil principal ou le fork actif auquel il est affecté.
 - L'app mobile Lumina ne montre que les messages publiés sous `claude-wake` : c'est le cas du
   holder.

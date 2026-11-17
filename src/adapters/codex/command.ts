@@ -1,3 +1,4 @@
+import {callCodexOverrides,type HumanCallIdentity} from '../../communication/human-call-capability.js';
 /**
  * Construction de la commande `codex app-server` et des paramètres de fil, à partir de
  * la configuration Wake seule : `CODEX_HOME` dédié (jamais celui de l'utilisateur, dont
@@ -39,6 +40,7 @@ export const WAKE_CONFIG_OVERRIDES: Readonly<Record<string, string>> = {
 };
 
 export interface BuildCommandInput {
+  readonly humanCall?: HumanCallIdentity;
   readonly executable: CodexExecutable;
   readonly codexHome: string;
   readonly workspaceDir: string;
@@ -107,6 +109,7 @@ export function buildAppServerCommand(input: BuildCommandInput): CodexCommand {
     ...(input.nativeCapabilities === true ? {} : WAKE_CONFIG_OVERRIDES),
     ...(input.channel?.configOverrides ?? {}),
     ...(input.extraConfig ?? {}),
+    ...(input.humanCall ? callCodexOverrides(input.humanCall,input.nativeCapabilities?input.codexHome:undefined,{...input.channel?.configOverrides,...input.extraConfig}) : {}),
     ...(input.nativeCapabilities === true ? {} : WAKE_CONFIG_OVERRIDES),
   };
   return {
@@ -145,3 +148,4 @@ export function threadPermissions(
 ): ThreadPermissions {
   return { approvalPolicy: "never", sandbox: bypass ? "danger-full-access" : hostSandbox };
 }
+

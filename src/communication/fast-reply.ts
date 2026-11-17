@@ -1,3 +1,9 @@
+import { roomVoiceLaunch, roleVoiceMayAct } from "./room-voice-launch.js";
+import {callMcpConfig,roomCallIdentity,type HumanCallIdentity} from './human-call-capability.js';
+import {spawnAgentProcess} from "../daemon/agent-process.js";
+import { launchAgentSession, providerFailure } from "../daemon/agent-engine.js";
+import { codexRoleTurn } from "../daemon/codex-role-turn.js";
+import { readAgentRole } from "../adapters/agent-role.js";
 /**
  * Réponse rapide : à chaque message humain d'un fil (principal, second fil ou fork), un
  * Claude Code sans outils répond aussitôt dans ce fil à partir de sa conversation récente.
@@ -14,7 +20,7 @@ import Database from "better-sqlite3";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../adapters/wake-system-prompt.js";
 import { workspaceDirFor } from "../daemon/paths.js";
 import { FORK_IDS, forkDir, forkEnabled } from "../daemon/forks.js";
-import { assignedForkPrompt, readForkAssignment } from "../daemon/fork-assignment.js";
+import { assignedForkPrompt, readForkAssignment, roomLabelIn } from "../daemon/fork-assignment.js";
 import { SecondThreadStore, secondThreadEnabled } from "../daemon/second-thread.js";
 import { OwnerMessages } from "./owner-messages.js";
 import { enqueueOwnerMessage } from "./owner-inbox.js";
@@ -37,12 +43,15 @@ export const FAST_REPLY_PREFIX = "⚡ ";
 const SILENCE = "SILENCE";
 const HISTORY_CHARS = 24_000;
 
-export function fastReplyThreadName(thread: FastReplyThread): string {
+/** Nom humain d'un fil ; avec `dataDir`, une room prend le nom posé dans son affectation. */
+export function fastReplyThreadName(thread: FastReplyThread, dataDir?: string): string {
   return thread === "principal"
     ? "Fil principal"
     : thread === "second"
       ? "Second fil"
-      : `Fork ${thread.slice("fork:".length)}`;
+      : dataDir === undefined
+        ? `Room ${thread.slice("fork:".length)}`
+        : roomLabelIn(dataDir, Number(thread.slice("fork:".length)));
 }
 
 /** Dossier de la boîte locale d'un fil (second fil ou fork). */
@@ -102,7 +111,7 @@ export function deliverFastReply(
   reply: { thread: FastReplyThread; messageId: string; replyId: string; text: string },
   recipients: readonly FastReplyThread[] = fastReplyRecipients(dataDir),
 ): FastReplyThread[] {
-  const source = fastReplyThreadName(reply.thread);
+  const source = fastReplyThreadName(reply.thread, dataDir);
   const delivered: FastReplyThread[] = [];
   const targets = recipients.includes(reply.thread) ? recipients : [reply.thread, ...recipients];
   const mentioned = parseFastReplyMentions(reply.text);
@@ -230,8 +239,8 @@ function boundConversation(input: readonly Line[]): Line[] {
 
 const FAST_REPLY_MAIN_ROLE =
   "Rôle : tu es la voix immédiate de cet agent MIND, le même agent pour ton humain ; le ⚡ marque seulement la rapidité. Tu réponds en quelques secondes au dernier message, pendant que ta session, qui a les outils, continue son travail.";
-const FAST_REPLY_RULES = [
-  "Tu n'as aucun outil : tu ne lis aucun fichier, ne lances rien et ne vérifies rien. Les consignes précédentes sur les outils et le canal propriétaire ne s'appliquent pas à toi : ton texte est publié tel quel dans la conversation.",
+export const FAST_REPLY_RULES = [
+  "Ce contexte rapide utilise seulement les outils effectivement exposés. Les outils d'appel peuvent être présents ; le bureau, le web et les sous-agents dépendent du rôle autorisé par le runtime. Ne nie pas les accès de ton manager à partir de ton seul contexte. Ton texte est publié tel quel dans la conversation : ne le republie pas avec message_owner.",
   "Selon le message : (1) si la réponse se trouve dans la conversation fournie (question sur ce qui a été dit ou fait, avis, explication, idée), réponds complètement ; (2) pour une action, une vérification ou un fichier, dis en une phrase ce qui va être fait et par quoi commencer, au futur proche ; ta session l'exécutera ; (3) pour une correction ou une consigne, reprends-la explicitement pour montrer qu'elle est prise en compte.",
   "Si une session précise doit traiter quelque chose, tu peux écrire @principal, @second ou @forkN (N de 2 à 8) : la mention prévient seulement cette session et ne donne ni outil ni permission.",
   "Tout ce que tu annonces engage ta session : n'annonce que ce qui est raisonnable et déjà autorisé. Ne prétends jamais avoir fait, vérifié ou lu ce qui ne figure pas dans la conversation ; si l'état réel est incertain, dis que tu vérifies.",
@@ -254,15 +263,15 @@ export const FORK_FAST_REPLY_IDENTITY = [
 ].join(" ");
 
 /** Contexte du fork entre deux bornes, puis l'identité ⚡ et les règles communes. */
-export function forkFastReplySystemPrompt(id: number, forkPrompt: string): string {
+export function forkFastReplySystemPrompt(id: number, forkPrompt: string, identity = FORK_FAST_REPLY_IDENTITY, rules = FAST_REPLY_RULES.join(" ")): string {
   return [
-    FORK_FAST_REPLY_IDENTITY,
+    identity,
     "",
-    `=== Contexte : instructions de l'agent du Fork ${String(id)} (pas ton identité) ===`,
+    `=== Contexte : instructions de l'agent de la Room ${String(id)} (pas ton identité) ===`,
     forkPrompt.trim(),
-    `=== Fin du contexte du Fork ${String(id)} ===`,
+    `=== Fin du contexte de la Room ${String(id)} ===`,
     "",
-    FAST_REPLY_RULES.join(" "),
+    rules,
   ].join("\n");
 }
 
@@ -277,7 +286,7 @@ export function signForkFastReply(text: string): string {
 }
 
 export function fastReplySystemPrompt(workspace: string): string {
-  return [withWakePersonality(workspace, WAKE_HOME_SYSTEM_PROMPT), "", FAST_REPLY_SYSTEM_NOTE].join(
+  return [withWakePersonality(workspace, readAgentRole(workspace,"wake-home",WAKE_HOME_SYSTEM_PROMPT)), "", readAgentRole(workspace,"fast-reply",FAST_REPLY_SYSTEM_NOTE)].join(
     "\n",
   );
 }
@@ -308,8 +317,8 @@ export function fastReplyClaude(
   };
 }
 
-/** Arguments d'un appel sans outils, sans MCP, sans hooks ni session conservée. */
-export function fastReplyArgs(model: string, systemPromptFile: string): string[] {
+/** Sans outils natifs, hooks ni session conservée ; trois outils MCP d’appel si le rôle est identifié par l’hôte. */
+export function fastReplyArgs(model: string, systemPromptFile: string, humanCall?:HumanCallIdentity): string[] {
   return [
     "-p",
     "--output-format",
@@ -320,6 +329,7 @@ export function fastReplyArgs(model: string, systemPromptFile: string): string[]
     systemPromptFile,
     "--tools",
     "",
+    ...(humanCall ? ["--mcp-config",callMcpConfig(undefined,humanCall),"--allowedTools","mcp__mind_calls__call_human,mcp__mind_calls__list_active_calls,mcp__mind_calls__hangup_call"] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "user",
@@ -369,6 +379,7 @@ export function startClaude(
   args: readonly string[],
   cwd: string,
   timeoutMs = 90_000,
+  dataDir?: string,
 ): WarmClaude {
   const env: Record<string, string> = {
     DISABLE_AUTOUPDATER: "1",
@@ -378,7 +389,7 @@ export function startClaude(
     const value = process.env[key];
     if (value !== undefined) env[key] = value;
   }
-  const child = spawn(claude.executable, [...(claude.prefixArgs ?? []), ...args], {
+  const child = dataDir && process.platform === "win32" ? spawnAgentProcess(dataDir,{executable:claude.executable,args:[...(claude.prefixArgs ?? []),...args],cwd,env}) : spawn(claude.executable, [...(claude.prefixArgs ?? []), ...args], {
     cwd,
     env,
     stdio: ["pipe", "pipe", "pipe"],
@@ -452,6 +463,39 @@ export function callClaude(
   return startClaude(claude, args, cwd, timeoutMs).answer(prompt);
 }
 
+export function agentTextCall(dataDir: string, native?: typeof callClaude): typeof callClaude {
+  return (claude, originalArgs, prompt, originalCwd, timeoutMs = 90000) => {
+    const role = roomVoiceLaunch(dataDir,originalArgs,originalCwd), args=role.args,cwd=role.cwd;
+    const allowed=()=>role.textOnly || roleVoiceMayAct(dataDir);
+    return launchAgentSession<ClaudeAnswer>(dataDir, "claude", async engine => {
+    if (!allowed()) return {error:"Wake is paused or stopped; role actions are not allowed"};
+    if (engine === "claude") {
+      if(native)return native(claude,args,prompt,cwd,timeoutMs);
+      const process=startClaude(claude,args,cwd,timeoutMs,dataDir);
+      const guard=setInterval(()=>{if(!allowed())process.dispose();},300);
+      try{return await process.answer(prompt);}finally{clearInterval(guard);}
+    }
+    const file = args[args.indexOf("--system-prompt-file")+1];
+    if (!file) throw Error("Prompt système absent");
+    let message = prompt;
+    const images: {data:string; mediaType:string}[] = [];
+    if (args.includes("--input-format")) {
+      const parts = JSON.parse(prompt).message.content;
+      const lines: string[] = [];
+      for (const part of parts) {
+        if (part.type === "text") lines.push(part.text);
+        if (part.type === "image") images.push({data:part.source.data,mediaType:part.source.media_type});
+      }
+      message = lines.join("\n");
+    }
+    const result = await codexRoleTurn({dataDir,cwd,instructions:fs.readFileSync(file,"utf8"),message,
+      images,textOnly:role.textOnly,nativeDelegation:role.nativeDelegation,webSearch:role.webSearch,
+      ...(args.includes("--mcp-config") ? {mcpConfig:args[args.indexOf("--mcp-config")+1]} : {}),allowed,timeoutMs});
+    return result.outcome === "completed" ? {text:result.text} : {error:result.detail ?? result.outcome};
+  }, r => "error" in r && providerFailure(r.error) ? {replay:true} : null, allowed);
+  };
+}
+
 /** Prompt système à jour et arguments d'un appel ; identiques pour un Claude préchauffé. */
 export function fastReplyLaunch(
   dataDir: string,
@@ -466,7 +510,7 @@ export function fastReplyLaunch(
     assigned === null ? "system-prompt.md" : `system-prompt-${thread.replace(":", "-")}.md`,
   );
   fs.writeFileSync(promptFile, assigned ?? fastReplySystemPrompt(workspaceDirFor(dataDir)));
-  return { args: fastReplyArgs(claude.model, promptFile), cwd: dir };
+  return { args: fastReplyArgs(claude.model, promptFile,thread.startsWith("fork:")?roomCallIdentity(dataDir,Number(thread.slice(5))):{dataDir,signature:"Marco"}), cwd: dir };
 }
 
 /**
@@ -480,7 +524,9 @@ export function assignedForkSystemPrompt(dataDir: string, thread: FastReplyThrea
     const assignment = readForkAssignment(forkDir(dataDir, id));
     return assignment === null
       ? null
-      : forkFastReplySystemPrompt(id, assignedForkPrompt(id, assignment));
+      : forkFastReplySystemPrompt(id, assignedForkPrompt(id, assignment),
+          readAgentRole(workspaceDirFor(dataDir), `fast-reply-fork-${id}`, FORK_FAST_REPLY_IDENTITY),
+          readAgentRole(workspaceDirFor(dataDir), "fast-reply-fork-rules", FAST_REPLY_RULES.join(" ")));
   } catch {
     return null;
   }
@@ -692,7 +738,7 @@ export async function runFastReply(options: {
     const claude = options.claude ?? fastReplyClaude();
     // Mêmes arguments que le Claude préchauffé du moteur (`fastReplyLaunch`).
     const launch = fastReplyLaunch(dataDir, claude, thread);
-    const result = await (options.call ?? callClaude)(
+    const result = await agentTextCall(dataDir, options.call)(
       claude,
       launch.args,
       fastReplyPrompt(input.conversation, input.human),

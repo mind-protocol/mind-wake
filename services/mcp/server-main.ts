@@ -16,14 +16,19 @@ import { recordHubReceived } from "../../src/communication/received-messages.js"
 import { writeRuntimeReceipt } from "../../src/communication/runtime-receipt.js";
 import { resolveDataDir } from "../../src/cli/paths.js";
 import { processContext } from "../../src/cli/context.js";
+import { registerHumanCall } from "./human-call.js";
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
 import { registerForkThreadTools } from "./fork-thread-tools.js";
 import { registerWakeManagerTools } from "./wake-manager-tools.js";
+import { registerWakeReminderTools } from "./wake-reminder-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
 import { registerRedditTools } from "./reddit-tools.js";
 import { registerColonyTools } from "./colony-tools.js";
+import { registerTelegramTools } from "./telegram-tools.js";
+import { registerTelegramUserTools } from "./telegram-user-tools.js";
 import { registerElevenLabsTools } from "./elevenlabs-tools.js";
+import { registerComputerUseTools } from "./computer-use-tools.js";
 import { registerSocietyTools } from "./1f916-tools.js";
 import { registerPeerTaskLocalTools } from "./peer-task-local-tools.js";
 import { queueAdvice, cancelAdvice } from "../helpers/advice-dispatch.js";
@@ -533,13 +538,18 @@ server.registerTool(
 );
 
 registerOwnerTools(server, process.env);
+registerHumanCall(server, process.env);
 registerBackgroundTools(server, process.env);
 registerForkThreadTools(server, process.env);
 registerWakeManagerTools(server, process.env);
+registerWakeReminderTools(server, process.env);
 registerRepoTools(server, process.env);
 registerRedditTools(server, process.env);
 registerColonyTools(server, process.env);
+registerTelegramTools(server, process.env);
+registerTelegramUserTools(server, process.env);
 registerElevenLabsTools(server, process.env);
+registerComputerUseTools(server, process.env);
 registerSocietyTools(server, process.env);
 registerPeerTaskLocalTools(server, process.env, async () => {
   if (hub === null) throw Error("Authenticated local hub required for peer decisions");

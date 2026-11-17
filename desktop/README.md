@@ -137,3 +137,7 @@ Le bouton **Redémarrer le moteur**, à côté de l’actualisation du lecteur, 
 Le navigateur de dossiers et le lecteur restent visibles dans un volet droit permanent, à côté de la conversation ou de la vue active. Sur une fenêtre étroite, ils passent en dessous. Le sélecteur choisit le projet Wake ou l’espace live renvoyé par `wake-history`. Les liens relatifs HTML/Markdown, les ancres, précédent/suivant et l’actualisation restent dans ce lecteur. Le Markdown affiche titres, listes, liens, code, citations et tableaux simples.
 
 Les lectures sont limitées aux fichiers HTML/Markdown (2 Mo maximum) à l’intérieur de la racine choisie après résolution des liens symboliques. Les pages HTML sont présentées en lecture seule dans une iframe sans scripts ni accès réseau ; leurs formulaires et ressources externes ne sont pas chargés. L’éditeur interactif des autorisations reste un parcours séparé. La commande `document_browse` est réservée à la fenêtre principale.
+
+## Onglet Appel
+
+L’onglet ouvre l’écran d’appel mobile dans le panneau desktop. La passerelle mobile sert cet écran sur la boucle locale, au port 8789. Après une modification de l’écran, exécuter `npm --prefix lumina-prime/app run build:web` sur la machine de la passerelle. Après une modification du serveur, relancer la passerelle avec sa configuration habituelle. Quitter l’onglet raccroche et libère le micro.

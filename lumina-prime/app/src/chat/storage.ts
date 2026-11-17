@@ -23,3 +23,42 @@ export async function loadChatSession(): Promise<ChatSession | null> {
     return value;
   } catch { await clearChatSession(); return null; }
 }
+
+/** Mode Appel : réponses lues à voix haute ou non (NLR, 16 nov. : off par défaut, la voix Windows ralentit tout). */
+const callVoiceKey = 'mind.wake.call.voice.v1';
+export async function loadCallVoice(): Promise<boolean> {
+  try {
+    const raw = Platform.OS === 'web' ? localStorage.getItem(callVoiceKey)
+      : (await SecureStore.isAvailableAsync()) ? await SecureStore.getItemAsync(callVoiceKey) : null;
+    return raw === 'on';
+  } catch { return false; }
+}
+export async function saveCallVoice(on: boolean) {
+  try {
+    if (Platform.OS === 'web') localStorage.setItem(callVoiceKey, on ? 'on' : 'off');
+    else if (await SecureStore.isAvailableAsync()) await SecureStore.setItemAsync(callVoiceKey, on ? 'on' : 'off');
+  } catch { /* Préférence perdue au redémarrage : voix off par défaut. */ }
+}
+
+/** Réglages d'appel (NLR, 17 nov. : modifiables pendant l'appel, conservés d'un appel à l'autre). */
+export type StoredCallTuning = { silence: number; bargeMode: 'sensible' | 'normal' | 'off'; floorDb: number };
+const callTuningKey = 'mind.wake.call.tuning.v1';
+export async function loadCallTuning(): Promise<Partial<StoredCallTuning>> {
+  try {
+    const raw = Platform.OS === 'web' ? localStorage.getItem(callTuningKey)
+      : (await SecureStore.isAvailableAsync()) ? await SecureStore.getItemAsync(callTuningKey) : null;
+    const value = raw ? JSON.parse(raw) : {};
+    const out: Partial<StoredCallTuning> = {};
+    if ([2, 3, 5, 8].includes(value?.silence)) out.silence = value.silence;
+    if (['sensible', 'normal', 'off'].includes(value?.bargeMode)) out.bargeMode = value.bargeMode;
+    if (typeof value?.floorDb === 'number' && Number.isFinite(value.floorDb)) out.floorDb = value.floorDb;
+    return out;
+  } catch { return {}; }
+}
+export async function saveCallTuning(value: StoredCallTuning) {
+  try {
+    const raw = JSON.stringify(value);
+    if (Platform.OS === 'web') localStorage.setItem(callTuningKey, raw);
+    else if (await SecureStore.isAvailableAsync()) await SecureStore.setItemAsync(callTuningKey, raw);
+  } catch { /* Réglage perdu au redémarrage : valeurs par défaut. */ }
+}

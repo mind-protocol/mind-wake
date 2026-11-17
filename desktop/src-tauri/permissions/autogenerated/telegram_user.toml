@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-telegram-user"
+description = "Enables the telegram_user command without any pre-configured scope."
+commands.allow = ["telegram_user"]
+
+[[permission]]
+identifier = "deny-telegram-user"
+description = "Denies the telegram_user command without any pre-configured scope."
+commands.deny = ["telegram_user"]

@@ -505,6 +505,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
       systemPromptMode: o.systemPromptMode ?? "replace",
       tools: o.tools ?? DEFAULT_CLAUDE_TOOLS,
       nativeCapabilities,
+      ...(o.ownerInboxDir ? {humanCall:{dataDir:o.ownerInboxDir,signature:"Marco"}} : {}),
       ...(o.ownerInboxDir !== undefined && permission === "skip_permissions_unsandboxed"
         ? {
             ownerInboxHook: ownerInboxHookLaunch(o.ownerInboxDir),

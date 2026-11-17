@@ -32,6 +32,10 @@ export function engineEntry(m) {
   const entry = path.join(m.repoDir, "dist/cli/main.js");
   return { entry, args: [entry] };
 }
+/** Arguments node complets pour une sous-commande du CLI (`forks run`…), même code que le moteur. */
+export function engineCliArgs(m, rest = []) {
+  return [...engineEntry(m).args, ...rest];
+}
 export function createEngineOwner(manifestFile, { daemonArgs = [] } = {}) {
   const owner = new OwnedRuntime(manifestFile, "daemon", async ({ file, instance }) => {
     const m = JSON.parse(fs.readFileSync(manifestFile, "utf8")),

@@ -6,12 +6,9 @@ type Envelope = { ok: boolean; data: { enabled: boolean }; error?: { message: st
 export function mountFastReply(invoke: Invoke): void {
   const toggle = document.getElementById("fast-reply-enabled") as HTMLInputElement;
   const state = document.getElementById("fast-reply-state")!;
-  const indicator = document.getElementById("fast-reply-indicator")!;
   let busy = false;
   const render = (enabled: boolean) => {
     toggle.checked = enabled;
-    indicator.hidden = enabled;
-    indicator.textContent = enabled ? "" : "⚡ coupée · l’agent principal continue de répondre";
     state.textContent = enabled ? "Activée" : "Coupée";
   };
   const call = async (action: "status" | "on" | "off"): Promise<boolean> => {

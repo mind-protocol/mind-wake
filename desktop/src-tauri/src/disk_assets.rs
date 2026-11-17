@@ -43,6 +43,9 @@ pub fn asset_path(root: &Path, key: &str) -> Option<PathBuf> {
 /// Marque écrite par `npm run desktop:ui` après compilation : l'app ouverte se recharge.
 pub const RELOAD_STAMP: &str = ".reload-stamp";
 
+/// La page peut différer le rechargement (appel en cours) : voir `desktop/ui/reload-guard.ts`.
+pub const RELOAD_SCRIPT: &str = "typeof window.__mindWakeUiUpdated === 'function' ? window.__mindWakeUiUpdated() : location.reload()";
+
 /// Recharge les fenêtres quand l'interface vient d'être recompilée (sans cargo, sans relance).
 pub fn watch_reload(app: tauri::AppHandle, root: PathBuf) {
     let stamp = root.join("build").join(RELOAD_STAMP);
@@ -56,7 +59,7 @@ pub fn watch_reload(app: tauri::AppHandle, root: PathBuf) {
                 seen = now;
                 use tauri::Manager;
                 for window in app.webview_windows().values() {
-                    let _ = window.eval("location.reload()");
+                    let _ = window.eval(RELOAD_SCRIPT);
                 }
             }
         }
@@ -114,6 +117,12 @@ mod tests {
         for escape in ["/../secret.txt", "/build/../../x", "/a//b", "/C:/x", "/a\\..\\b", "/./x"] {
             assert_eq!(asset_path(root, escape), None, "{escape}");
         }
+    }
+
+    #[test]
+    fn reload_lets_the_page_defer_during_a_call() {
+        assert!(RELOAD_SCRIPT.contains("window.__mindWakeUiUpdated()"));
+        assert!(RELOAD_SCRIPT.ends_with("location.reload()"));
     }
 
     #[test]

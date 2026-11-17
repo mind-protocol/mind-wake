@@ -1,5 +1,8 @@
 import { tr, formatLocale } from "./i18n.js";
 import { renderMarkdown } from "./markdown.js";
+import { composeField, copyButton } from "./copy-button.js";
+import { authorMarker } from "./author-tint.js";
+import { readingHold } from "./scroll-hold.js";
 
 export interface CoachEntry {
   id: number;
@@ -84,11 +87,12 @@ export function mountCoach(options: {
   send.type = "submit";
   send.textContent = tr("Envoyer");
   feedback.setAttribute("role", "status");
-  form.append(text, send, feedback);
+  form.append(composeField(text), send, feedback);
   const header = document.createElement("header");
   header.className = "coach-heading";
   header.append(heading, toggle);
   panel.append(header, status, messages, form);
+  const hold = readingHold(messages);
   let model: CoachView | null = null,
     signature = "",
     loading = false,
@@ -118,7 +122,7 @@ export function mountCoach(options: {
       const next = JSON.stringify(model.entries);
       if (next === signature) return;
       signature = next;
-      const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
+      const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80, reading = messages.scrollTop;
       messages.replaceChildren(
         ...model.entries.map((e) => {
           const li = document.createElement("li"),
@@ -129,11 +133,13 @@ export function mountCoach(options: {
           const body = e.role === "agent" ? renderMarkdown(e.text) : document.createElement("p");
           if (e.role === "agent") options.decorate(body, e.text);
           else body.textContent = e.text;
-          li.append(meta, body);
+          const marker = authorMarker(li, e.role === "human" ? "owner" : null);
+          if (marker) meta.prepend(marker);
+          li.append(meta, body, copyButton(() => e.text));
           return li;
         }),
       );
-      if (follow) messages.scrollTop = messages.scrollHeight;
+      if (follow) { hold.keep(null); messages.scrollTop = messages.scrollHeight; } else hold.keep(reading);
     } catch (error) {
       status.textContent = String(error);
     } finally {
@@ -186,5 +192,15 @@ export function mountCoach(options: {
       });
   });
   void refresh();
-  setInterval(() => void refresh(), 5000);
+  // Vue masquée : relue toutes les 30 s au lieu de 5 s (chaque lecture lance un processus node,
+  // 16 nov. 2026) ; dès qu'elle redevient visible, relecture immédiate.
+  let lastPoll = Date.now(), wasHidden = false;
+  setInterval(() => {
+    const hidden = typeof document !== "undefined" && document.getElementById("view-coach")?.hidden === true;
+    const due = Date.now() - lastPoll >= (hidden ? 30_000 : 5000) || (wasHidden && !hidden);
+    wasHidden = hidden;
+    if (!due) return;
+    lastPoll = Date.now();
+    void refresh();
+  }, 1000);
 }

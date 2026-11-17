@@ -24,7 +24,7 @@ export function postToForkThread(
   const text = input.text.trim();
   if (text === "" || text.length > 4000) throw Error("Message vide ou trop long (4000 caractères au plus).");
   const dir = forkDir(dataDir, input.fork);
-  if (!fs.existsSync(dir)) throw Error(`Fork ${String(input.fork)} introuvable.`);
+  if (!fs.existsSync(dir)) throw Error(`Room ${String(input.fork)} introuvable.`);
   const control = openStoreReadOnly(controlDbPath(dataDir));
   try {
     const profile = control.uow.profiles.get(DEFAULT_PROFILE_ID);
@@ -53,7 +53,7 @@ export function registerForkThreadTools(
     "post_to_fork_thread",
     {
       description:
-        "Post one signed message into a fork's thread (e.g. Fork 7 / VOX). Nothing you write elsewhere is sent automatically: only this call adds a message. It appears on screen under your signature and the fork reads it as an incoming message on its next turn. Use a stable idempotency_key so a retry does not post twice. Not for the human's main thread.",
+        "Post one signed message into a room's thread (e.g. Room 7 / VOX). Nothing you write elsewhere is sent automatically: only this call adds a message. It appears on screen under your signature and the room reads it as an incoming message on its next turn. Use a stable idempotency_key so a retry does not post twice. Not for the human's main thread.",
       inputSchema: z.strictObject({
         fork: z.number().int().min(2).max(8),
         text: z.string().min(1).max(4000),

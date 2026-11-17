@@ -5,6 +5,11 @@ import type {VoiceScreenshots} from './voice-screenshots.js';
 import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { renderMarkdown } from "./markdown.js";
+import { roomName, setRoomLabels } from "./room-name.js";
+import { composeField, copyButton } from "./copy-button.js";
+import { agentTint, authorMarker, VOX_ROOM } from "./author-tint.js";
+import { readingHold } from "./scroll-hold.js";
+import { browserStorage, DraftStore, Outbox, sendOnEnter, typingIdle } from "./composer-kit.js";
 
 interface ForkEntry {
   id: number;
@@ -23,6 +28,8 @@ export interface ForkView {
   projectWakes?: unknown;
   planning?: boolean;
   id: number;
+  /** Nom affiché de la room (affectation `name`, signature, sinon « Room N »). */
+  label?: string;
   enabled: boolean;
   projects: string[];
   threadId: string | null;
@@ -129,7 +136,7 @@ export function mountForks(options: {
     avatar.className = "fork-icon";
     avatar.dataset["forkIcon"] = String(id);
     avatar.setAttribute("role", "img");
-    avatar.setAttribute("aria-label", tr("Agent Codex · fork {0}", [String(id)]));
+    avatar.setAttribute("aria-label", tr("Agent Codex · {0}", [roomName(id)]));
     avatar.textContent = `⑂${String(id)}`;
     return avatar;
   };
@@ -150,7 +157,7 @@ export function mountForks(options: {
   text.rows = 3;
   text.maxLength = 4000;
   text.required = true;
-  text.setAttribute("aria-label", tr("Message au fork sélectionné"));
+  text.setAttribute("aria-label", tr("Message à la Room sélectionnée"));
   const send = document.createElement("button");
   send.type = "submit";
   send.textContent = tr("Envoyer");
@@ -158,7 +165,7 @@ export function mountForks(options: {
   feedback.setAttribute("role", "status");
   const voice=document.createElement('button'),cancelVoice=document.createElement('button'),voiceStatus=document.createElement('p');
   voice.type='button';voice.textContent='Voice';voice.setAttribute('aria-pressed','false');cancelVoice.type='button';cancelVoice.textContent='Annuler Voice';voiceStatus.setAttribute('role','status');
-  form.append(text,send,voice,cancelVoice,voiceStatus,feedback);
+  form.append(composeField(text),send,voice,cancelVoice,voiceStatus,feedback);
   panel.append(heading, status, messages, incoming, presence, form);
   const transcriptStatus=voiceTranscriptStatus(panel,"2");
   const updateVoice=voiceChatControls(voice,cancelVoice);
@@ -188,6 +195,16 @@ export function mountForks(options: {
     }
   >();
   const drafts = new Map<number, string>();
+  // Brouillons par Room gardés localement : un rechargement de l'app ne les efface plus.
+  const storage = browserStorage();
+  const draftStore = new DraftStore(storage, "mind-wake.room-draft.");
+  const outbox = new Outbox(storage, "mind-wake.room-outbox");
+  const draftOf = (id: number): string => drafts.get(id) ?? draftStore.get(id);
+  const keepDraft = (id: number, value: string): void => { drafts.set(id, value); draftStore.set(id, value); };
+  /** Envoi affiché tout de suite dans le fil, avant la réponse de la CLI (~1 à 3 s). */
+  interface PendingSend { key: string; id: number; text: string; at: number; state: "sending" | "sent" | "unknown" | "failed"; restored: boolean; li: HTMLLIElement; label: HTMLElement }
+  const pendings: PendingSend[] = [];
+  let sendQueue: Promise<unknown> = Promise.resolve();
   const selections = new Map<number, {start:number;end:number;direction:'forward'|'backward'|'none'}>();
   const pendingVoiceOff = new Set<number>();
   const scrolls = new Map<number,number>(),voiceNotes=new Map<number,string>();
@@ -195,23 +212,24 @@ export function mountForks(options: {
   // s'il est déjà tout en bas, à quelques pixels près ; à l'ouverture de l'onglet, en bas une fois.
   const FOLLOW_SLACK_PX = 8;
   let pinned = true;
+  const hold = readingHold(messages);
   const capture=forkVoice({screenshots:options.voiceScreenshots,invoke:options.invoke,importImage:raw=>options.importVoiceImage(raw),
     ...(options.sampleVoiceScreen?{visualSnapshot:options.sampleVoiceScreen}:{}),
     send:async(id,body,voiceScreenRefs)=>{
       // Recheck at transport time: a delayed transcription must not outlive Off/Pause.
       if(model?.profile!=="run" || pendingVoiceOff.has(id) || !model.forks.find(f=>f.id===id)?.enabled)
-        throw Error("Dictée conservée en brouillon : Fork arrêté ou en pause ; aucun nouvel envoi.");
+        throw Error("Dictée conservée en brouillon : Room arrêtée ou en pause ; aucun nouvel envoi.");
       await request('send',{id,text:body,...(voiceScreenRefs?.length?{voiceScreenRefs}:{})});
     },
-    recover:(id,body)=>{const previous=id===current?text.value:drafts.get(id) || '';const recovered=[previous,body].filter(Boolean).join('\n\n');drafts.set(id,recovered);if(current===id){const start=text.selectionStart,end=text.selectionEnd,direction=text.selectionDirection;text.value=recovered;if(typeof text.setSelectionRange === "function")text.setSelectionRange(start,end,direction);}},
+    recover:(id,body)=>{const previous=id===current?text.value:draftOf(id);const recovered=[previous,body].filter(Boolean).join('\n\n');keepDraft(id,recovered);if(current===id){const start=text.selectionStart,end=text.selectionEnd,direction=text.selectionDirection;text.value=recovered;if(typeof text.setSelectionRange === "function")text.setSelectionRange(start,end,direction);}},
     captureSegment:(id,event)=>{transcriptStatus.segment(String(id),event);},
     transcribing:(id,pending)=>{transcriptions.set(id,pending);transcriptStatus(transcriptions.get(current)??0);},
     presentation:(recording,processing,starting)=>{updateVoice(recording,processing,starting);},
-    status:(id,note)=>{const scoped="Fork "+String(id)+" · "+note;voiceNotes.set(id,scoped);if(id===current)voiceStatus.textContent=scoped;},
+    status:(id,note)=>{const scoped=roomName(id)+" · "+note;voiceNotes.set(id,scoped);if(id===current)voiceStatus.textContent=scoped;},
   });
   voice.onclick=()=>{
     if(capture.target()===undefined && (model?.profile!=="run" || pendingVoiceOff.has(current) || !model.forks.find(f=>f.id===current)?.enabled)) {
-      voiceStatus.textContent="Voice indisponible : ce Fork est arrêté ou Wake est en pause.";
+      voiceStatus.textContent="Voice indisponible : cette Room est arrêtée ou Wake est en pause.";
       return;
     }
     void (capture.target()===undefined?capture.start(current):capture.stop()).catch(showError);
@@ -224,7 +242,7 @@ export function mountForks(options: {
     const row = document.createElement("div");
     row.className = "fork-control";
     const label = document.createElement("strong");
-    label.append(icon(id), ` Fork ${String(id)} · Codex`);
+    label.append(icon(id), ` ${roomName(id)} · Codex`);
     const badge = (): HTMLElement => {
       const node = document.createElement("span");
       node.className = "fork-unread";
@@ -243,7 +261,7 @@ export function mountForks(options: {
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.setAttribute("role", "switch");
-    toggle.setAttribute("aria-label", tr("Activer le fork Codex {0}", [String(id)]));
+    toggle.setAttribute("aria-label", tr("Activer {0} · Codex", [roomName(id)]));
     toggle.setAttribute("aria-checked", "false");
     toggle.textContent = "Off";
     const detail = document.createElement("small");
@@ -262,11 +280,11 @@ export function mountForks(options: {
     tab.dataset["forkTab"] = String(id);
     const tabUnread = badge(),
       tabWorking = working();
-    tab.append(icon(id), ` Fork ${String(id)}`, tabWorking, tabUnread);
+    tab.append(icon(id), ` ${roomName(id)}`, tabWorking, tabUnread);
     tab.hidden = true;
     element("tab-second").before(tab);
     const select = () => {
-      drafts.set(current, text.value);
+      keepDraft(current, text.value);
       selections.set(current,{start:text.selectionStart,end:text.selectionEnd,direction:text.selectionDirection});
       // Position de lecture gardée seulement si NLR était remonté lire ; en bas, rien à garder.
       if (!panel.hidden && messages.scrollHeight - messages.scrollTop - messages.clientHeight > FOLLOW_SLACK_PX)
@@ -275,11 +293,11 @@ export function mountForks(options: {
       current = id;
       transcriptStatus.select(String(id));
       transcriptStatus(transcriptions.get(id)??0);
-      text.value = drafts.get(id) ?? "";
+      text.value = draftOf(id);
       const selection=selections.get(id);
       if(selection && typeof text.setSelectionRange === "function")text.setSelectionRange(selection.start,selection.end,selection.direction);
       feedback.textContent = "";
-      voiceStatus.textContent=voiceNotes.get(id) || (capture.target()===undefined?'':'Capture liée au Fork '+String(capture.target()));
+      voiceStatus.textContent=voiceNotes.get(id) || ((target)=>target===undefined?'':'Capture liée à '+roomName(target))(capture.target());
       signature = "";
       options.selectTab();
       document.querySelectorAll("[data-fork-tab]").forEach((button) => {
@@ -295,7 +313,7 @@ export function mountForks(options: {
       if (reading === undefined) scrollToEnd();
       else {
         pinned = false;
-        messages.scrollTop = reading;
+        hold.keep(reading);
       }
       updateIndicators();
     };
@@ -338,12 +356,13 @@ export function mountForks(options: {
       throw Error(
         typeof response.error?.message === "string"
           ? response.error.message
-          : tr("Commande de fork refusée"),
+          : tr("Commande de Room refusée"),
       );
     return response.data as ForksView;
   }
   function apply(next: ForksView) {
     model = next;
+    setRoomLabels(next.forks);
     const target=capture.target();
     if(target!==undefined && (next.profile!=="run" || pendingVoiceOff.has(target) || !next.forks.find(f=>f.id===target)?.enabled))void capture.stop(true);
     fresh = true;
@@ -373,7 +392,7 @@ export function mountForks(options: {
       row.tab.dataset["working"] = String(working);
       row.tab.setAttribute(
         "aria-label",
-        `Fork ${String(fork.id)}${working ? tr(" · Travaille") : ""}${count ? ` · ${String(count)} message(s) non lu(s)` : ""}`,
+        `${roomName(fork.id)}${working ? tr(" · Travaille") : ""}${count ? ` · ${String(count)} message(s) non lu(s)` : ""}`,
       );
     }
     const working = active !== undefined && fresh && forkIsWorking(active, model);
@@ -381,7 +400,7 @@ export function mountForks(options: {
     if (working)
       presence.replaceChildren(
         icon(current),
-        document.createTextNode(` Fork ${String(current)} travaille`),
+        document.createTextNode(` ${roomName(current)} travaille`),
       );
   }
   function render() {
@@ -402,10 +421,11 @@ export function mountForks(options: {
     if (!fork) return;
     heading.replaceChildren(
       icon(current),
-      document.createTextNode(` Fork ${String(current)} · Codex`),
+      document.createTextNode(` ${roomName(current)} · Codex`),
     );
     status.textContent = forkStatus(fork, model);
     const conversation = forkConversationEntries(fork);
+    prunePendings();
     const next = JSON.stringify([current, conversation, fork.projectWakes]);
     if (next === signature) {
       updateIndicators();
@@ -413,10 +433,11 @@ export function mountForks(options: {
     }
     signature = next;
     const follow = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= FOLLOW_SLACK_PX;
+    const reading = messages.scrollTop;
     messages.replaceChildren(
       ...conversation.map((entry) => {
         const statusAuthor = entry.clusterStatus && entry.senderFork !== undefined
-          ? entry.senderFork === 1 ? "Fil principal" : `Fork ${entry.senderFork}`
+          ? roomName(entry.senderFork)
           : undefined;
         const li = document.createElement("li");
         li.dataset["self"] = String(entry.role === "human" && entry.senderFork === undefined && entry.notice === undefined);
@@ -424,16 +445,20 @@ export function mountForks(options: {
         if (statusAuthor) li.dataset["from"] = "received";
         else if (entry.activity) li.dataset["from"] = "activity";
         const meta = document.createElement("small");
+        const marker = authorMarker(li, entry.notice ? null
+          : entry.role === "human" ? entry.senderFork === undefined ? "owner" : entry.senderFork === VOX_ROOM ? "vox" : null
+          : entry.role === "agent" ? agentTint(entry.text, current) : null);
+        if (marker) meta.append(marker);
         if (entry.role === "agent") meta.append(icon(current), " ");
         meta.append(
-          `${entry.notice ? entry.notice.label : statusAuthor ? `FYI · ${statusAuthor}` : entry.role === "human" ? (entry.senderFork === undefined ? tr("Toi") : `Fork ${entry.senderFork}`) : entry.role === "agent" ? `Codex · fork ${String(current)}` : entry.activity ? tr("Activité{0}", [entry.source ? ` · ${entry.source}` : ""]) : tr("État")} · ${new Date(entry.at).toLocaleString(formatLocale())}`,
+          `${entry.notice ? entry.notice.label : statusAuthor ? `FYI · ${statusAuthor}` : entry.role === "human" ? (entry.senderFork === undefined ? tr("Toi") : roomName(entry.senderFork)) : entry.role === "agent" ? `Codex · ${roomName(current)}` : entry.activity ? tr("Activité{0}", [entry.source ? ` · ${entry.source}` : ""]) : tr("État")} · ${new Date(entry.at).toLocaleString(formatLocale())}`,
         );
         if (entry.role === "human" && !entry.notice) {
           const receipt = document.createElement("span");
           receipt.className = "delivery-receipt";
           receipt.dataset["delivered"] = String(entry.delivered);
           receipt.textContent = entry.delivered ? " ✓✓" : tr(" ✓ · en file");
-          receipt.title = entry.delivered ? tr("Transmis à la session de l’agent") : tr("Message enregistré dans la boîte du fork.");
+          receipt.title = entry.delivered ? tr("Transmis à la session de l’agent") : tr("Message enregistré dans la boîte de la Room.");
           meta.append(receipt);
         }
         const body =
@@ -443,18 +468,24 @@ export function mountForks(options: {
           const prefix = `FYI — ${statusAuthor} : `;
           body.textContent = statusAuthor && entry.text.startsWith(prefix) ? entry.text.slice(prefix.length) : entry.text;
         }
-        li.append(meta, body);
+        li.append(meta, body, copyButton(() => entry.text));
         return li;
       }),
     );
     const objectives = projectWakesCard(fork.projectWakes, `fork-${String(current)}`);
     if (objectives) messages.append(objectives);
+    showPendings();
     if (follow) scrollToEnd();
+    else {
+      pinned = false;
+      hold.keep(reading);
+    }
     updateIndicators();
   }
   /** Bas du fil, puis encore après la mise en page (Markdown, images) : le dernier message reste visible. */
   function scrollToEnd() {
     pinned = true;
+    hold.keep(null);
     messages.scrollTop = messages.scrollHeight;
     if (typeof requestAnimationFrame === "function")
       requestAnimationFrame(() => {
@@ -463,7 +494,8 @@ export function mountForks(options: {
   }
   // Suit le bas tant que NLR y est ; une image chargée plus tard ne le fait pas décrocher.
   messages.addEventListener("scroll", () => {
-    pinned = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= FOLLOW_SLACK_PX;
+    // Un défilement causé par le re-rendu (images rechargées) n'est pas une lecture de l'humain.
+    if (!hold.holding()) pinned = messages.scrollHeight - messages.scrollTop - messages.clientHeight <= FOLLOW_SLACK_PX;
   });
   messages.addEventListener(
     "load",
@@ -475,31 +507,121 @@ export function mountForks(options: {
   messages.addEventListener("scroll", updateIndicators);
   document.addEventListener("visibilitychange", updateIndicators);
   window.addEventListener("focus", updateIndicators);
+  function pendingState(p: PendingSend, state: PendingSend["state"], detail = ""): void {
+    p.state = state;
+    p.li.dataset["sending"] = String(state === "sending" || state === "unknown");
+    if (state === "failed") p.li.dataset["failed"] = "true";
+    else delete p.li.dataset["failed"];
+    p.li.querySelector(".message-retry")?.remove();
+    p.label.textContent = state === "sending" ? tr("Toi · Envoi en cours…")
+      : state === "sent" ? tr("Toi · Parti ✓")
+      : state === "unknown" ? tr("Toi · Envoi interrompu par le rechargement · vérification…")
+      : tr("Toi · Échec de l’envoi : {0}", [detail]);
+    if (state === "failed") {
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "message-retry";
+      retry.textContent = tr("Réessayer");
+      retry.addEventListener("click", () => { transmit(p); });
+      p.li.append(retry);
+    }
+  }
+  function pendingBubble(key: string, id: number, value: string, at: number, restored: boolean): PendingSend {
+    const li = document.createElement("li"), meta = document.createElement("small"), label = document.createElement("span");
+    const body = document.createElement("p");
+    li.dataset["self"] = "true";
+    li.className = "message-outgoing";
+    label.setAttribute("role", "status");
+    const marker = authorMarker(li, "owner");
+    if (marker) meta.append(marker);
+    meta.append(label);
+    body.textContent = value;
+    li.append(meta, body, copyButton(() => value));
+    const p: PendingSend = { key, id, text: value, at, state: "sending", restored, li, label };
+    pendings.push(p);
+    return p;
+  }
+  function dropPending(p: PendingSend): void {
+    const index = pendings.indexOf(p);
+    if (index >= 0) pendings.splice(index, 1);
+    p.li.remove();
+    outbox.remove(p.key);
+  }
+  /** Retire un envoi confirmé dès que le message réel apparaît dans le fil de sa Room. */
+  function prunePendings(): void {
+    if (!model) return;
+    for (const p of [...pendings]) {
+      if (p.state === "sending" || (p.state === "failed" && !p.restored)) continue;
+      const fork = model.forks.find((f) => f.id === p.id);
+      const seen = fork?.entries.some((e) => e.role === "human" && e.senderFork === undefined && e.notice === undefined &&
+        e.text.trim() === p.text && Date.parse(e.at) >= p.at - 120_000) === true;
+      // Arrivé finalement (envoi d'avant le rechargement) : retirer aussi le texte rendu au champ.
+      if (seen && p.restored && p.id === current && text.value.trim() === p.text) { text.value = ""; keepDraft(p.id, ""); }
+      if (seen || (p.state === "sent" && Date.now() - p.at > 120_000)) dropPending(p);
+    }
+  }
+  function showPendings(): void {
+    for (const p of pendings) if (p.id === current) messages.append(p.li);
+  }
+  /** Échec : le texte revient dans le champ de sa Room s'il est vide. */
+  function restoreText(p: PendingSend): void {
+    if (p.id === current) {
+      if (text.value.trim() !== "") return;
+      text.value = p.text;
+      keepDraft(p.id, p.text);
+    } else if (draftOf(p.id).trim() === "") keepDraft(p.id, p.text);
+  }
+  function transmit(p: PendingSend): void {
+    pendingState(p, "sending");
+    // Envois de la page gardés dans l'ordre ; la frappe et les autres Rooms restent libres.
+    const run = sendQueue.then(() => request("send", { id: p.id, text: p.text }));
+    sendQueue = run.catch(() => undefined);
+    void run.then((next) => {
+      outbox.remove(p.key);
+      pendingState(p, "sent");
+      if (current === p.id && text.value.trim() === p.text) { text.value = ""; keepDraft(p.id, ""); }
+      apply(next);
+    }, (error: unknown) => {
+      outbox.remove(p.key);
+      pendingState(p, "failed", error instanceof Error ? error.message : String(error));
+      restoreText(p);
+    });
+  }
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     const value = text.value.trim();
-    if (!value || send.disabled) return;
-    const id = current;
-    send.disabled = true;
-    void request("send", { id, text: value })
-      .then((next) => {
-        drafts.set(id, "");
-        if (current === id && text.value.trim() === value) text.value = "";
-        feedback.textContent = tr("Message enregistré pour le fork {0}.", [String(id)]);
-        apply(next);
-      })
-      .catch(showError)
-      .finally(() => {
-        send.disabled = false;
-      });
+    if (!value) return;
+    const id = current, at = Date.now(), key = `room-${String(id)}-${String(at)}-${Math.random().toString(36).slice(2, 8)}`;
+    const p = pendingBubble(key, id, value, at, false);
+    outbox.add({ key, text: value, at: new Date(at).toISOString(), target: id });
+    // Champ vidé tout de suite ; le texte reste dans la bulle et la file locale jusqu'à confirmation.
+    text.value = "";
+    keepDraft(id, "");
+    feedback.textContent = "";
+    messages.append(p.li);
+    scrollToEnd();
+    transmit(p);
   });
+  sendOnEnter(text, () => { form.requestSubmit(); });
+  text.addEventListener("input", () => { keepDraft(current, text.value); });
+  text.value = draftOf(current);
+  // Rechargement pendant un envoi : sans clé d'idempotence côté Room, vérifier le fil avant de proposer un renvoi.
+  for (const saved of outbox.list()) {
+    const id = Number(saved.target);
+    if (!Number.isInteger(id) || id < 2 || id > 8) { outbox.remove(saved.key); continue; }
+    pendingState(pendingBubble(saved.key, id, saved.text, Date.parse(saved.at) || Date.now(), true), "unknown");
+  }
   async function refresh() {
     if (busy) return;
     busy = true;
-    const ensure = Date.now() - lastEnsure > 60_000;
-    if (ensure) lastEnsure = Date.now();
     try {
+      // ~0,9 Mo de JSON par lecture : attendre une pause de frappe (5 s au plus).
+      await typingIdle();
+      const ensure = Date.now() - lastEnsure > 60_000;
+      if (ensure) lastEnsure = Date.now();
       apply(await request(ensure ? "ensure" : "status"));
+      // Envois d'avant le rechargement toujours absents du fil : proposer le renvoi, rendre le texte.
+      for (const p of [...pendings]) if (p.state === "unknown") { outbox.remove(p.key); pendingState(p, "failed", tr("non confirmé avant le rechargement")); restoreText(p); }
     } catch (error) {
       showError(error);
     } finally {

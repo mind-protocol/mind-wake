@@ -1,15 +1,28 @@
 use std::path::{Component, Path, PathBuf};
 
+static AGENT_WORKSPACE: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
+
+/// Garde le premier succès ; le verrou tenu pendant la résolution évite les lancements simultanés.
+fn cached_workspace(cache: &std::sync::Mutex<Option<PathBuf>>, resolve: impl FnOnce() -> Result<PathBuf, String>) -> Result<PathBuf, String> {
+    let mut slot = cache.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(path) = slot.as_ref() { return Ok(path.clone()); }
+    let path = resolve()?;
+    *slot = Some(path.clone());
+    Ok(path)
+}
+
 pub(super) fn root(scope: &str) -> Result<PathBuf, String> {
     let path = match scope {
         "project" => std::env::var_os("MIND_WAKE_REPO_DIR").map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")),
-        "agent" => {
+        // Une seule résolution par session : chaque image du fil appelait `wake-history` (un
+        // processus Node par appel), des dizaines à la fois, ce qui saturait le CPU (17 nov. 2026).
+        "agent" => cached_workspace(&AGENT_WORKSPACE, || {
             let run = crate::cli::wake(crate::cli::Verb::WakeHistory)?;
             let value: serde_json::Value = serde_json::from_str(&run.stdout).map_err(|e| e.to_string())?;
             if run.exit_code != 0 { return Err("Espace agent indisponible".into()); }
-            PathBuf::from(value["data"]["locations"]["workspace"].as_str().ok_or("Espace agent indisponible")?)
-        }
+            Ok(PathBuf::from(value["data"]["locations"]["workspace"].as_str().ok_or("Espace agent indisponible")?))
+        })?,
         _ => return Err("Espace inconnu".into()),
     };
     path.canonicalize().map_err(|e| e.to_string())
@@ -160,6 +173,17 @@ fn catalog(base: &Path, start: &Path) -> Result<serde_json::Value, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn agent_workspace_is_resolved_once_and_failures_are_not_cached() {
+        let cache = std::sync::Mutex::new(None);
+        let calls = std::cell::Cell::new(0);
+        assert!(cached_workspace(&cache, || { calls.set(calls.get() + 1); Err("x".into()) }).is_err());
+        for _ in 0..5 {
+            let path = cached_workspace(&cache, || { calls.set(calls.get() + 1); Ok(PathBuf::from("w")) }).unwrap();
+            assert_eq!(path, PathBuf::from("w"));
+        }
+        assert_eq!(calls.get(), 2);
+    }
     #[test]
     fn interactive_atelier_requires_local_opt_in_exact_scope_and_path() {
         let page = "artifacts/creations/atelier-dj/index.html";

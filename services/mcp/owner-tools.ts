@@ -1,6 +1,10 @@
 import { queueOwnerToast } from "./owner-toast.js";
 import { generatedImageMessage, saveGeneratedImage, ImagePublicationError } from "../../src/communication/generated-images.js";
 import { workspaceDirFor } from "../../src/daemon/paths.js";
+import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { MediaError, defaultImageTitle, generateImageWithCodex, type ProcessRunner } from "./media-tools.js";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import {
@@ -20,6 +24,7 @@ import { DEFAULT_PROFILE_ID } from "../../src/cli/context.js";
 export function registerOwnerTools(
   server: McpServer,
   env: Readonly<Record<string, string | undefined>>,
+  media: { runner?: ProcessRunner; codexHome?: string } = {},
 ): void {
   if (env["MIND_WAKE_OWNER_MESSAGES"] !== "1") return;
   const dir = env["MIND_WAKE_DATA_DIR"];
@@ -87,9 +92,9 @@ export function registerOwnerTools(
             type: "text" as const,
             text: JSON.stringify({
               schema: "mind.mcp/error",
-              error: e instanceof OwnerMessageError ? e.code : e instanceof ImagePublicationError ? "invalid_image" : "internal",
+              error: e instanceof OwnerMessageError || e instanceof MediaError ? e.code : e instanceof ImagePublicationError ? "invalid_image" : "internal",
               message:
-                e instanceof OwnerMessageError || e instanceof ImagePublicationError
+                e instanceof OwnerMessageError || e instanceof ImagePublicationError || e instanceof MediaError
                   ? e.message
                   : "Local owner-channel operation failed.",
             }),
@@ -151,6 +156,42 @@ export function registerOwnerTools(
       const message = store.publish(generatedImageMessage(args.title, saved.reference), args.idempotency_key);
       return { message, image: saved };
     }),
+  );
+  server.registerTool(
+    "generate_image",
+    {
+      description:
+        "Generate one image from a prompt (Codex, native image generation, on the owner's ChatGPT subscription), save it permanently in artifacts/generated-images/ (by hash) and publish its clickable preview in your human's Wake conversation, exactly like publish_image. Takes one to a few minutes. Returns the saved path and sha256. To send it to the owner's phone afterwards, use telegram_send_owner with image_path.",
+      inputSchema: z.strictObject({
+        prompt: z.string().trim().min(1).max(4000),
+        title: z.string().trim().min(1).max(240).optional(),
+      }),
+      annotations: { openWorldHint: true },
+    },
+    async (args) => {
+      const title = args.title ?? defaultImageTitle(args.prompt);
+      let source: string | undefined;
+      try {
+        if (!dir) throw new OwnerMessageError("permission_denied", "Owner channel has no Wake profile.");
+        const generated = await generateImageWithCodex(workspaceDirFor(dir), args.prompt, media);
+        source = path.join(generated.runDir, path.basename(generated.sourcePath));
+        const key = `gen_${randomUUID()}`;
+        return call("generate_image", (store) => {
+          const saved = saveGeneratedImage(workspaceDirFor(dir), {
+            sourcePath: generated.sourcePath, title, prompt: args.prompt, requestKey: key,
+          });
+          const message = store.publish(generatedImageMessage(title, saved.reference), key);
+          return { message, image: { path: saved.reference, absolute_path: saved.absolutePath, sha256: saved.sha256 }, codex_session: generated.session };
+        });
+      } catch (e) {
+        return call("generate_image", () => {
+          throw e;
+        });
+      } finally {
+        // La copie de travail est remplacée par l'image enregistrée ; le journal codex.log reste.
+        if (source !== undefined) fs.rmSync(source, { force: true });
+      }
+    },
   );
   server.registerTool(
     "edit_owner_message",

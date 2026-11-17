@@ -8,7 +8,10 @@ import {
   forkOwnsPrompt,
   forkWritableDirs,
   LOADED_PROMPT_MARK,
+  promptReloadRecap,
   reloadsPromptOnChange,
+  roomLabel,
+  roomLabelIn,
   runAssignedClaudeTurn,
   saveForkAssignment,
   validateAssignment,
@@ -127,6 +130,7 @@ describe("écriture d'un fork affecté", () => {
       mcpServers: { mind: { env: Record<string, string> } };
     }).mcpServers.mind.env;
     expect(env["MIND_WAKE_OWNER_SIGNATURE"]).toBe("VOX (Room 7)");
+    expect(env["MIND_WAKE_DESKTOP_ROOM"]).toBe("7");
     expect(env["MIND_WAKE_OWNER_PROFILE"]).toBeUndefined();
     expect(env["MIND_WAKE_OWNER_COLONY"]).toBeUndefined();
   });
@@ -136,12 +140,12 @@ describe("écriture d'un fork affecté", () => {
     for (const id of [2, 3, 4, 5, 6, 8]) {
       const a = validateAssignment({ instructions, workspace: root, writable: ["carnet"] });
       expect(a.owner).toBeNull();
-      expect(forkOwnerMcpConfig(id, "D:/data", "node", "R:/repo", a)).toBeUndefined();
+      expect(Object.keys(JSON.parse(forkOwnerMcpConfig(id, "D:/data", "node", "R:/repo", a)!).mcpServers)).toEqual(["mind_calls"]);
       const prompt = assignedForkPrompt(id, a);
       expect(prompt).toContain("Aucun envoi externe.");
       expect(prompt).not.toContain("message_owner");
       expect(prompt).not.toContain("colony_call_tool");
-      expect(reloadsPromptOnChange(id, a)).toBe(false);
+      expect(reloadsPromptOnChange(id, a)).toBe(true);
     }
   });
 
@@ -187,13 +191,15 @@ describe("rechargement du prompt système (Fork 7)", () => {
   }
 
   it("un prompt modifié ouvre une session neuve qui le charge, avec rappel du fil, et affiche la version chargée", async () => {
-    const { root, instructions, calls, run } = setup();
+    const { root, instructions, calls, run, kv } = setup();
+    const storeFooter = () => kv.get("lastPromptFooter");
     fs.mkdirSync(path.join(root, "carnet"));
     fs.writeFileSync(path.join(root, "carnet", "a-trier-pour-la-bible.md"), "notes");
     const first = await run();
     const digestV1 = promptDigest(calls[0]!.prompt).slice(0, 16);
     expect(calls[0]!.mode).toBe("new");
-    expect(first.text).toContain(`${LOADED_PROMPT_MARK} ${digestV1} · chargé 2026-11-06T05:30:00.000Z`);
+    expect(first.text).not.toContain(LOADED_PROMPT_MARK);
+    expect(String(storeFooter())).toContain(`${LOADED_PROMPT_MARK} ${digestV1} · chargé 2026-11-06T05:30:00.000Z`);
     await run();
     expect(calls[1]!.mode).toBe("resume");
     expect(calls[1]!.id).toBe(calls[0]!.id);
@@ -212,8 +218,8 @@ describe("rechargement du prompt système (Fork 7)", () => {
     expect(calls[2]!.message).toContain(path.join(root, "carnet", "a-trier-pour-la-bible.md"));
     expect(calls[2]!.message.endsWith("NLR [t3] : message en attente")).toBe(true);
     const digestV2 = promptDigest(calls[2]!.prompt).slice(0, 16);
-    expect(third.text).toContain(`${LOADED_PROMPT_MARK} ${digestV2}`);
-    expect(third.text).not.toContain("≠");
+    expect(String(storeFooter())).toContain(`${LOADED_PROMPT_MARK} ${digestV2}`);
+    expect(String(storeFooter())).not.toContain("≠");
     await run();
     expect(calls[3]!.mode).toBe("resume");
     expect(calls[3]!.id).toBe(calls[2]!.id);
@@ -230,13 +236,13 @@ describe("rechargement du prompt système (Fork 7)", () => {
     expect(calls[1]!.message).toContain(old);
   });
 
-  it("hors Fork 7 : reprise inchangée, pas de pied de version", async () => {
+  it("hors Fork 7 : un prompt changé est également chargé dans une session neuve", async () => {
     const { instructions, calls, run } = setup(8);
     await run();
     fs.writeFileSync(instructions, "Consignes v2");
     const second = await run();
-    expect(calls[1]!.mode).toBe("resume");
-    expect(calls[1]!.id).toBe(calls[0]!.id);
+    expect(calls[1]!.mode).toBe("new");
+    expect(calls[1]!.id).not.toBe(calls[0]!.id);
     expect(second.text).toBe("réponse");
   });
 });
@@ -253,7 +259,7 @@ describe("canal propriétaire du Fork 7", () => {
       expect(assignedForkPrompt(7, a)).toContain("« VOX (Room 7) »");
       expect(assignedForkPrompt(8, a)).not.toContain("message_owner");
       expect(assignedForkPrompt(7, { ...a, engine: "codex" })).not.toContain("message_owner");
-      expect(forkOwnerMcpConfig(8, "D:/data", "node", "R:/repo")).toBeUndefined();
+      expect(Object.keys(JSON.parse(forkOwnerMcpConfig(8, "D:/data", "node", "R:/repo")!).mcpServers)).toEqual(["mind_calls"]);
       const config = JSON.parse(forkOwnerMcpConfig(7, "D:/data", "node", "R:/repo")!) as {
         mcpServers: { mind: { command: string; args: string[]; env: Record<string, string> } };
       };
@@ -293,7 +299,7 @@ describe("canal propriétaire posé par affectation (Room 2)", () => {
       expect(assignedForkPrompt(2, a)).toContain("signé « Fixeur (Room 2) »");
       expect(assignedForkPrompt(2, a)).toContain("Reddit en lecture seule");
       // Sans bloc owner : aucun outil, aucune publication.
-      expect(forkOwnerMcpConfig(2, "D:/data", "node", "R:/repo", { ...a, owner: null })).toBeUndefined();
+      expect(Object.keys(JSON.parse(forkOwnerMcpConfig(2, "D:/data", "node", "R:/repo", { ...a, owner: null })!).mcpServers)).toEqual(["mind_calls"]);
       expect(assignedForkPrompt(2, { ...a, owner: null })).toContain("Aucun envoi externe.");
       // Room 7 : son canal historique, sans variables de profil, même avec un bloc owner.
       const vox = JSON.parse(forkOwnerMcpConfig(7, "D:/data", "node", "R:/repo", a) ?? "{}") as {
@@ -310,5 +316,142 @@ describe("canal propriétaire posé par affectation (Room 2)", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+// 16 nov. 2026 : worker des forks tué en plein tour ; la CLI avait créé la session et chaque
+// tour suivant échouait (« Session ID … is already in use »).
+describe("session déjà créée par un tour interrompu", () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const d of dirs.splice(0)) fs.rmSync(d, { recursive: true, force: true });
+  });
+  type Reply = { outcome: string; sessionConfirmed: boolean; detail?: string | null };
+  function setup(replies: Reply[], opts: { id?: number; agent?: boolean } = {}) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fork-inuse-"));
+    dirs.push(root);
+    const instructions = path.join(root, "DEPART.md");
+    fs.writeFileSync(instructions, "Consignes v1");
+    const assignment = validateAssignment({ instructions, workspace: root, assignedAt: "2026-11-16T03:00:00.000Z" });
+    const kv = new Map<string, string>();
+    const store = { get: (k: string) => kv.get(k) ?? null, set: (k: string, v: string) => void kv.set(k, v) };
+    const calls: { mode: string; id: string; message: string }[] = [];
+    const queue = [...replies];
+    const turn = (async (t: Parameters<typeof runClaudeTurn>[0]) => {
+      calls.push({ mode: t.session.mode, id: t.session.id, message: t.message });
+      const r = queue.shift() ?? { outcome: "completed", sessionConfirmed: true };
+      return { text: "réponse", tokens: 1, retryAtMs: null, detail: null, ...r };
+    }) as unknown as typeof runClaudeTurn;
+    const agent = opts.agent
+      ? { key: "room-2:coach-colony", prompt: "Tu es Coach Colony.", mcpConfig: undefined, promptDir: path.join(root, "prompts") }
+      : undefined;
+    const run = () =>
+      runAssignedClaudeTurn({
+        dataDir: root,
+        dir: path.join(root, "fork"),
+        id: opts.id ?? 8,
+        assignment,
+        store,
+        message: "NLR [t1] : bonjour",
+        control: () => "run",
+        turn,
+        history: () => [],
+        now: () => new Date("2026-11-16T10:00:00Z"),
+        ...(agent === undefined ? {} : { agent }),
+      });
+    return { kv, calls, run };
+  }
+  const inUse = (id = "x") => ({ outcome: "error", sessionConfirmed: false, detail: `Error: Session ID ${id} is already in use.` });
+
+  it("récupère la session interrompue puis renouvelle une fois son prompt inconnu", async () => {
+    const { kv, calls, run } = setup([inUse()]);
+    const r = await run();
+    expect(calls.map((c) => c.mode)).toEqual(["new", "resume"]);
+    expect(calls[1]!.id).toBe(calls[0]!.id);
+    expect(r.accepted).toBe(true);
+    expect(kv.get("claudeConfirmed")).toBe(calls[0]!.id);
+    expect(kv.get("claudeGeneration") ?? "0").toBe("0");
+    await run();
+    expect(calls[2]!.mode).toBe("new");
+    expect(calls[2]!.id).not.toBe(calls[0]!.id);
+    await run();
+    expect(calls[3]).toMatchObject({mode:"resume",id:calls[2]!.id});
+  });
+
+  it("reprise impossible : génération suivante, id neuve, une seule fois", async () => {
+    const { kv, calls, run } = setup([inUse(), { outcome: "error", sessionConfirmed: false, detail: "No conversation found" }]);
+    const r = await run();
+    expect(calls.map((c) => c.mode)).toEqual(["new", "resume", "new"]);
+    expect(calls[2]!.id).not.toBe(calls[0]!.id);
+    expect(r.sessionId).toBe(calls[2]!.id);
+    expect(kv.get("claudeGeneration")).toBe("1");
+    expect(kv.get("claudeConfirmed")).toBe(calls[2]!.id);
+  });
+
+  it("agent de room (prompt rechargé) : reprise, version inconnue, puis session neuve avec rappel", async () => {
+    const { kv, calls, run } = setup([inUse()], { id: 2, agent: true });
+    const first = await run();
+    expect(calls.map((c) => c.mode)).toEqual(["new", "resume"]);
+    expect(first.text).not.toContain("session reprise après un tour interrompu");
+    expect([...kv.values()].some((v) => String(v).includes("session reprise après un tour interrompu"))).toBe(true);
+    expect(kv.get(`claudePromptDigest:${calls[0]!.id}`)).toBeUndefined();
+    await run();
+    expect(calls[2]!.mode).toBe("new");
+    expect(calls[2]!.id).not.toBe(calls[0]!.id);
+    expect(calls[2]!.message).toContain(calls[0]!.id);
+    await run();
+    expect(calls[3]).toMatchObject({ mode: "resume", id: calls[2]!.id });
+  });
+
+  it("une autre erreur ou un arrêt ne déclenche aucune relance", async () => {
+    const a = setup([{ outcome: "error", sessionConfirmed: false, detail: "boom" }]);
+    await a.run();
+    expect(a.calls).toHaveLength(1);
+    const b = setup([{ outcome: "interrupted", sessionConfirmed: false, detail: "Session ID x is already in use" }]);
+    await b.run();
+    expect(b.calls).toHaveLength(1);
+  });
+});
+
+// NLR, 16 nov. 2026 : « renommons les rooms avec les noms de projet ».
+describe("nom d'une room", () => {
+  const instructions = path.join(os.tmpdir(), "DEPART.md");
+  it("accepte un `name` de 2 à 40 caractères et le rend au libellé", () => {
+    const a = validateAssignment({ instructions, name: "  Médicis " });
+    expect(a.name).toBe("Médicis");
+    expect(roomLabel(3, a)).toBe("Médicis");
+    expect(validateAssignment({ instructions }).name).toBeUndefined();
+  });
+  it("refuse un nom trop court, trop long, non textuel ou avec un caractère de contrôle", () => {
+    for (const name of ["x", "a".repeat(41), 42, "La\nToile", "Tab\tx"])
+      expect(() => validateAssignment({ instructions, name })).toThrow(/name/);
+  });
+  it("sans nom : signature propriétaire, sinon « Room N »", () => {
+    expect(roomLabel(7, null)).toBe("VOX");
+    expect(roomLabel(4, null)).toBe("Room 4");
+    const owned = validateAssignment({
+      instructions,
+      owner: { signature: "Fixeur (Room 2)", colony: "colony-fixeur.json", profile: "publish" },
+    });
+    expect(roomLabel(2, owned)).toBe("Fixeur");
+    expect(roomLabel(2, { ...owned, name: "La Toile" })).toBe("La Toile");
+  });
+  it("roomLabelIn lit l'affectation du dossier et replie sur « Room N »", () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "room-label-"));
+    try {
+      fs.mkdirSync(path.join(dataDir, "forks", "3"), { recursive: true });
+      fs.writeFileSync(path.join(dataDir, "forks", "3", "assignment.json"), JSON.stringify({ instructions, name: "Médicis" }));
+      fs.mkdirSync(path.join(dataDir, "forks", "5"), { recursive: true });
+      fs.writeFileSync(path.join(dataDir, "forks", "5", "assignment.json"), "{");
+      expect(roomLabelIn(dataDir, 3)).toBe("Médicis");
+      expect(roomLabelIn(dataDir, 5)).toBe("Room 5");
+      expect(roomLabelIn(dataDir, 6)).toBe("Room 6");
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+  it("le rappel de session nomme la room expéditrice", () => {
+    const entry = { id: 1, at: "2026-11-16T10:00:00Z", role: "human", text: "Bonjour", delivered: true, senderFork: 3 } as unknown as SecondThreadEntry;
+    expect(promptReloadRecap(null, "d".repeat(16), [entry], null, () => "Médicis")).toContain("Médicis [2026-11-16T10:00:00Z] : Bonjour");
   });
 });

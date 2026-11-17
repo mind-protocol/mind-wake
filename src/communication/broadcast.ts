@@ -74,6 +74,6 @@ export async function broadcastHuman(dataDir:string,key:string,text:string,sendO
       db.prepare('INSERT OR REPLACE INTO deliveries VALUES(?,?,?,?)').run(key,target.id,state,detail);
     }
     const deliveries=db.prepare('SELECT target,state,detail FROM deliveries WHERE id=?').all(key) as {target:string;state:string;detail:string}[];
-    return {id:key,recipients:targets.map(t=>({...deliveries.find(d=>d.target===t.id),id:t.id,label:t.label})),scope:'Principal et rôles avec keeper actif. Jobs CLI sans canal signalés ; sous-agents natifs non exposés au daemon. Forks 2–8 exclus.'};
+    return {id:key,recipients:targets.map(t=>({...deliveries.find(d=>d.target===t.id),id:t.id,label:t.label})),scope:'Principal et rôles avec keeper actif. Jobs CLI sans canal signalés ; sous-agents natifs non exposés au daemon. Rooms 2–8 exclues.'};
   }finally{db.close();fs.closeSync(lock);fs.unlinkSync(lockFile);}
 }

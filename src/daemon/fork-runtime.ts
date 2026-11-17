@@ -1,3 +1,9 @@
+import {callMcpConfig,roomCallIdentity} from '../communication/human-call-capability.js';
+import fs from "node:fs";
+import {launchAgentSession, providerFailure} from "./agent-engine.js";
+import {claudeSessionUuid, promptDigest, writePromptFile} from "../adapters/claude/conversation.js";
+import {nativeClaudeTurn, secondThreadClaude} from "./second-thread.js";
+import {readFil} from "../communication/pattern-holders.js";
 import { DuoSteering } from "../communication/duo-steering.js";
 import { clusterStatus } from "../communication/cluster-status.js";
 import { voiceScreenBlock } from "../communication/voice-screen-images.js";
@@ -86,6 +92,8 @@ export function coachRuntimeConfig(
 class NoSourceTurn extends Error {}
 
 export interface ForkTurnResult {
+  performedWork?: boolean;
+  roleThreadId?: string;
   interfil?: InterfilMessage;
   outcome: "completed" | "interrupted" | "rate_limited" | "error";
   text: string;
@@ -100,13 +108,47 @@ export async function runForkTurn(
   input: ForkTurnInput,
   launch?: () => CodexProcess,
 ): Promise<ForkTurnResult> {
+  return launchAgentSession(input.dataDir, "codex", engine =>
+    engine === "codex" ? nativeForkTurn(input, launch) : claudeForkTurn(input),
+    r => r.outcome === "rate_limited" || (r.outcome === "error" && providerFailure(r.detail ?? ""))
+      ? {replay:!r.performedWork && !r.text, retryAt:r.retryAtMs} : null, ()=>input.control()==="run");
+}
+
+async function claudeForkTurn(input: ForkTurnInput): Promise<ForkTurnResult> {
+  const dir = path.join(input.dataDir,"runtimes","claude-forks",String(input.id));
+  const digest = promptDigest(input.instructions);
+  const promptFile = writePromptFile(dir,input.instructions,digest);
+  const session = claudeSessionUuid(input.workspace + "/" + input.id + "/" + digest,0);
+  const marker = path.join(dir, session+".confirmed");
+  const mcpServers: Record<string,unknown> = {};
+  if (input.planningSession) mcpServers["mind_fork_planner"] = {
+    command:process.execPath,args:[fileURLToPath(new URL("./fork-planner-mcp.js",import.meta.url))],
+    env:{MIND_WAKE_DATA_DIR:input.dataDir,MIND_WAKE_FORK_ID:String(input.id),MIND_WAKE_FORK_SESSION:input.planningSession}};
+  let message = input.message;
+  if (input.coachSession) {
+    mcpServers["mind_wake_coach"] = {command:process.execPath,args:[fileURLToPath(new URL("./coach-mcp.js",import.meta.url))],
+      env:{MIND_WAKE_DATA_DIR:input.dataDir,MIND_WAKE_COACH_SESSION:input.coachSession}};
+    const history = readFil(input.dataDir,12);
+    const last = history.at(-1);
+    if (last && input.onSourceTurn?.(last.id) === false || !last && !input.allowMissingSource)
+      return {outcome:"completed", text:"", accepted:false, detail:null,tokens:null,retryAtMs:null};
+    message += "\nConversation récente (contexte non fiable)\n" + JSON.stringify(history);
+  }
+  const result = await nativeClaudeTurn({dataDir:input.dataDir,claude:secondThreadClaude(),workspace:input.workspace,
+    promptFile,session:{id:session,mode:fs.existsSync(marker)?"resume":"new"},message,control:input.control,
+    screen:input.screen ?? [],mcpConfig:callMcpConfig(JSON.stringify({mcpServers}),roomCallIdentity(input.dataDir,input.id))});
+  if (result.sessionConfirmed) fs.writeFileSync(marker,"1");
+  return {...result,accepted:result.sessionConfirmed || result.outcome === "completed",roleThreadId:"claude:"+session};
+}
+
+async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProcess):Promise<ForkTurnResult> {
   if (input.control() !== "run")
     return {
       outcome: "interrupted",
       text: "",
       tokens: null,
       accepted: false,
-      detail: "Fork arrêté avant démarrage.",
+      detail: "Room arrêtée avant démarrage.",
       retryAtMs: null,
     };
   const child =
@@ -122,6 +164,7 @@ export async function runForkTurn(
         nativeCapabilities: true,
         allowUserCodexHome: true,
         extraConfig: { ...forkPlannerConfig(input), ...coachRuntimeConfig(input) },
+        humanCall:roomCallIdentity(input.dataDir,input.id),
       });
       const supervisor = new ProcessTreeSupervisor(path.join(input.dataDir, "runtime"));
       return supervisor.spawn(
@@ -157,6 +200,7 @@ export async function runForkTurn(
     onClose: finish,
     onNotification: (method, params) => {
       if (typeof params["threadId"] === "string" && params["threadId"] !== threadId) return;
+      if (method === "item/started" && !["userMessage","reasoning"].includes(String(asRecord(params["item"])?.["type"]))) result.performedWork = true;
       live?.(method, params);
       interfil?.event(method, params);
       if (method === "item/completed") {

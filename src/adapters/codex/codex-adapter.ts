@@ -445,6 +445,7 @@ export class CodexAdapter implements RuntimeAdapter {
           ? (this.#options.nativeCodexHome ?? path.join(os.homedir(), ".codex"))
           : this.#options.codexHome,
         workspaceDir: this.#options.workspaceDir,
+        ...(this.#options.ownerInboxDir ? {humanCall:{dataDir:this.#options.ownerInboxDir,signature:"Marco"}} : {}),
         channel,
         allowUserCodexHome:
           nativeCapabilities || (this.#manualOnly() && this.#options.allowUserCodexHome === true),

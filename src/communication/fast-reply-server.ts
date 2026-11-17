@@ -5,10 +5,11 @@
  * supervision propres : le service vit et s'arrête avec le moteur. Utilise seulement l'API
  * publique de `fast-reply.ts` (`runFastReply` et son point d'injection `call`).
  */
+import {engineChoice, preferredEngine} from "../daemon/agent-engine.js";
 import fs from "node:fs";
 import path from "node:path";
 import {
-  callClaude,
+
   fastReplyApplies,
   fastReplyClaude,
   fastReplyEnabled,
@@ -107,7 +108,10 @@ export class FastReplyService {
       return;
     }
     this.#beat();
-    const warm = this.#ready();
+    const choice = engineChoice(dataDir);
+    const warmClaude = !choice || preferredEngine(dataDir,choice) === "claude";
+    if (!warmClaude) {this.#warm?.dispose(); this.#warm = undefined;}
+    const warm = warmClaude ? this.#ready() : undefined;
     for (const messageId of [...waitingHumanMessages(dataDir), ...waitingThreadMessages(dataDir)]) {
       // `close()` peut survenir pendant l'appel précédent.
       if (this.#isClosed()) return;
@@ -121,15 +125,15 @@ export class FastReplyService {
         ...(this.options.log === undefined ? {} : { log: this.options.log }),
         // Le prompt système vient d'être réécrit à l'identique : le Claude préchauffé convient.
         call: (claude, args, prompt, cwd) =>
-          ready.alive() && ready.args.join("\0") === args.join("\0")
+          ready?.alive() && ready.args.join("\0") === args.join("\0")
             ? ready.answer(prompt)
-            : callClaude(claude, args, prompt, cwd),
+            : startClaude(claude,args,cwd,undefined,dataDir).answer(prompt),
       });
-      ready.dispose();
+      ready?.dispose();
       this.options.log?.(`réponse rapide ${messageId} : ${state}`);
       if (!this.#isClosed()) {
         this.#beat(true);
-        this.#ready();
+        if (warmClaude) this.#ready();
       }
     }
   }
@@ -163,7 +167,7 @@ export class FastReplyService {
     warm?.dispose();
     const claude = this.options.claude ?? fastReplyClaude();
     const launch = fastReplyLaunch(this.options.dataDir, claude);
-    this.#warm = (this.options.start ?? startClaude)(claude, launch.args, launch.cwd);
+    this.#warm = (this.options.start ?? startClaude)(claude, launch.args, launch.cwd, undefined, this.options.dataDir);
     return this.#warm;
   }
 

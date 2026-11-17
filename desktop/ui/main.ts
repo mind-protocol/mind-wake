@@ -16,8 +16,10 @@ import {voiceCaptureSelection,voiceThreadSettings,isVoiceThreadId} from "./voice
 import {deliverVoiceTranscript} from "./deliver-voice.js";
 import { initElevenLabs } from "./elevenlabs.js";
 import { mountFastReply } from "./fast-reply.js";
+import { mountTelegramAccount } from "./telegram-account.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
+import { Outbox, sendOnEnter, trackTyping, typingIdle } from "./composer-kit.js";
 import { bindChatImages } from "./chat-images.js";
 import {voiceChatControls,voiceTranscriptStatus} from './voice-chat-ui.js';
 import {voiceChatController,voiceChatPlayback,voiceChatBargeIn} from "./voice-chat-controller.js";
@@ -38,9 +40,13 @@ import { mountCoach } from "./coach.js";
 
 import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, progressReminderLabel, type BumpKind } from "./chat-presence.js";
 import { activityModel, type ActivityModel } from "./activity.js";
+import { mountPromptEditor } from "./prompt-editor.js";
+import { callVisionFeed } from "./call-vision.js";
 import { mountAuthorizations } from "./authorizations.js";
 import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
 import { projectBadge, projectMarker, undefinedObjectiveBadge } from "./project-marker.js";
+import { attachComposeCopy, copyButton } from "./copy-button.js";
+import { agentTint, authorMarker } from "./author-tint.js";
 import {recipientSender} from "./recipient.js";
 import { repoThreads, type RepoThread } from "./repo-threads.js";
 import { renderMarkdown } from "./markdown.js";
@@ -48,6 +54,8 @@ import { initMessageFileLinks } from "./message-file-links.js";
 import { appendMessageImages } from "./message-images.js";
 import { decorateMessageLinks } from "./message-links.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
+import { reloadGuard, pendingBadge } from "./reload-guard.js";
+import { shouldReopenCall, callWaitStatus } from "./call-frame.js";
 
 interface TauriGlobal {
   readonly core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
@@ -86,6 +94,13 @@ interface Message {
 
 const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
 const messageFileLinks = tauri ? initMessageFileLinks((command,args)=>tauri.core.invoke(command,args)) : null;
+const prompts = mountPromptEditor(async request => {
+  if (!tauri) throw Error("Ouvre cet onglet dans MIND Wake.");
+  const run = await tauri.core.invoke("agent_prompts", {request}) as CliRun;
+  const result = JSON.parse(run.stdout);
+  if (run.exitCode || result.error) throw Error(result.error ?? "Prompts indisponibles");
+  return result;
+});
 const authorizations = mountAuthorizations(async (command, args) => {
   if (!tauri) throw new Error(tr("Les autorisations sont disponibles dans l’application MIND Wake."));
   return tauri.core.invoke(command, args);
@@ -204,7 +219,9 @@ function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement
   const kind = automaticBumpKind({from:"human",id:key,text});
   if (kind !== null) li.dataset["invitation"] = kind;
   const body = conversationBody(text, kind);
-  li.append(meta, body);
+  const marker = authorMarker(li, "owner");
+  if (marker) meta.prepend(marker);
+  li.append(meta, body, copyButton(() => text));
   outgoingChat.set(key, li);
   byId("chat").append(li);
   if (kind === null) messageFileLinks?.observe([{id:key,at:new Date().toISOString(),text}],false,true);
@@ -247,7 +264,10 @@ async function refresh():Promise<void>{
 async function refreshOnce(): Promise<void> {
   // La conversation ne dépend pas du statut : la lire en parallèle évite ~1 s de latence
   // et un tour plus long que POLL_MS (tick sauté).
-  const chat = tick % CHART_EVERY === 0 || chatOpen || dictation.active() ? refreshChatSoon() : Promise.resolve();
+  // `wake messages` coûte ≈ 3,3 s de CPU et 6,8 Mo de JSON (16 nov. 2026) : relu toutes les
+  // 2 s, il occupait la machine en continu et ralentissait la saisie et l'envoi. Les messages
+  // de l'agent arrivent par l'événement `owner-messages-changed` ; le polling n'est qu'un filet.
+  const chat = tick % CHART_EVERY === 0 || dictation.active() ? refreshChatSoon() : Promise.resolve();
   try {
     const envelope = await invoke("wake_status");
     lastRead = { ok: true, fetchedAt: Date.now(), envelope };
@@ -539,7 +559,9 @@ async function showThread(
         body.textContent = m.text;
         messageLinks(body);
         appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
-        li.append(meta, body);
+        const marker = authorMarker(li, m.from_self ? "owner" : null);
+        if (marker) meta.prepend(marker);
+        li.append(meta, body, copyButton(() => m.text));
         return li;
       }),
     );
@@ -606,6 +628,8 @@ let chatRequest = 0;
 let lastChatResponse = 0;
 let chatLoadingOlder = false;
 let chatHasOpened = false;
+// Bouton « copier » des zones de saisie (NLR, 15 nov. 2026).
+for (const id of ["chat-text", "second-thread-text", "reply-text"]) attachComposeCopy(byId<HTMLTextAreaElement>(id));
 byId("chat-older").addEventListener("click", () => { chatVisibleCount += CHAT_PAGE_SIZE; chatLoadingOlder = true; void refreshChat(); });
 // Une seule lecture à la fois ; une demande pendant la lecture en relance une seule après.
 let chatInFlight: Promise<void> | null = null;
@@ -613,23 +637,35 @@ let chatAgain = false;
 function refreshChatSoon(): Promise<void> {
   if (chatInFlight) { chatAgain = true; return chatInFlight; }
   chatInFlight = (async () => {
-    try { do { chatAgain = false; await refreshChat(); } while (chatAgain); }
+    // ~6 Mo de JSON à lire et analyser (≈ 60 ms bloquantes) : pas au milieu d'une frappe.
+    try { do { chatAgain = false; await typingIdle(); await refreshChat(); } while (chatAgain); }
     finally { chatInFlight = null; }
   })();
   return chatInFlight;
+}
+let recipientCheckedAt = 0;
+let helpersCache: {at: number; value: Promise<Envelope | null>} | null = null;
+function helpersAnswers(): Promise<Envelope | null> {
+  if (helpersCache === null || Date.now() - helpersCache.at > 30_000) {
+    helpersCache = {at: Date.now(), value: invoke("helpers_answers").catch(() => null)};
+  }
+  return helpersCache.value;
 }
 // Le panneau Rust signale l'écriture d'un message de l'agent : lecture immédiate.
 void tauri?.event?.listen("owner-messages-changed", () => void refreshChatSoon());
 async function refreshChat(): Promise<void> {
   const request = ++chatRequest;
   const speechObservation=chatLoadingOlder?"history":"live";
-  void refreshRecipient();
+  if (Date.now() - recipientCheckedAt > 15_000) { recipientCheckedAt = Date.now(); void refreshRecipient(); }
   let model;
   try {
     // Réponses des sessions réveillées pour aider l'agent : facultatives, jamais bloquantes.
+    // ≈ 2,6 s de CPU par lecture : gardées 30 s au lieu d'être relues à chaque tour.
     const [messages, helpers] = await Promise.all([
-      invoke("wake_messages"),
-      invoke("helpers_answers").catch(() => null),
+      // Seulement la fin du fil (CLI `messages --limit`) : marge large car seuls certains éléments
+      // comptent dans la fenêtre. Un binaire Rust plus ancien ignore l'argument et rend tout.
+      invoke("wake_messages", {limit: chatVisibleCount * 3 + 60}),
+      helpersAnswers(),
     ]);
     model = conversation(messages, helpers);
   } catch (error) {
@@ -649,7 +685,7 @@ async function refreshChat(): Promise<void> {
   byId("chat-new").hidden = chatOpen || !fresh;
   if (chatOpen && model.agentUpdatedAt !== null) markChatSeen(model.agentUpdatedAt);
   byId("chat-note").textContent = model.note ?? "";
-  byId("chat-older").hidden = conversationMessageCount(model.items) <= chatVisibleCount;
+  byId("chat-older").hidden = conversationMessageCount(model.items) <= chatVisibleCount && model.truncated !== true;
   // Keep local bubbles through polling until the persisted ID appears.
   let reconciled = false;
   for (const item of model.items) {
@@ -717,7 +753,11 @@ async function refreshChat(): Promise<void> {
         note.textContent = tr("Prévision révisable · mise à jour automatique · wake en cours exclu.");
         details.append(note);
       }
-      li.append(meta, body);
+      const marker = authorMarker(li, item.from === "human" ? item.voiceSpeakerLabel ? null : "owner"
+        : item.from === "agent" ? agentTint(item.text)
+        : item.from === "received" && item.headerNames?.[0]?.startsWith("Pattern holder") ? "holder" : null);
+      if (marker) meta.prepend(marker);
+      li.append(meta, body, copyButton(() => item.text));
       if (item.pendingReason) {
         const wait = document.createElement("small");
         wait.className = "message-wait";
@@ -814,6 +854,17 @@ async function refreshRecipient():Promise<void> {
 }
 const recipientStorage=(()=>{try{return localStorage;}catch{return undefined;}})();
 const saveChatDraft=bindChatDraft(byId<HTMLTextAreaElement>('chat-text'),byId<HTMLSelectElement>('chat-recipient'),recipientStorage);
+// Entrée envoie, Maj+Entrée va à la ligne ; toute frappe repousse les lectures lourdes.
+sendOnEnter(byId<HTMLTextAreaElement>('chat-text'),()=>byId<HTMLFormElement>('chat-form').requestSubmit());
+trackTyping(document);
+// Envois partis mais non confirmés : un rechargement les renvoie (clé d'idempotence identique).
+const chatOutbox=new Outbox(recipientStorage,'mind-wake.chat-outbox');
+/** Échec : le texte revient dans le champ s'il est vide, rien n'est perdu. */
+function restoreChatText(text:string):void{
+  const field=byId<HTMLTextAreaElement>('chat-text');
+  if(field.value.trim()!=='')return;
+  field.value=text;saveChatDraft();
+}
 const voiceScreenshots=voiceScreenshotsPreference(recipientStorage,false);
 const principalScreenComposer=voiceScreenComposer();
 let principalScreenRevision=0;
@@ -962,36 +1013,67 @@ const chatImages=bindChatImages({
 });
 window.addEventListener('beforeunload',saveChatDraft);
 const sendRemoteRecipient=recipientSender(invoke,()=>`ui-${crypto.randomUUID()}`,recipientStorage);
-let broadcastBusy=false;
 let broadcastPending: {key:string;text:string}|null=null;
 try {broadcastPending=JSON.parse(recipientStorage?.getItem('mind-wake.broadcast-pending')??'null');}catch{}
+let broadcastQueue: Promise<void> = Promise.resolve();
+async function transmitBroadcast(pending:{key:string;text:string},bubble:HTMLLIElement):Promise<void>{
+  const meta=bubble.querySelector("small")!;
+  const fail=(detail:string):void=>{
+    bubble.dataset["sending"]="false";bubble.dataset["failed"]="true";
+    meta.textContent=tr("Toi · Échec de l’envoi : {0}",[detail]);
+    // Le texte revient dans le champ (même clé gardée pour un renvoi sans doublon).
+    broadcastPending=pending;
+    try{recipientStorage?.setItem('mind-wake.broadcast-pending',JSON.stringify(pending));}catch{/* Affichage local. */}
+    restoreChatText(pending.text);
+    byId("chat-status").textContent=detail+" · brouillon conservé";
+  };
+  const slow=setTimeout(()=>{if(bubble.dataset["sending"]==="true")meta.textContent=tr("Toi · Envoi en cours… (lent, toujours en attente)");},6000);
+  try{
+    const result=await invoke("broadcast_send",{idempotencyKey:pending.key,text:pending.text});
+    if(result.ok!==true)throw Error(errorText(result));
+    const recipients=(result.data?.["recipients"]??[]) as {label:string;state:string;detail:string}[];
+    const queued=recipients.filter(r=>r.state==="queued");
+    const missed=recipients.filter(r=>r.state!=="queued");
+    byId("broadcast-receipt").hidden=false;
+    byId("broadcast-receipt-details").textContent=recipients.map(r=>`${r.label} : ${r.detail}`).join("\n");
+    if(recipients.some(r=>r.state==="failed")){fail(`${missed.length} non joints : ${missed.map(r=>r.label).join(", ")}`);return;}
+    bubble.dataset["sending"]="false";
+    meta.textContent=tr("Toi · Parti ✓")+` · ${queued.length} en file`+(missed.length?` ; ${missed.length} non joints`:"");
+    byId("chat-status").textContent=`${queued.length} en file · lecture non attestée`+(missed.length?` ; ${missed.length} non joints : ${missed.map(r=>r.label).join(", ")}`:"");
+    if(broadcastPending===null)try{recipientStorage?.removeItem('mind-wake.broadcast-pending');}catch{/* Affichage local. */}
+    void refreshChatSoon();
+  }catch(error){fail(message(error));}
+  finally{clearTimeout(slow);}
+}
 async function sendToAgent(): Promise<void> {
   if(chatImages.busy()) {byId('chat-status').textContent=tr('Import des images en cours…');return;}
   if(chatImages.text().length>4000) {byId('chat-status').textContent=tr('Le texte et les images dépassent la taille du message. Raccourcir le texte.');return;}
   if(byId<HTMLSelectElement>("chat-recipient").value==="all") {
-    const field=byId<HTMLTextAreaElement>("chat-text"),draft=field.value,text=chatImages.text();
-    if(!text.trim()||broadcastBusy)return;
-    broadcastBusy=true;
+    // « Tous » (destinataire habituel de NLR) : bulle dans le fil dès le clic, champ vidé,
+    // envoi en arrière-plan ; un second envoi pendant le premier passe à la suite au lieu
+    // d'être ignoré (16 nov. 2026, « pas sur send et ce qui s'en suit »).
+    const field=byId<HTMLTextAreaElement>("chat-text"),text=chatImages.text();
+    if(!text.trim())return;
     if(broadcastPending?.text!==text)broadcastPending={key:`ui-all-${crypto.randomUUID()}`,text};
-    try {
-      recipientStorage?.setItem('mind-wake.broadcast-pending',JSON.stringify(broadcastPending));
-      const result=await invoke("broadcast_send",{idempotencyKey:broadcastPending.key,text});
-      if(result.ok!==true)throw Error(errorText(result));
-      const recipients=(result.data?.["recipients"]??[]) as {label:string;state:string;detail:string}[];
-      const queued=recipients.filter(r=>r.state==="queued");
-      const missed=recipients.filter(r=>r.state!=="queued");
-      byId("chat-status").textContent=`${queued.length} en file · lecture non attestée`+(missed.length?` ; ${missed.length} non joints : ${missed.map(r=>r.label).join(", ")}`:"");
-      byId("broadcast-receipt").hidden=false;
-      byId("broadcast-receipt-details").textContent=recipients.map(r=>`${r.label} : ${r.detail}`).join("\n");
-      if(recipients.every(r=>r.state!=="failed")) {if(field.value===draft&&chatImages.text()===text){field.value="";chatImages.clear();}broadcastPending=null;recipientStorage?.removeItem('mind-wake.broadcast-pending');}
-      saveChatDraft();void refreshChat();
-    } catch(error){byId("chat-status").textContent=message(error)+" · brouillon conservé";}
-    finally{broadcastBusy=false;}
+    const pending=broadcastPending;
+    broadcastPending=null;
+    try{recipientStorage?.setItem('mind-wake.broadcast-pending',JSON.stringify(pending));}catch{/* Affichage local. */}
+    // Même identifiant que la réponse enregistrée (`reply --idempotency-key`) : la relecture du
+    // fil remplace la bulle par le message persisté, sans doublon.
+    const bubble=outgoingBubble(pending.key,text);
+    const meta=bubble.querySelector("small")!;
+    bubble.dataset["sending"]="true";
+    meta.textContent=tr("Toi · Envoi à tous en cours…");
+    field.value="";chatImages.clear();saveChatDraft();field.focus();
+    byId("chat-status").textContent="";
+    const run=broadcastQueue.then(()=>transmitBroadcast(pending,bubble));
+    broadcastQueue=run.catch(()=>undefined);
+    await run;
     return;
   }
   if (byId<HTMLSelectElement>("chat-recipient").value === "auroracle") {
     if(chatImages.count()) {byId('chat-status').textContent=tr('Les images locales peuvent être envoyées aux agents de cette installation. Choisir Mon agent ou Tous.');return;}
-    try {byId("chat-status").textContent=await sendRemoteRecipient(byId<HTMLTextAreaElement>("chat-text"));void refreshChat();}
+    try {byId("chat-status").textContent=await sendRemoteRecipient(byId<HTMLTextAreaElement>("chat-text"));void refreshChatSoon();}
     catch(error){byId("chat-status").textContent=message(error);}
     saveChatDraft();
     return;
@@ -1001,11 +1083,14 @@ async function sendToAgent(): Promise<void> {
   if (text === "") return;
   const key = `ui-${crypto.randomUUID()}`;
   const bubble = outgoingBubble(key, text);
+  chatOutbox.add({key, text, at: new Date().toISOString()});
   field.value = "";
   chatImages.clear();
   saveChatDraft();
   field.focus();
-  await transmitChat(key, text, bubble);
+  const sent = await transmitChat(key, text, bubble);
+  chatOutbox.remove(key);
+  if (!sent) restoreChatText(text);
 }
 
 async function transmitChat(key: string, text: string, bubble: HTMLLIElement, requestWake = true,
@@ -1013,7 +1098,10 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
   const meta = bubble.querySelector("small")!;
   bubble.querySelector("button")?.remove();
   bubble.dataset["sending"] = "true";
+  delete bubble.dataset["failed"];
   meta.textContent = tr("Toi · Envoi en cours…");
+  // Jamais d'attente muette : au-delà de 6 s, le dire (la CLI répond ou échoue avant 15 s).
+  const slow = setTimeout(() => { if (bubble.dataset["sending"] === "true") meta.textContent = tr("Toi · Envoi en cours… (lent, toujours en attente)"); }, 6000);
   try {
     if(voiceScreenRefs.length&&!sharingAllowed()){
       bubble.dataset["sending"]="false";
@@ -1024,20 +1112,27 @@ async function transmitChat(key: string, text: string, bubble: HTMLLIElement, re
     const detail = typeof envelope.data?.["detail"] === "string" ? envelope.data["detail"] : "";
     if (envelope.ok !== true) throw new Error(detail || errorText(envelope));
   } catch (error) {
+    clearTimeout(slow);
     bubble.dataset["sending"] = "false";
-    meta.textContent = tr("Toi · Envoi non confirmé : {0}", [message(error)]);
+    bubble.dataset["failed"] = "true";
+    meta.textContent = tr("Toi · Échec de l’envoi : {0}", [message(error)]);
     const retry = document.createElement("button");
     retry.type = "button";
+    retry.className = "message-retry";
     retry.textContent = tr("Réessayer");
     retry.addEventListener("click", () => { void transmitChat(key, text, bubble, requestWake, voiceScreenRefs, sharingAllowed); });
     bubble.append(retry);
     return false;
   }
+  clearTimeout(slow);
   bubble.dataset["sending"] = "false";
-  meta.textContent = tr("Toi · Message enregistré");
+  meta.textContent = tr("Toi · Parti ✓");
+  // Texte rendu au champ après un échec puis renvoyé par « Réessayer » : pas de double.
+  const sentField = byId<HTMLTextAreaElement>("chat-text");
+  if (sentField.value === text) { sentField.value = ""; saveChatDraft(); }
   if (pendingBump?.key === key) pendingBump = null;
   // Refresh independently: waking the agent must never delay the sent receipt.
-  void refreshChat();
+  void refreshChatSoon();
   if (!requestWake) { tick = 0; return true; }
   try {
     const wake = await invoke("wake_now");
@@ -1056,10 +1151,122 @@ byId("chat-form").addEventListener("submit", (event) => {
   event.preventDefault();
   void sendToAgent();
 });
+// Rechargement pendant un envoi : la bulle revient et l'envoi reprend avec la même clé.
+if (tauri !== undefined) for (const pending of chatOutbox.list()) {
+  const bubble = outgoingBubble(pending.key, pending.text);
+  void transmitChat(pending.key, pending.text, bubble).then((sent) => {
+    chatOutbox.remove(pending.key);
+    if (!sent) restoreChatText(pending.text);
+  });
+}
 
 // --- Navigation et événements -------------------------------------------------------------
 
-type Tab = "voice" | "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
+const callFrame = byId("call-frame") as HTMLIFrameElement;
+const callOrigin = "http://127.0.0.1:8789";
+const displayCallVision = callVisionFeed(byId("call-vision-feed"), async (call,after) => {
+  const run = await tauri!.core.invoke("agent_prompts", {request:{action:"callVision",call,after}}) as CliRun;
+  const result = JSON.parse(run.stdout);
+  if (run.exitCode || result.error) throw Error(result.error ?? "Captures indisponibles");
+  return result.events;
+});
+type DesktopInvite = {id:string; label:string; until:number; ringtone?: "common" | "marco" | "vox" | "equerre" | "rose_des_vents" | "medicis"};
+let incomingCall: DesktopInvite | null = null;
+let callOpenedAt = 0;
+let callFrameLoaded = false;
+const callFrameState = () => ({hidden: callFrame.hidden === true, loaded: callFrameLoaded, openedAt: callOpenedAt, now: Date.now()});
+callFrame.addEventListener("load", () => { callFrameLoaded = true; });
+// Rechargement de .reload-stamp différé pendant un appel (sonnerie ou en cours).
+const uiReload = reloadGuard({reload: () => location.reload(), showPending: pendingBadge(document, () => location.reload())});
+(window as unknown as {__mindWakeUiUpdated?: () => void}).__mindWakeUiUpdated = () => uiReload.requested();
+setInterval(() => uiReload.check(), 5000);
+function setPhoneToast(stage: "ringing" | "active" | null, invite: DesktopInvite | null) {
+  uiReload.callStage(stage && invite ? stage : null, invite?.until);
+  if (tauri) void tauri.core.invoke("phone_toast_set", {toast: stage && invite ? {stage, id:invite.id, label:invite.label, until:invite.until, ringtone:invite.ringtone ?? "common"} : null}).catch(console.error);
+}
+let callTimer: ReturnType<typeof setTimeout> | undefined;
+let releaseTimer: ReturnType<typeof setTimeout> | undefined;
+function releaseCallFrame() {
+  clearTimeout(releaseTimer);
+  callFrame.removeAttribute("src");
+  callFrame.hidden = true;
+}
+function openCall() {
+  displayCallVision("");
+  clearTimeout(callTimer);
+  byId("call-status").textContent = "Ouverture de l’appel…";
+  byId("call-retry").hidden = true;
+  callFrame.hidden = true;
+  callOpenedAt = Date.now();
+  callFrameLoaded = false;
+  callFrame.src = callOrigin + (tauri ? "/desktop-call?receiver=desktop" : "/desktop-call");
+  const waitForCall = () => {
+    // Chargement lent (machine chargée) : attendre, ne pas annoncer une panne.
+    if (callWaitStatus(callFrameState()) === "loading") {
+      byId("call-status").textContent = "Ouverture de l’appel… (chargement lent)";
+      callTimer = setTimeout(waitForCall, 5000);
+      return;
+    }
+    byId("call-status").textContent = "Écran d’appel indisponible. Vérifie que la passerelle mobile est démarrée et que son export web est à jour.";
+    byId("call-retry").hidden = false;
+  };
+  callTimer = setTimeout(waitForCall, 10000);
+}
+window.addEventListener("message", event => {
+  if (event.source !== callFrame.contentWindow || event.origin !== callOrigin) return;
+  if (tauri) {
+    const message = event.data;
+    if (message?.type === "mind.call.vision" && typeof message.id === "string" && /^[a-f0-9-]{36}$/i.test(message.id)) {
+      displayCallVision(message.id);
+      return;
+    }
+    if(message?.type === 'mind.phone.ringtone-capabilities' && typeof message.request === 'string'){
+      const request=message.request;
+      void tauri.core.invoke('phone_ringtone_keys').then(keys=>callFrame.contentWindow?.postMessage({type:'mind.phone.ringtone-capabilities',request,keys},callOrigin))
+        .catch(()=>callFrame.contentWindow?.postMessage({type:'mind.phone.ringtone-capabilities',request,keys:[]},callOrigin));
+      return;
+    }
+    if (message === "mind.phone.ended") {
+      displayCallVision("");
+      incomingCall = null;
+      setPhoneToast(null, null);
+      return;
+    }
+    if (message?.type === "mind.phone.ringing" && !incomingCall) {
+      setPhoneToast(message.invite ? "ringing" : null, message.invite);
+      return;
+    }
+    if (message?.type === "mind.phone.accepted" && message.invite) {
+      incomingCall = message.invite;
+      selectTab("call");
+      setPhoneToast("active", incomingCall);
+      return;
+    }
+  }
+  if (!tauri && event.data === "mind.call.closed" && byId("view-call").hidden) releaseCallFrame();
+  if (event.data !== "mind.call.ready") return;
+  clearTimeout(callTimer);
+  byId("call-status").textContent = "";
+  byId("call-retry").hidden = true;
+  callFrame.hidden = false;
+});
+if (tauri?.event) {
+  setPhoneToast(null, null);
+  void tauri.event.listen("phone-poll", () => {
+    if (shouldReopenCall(callFrameState())) openCall();
+    else callFrame.contentWindow?.postMessage("mind.phone.poll", callOrigin);
+  });
+  void tauri.event.listen("phone-toast-action", event => {
+    const {id,action} = (event as {payload:{id:string;action:string}}).payload;
+    if (action === "hangup" && incomingCall?.id === id)
+      callFrame.contentWindow?.postMessage("mind.call.leave", callOrigin);
+    else callFrame.contentWindow?.postMessage({type:"mind.phone.answer", id, action}, callOrigin);
+  });
+  openCall();
+}
+byId("call-retry").addEventListener("click", openCall);
+byId("tab-call").addEventListener("click", () => selectTab("call"));
+type Tab = "call" | "prompts" | "voice" | "panel" | "chat" | "second" | "forks" | "threads" | "agents" | "history" | "settings" | "authorizations" | "projects" | "documents";
 
 let conversationTab: "general" | "second" | "forks" | "coach" = "general";
 function selectConversation(tab: "general" | "second" | "forks" | "coach"): void {
@@ -1076,15 +1283,29 @@ function selectConversation(tab: "general" | "second" | "forks" | "coach"): void
 function selectTab(tab: Tab): void {
   if (tab === "second") { selectConversation("second"); return; }
   if (tab === "forks") { selectConversation("forks"); return; }
+  if (tab === "call") {
+    clearTimeout(releaseTimer);
+    if (!callFrame.hasAttribute("src")) openCall();
+  }
+  if (tab !== "call" && !byId("view-call").hidden) {
+    clearTimeout(callTimer);
+    if (tauri) callFrame.contentWindow?.postMessage("mind.call.leave", callOrigin);
+    else if (callFrame.hidden) releaseCallFrame();
+    else {
+      callFrame.contentWindow?.postMessage("mind.call.leave", callOrigin);
+      releaseTimer = setTimeout(releaseCallFrame, 1500);
+    }
+  }
   if (tab === "chat") selectConversation("general");
   document.querySelector("main")?.setAttribute("data-active-tab", tab);
   byId("tab-documents").setAttribute("aria-selected", String(tab === "documents"));
-  for (const name of ["panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects", "voice"] as const) {
+  for (const name of ["call", "panel", "chat", "threads", "agents", "history", "settings", "authorizations", "projects", "voice", "prompts"] as const) {
     byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
     byId(`view-${name}`).hidden = name !== "chat" && name !== tab;
   }
   byId("view-documents").hidden = tab !== "documents" && tab !== "chat";
   chatOpen = true;
+  if (tab === "prompts") void prompts.open();
   if (tab === "authorizations") void authorizations.open();
   if (tab === "threads") void refreshThreads();
   if (!chatHasOpened || tab === "chat") {
@@ -1099,6 +1320,7 @@ function selectTab(tab: Tab): void {
   try { localStorage.setItem("mind-wake-active-tab", tab); } catch { /* Display preference only. */ }
 }
 
+byId("tab-prompts").addEventListener("click", () => selectTab("prompts"));
 byId("tab-voice").addEventListener("click",()=>selectTab("voice"));
 byId("tab-panel").addEventListener("click", () => {
   selectTab("panel");
@@ -1214,7 +1436,7 @@ function renderAgentThreads(): void {
     meta.textContent = `${m.from === "system" ? tr("État de la consultation") : m.from === "wake" ? tr("Agent Wake") : `Session ${selected.runtime} · ${selected.project}`} · ${new Date(m.at).toLocaleString(formatLocale())}`;
     messageLinks(body);
     appendMessageImages(body, m.text, (command, args) => tauri!.core.invoke(command, args));
-    li.append(meta, body);
+    li.append(meta, body, copyButton(() => m.text));
     if (m.from === "repo" && m.text.length === 4000 && Date.parse(m.at) < Date.parse("2026-10-30T16:00:00Z")) {
       const notice = document.createElement("p"); notice.className = "hint";
       notice.textContent = tr("Cette réponse historique atteint l’ancienne limite de 4 000 caractères : elle peut être incomplète.");
@@ -1358,12 +1580,33 @@ async function showAppVersion(): Promise<void> {
 }
 void showAppVersion();
 
-byId("tab-settings").addEventListener("click", () => { selectTab("settings"); });
+const engineSelect = byId("agent-engine") as HTMLSelectElement;
+let savedEngine = "";
+async function updateAgentEngine(preferred?: string) {
+  if (!tauri) return;
+  engineSelect.disabled = true;
+  try {
+    const request = { action: "agentEngine", preferred };
+    const run = await tauri.core.invoke("agent_prompts", {request}) as CliRun;
+    const result = JSON.parse(run.stdout);
+    if (run.exitCode || result.error) throw Error(result.error ?? "Réglage indisponible");
+    savedEngine = result.preferred ?? "";
+    byId("agent-engine-status").textContent = preferred ? "Choix enregistré." : "";
+  } catch (err) {
+    byId("agent-engine-status").textContent = String(err);
+  } finally {
+    engineSelect.value = savedEngine;
+    engineSelect.disabled = false;
+  }
+}
+engineSelect.addEventListener("change", () => void updateAgentEngine(engineSelect.value));
+byId("tab-settings").addEventListener("click", () => { selectTab("settings"); void updateAgentEngine(); });
 if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
 if (tauri) {const voicePlayer=initElevenLabs((command, args) => tauri.core.invoke(command, args), voiceChatPlayback,clip=>{voiceCapture.played(clip);voiceRouteStatus.textContent=" · Dernier vocal : "+(threadSettings.get().find(t=>t.id===clip.threadId)?.label??"non attribué")+" · tes prochains messages vont aux destinataires choisis";},event=>voiceCycle.event(event));
   voiceChatBargeIn({enabled:()=>bargeInSetting.enabled(),interrupt:()=>{if(bargeInSetting.enabled())voicePlayer.interrupt();}});}
 if (tauri) mountFastReply((command,args)=>tauri.core.invoke(command,args));
+if (tauri) mountTelegramAccount((command,args)=>tauri.core.invoke(command,args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
 if (tauri) {

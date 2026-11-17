@@ -1,5 +1,6 @@
 import path from "node:path";
 import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./project-lease.js";
+import { RepairAgent } from "./repair-agent.js";
 import { WakeCoach } from "./coach.js";
 import { FastReplyService } from "../communication/fast-reply-server.js";
 import { PatternHolderService } from "../communication/pattern-holders.js";
@@ -35,6 +36,8 @@ import {
 
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import { applyPrincipalEngine } from "./principal-engine.js";
+import { engineChoice, launchAgentSession, providerFailure, recordEngineFailure } from "./agent-engine.js";
 import { activateWorkspace } from "./workspace-config.js";
 import { WorkspaceGitSync } from "./workspace-git-sync.js";
 import { AuroreGitSync } from "./aurore-git-sync.js";
@@ -120,6 +123,7 @@ import {
   recordWakePrompt,
   type WakeTemplates,
 } from "./wake-prompt.js";
+import { takeWakeReminders } from "./wake-reminders.js";
 import { AgentWakeups, type QuotaSource } from "./wakeups.js";
 import { executionMode } from "./execution-mode.js";
 import { consumeHumanWake, pendingHumanWake } from "./human-wake.js";
@@ -132,6 +136,7 @@ import { openSharedInboxSession, type SharedInboxSession } from "../communicatio
 import { ownerMessagePending } from "../communication/owner-inbox.js";
 import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
 import { BackgroundJobs } from "./background-jobs.js";
+import { TelegramSupervisor } from "./telegram-supervisor.js";
 import { QuotaPacingStore } from "./pacing.js";
 
 export class DaemonError extends Error {
@@ -266,6 +271,7 @@ export class WakeDaemon implements SessionLauncher {
   #readiness: SandboxReadiness = { ok: false, detail: "autotest de refus non exécuté" };
   #stopReason = "arrêt demandé";
   #scheduler: Scheduler | null = null;
+  #repairAgent: RepairAgent | null = null;
   #backgroundJobs: BackgroundJobs | null = null;
   #workspaceSync: WorkspaceGitSync | null = null;
   #auroreSync: AuroreGitSync | null = null;
@@ -274,6 +280,7 @@ export class WakeDaemon implements SessionLauncher {
   #coach: WakeCoach | null = null;
   #fastReply: FastReplyService | null = null;
   #patternHolders: PatternHolderService | null = null;
+  #telegram: TelegramSupervisor | null = null;
   readonly #templates: WakeTemplates;
   readonly #wakeups: AgentWakeups;
   #quota: QuotaSource | undefined;
@@ -446,7 +453,18 @@ export class WakeDaemon implements SessionLauncher {
         const hostUnsandboxed =
           resolution.status === "active" &&
           resolution.revision.groups.runtime.hostUnsandboxedAcknowledged === true;
-        real = await realMode(options, registration, runtimeDir, hostUnsandboxed);
+        if (hostUnsandboxed && (wanted === "codex" || wanted === "claude") && engineChoice(options.dataDir)) {
+          const opened = await launchAgentSession(options.dataDir, wanted === "claude" ? "claude" : "codex", async engine => {
+            applyPrincipalEngine(store, options.dataDir, options.profileId, engine);
+            const active = resolvePolicy(store.uow.policies, options.profileId);
+            if (active.status !== "active") throw Error("Révision du profil indisponible");
+            const selected = active.revision.groups.runtime;
+            const reg = realRegistration(options.registry ?? defaultRegistry(selected), selected.adapterId);
+            return {registration:reg, real:await realMode(options, reg, runtimeDir, hostUnsandboxed)};
+          }, () => null, () => !store.uow.profiles.get(options.profileId)?.emergencyStopLocked);
+          registration = opened.registration;
+          real = opened.real;
+        } else real = await realMode(options, registration, runtimeDir, hostUnsandboxed);
       }
       const supervisor = new ProcessTreeSupervisor(runtimeDir);
       if (!supervisor.status.available) {
@@ -615,6 +633,11 @@ export class WakeDaemon implements SessionLauncher {
       environment instanceof RuntimeEnvironment ? () => environment.quotaSnapshots() : undefined;
     const scheduler = new Scheduler({
       maintenance: () => {
+        if (real && !this.#abort.signal.aborted && this.#sessions.size === 0 &&
+            applyPrincipalEngine(this.#store, this.#o.dataDir, profileId, undefined, true)) {
+          this.requestStop("changement du moteur des agents");
+          return;
+        }
         void this.#auroreSync?.tick().catch(() => {
           this.#log("Aurore sync controls unavailable; inspect aurore-sync-state.json.");
         });
@@ -680,10 +703,10 @@ export class WakeDaemon implements SessionLauncher {
           allowed: () => {
             const policy = resolvePolicy(uow.policies, profileId);
             return syncAllowed() && policy.status === "active" &&
-              policy.revision.groups.runtime.adapterId === "codex" &&
+              (policy.revision.groups.runtime.adapterId === "codex" || !!engineChoice(this.#o.dataDir)) &&
               policy.revision.groups.runtime.nativeCapabilities === true;
           },
-          ...(coachPolicy.status === "active" ? { model: coachPolicy.revision.groups.runtime.model } : {}),
+          ...(coachPolicy.status === "active" && coachPolicy.revision.groups.runtime.adapterId === "codex" ? { model: coachPolicy.revision.groups.runtime.model } : {}),
           log: message => this.#log(message),
         });
         this.#coach.start();
@@ -701,9 +724,16 @@ export class WakeDaemon implements SessionLauncher {
           log: message => this.#log(message),
         });
         this.#patternHolders.start();
+        // Pont Telegram : relancé s'il meurt ou se fige, alerte dans le fil si le relevé ne progresse plus.
+        this.#telegram = new TelegramSupervisor({
+          dataDir: this.#o.dataDir,
+          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
+          log: message => this.#log(message),
+        });
+        this.#telegram.start();
       }
       if (real !== null && real.sandbox === null) {
-        this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, () => {
+        const hostWorkAllowed = () => {
           const profile = uow.profiles.get(profileId);
           const policy = resolvePolicy(uow.policies, profileId);
           return (
@@ -715,7 +745,11 @@ export class WakeDaemon implements SessionLauncher {
             policy.status === "active" &&
             policy.revision.groups.runtime.hostUnsandboxedAcknowledged === true
           );
-        }, job => this.#log(`job relancé après interruption : ${job.id} (${job.title})`));
+        };
+        this.#repairAgent = new RepairAgent(this.#o.dataDir, hostWorkAllowed, message => this.#log(message));
+        this.#repairAgent.start();
+        this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, hostWorkAllowed, (job, after) => this.#log(`job relancé après ${after} : ${job.id} (${job.title})`),
+        { log: message => this.#log(message) });
         this.#backgroundJobs.start();
       }
       await scheduler.run(this.#abort.signal);
@@ -723,8 +757,10 @@ export class WakeDaemon implements SessionLauncher {
       await this.#coach?.close();
       await this.#fastReply?.close();
       await this.#patternHolders?.close();
+      this.#telegram?.close();
       await this.#auroreSync?.close();
       await this.#workspaceSync?.close();
+      await this.#repairAgent?.close();
       await this.#backgroundJobs?.close();
       this.#close();
     }
@@ -984,6 +1020,11 @@ export class WakeDaemon implements SessionLauncher {
         `gestionnaire : résultat de session conservé, finalisation à reprendre : ${String(error)}`,
       );
     }
+    const engine = this.#registration.id;
+    if ((engine === "codex" || engine === "claude") && providerFailure(result.reason)) {
+      const choice = engineChoice(this.#o.dataDir);
+      if (choice) recordEngineFailure(this.#o.dataDir, choice, engine === "claude" ? "claude" : "codex");
+    }
     this.#results.push(result);
     if (guard !== null && quotaAtStart !== undefined) {
       const quotaAtEnd = await this.#quota?.().catch(() => undefined);
@@ -1074,8 +1115,16 @@ export class WakeDaemon implements SessionLauncher {
         },
       } : null;
     });
+    const wakeNumber =
+      (db
+        .prepare<[string], { n: number }>("SELECT COUNT(*) AS n FROM wake_prompts WHERE profile_id = ?")
+        .get(this.#o.profileId)?.n ?? 0) + 1;
+    const reminders = takeWakeReminders(this.#o.dataDir, wakeNumber);
+    if (reminders.due.length + reminders.expired.length > 0)
+      this.#log(`réveil ${String(wakeNumber)} : ${String(reminders.due.length)} rappel(s) martelé(s), ${String(reminders.expired.length)} expiré(s)`);
     const composition = composeWake({
       templates: this.#templates,
+      reminders: reminders.block,
       events: [
         ...events,
         ...[ownerPresenceEvent(this.#idleWatcher?.latest() ?? null)].filter((e) => e !== null),

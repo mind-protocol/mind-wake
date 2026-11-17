@@ -32,7 +32,8 @@ import { status } from "./commands/status.js";
 import { stop } from "./commands/stop.js";
 import { wake } from "./commands/wake.js";
 import { broadcastTargets, broadcastHuman } from "../communication/broadcast.js";
-import { messages, reply } from "./commands/messages.js";
+import { relayAppError } from "../communication/app-error-relay.js";
+import { messages, reply, MAX_MESSAGES_LIMIT } from "./commands/messages.js";
 import { wakeHistory } from "./commands/wake-history.js";
 import { uninstall } from "./commands/uninstall.js";
 import type { CliContext } from "./context.js";
@@ -58,6 +59,7 @@ Commandes :
   forks status|on|off|send|run
                 Forks Codex 2 à 8 ; on/off/send lisent un objet JSON {id,text?} sur stdin
   wake-order    Réordonne les blocs futurs (JSON sur l’entrée standard)
+  app-error     Relaie au principal une erreur affichée par une app (JSON {app,screen,text,at} sur stdin)
   wake-passages Importe/valide les passages ou prépare un passage (JSON explicite)
   elevenlabs status|enable
                 Voix ElevenLabs : état du disjoncteur crédits ; enable réactive
@@ -89,6 +91,7 @@ Commandes :
   wake          Demande un réveil au plus tôt ; n'accorde rien (fenêtres, priorité,
                 budgets revérifiés), refusé en pause, arrêt ou blocage
   messages      Fil avec ton agent : sa note artifacts/questions-for-human.md et tes réponses
+                --limit N : seulement les N éléments les plus récents du fil (desktop)
   reply         Répond à ton agent : texte lu sur l'entrée standard
                 (--idempotency-key K) ; ne le réveille pas, n'accorde rien
                 --capture-screen joint une capture ponctuelle de l’écran principal
@@ -189,8 +192,11 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
     if (takesArgument && argument === undefined) {
       throw new UsageError(`\`${command}\` attend un chemin`);
     }
-    if (command !== "journal" && (values.limit !== undefined || values.after !== undefined)) {
-      throw new UsageError("--limit et --after ne s'appliquent qu'à `journal`");
+    if (values.after !== undefined && command !== "journal") {
+      throw new UsageError("--after ne s'applique qu'à `journal`");
+    }
+    if (values.limit !== undefined && command !== "journal" && command !== "messages") {
+      throw new UsageError("--limit ne s'applique qu'à `journal` et `messages`");
     }
     rejectOptions(command, values);
 
@@ -301,11 +307,20 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         result = wake(ctx, dataDir) as CommandResult<unknown>;
         break;
       case "messages":
-        result = messages(ctx, dataDir) as CommandResult<unknown>;
+        result = messages(ctx, dataDir, parseIntegerOption("limit", values.limit, 1, MAX_MESSAGES_LIMIT)) as CommandResult<unknown>;
         break;
       case "wake-history":
         result = wakeHistory(dataDir) as CommandResult<unknown>;
         break;
+      case "app-error": {
+        // Erreur affichée par l'app desktop : JSON {app,screen,text,at} sur stdin → file du Réparateur.
+        const raw = (await ctx.readStdin?.()) ?? "";
+        let input: unknown;
+        try { input = JSON.parse(raw); } catch { throw new UsageError("app-error attend un objet JSON sur stdin"); }
+        const sent = relayAppError(dataDir.path, input);
+        result = { exitCode: EXIT_OK, data: { id: sent.id, app: sent.report.app, screen: sent.report.screen }, human: () => "Incident enregistré pour Réparateur." };
+        break;
+      }
       case "broadcast-status":
         result = {exitCode:EXIT_OK,data:{recipients:broadcastTargets(dataDir.path),scope:'Principal + rôles keeper actifs ; jobs CLI sans canal signalés. Forks 2-8 exclus. Sous-agents natifs non exposés.'},human:d=>JSON.stringify(d)};
         break;

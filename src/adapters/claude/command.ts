@@ -1,3 +1,4 @@
+import {claudeCallMcpConfig,type HumanCallIdentity} from '../../communication/human-call-capability.js';
 import type { WakeImage } from "../../contracts/wake-image.js";
 import { claudeWakeContent } from "../wake-image.js";
 import path from "node:path";
@@ -45,6 +46,8 @@ export function interruptibleBashScript(ownerInboxScript: string): string {
 }
 
 export interface ClaudeRunArgs {
+  readonly humanCall?: HumanCallIdentity;
+  readonly strictMcpConfig?: boolean;
   readonly model: string;
   readonly systemPromptFile: string;
   /** `replace` : `--system-prompt-file` ; `append` : `--append-system-prompt-file`. */
@@ -59,6 +62,17 @@ export interface ClaudeRunArgs {
     /** Options Node avant le script (chargeur TypeScript quand le moteur tourne depuis src). */
     readonly nodeArgs?: readonly string[];
   };
+  /**
+   * Hook de confiance d'une room (room-inbox-hook.ts) : les messages arrivés pendant le tour
+   * sont injectés après chaque outil et au Stop. Ignoré si `ownerInboxHook` est fourni.
+   */
+  readonly roomInboxHook?: {
+    readonly node: string;
+    readonly nodeArgs?: readonly string[];
+    readonly script: string;
+    /** Arguments après le script (`--deliver-room-inbox` …). */
+    readonly args: readonly string[];
+  };
   /** Configuration MCP explicitement fournie par le lanceur de confiance. */
   readonly mcpConfigFile?: string;
   /** Journal de débogage du CLI (`--debug-file`), activé par l'administrateur du poste. */
@@ -67,10 +81,37 @@ export interface ClaudeRunArgs {
   /** `--session-id` pour une conversation neuve, `--resume` pour la suite. */
   readonly session: { readonly mode: "new" | "resume"; readonly id: string };
   readonly maxTurns?: number;
+  /** Dossiers supplémentaires accessibles aux outils (`--add-dir`), hors du dossier de travail. */
+  readonly addDirs?: readonly string[];
+}
+
+/** Réglages d'une session de room : seul le hook de sa boîte de réception (même forme que le principal). */
+function roomInboxSettings(hook: NonNullable<ClaudeRunArgs["roomInboxHook"]>): string {
+  return JSON.stringify({
+    disableAllHooks: false,
+    bashEditDiffEnabled: false,
+    hooks: Object.fromEntries(
+      ["PostToolUse", "PostToolUseFailure", "Stop"].map((event) => [
+        event,
+        [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: hook.node,
+                args: [...(hook.nodeArgs ?? []), hook.script, ...hook.args],
+              },
+            ],
+          },
+        ],
+      ]),
+    ),
+  });
 }
 
 /** Arguments d'une session : entrée et sortie `stream-json`, aucun réglage projet chargé. */
 export function claudeRunArgs(options: ClaudeRunArgs): string[] {
+  if(options.humanCall) { const config=claudeCallMcpConfig(options.mcpConfigFile,options.humanCall,options.nativeCapabilities===true); options={...options,...(config===undefined?{}:{mcpConfigFile:config})}; }
   const args = [
     "-p",
     "--input-format",
@@ -86,6 +127,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
     options.nativeCapabilities === true ? "default" : options.tools.join(","),
     // Seuls les réglages du dossier de configuration dédié : aucun `.claude/settings*.json`
     // de l'espace d'exploration, écrit par l'agent, n'est chargé.
+    ...(options.strictMcpConfig === true && options.nativeCapabilities === true ? ["--strict-mcp-config"] : []),
     ...(options.nativeCapabilities === true
       ? []
       : [
@@ -94,9 +136,11 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
           "--strict-mcp-config",
         ]),
     ...(options.ownerInboxHook === undefined
-      ? options.nativeCapabilities === true
-        ? []
-        : ["--settings", CLAUDE_SESSION_SETTINGS]
+      ? options.roomInboxHook !== undefined
+        ? ["--settings", roomInboxSettings(options.roomInboxHook)]
+        : options.nativeCapabilities === true
+          ? []
+          : ["--settings", CLAUDE_SESSION_SETTINGS]
       : [
           "--settings",
           JSON.stringify({
@@ -165,6 +209,7 @@ export function claudeRunArgs(options: ClaudeRunArgs): string[] {
   if (options.mcpConfigFile !== undefined) args.push("--mcp-config", options.mcpConfigFile);
   if (options.debugFile !== undefined) args.push("--debug-file", options.debugFile);
   if (options.maxTurns !== undefined) args.push("--max-turns", String(options.maxTurns));
+  if (options.addDirs !== undefined && options.addDirs.length > 0) args.push("--add-dir", ...options.addDirs);
   if (options.ownerInboxHook !== undefined) args.push("--replay-user-messages");
   return args;
 }
@@ -315,3 +360,4 @@ export function claudeEnvironment(options: ClaudeEnvironmentOptions): Record<str
   }
   return env;
 }
+

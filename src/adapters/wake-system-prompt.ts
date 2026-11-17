@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { withHumanCallPrompt } from "../communication/human-call-prompt.js";
 
 /** Shared runtime direction, separate from the per-wake message. */
 export const WAKE_HOME_SYSTEM_PROMPT = [
@@ -33,6 +34,7 @@ export const WAKE_HOME_SYSTEM_PROMPT = [
 export const PERSONALITY_FILE = "artifacts/PERSONALITY.md";
 
 export function withWakePersonality(workspaceDir: string, base: string): string {
+  base = withHumanCallPrompt(base);
   const file = path.join(workspaceDir, PERSONALITY_FILE);
   let realFile: string;
   try { realFile = fs.realpathSync(file); } catch (error) {

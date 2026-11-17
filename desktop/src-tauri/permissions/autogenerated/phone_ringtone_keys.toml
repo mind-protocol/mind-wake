@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-phone-ringtone-keys"
+description = "Enables the phone_ringtone_keys command without any pre-configured scope."
+commands.allow = ["phone_ringtone_keys"]
+
+[[permission]]
+identifier = "deny-phone-ringtone-keys"
+description = "Denies the phone_ringtone_keys command without any pre-configured scope."
+commands.deny = ["phone_ringtone_keys"]

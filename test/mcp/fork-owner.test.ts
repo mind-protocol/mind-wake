@@ -1,3 +1,4 @@
+import { DESKTOP_TOOLS } from "../../services/mcp/desktop-tools.js";
 import { expect, it } from "vitest";
 import { McpServer } from "@modelcontextprotocol/server";
 import fs from "node:fs";
@@ -39,11 +40,13 @@ it("gives VOX her own job tools and the MIND tools attributable to her", () => {
     "list_owner_messages",
     "message_owner",
     "publish_image",
+    "generate_image",
     "edit_owner_message",
     "delete_owner_message",
     "start_background_job",
     "list_background_jobs",
     "cancel_background_job",
+    "computer_use", ...DESKTOP_TOOLS, "call_human",
     "wake_status",
     "wake_journal",
     "wake_last_report",
@@ -94,7 +97,7 @@ it("exposes message_owner only, and requires a signature", () => {
     MIND_WAKE_DATA_DIR: "D:/data",
     MIND_WAKE_OWNER_SIGNATURE: "Room 9",
   });
-  expect(names).toEqual(["message_owner"]);
+  expect(names).toEqual(["message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, "call_human"]);
   expect(() => registerSignedOwnerTools(server, { MIND_WAKE_DATA_DIR: "D:/data" })).toThrow(
     "SIGNATURE",
   );
@@ -147,6 +150,8 @@ it("gives the Room 2 publish profile exactly its tools", () => {
   expect(names).toEqual([
     "list_owner_messages",
     "message_owner",
+    "generate_image",
+    "computer_use", ...DESKTOP_TOOLS, "call_human",
     "reddit_me",
     "reddit_feed",
     "reddit_search",
@@ -173,7 +178,7 @@ it("gives Room 2 no Colony tools when its own file is missing", () => {
   const dir = dataDirWith({ reddit: false });
   const { names, server } = recorder();
   registerSignedOwnerTools(server, room2(dir));
-  expect(names).toEqual(["list_owner_messages", "message_owner", "post_to_fork_thread"]);
+  expect(names).toEqual(["list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, "call_human", "post_to_fork_thread"]);
   // Un nom qui viserait le compte du principal est refusé : toujours aucun outil Colony.
   const other = recorder();
   registerSignedOwnerTools(other.server, { ...room2(dir), MIND_WAKE_OWNER_COLONY: "colony.json" });
@@ -195,11 +200,13 @@ it("keeps Room 7 unchanged, with Reddit writes for VOX only", () => {
     "list_owner_messages",
     "message_owner",
     "publish_image",
+    "generate_image",
     "edit_owner_message",
     "delete_owner_message",
     "start_background_job",
     "list_background_jobs",
     "cancel_background_job",
+    "computer_use", ...DESKTOP_TOOLS, "call_human",
     "wake_status",
     "wake_journal",
     "wake_last_report",

@@ -14,6 +14,7 @@ import { CLI_MAIN, minimalEnv, NODE_ARGS, startHarness, type Harness } from "./h
 const TIMEOUT = 60_000;
 
 const EXPECTED_TOOLS = [
+  "add_wake_reminder",
   "close_help_request",
   "configure_wake_rotation",
   "get_next_wakes",
@@ -22,10 +23,12 @@ const EXPECTED_TOOLS = [
   "list_directory",
   "list_help_requests",
   "list_invitations",
+  "list_wake_reminders",
   "plan_wake_block",
   "propose_matches",
   "publish_help_request",
   "read_inbox",
+  "remove_wake_reminder",
   "reply_to_thread",
   "respond_to_invitation",
   "save_wake_context",

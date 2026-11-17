@@ -1,19 +1,27 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   FORK_IDS,
+  ONE_SHOT_CAP,
+  ONE_SHOT_NOTE,
+  claimOneShot,
   clusterStatusPublisher,
+  oneShotTriggers,
+  oneShotTurns,
   forkDir,
   forkEnabled,
   forkProjects,
   forksRunning,
   readForks,
   runForks,
+  discardPendingBeforeAssignment,
+  sendNoticeToFork,
   sendToFork,
   setForkEnabled,
 } from "./forks.js";
+import { saveForkAssignment } from "./fork-assignment.js";
 import { SecondThreadStore } from "./second-thread.js";
 import { runForkTurn, type ForkTurnResult } from "./fork-runtime.js";
 import type { CodexProcess } from "../adapters/codex/launch.js";
@@ -179,22 +187,22 @@ it("broadcasts changed public statuses to enabled peers with explicit FYI proven
   expect(clusterStatus({ ...item, text: "Citation : " + item.text })).toBeUndefined();
   const status = clusterStatus(item);
   expect(status).toBe("Carte analysée.");
-  const publish = clusterStatusPublisher(dir, 8, "Fork 8");
+  const publish = clusterStatusPublisher(dir, 8, "Room 8");
   publish(status!);
   publish(status!);
   publish("Comparaison terminée.");
-  clusterStatusPublisher(dir, 8, "Fork 8")("Comparaison terminée.");
+  clusterStatusPublisher(dir, 8, "Room 8")("Comparaison terminée.");
   const store = new SecondThreadStore(forkDir(dir, 4));
   try {
     expect(store.pendingHuman().map(entry => entry.text)).toEqual([
-      "FYI — Fork 8 : Carte analysée.",
-      "FYI — Fork 8 : Comparaison terminée.",
+      "FYI — Room 8 : Carte analysée.",
+      "FYI — Room 8 : Comparaison terminée.",
     ]);
     expect(store.pendingSteering(0)?.senderFork).toBe("8");
     expect(store.entries().map(entry => entry.clusterStatus)).toEqual([true, true]);
   } finally { store.close(); }
   expect(readOwnerInboxHistory(dir)).toHaveLength(2);
-  expect(readOwnerInboxHistory(dir)[0]?.origin).toMatchObject({ kind: "peer_message", author: "Fork 8" });
+  expect(readOwnerInboxHistory(dir)[0]?.origin).toMatchObject({ kind: "peer_message", author: "Room 8" });
   expect(readReceivedMessages(dir).map(message => message.source.kind)).toEqual(["cluster-status", "cluster-status"]);
   expect(fs.existsSync(forkDir(dir, 2))).toBe(false);
   clusterStatusPublisher(dir, 1, "Fil principal")("Données de partie reçues.");
@@ -307,7 +315,7 @@ it.each(["active-turn", "different-turn"])("steers new interfil messages and che
   expect(steers).toHaveLength(ack === "active-turn" ? 2 : 1);
   expect(steers[0]?.params).toMatchObject({
     threadId: "own-thread", expectedTurnId: "active-turn",
-    input: [{ type: "text", text: expect.stringMatching(/^Message de Fork 4.*La case B/) }],
+    input: [{ type: "text", text: expect.stringMatching(/^Message de Room 4.*La case B/) }],
   });
   if (ack === "active-turn") expect(steers[1]?.params["input"]).toEqual([
     { type: "text", text: expect.stringMatching(/^Message humain.*Nouveau message humain/) },
@@ -486,4 +494,184 @@ it("reads public activity for each fork independently while a turn is still runn
   expect(view.forks[0]?.lastTurn?.endedAt).toBeNull();
   expect(view.forks[0]?.activity.map(a=>a.text)).toEqual(["Activité du fork 2"]);
   expect(view.forks[1]?.activity.map(a=>a.text)).toEqual(["Activité du fork 3"]);
+});
+
+it("delivers a labelled notice (Vigie) to an assigned room under its label, never as NLR", async () => {
+  const instructions = path.join(workspace, "room4.md");
+  fs.writeFileSync(instructions, "Consigne de la room.");
+  saveForkAssignment(forkDir(dir, 4), { instructions, engine: "claude", workspace });
+  setForkEnabled(dir, 4, true);
+  const label = "Vigie · voix-juge de la room";
+  expect(sendNoticeToFork(dir, 4, "Coup joué : vérifie la règle 3.", "vigie-test-0001", label).status).toBe("recorded");
+  expect(sendNoticeToFork(dir, 4, "Coup joué : vérifie la règle 3.", "vigie-test-0001", label).status).toBe("duplicate");
+  // L'étiquette est stockée avec l'entrée ; la notice réveille la room (pendingHuman).
+  const before = new SecondThreadStore(forkDir(dir, 4));
+  expect(before.get("entry-notice:1")).toBe(JSON.stringify({ label, hidden: false }));
+  expect(before.pendingHuman().map((e) => e.notice?.label)).toEqual([label]);
+  before.close();
+  // La vue desktop lit l'auteur dans le store (entrée visible, étiquetée).
+  const view = readForks(dir, workspace).forks.find((f) => f.id === 4);
+  expect(view?.entries.map((e) => [e.role, e.notice])).toEqual([["human", { label, hidden: false }]]);
+  const messages: string[] = [];
+  await runForks({
+    dataDir: dir, workspace, profile: () => "run", claudeProfile: () => "run", maxTurns: 1,
+    claudeTurn: async (input) => {
+      messages.push(input.message);
+      return { outcome: "completed", text: "", tokens: null, accepted: true, detail: null, retryAtMs: null, sessionId: "s" };
+    },
+  });
+  expect(messages).toHaveLength(1);
+  expect(messages[0]).toMatch(/^Vigie · voix-juge de la room \[[^\]]+\] : Coup joué : vérifie la règle 3\.$/);
+  expect(messages[0]).not.toContain("NLR");
+});
+it("sets aside, without deleting, pending messages older than a new assignment", () => {
+  sendToFork(dir, 4, "Ancienne diffusion");
+  const store = new SecondThreadStore(forkDir(dir, 4));
+  store.addNoticeOnce("old-notice-01", "Ancienne notice", "Principal");
+  store.close();
+  const instructions = path.join(workspace, "room4.md");
+  fs.writeFileSync(instructions, "Consigne.");
+  const assignment = saveForkAssignment(forkDir(dir, 4), { instructions, engine: "claude", workspace });
+  expect(discardPendingBeforeAssignment(dir, 4, assignment.assignedAt)).toEqual([1, 2]);
+  sendToFork(dir, 4, "Après affectation");
+  const after = new SecondThreadStore(forkDir(dir, 4));
+  expect(after.pendingHuman().map((e) => e.text)).toEqual(["Après affectation"]);
+  const kept = after.entries();
+  expect(kept.filter((e) => e.role === "human").map((e) => [e.text, e.delivered])).toEqual([
+    ["Ancienne diffusion", true], ["Ancienne notice", true], ["Après affectation", false],
+  ]);
+  expect(JSON.parse(after.get("entry-discarded:1") ?? "{}")).toMatchObject({ before: assignment.assignedAt });
+  expect(kept.find((e) => e.role === "event")?.text).toContain("entrées 1, 2");
+  after.close();
+  expect(discardPendingBeforeAssignment(dir, 5, assignment.assignedAt)).toEqual([]);
+});
+describe("disabled room: one turn per human message", () => {
+  const assign = (room: number) => {
+    const instructions = path.join(workspace, `room${String(room)}.md`);
+    fs.writeFileSync(instructions, "Consigne.");
+    saveForkAssignment(forkDir(dir, room), { instructions, engine: "claude", workspace });
+  };
+  const since = (room: number, at = "1970-01-01T00:00:00.000Z") => {
+    const s = new SecondThreadStore(forkDir(dir, room));
+    s.set("oneshot-since", at);
+    s.close();
+  };
+  // Room 4, active, garde le worker vivant le temps d'un tour (maxTurns) ; Room 7 reste désactivée.
+  let telegram: { text: string; key: string }[] = [];
+  let telegramFails = false;
+  const run = async (reply = (id: number) => `réponse ${String(id)}`) => {
+    sendToFork(dir, 4, `tour de la room 4 ${String(Math.random())}`);
+    const calls: { id: number; message: string; control: string }[] = [];
+    await runForks({
+      dataDir: dir, workspace, profile: () => "run", claudeProfile: () => "run", maxTurns: 1, telegramInbound: false,
+      telegramReply: async (text, key) => {
+        telegram.push({ text, key });
+        if (telegramFails) throw Error("réseau indisponible");
+      },
+      claudeTurn: async (input) => {
+        calls.push({ id: input.id, message: input.message, control: input.control() });
+        return { outcome: "completed", text: reply(input.id), tokens: null, accepted: true, detail: null, retryAtMs: null, sessionId: "s" };
+      },
+    });
+    return calls.filter((c) => c.id === 7);
+  };
+  beforeEach(() => {
+    telegram = [];
+    telegramFails = false;
+    assign(4);
+    assign(7);
+    setForkEnabled(dir, 4, true);
+    setForkEnabled(dir, 7, false);
+    since(7);
+  });
+
+  it("runs exactly one turn for a Telegram-routed message, then never again, without enabling the room", async () => {
+    sendToFork(dir, 7, "@vox hello !", "telegram-route:msg-000001", "telegram", undefined, [], true);
+    const first = await run();
+    expect(first).toHaveLength(1);
+    expect(first[0]?.control).toBe("run");
+    expect(first[0]?.message).toContain(ONE_SHOT_NOTE);
+    expect(first[0]?.message).toContain("@vox hello !");
+    expect(forkEnabled(dir, 7)).toBe(false);
+    expect(JSON.parse(fs.readFileSync(path.join(forkDir(dir, 7), "enabled.json"), "utf8"))).toEqual({ enabled: false });
+    const store = new SecondThreadStore(forkDir(dir, 7));
+    expect(store.pendingHuman()).toEqual([]);
+    expect(store.entries().filter((e) => e.role === "agent").map((e) => e.text)).toEqual(["réponse 7"]);
+    expect(oneShotTurns(store)).toHaveLength(1);
+    store.close();
+    // Retry of the same Telegram message: duplicate, no second turn.
+    expect(sendToFork(dir, 7, "@vox hello !", "telegram-route:msg-000001", "telegram", undefined, [], true).status).toBe("duplicate");
+    expect(await run()).toHaveLength(0);
+    // La réponse de VOX, et elle seule, est partie une fois vers le téléphone de NLR.
+    expect(telegram).toEqual([{ text: "VOX : réponse 7", key: expect.stringMatching(/^room7-reply-\d+$/) as unknown as string }]);
+  });
+
+  it("sends nothing to Telegram for a desktop message, and splits long Telegram replies at 4000 chars", async () => {
+    sendToFork(dir, 7, "message direct du desktop");
+    expect(await run()).toHaveLength(1);
+    expect(telegram).toEqual([]);
+    sendToFork(dir, 7, "@vox raconte", "telegram-route:msg-000002", "telegram", undefined, [], true);
+    expect(await run(() => "x".repeat(5000))).toHaveLength(1);
+    expect(telegram.map((t) => t.text.length)).toEqual([4000, 5006 - 4000]);
+    expect(telegram[0]?.text.startsWith("VOX : xxx")).toBe(true);
+    expect(telegram.map((t) => /^room7-reply-\d+-(\d)$/.exec(t.key)?.[1])).toEqual(["0", "1"]);
+  });
+
+  it("logs a failed Telegram send once and never retries it", async () => {
+    telegramFails = true;
+    sendToFork(dir, 7, "@vox hello", "telegram-route:msg-000003", "telegram", undefined, [], true);
+    expect(await run()).toHaveLength(1);
+    expect(telegram).toHaveLength(1);
+    const store = new SecondThreadStore(forkDir(dir, 7));
+    const reply = store.entries().find((e) => e.role === "agent")!;
+    expect(store.get(`telegram-reply:${String(reply.id)}`)).toMatch(/^failed: réseau indisponible/);
+    store.close();
+    expect(await run()).toHaveLength(0);
+    expect(telegram).toHaveLength(1);
+  });
+
+  it("does not re-run a claimed message that stayed pending (turn not accepted)", async () => {
+    sendToFork(dir, 7, "message direct du desktop");
+    const store = new SecondThreadStore(forkDir(dir, 7));
+    expect(oneShotTriggers(store).map((e) => e.text)).toEqual(["message direct du desktop"]);
+    claimOneShot(store, oneShotTriggers(store));
+    expect(oneShotTriggers(store)).toEqual([]);
+    expect(store.pendingHuman()).toHaveLength(1);
+    store.close();
+    expect(await run()).toHaveLength(0);
+  });
+
+  it("never wakes the room for agent messages (principal, other room, simulation, relay)", async () => {
+    sendNoticeToFork(dir, 7, "VOX, ton outil est prêt.", "post:principal:abcdefgh", "Principal");
+    sendNoticeToFork(dir, 7, "Simulation NLR : continue.", "post:nlr:abcdefgh", "Simulation NLR");
+    sendToFork(dir, 7, "FYI — Room 2 : statut", "status:abcdefgh", JSON.stringify({ kind: "interfil" }), 2);
+    sendToFork(dir, 7, "relais applicatif", "relay:abcdefgh", "vox-relay");
+    const store = new SecondThreadStore(forkDir(dir, 7));
+    expect(store.pendingHuman()).toHaveLength(4);
+    expect(oneShotTriggers(store)).toEqual([]);
+    store.close();
+    expect(await run()).toHaveLength(0);
+  });
+
+  it("ignores the backlog received before the worker's first start", async () => {
+    since(7, new Date(Date.now() + 60_000).toISOString());
+    sendToFork(dir, 7, "ancien message");
+    expect(await run()).toHaveLength(0);
+  });
+
+  it("caps one-shot turns at 30 per room over a rolling 24 h and logs once", () => {
+    sendToFork(dir, 7, "message au-delà du plafond");
+    const store = new SecondThreadStore(forkDir(dir, 7));
+    const now = Date.now();
+    store.set("oneshot-turns", JSON.stringify([now - 25 * 3_600_000, ...Array.from({ length: ONE_SHOT_CAP }, (_, i) => now - i * 60_000)]));
+    expect(oneShotTurns(store, now)).toHaveLength(ONE_SHOT_CAP);
+    const logs: string[] = [];
+    expect(claimOneShot(store, oneShotTriggers(store), now, (l) => logs.push(l), 7)).toBeNull();
+    expect(claimOneShot(store, oneShotTriggers(store), now, (l) => logs.push(l), 7)).toBeNull();
+    expect(logs).toHaveLength(1);
+    expect(store.pendingHuman()).toHaveLength(1);
+    // Once the oldest leaves the 24 h window, the message gets its turn.
+    expect(claimOneShot(store, oneShotTriggers(store), now + 24 * 3_600_000 - 29 * 60_000 + 1)?.map((e) => e.text)).toEqual(["message au-delà du plafond"]);
+    store.close();
+  });
 });

@@ -1,3 +1,4 @@
+import { readAgentRole } from "../agent-role.js";
 /**
  * Enregistrement de Codex dans le registre d'adapters du daemon (`defaultRegistry()`).
  *
@@ -112,7 +113,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
               [
                 typeof config.systemPrompt === "function"
                   ? config.systemPrompt(request)
-                  : (config.systemPrompt ?? WAKE_HOME_SYSTEM_PROMPT),
+                  : (config.systemPrompt ?? readAgentRole(context.workspaceDir,"marco-codex",WAKE_HOME_SYSTEM_PROMPT)),
                 ...(context.nativeCapabilities === true ? [CLUSTER_STATUS_PROMPT] : []),
               ].join("\n\n"),
             ),

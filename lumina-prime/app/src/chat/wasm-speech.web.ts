@@ -36,7 +36,7 @@ export function createWasmSpeech(options:{onState:(state:LocalSpeechState)=>void
   }
   async function load() {
     if(ready)return;if(loading)return loading;
-    state('checking','Téléchargement du moteur et du modèle local sur cet appareil…');
+    state('checking','Préparation de la dictée…');
     loading=new Promise<void>((resolve,reject)=>{loadResolve=resolve;loadReject=reject;});
     const url=URL.createObjectURL(new Blob([workerSource],{type:'text/javascript'}));
     try {worker=new Worker(url,{type:'module'});}finally{URL.revokeObjectURL(url);}
@@ -68,7 +68,7 @@ export function createWasmSpeech(options:{onState:(state:LocalSpeechState)=>void
         const text=await new Promise<string>((resolve,reject)=>{pending.set(item.id,{resolve,reject});worker!.postMessage({type:'audio',id:item.id,audio},[audio.buffer]);});
         if(active&&item.version===version&&text.trim())options.onTranscript(text.trim());
       }
-    }catch{pause('Moteur local arrêté. Réessaie le micro ; aucun audio envoyé au PC.');}
+    }catch{pause('Le micro s’est arrêté. Réessaie.');}
     finally{processing=false;}
   }
   function segment(currentVersion:number) {
@@ -92,9 +92,9 @@ export function createWasmSpeech(options:{onState:(state:LocalSpeechState)=>void
   async function start(allowDownload=false) {
     if(active)return;
     if(!globalThis.isSecureContext||!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'||typeof Worker==='undefined'){
-      state('unsupported','Micro local indisponible dans ce contexte. HTTPS ou localhost requis.');return;
+      state('unsupported','Micro indisponible ici.');return;
     }
-    if(!ready&&!allowDownload){state('download','Télécharger le modèle français et le moteur WASM sur ce téléphone. Audio traité ici, pas sur le PC.');return;}
+    if(!ready&&!allowDownload){state('download','Télécharger la dictée en français sur ce téléphone.');return;}
     active=true;const currentVersion=++version;
     try{
       await load();if(!active||currentVersion!==version)return;

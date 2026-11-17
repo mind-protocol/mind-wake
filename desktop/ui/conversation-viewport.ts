@@ -5,7 +5,8 @@ export function reconcileConversationChildren(container:HTMLElement,desired:HTML
 interface Anchor {node:HTMLElement;key:string|undefined;offset:number}
 export interface ConversationPosition {follow:boolean;top:number;anchor?:Anchor}
 export function conversationViewport(pane:HTMLElement,options:{observe?:boolean;schedule?:(callback:()=>void)=>void}={}){
- const nearBottom=()=>pane.scrollHeight-pane.scrollTop-pane.clientHeight<100;
+ // NLR (15 nov. 2026) : suivre le bas seulement si l'on y est déjà, à ~80 px près.
+ const nearBottom=()=>pane.scrollHeight-pane.scrollTop-pane.clientHeight<80;
  function capture(forceFollow=false):ConversationPosition{const top=pane.getBoundingClientRect().top;const node=[...pane.children].find(n=>n.getBoundingClientRect().bottom>top+1) as HTMLElement|undefined;return{follow:forceFollow||nearBottom(),top:pane.scrollTop,...(node?{anchor:{node,key:node.dataset['viewportKey']??node.dataset['messageId'],offset:node.getBoundingClientRect().top-top}}:{})};}
  let remembered=capture(),pending=false;const schedule=options.schedule??(callback=>requestAnimationFrame(callback));
  function restore(position:ConversationPosition){if(pane.clientHeight<=0)return;if(position.follow)pane.scrollTop=pane.scrollHeight;else{let node=position.anchor?.node;if(node&&!pane.contains(node))node=[...pane.children].find(n=>((n as HTMLElement).dataset['viewportKey']??(n as HTMLElement).dataset['messageId'])===position.anchor?.key) as HTMLElement|undefined;pane.scrollTop=node&&position.anchor?pane.scrollTop+node.getBoundingClientRect().top-pane.getBoundingClientRect().top-position.anchor.offset:position.top;}remembered=capture(position.follow);}

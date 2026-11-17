@@ -293,6 +293,50 @@ export class ElevenLabs {
     return true;
   }
 
+  /**
+   * MP3 d'un texte pour un vocal Telegram au propriétaire (NLR, 16 nov. 2026 17:31), sans file
+   * de lecture desktop. Mêmes garde-fous qu'une génération : autorisation, pause, disjoncteur,
+   * voix choisie dans Réglages, modèle multilingue ; tout échec est journalisé comme les autres.
+   */
+  async synthesizeMp3(text: string, signal?: AbortSignal): Promise<Buffer> {
+    const spoken = z.string().trim().min(1).max(5000).parse(text);
+    try {
+      this.generationAllowed();
+      const selected = voiceId.parse(this.config().voiceId);
+      const response = await this.request(
+        `/v1/text-to-speech/${selected}?output_format=mp3_44100_128`,
+        {
+          method: "POST",
+          ...(signal ? { signal } : {}),
+          body: JSON.stringify({ text: spoken, model_id: "eleven_multilingual_v2" }),
+        },
+      );
+      const reader = response.body?.getReader();
+      if (!reader) throw Error("Audio ElevenLabs vide.");
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          size += value.byteLength;
+          if (size > 16 * 1024 * 1024) throw Error("Audio ElevenLabs trop volumineux.");
+          chunks.push(value);
+        }
+      } finally {
+        await reader.cancel().catch(() => {});
+      }
+      if (!size || !response.headers.get("content-type")?.startsWith("audio/"))
+        throw Error("Réponse audio ElevenLabs invalide.");
+      return Buffer.concat(chunks);
+    } catch (error) {
+      // Désactivé ou disjoncteur ouvert : pas un échec du fournisseur, rien à journaliser.
+      if (error instanceof Error && /^(ElevenLabs est désactivé|Wake est en pause)/.test(error.message)) throw error;
+      if (error instanceof Error && error.message === VOICE_CUT_MESSAGE) throw error;
+      throw this.recordGenerationFailure(error);
+    }
+  }
+
   async generate(input: unknown) {
     const request = this.reserveGeneration(input);
     if ("result" in request) return request.result;

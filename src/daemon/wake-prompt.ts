@@ -285,6 +285,8 @@ export interface WakeInputs {
   readonly previousNudge: Nudge | null;
   /** Demande de réveil de l'agent servie par ce réveil. */
   readonly agentWakeup: { readonly id: string; readonly prompt: string } | null;
+  /** Bloc des rappels martelés de l'humain (`wake-reminders.ts`), placé avant les événements. */
+  readonly reminders?: string;
 }
 
 export function composeWake(inputs: WakeInputs): WakeComposition {
@@ -309,7 +311,12 @@ export function composeWake(inputs: WakeInputs): WakeComposition {
   const standardText = fillTemplate(inputs.templates.base, {
     nudge: inputs.agentWakeup === null ? nudgeText : inputs.templates.nudges[rotateNudge(inputs.previousNudge)],
     budget: `Time: ${inputs.sessionEnd ?? "no local time limit"}. ${quotaPlanText(inputs.revision, inputs.onSubscription, inputs.quotaResetAt ?? null)}`,
-    events: events.length === 0 ? "" : `New events (data):\n${events.join("\n")}`,
+    events: [
+      inputs.reminders?.trim() ?? "",
+      events.length === 0 ? "" : `New events (data):\n${events.join("\n")}`,
+    ]
+      .filter((part) => part !== "")
+      .join("\n\n"),
   }).trim();
   const step = nextWakeStep(inputs.workspaceDir);
   const text = step === null ? standardText : `${standardText}\n\n${step}`;
