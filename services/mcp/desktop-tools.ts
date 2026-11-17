@@ -21,7 +21,7 @@ const view = {
 };
 /** Optional Windows virtual desktop (Win+Tab), 1-based as in desktop_list. Omitted: this room's own desktop. */
 const desktop = z.int().min(1).max(32).optional()
-  .describe("Optional Windows virtual desktop number (Win+Tab order, 1-based) from desktop_list. Omitted: this room's own virtual desktop (default). 1 is normally the human's desktop. Another number targets that desktop, in the same Windows session, with the human's usual Chrome profile and signed-in accounts. Reading a named window does not change the visible desktop; input, live screen or taskbar captures briefly show the target desktop, then return to the previous one.");
+  .describe("Optional Windows virtual desktop number (Win+Tab order, 1-based) from desktop_list. Omitted: this room's own virtual desktop (default). 1 is normally the human's desktop. Another number targets that desktop, in the same Windows session, with the human's usual Chrome profile and signed-in accounts. A numeric window ID from desktop_list is found on its own desktop even without this parameter. Reads and captures never change the visible desktop (PrintWindow/UI Automation); only input (click, text, keys, scroll) briefly shows the target desktop, then returns to the previous one.");
 const label = z.string().trim().min(1).max(300);
 const auto_scroll = z.union([z.boolean(), label]).optional()
   .describe("Default off. True looks for new or renamed accessible content for up to 2 seconds. A string selects an exact accessible name, including existing content. Read status: revealed, visible, no_target, ambiguous, unavailable or window_changed.");

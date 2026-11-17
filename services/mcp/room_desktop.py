@@ -56,6 +56,20 @@ def by_number(number):
     return desktops[number - 1]
 
 
+def number_of(hwnd):
+    """1-based Win+Tab number of the virtual desktop holding a window, or None."""
+    if not hwnd:
+        return None
+    try:
+        guid = AppView(hwnd=hwnd).desktop_id
+    except (COMError, OSError, ValueError):
+        return None
+    for index, desktop in enumerate(get_virtual_desktops()):
+        if desktop.id == guid:
+            return index + 1
+    return None
+
+
 def inventory(own, list_windows):
     """Every virtual desktop with the visible windows that Windows assigns to it."""
     current = VirtualDesktop.current().id

@@ -204,6 +204,52 @@ def document_text(hwnd):
     return None
 
 
+# Below this many words, UIA only exposed the browser frame (Chrome without web
+# accessibility); the page is then read by scrolling and OCR instead.
+MIN_UIA_WORDS = 15
+
+
+def uia_page_text(hwnd):
+    """Page text from UIA when it is significant, otherwise None (use OCR slices)."""
+    try:
+        text = document_text(hwnd)
+    except Exception:
+        return None
+    if not text:
+        return None
+    import re
+    words = re.findall(r"\w{2,}", text.replace("￼", " "))
+    return text if len(words) >= MIN_UIA_WORDS else None
+
+
+def render_widget(hwnd):
+    """Chrome/Edge web content child window, used when UIA exposes no Document."""
+    found = []
+
+    def collect(child, _):
+        if gui.GetClassName(child) == "Chrome_RenderWidgetHostHWND" and gui.IsWindowVisible(child):
+            found.append(child)
+    try:
+        gui.EnumChildWindows(hwnd, collect, None)
+    except Exception:
+        pass
+    if not found:
+        return None
+    return max(found, key=lambda h: (lambda r: (r[2] - r[0]) * (r[3] - r[1]))(gui.GetWindowRect(h)))
+
+
+WHEEL_DELTA = 120
+
+
+def page_wheel(hwnd, point, delta):
+    """Wheel over the target window's own web content only, never another window."""
+    check_focus(hwnd)
+    hit = gui.WindowFromPoint(point)
+    if not hit or gui.GetAncestor(hit, win32con.GA_ROOT) != hwnd:
+        raise ValueError("La page est recouverte par une autre fenêtre : défilement annulé.")
+    mouse.scroll(delta, *point)
+
+
 def stitch(pages):
     """Join per-slice text lines, dropping the lines repeated by viewport overlap."""
     merged = []
@@ -252,7 +298,50 @@ def capture(box, expected=None):
     return image
 
 
+def window_id(value):
+    """Window handle when value is a numeric ID of an existing window, else None."""
+    if isinstance(value, str) and value.isdigit():
+        hwnd = int(value)
+        if gui.IsWindow(hwnd):
+            return hwnd
+    return None
+
+
+def desktop_windows_bottom_up(desktop):
+    """Visible top-level windows of a virtual desktop, from the bottom of the z-order."""
+    from room_desktop import owns
+    found = []
+
+    def collect(hwnd, _):
+        if (gui.IsWindowVisible(hwnd) and not gui.IsIconic(hwnd)
+                and gui.GetClassName(hwnd) not in ("Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd")
+                and owns(desktop, hwnd)):
+            found.append(hwnd)
+    gui.EnumWindows(collect, None)  # top of the z-order first
+    return found[::-1]
+
+
+def composite_desktop(box):
+    """Screen of a non-visible virtual desktop, painted from PrintWindow of its windows.
+
+    No desktop switch, focus change, scroll or overlay: the human's screen stays still.
+    """
+    canvas = Image.new("RGB", (box[2] - box[0], box[3] - box[1]), (32, 32, 32))
+    for hwnd in desktop_windows_bottom_up(room_desktop):
+        try:
+            left, top, right, bottom = gui.GetWindowRect(hwnd)
+            if right <= box[0] or bottom <= box[1] or left >= box[2] or top >= box[3]:
+                continue
+            image = read_window(hwnd, (left, top, right, bottom))
+        except Exception:
+            continue  # a window refusing PrintWindow leaves its area as background
+        canvas.paste(image, (left - box[0], top - box[1]))
+    return canvas
+
+
 def read_window(hwnd, box):
+    if hwnd is None and room_desktop is not None and current_desktop_id() != str(room_desktop.id):
+        return composite_desktop(box)
     if hwnd is None or (room_desktop is None and gui.GetForegroundWindow() == hwnd):
         return capture(box)
     left, top, right, bottom = gui.GetWindowRect(hwnd)
@@ -892,7 +981,8 @@ def run(tool, a, cache, restore_view=None):
                 results.append(dict(window=target, error=str(e)))
         return results
     if tool == "desktop_page" and a.get("text"):
-        text = document_text(hwnd)
+        # Empty or insignificant UIA text falls through to scrolling + OCR stitching.
+        text = uia_page_text(hwnd)
         if text is not None:
             return dict(window=str(hwnd), title=gui.GetWindowText(hwnd), source="uia_text_pattern",
                         length=len(text), text=text)
@@ -901,27 +991,45 @@ def run(tool, a, cache, restore_view=None):
     box = bounds(hwnd)
     if tool == "desktop_page":
         root = window_ui(hwnd)
-        docs = [d for d in root.descendants(control_type="Document") if d.is_visible()]
-        if not docs:
-            raise ValueError("Aucune page visible dans cette fenêtre")
-        doc = docs[0]
-        rect = doc.rectangle()
-        box = (
-            max(box[0], rect.left),
-            max(box[1], rect.top),
-            min(box[2], rect.right),
-            min(box[3], rect.bottom),
-        )
         try:
-            scroll = doc.iface_scroll
-            if not scroll.CurrentVerticallyScrollable:
-                scroll = None
+            docs = [d for d in root.descendants(control_type="Document") if d.is_visible()]
         except Exception:
-            scroll = None
-        doc.set_focus()
+            docs = []
+        wheel = None
+        if docs:
+            rect = docs[0].rectangle()
+            rect = rect.left, rect.top, rect.right, rect.bottom
+        else:
+            # Chrome without web accessibility exposes no Document: read its web
+            # content child window and scroll it with the wheel under the pointer.
+            widget = render_widget(hwnd)
+            if not widget:
+                raise ValueError("Aucune page visible dans cette fenêtre")
+            rect = gui.GetWindowRect(widget)
+        box = (
+            max(box[0], rect[0]),
+            max(box[1], rect[1]),
+            min(box[2], rect[2]),
+            min(box[3], rect[3]),
+        )
+        scroll = None
+        if docs:
+            try:
+                scroll = docs[0].iface_scroll
+                if not scroll.CurrentVerticallyScrollable:
+                    scroll = None
+            except Exception:
+                scroll = None
+            docs[0].set_focus()
+        else:
+            wheel = (box[0] + box[2]) // 2, (box[1] + box[3]) // 2
+            move_pointer(*wheel)
         check_focus(hwnd)
         if scroll:
             scroll.SetScrollPercent(-1, 0)
+        elif wheel:
+            for _ in range(20):
+                page_wheel(hwnd, wheel, WHEEL_DELTA * 50)
         else:
             mouse.hotkey("ctrl", "home")
         ident = str(uuid.uuid4())
@@ -962,6 +1070,10 @@ def run(tool, a, cache, restore_view=None):
                     scroll.Scroll(
                         2, 3
                     )  # NoAmount horizontally, LargeIncrement vertically
+                elif wheel:
+                    # About 70 % of the viewport per step; stitch() drops the overlap.
+                    notches = max(1, int((box[3] - box[1]) * 0.7 / 100))
+                    page_wheel(hwnd, wheel, -WHEEL_DELTA * notches)
                 else:
                     mouse.press("pagedown")
         (folder / "page.json").write_text(json.dumps(offsets))
@@ -1006,13 +1118,22 @@ PASSIVE_TOOLS = {
     "desktop_list", "desktop_windows", "desktop_taskbar", "desktop_tabs", "desktop_observe",
     "desktop_ascii", "desktop_sweep", "desktop_slice",
 }
-LEASE_SECONDS = 20
 
 
 def dispatch(req):
     global room_desktop, room_number, browser_root, own_desktop, target_desktop
     tool, args, cache = req["tool"], req["args"], Path(req["cache"])
     target_desktop = int(req["desktop"]) if req.get("desktop") is not None else None
+    if tool == "desktop_click_excerpt" and target_desktop is None:
+        manifest = cache / args["capture"] / "ascii.json"
+        if manifest.is_file():
+            saved_desktop = json.loads(manifest.read_text(encoding="utf8")).get("desktop_id")
+            if saved_desktop:
+                from room_desktop import get_virtual_desktops
+                desktops = get_virtual_desktops()
+                target_desktop = next((i+1 for i,d in enumerate(desktops) if str(d.id) == saved_desktop), None)
+                if target_desktop is None:
+                    raise ValueError("Le bureau de cette capture a été fermé. Refaites la capture.")
     if target_desktop is not None and target_desktop < 1:
         raise ValueError("Numéro de bureau virtuel invalide.")
     room = int(req["room"]) if req.get("room") is not None else None
@@ -1032,6 +1153,13 @@ def dispatch(req):
             from room_desktop import resolve, switch, by_number, VirtualDesktop
         if room is not None:
             own_desktop = room_desktop = resolve(db, room)
+        if target_desktop is None and room is not None:
+            # A numeric window ID (desktop_list) designates that window wherever it is:
+            # the call then targets its virtual desktop, exactly as with desktop=N.
+            from room_desktop import number_of
+            number = number_of(window_id(args.get("window")))
+            if number is not None and str(by_number(number).id) != str(own_desktop.id):
+                target_desktop = number
         if target_desktop is not None:
             room_desktop = by_number(target_desktop)
         # Reading a named window uses PrintWindow on an inactive desktop. A whole
@@ -1045,7 +1173,10 @@ def dispatch(req):
         # Every focus-requiring call (input, desktop switch, live view) waits its turn in
         # a FIFO shared by all MCP servers; a dead or frozen holder is dropped.
         from desktop_input_lock import DesktopInputLock, WAIT_SECONDS
-        queue = DesktopInputLock(owner=owner, room=room, tool=tool).acquire()
+        # A shared virtual desktop (desktop=N) has one control lease for every room;
+        # a caller blocked by another agent's lease waits its turn in the same queue.
+        slot = None if passive else (-target_desktop if target_desktop is not None else (room or 0))
+        queue = DesktopInputLock(owner=owner, room=room, tool=tool, slot=slot).acquire()
         # Windows mutex kept for workers still running the previous code.
         try:
             lock = win32event.CreateMutex(None, False, r"Local\MindWakeDesktopInput")
@@ -1056,17 +1187,9 @@ def dispatch(req):
         try:
             if not acquired:
                 raise ValueError("Bureau occupé par un ancien processus desktop (verrou Windows). Réessayez après son action.")
-            # A shared virtual desktop (desktop=N) has one lease for every room.
-            slot = -target_desktop if target_desktop is not None else (room or 0)
-            if not passive:
-                db.execute("CREATE TABLE IF NOT EXISTS lease (slot INTEGER PRIMARY KEY, owner TEXT, name TEXT, expires REAL)")
-                row = db.execute("SELECT owner,name,expires FROM lease WHERE slot=?", (slot,)).fetchone()
-                now = time.time()
-                if row and row[0] != owner["id"] and row[2] > now:
-                    raise ValueError(f"Canal de contrôle réservé par {row[1]}. Réessayez dans {math.ceil(row[2]-now)} s.")
-                db.execute("INSERT OR REPLACE INTO lease VALUES (?,?,?,?)",
-                           (slot,owner["id"],owner["name"],now + LEASE_SECONDS))
-            previous = VirtualDesktop.current() if scoped else None
+            # Only input shows the target desktop. Reads (whole screen, foreground
+            # window, taskbar) never switch the visible desktop: see read_window.
+            previous = VirtualDesktop.current() if scoped and not passive else None
             try:
                 if previous:
                     switch(room_desktop)
@@ -1074,12 +1197,8 @@ def dispatch(req):
                     return run(tool, args, cache, lambda: switch(previous))
                 return run(tool, args, cache)
             finally:
-                try:
-                    if previous and previous.id != room_desktop.id and VirtualDesktop.current().id == room_desktop.id:
-                        switch(previous)
-                finally:
-                    if not passive:
-                        db.execute("UPDATE lease SET expires=? WHERE slot=?", (time.time()+LEASE_SECONDS,slot))
+                if previous and previous.id != room_desktop.id and VirtualDesktop.current().id == room_desktop.id:
+                    switch(previous)
         finally:
             try:
                 if acquired:
