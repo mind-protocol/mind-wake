@@ -35,3 +35,14 @@ output/
 .tmp/
 **/node-compile-cache/
 outputs/fork-test-tmp/
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]
+
+# Scratch MCP client scripts and generated test fixtures (mkdtemp-style names)
+.tmp-mcp/
+test-fixtures/
+
+# Desktop screen captures (may show private windows)
+artifacts/capture-unicode/ecran-*/
