@@ -4,7 +4,7 @@ import { createBargeIn, createCallVad, levelDb } from './call-vad.ts';
 function feed(vad, from, to, db, step = 100) { const actions = []; for (let t = from; t < to; t += step) { const a = vad.step(db, t); if (a !== 'none') actions.push([a, t]); } return actions; }
 
 test('an utterance ends after 5 s of silence following speech', () => {
-  const vad = createCallVad(); vad.reset(0);
+  const vad = createCallVad({ silenceMs: 5000 }); vad.reset(0);
   assert.deepEqual(feed(vad, 0, 2000, -70), []);
   const speech = feed(vad, 2000, 4000, -25);
   assert.equal(speech[0][0], 'speech');
@@ -49,7 +49,7 @@ test('barge-in needs a louder voice held ~300 ms; off never interrupts', () => {
 });
 
 test('a quieter end of sentence does not end the utterance (NLR 16 nov.)', () => {
-  const vad = createCallVad({ silenceMs: 2000 }); vad.reset(0);
+  const vad = createCallVad({ silenceMs: 2000, floorDb: -52 }); vad.reset(0);
   feed(vad, 0, 2000, -70);
   feed(vad, 2000, 3000, -25);
   // threshold ≈ -52 ; la fin de phrase tombe à -56 dB pendant 3 s : encore de la parole
@@ -59,7 +59,7 @@ test('a quieter end of sentence does not end the utterance (NLR 16 nov.)', () =>
 });
 
 test('the background-noise threshold can be raised during a call (NLR 17 nov.)', () => {
-  const vad = createCallVad({ silenceMs: 1000 }); vad.reset(0);
+  const vad = createCallVad({ silenceMs: 1000, floorDb: -52 }); vad.reset(0);
   feed(vad, 0, 1000, -90); // bruit de fond appris très bas
   assert.equal(feed(vad, 1000, 1500, -48)[0][0], 'speech'); // bruit à -48 dB compté comme parole
   assert.deepEqual(feed(vad, 1500, 4000, -48), []); // le micro reste « actif », rien ne part

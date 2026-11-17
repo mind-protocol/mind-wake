@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
+import { Animated, Image, Platform, Pressable, ScrollView, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, styles as s } from '../ui/theme';
 import { MessageRow } from './MessageRow';
@@ -7,7 +7,7 @@ import { useIncomingPhone } from './IncomingPhone';
 import { useWakeChat } from './WakeChatProvider';
 import { callTargets, type CallTarget } from './call-client.ts';
 import { createCallEngine, type CallLine, type CallPhase } from './call-engine';
-import { clampFloorDb, FLOOR_DB_DEFAULT, FLOOR_DB_MAX, FLOOR_DB_MIN, type BargeMode } from './call-vad.ts';
+import { clampFloorDb, FLOOR_DB_DEFAULT, FLOOR_DB_MAX, FLOOR_DB_MIN, SILENCE_S_DEFAULT, type BargeMode } from './call-vad.ts';
 import { chatErrorMessage, tintOf } from './client.ts';
 import { loadCallTuning, loadCallVoice, saveCallTuning, saveCallVoice } from './storage.ts';
 import { RichText } from '../ui/Primitives';
@@ -17,6 +17,8 @@ import { canModifyCallParticipants } from './call-engine-capabilities';
 import { useReportedError } from './app-error-report.ts';
 import { createScrollFollow } from './scroll-follow';
 import { createWebScrollFollow } from './scroll-follow-web';
+import { captureLines, type CallCapture } from './call-frames.ts';
+import { pinScrollToEnd } from './call-scroll.ts';
 type ScrollViewInstance = React.ComponentRef<typeof ScrollView>;
 
 const PHASES: Record<CallPhase, string> = { connecting: 'Connexion…', listening: 'À l’écoute', speaking: 'Tu parles…',
@@ -42,7 +44,7 @@ export default function CallScreen() {
   const [selected, setSelected] = useState<string[]>(['mind']);
   const [adding, setAdding] = useState(false);
   const [joining, setJoining] = useState(false);
-  const [silence, setSilence] = useState(5);
+  const [silence, setSilence] = useState(SILENCE_S_DEFAULT);
   const [bargeMode, setBargeMode] = useState<BargeMode>('normal');
   // Seuil de bruit de fond (NLR, 17 nov.) : en dessous, le micro compte comme silence.
   const [floorDb, setFloorDb] = useState(FLOOR_DB_DEFAULT);
@@ -78,7 +80,34 @@ export default function CallScreen() {
   const [scrollFollow] = useState(() => createScrollFollow(() => {}, setFollowing));
   const [webFollow] = useState(() => createWebScrollFollow(scrollFollow));
   const web = Platform.OS === 'web';
-  useLayoutEffect(() => { scrollFollow.setScrollToEnd(() => transcript.current?.scrollToEnd({ animated: false })); }, [scrollFollow]);
+  // Nouveau message : défilement animé (NLR, 17 nov.) ; recalage après une image/ASCII tardive : instantané.
+  const smoothNext = useRef(false); const animatingUntil = useRef(0);
+  useLayoutEffect(() => { scrollFollow.setScrollToEnd(() => {
+    const animated = pinScrollToEnd(smoothNext, animatingUntil, Date.now());
+    transcript.current?.scrollToEnd({ animated });
+  }); }, [scrollFollow]);
+  const onTranscriptScroll = (event: Parameters<typeof webFollow.onScroll>[0]) => {
+    // Pendant un défilement animé lancé par l'écran, les positions intermédiaires ne sont pas un geste de NLR.
+    if (Date.now() < animatingUntil.current) return;
+    webFollow.onScroll(event);
+  };
+  // Agrandissement d'une image ou d'une capture ASCII (NLR, 17 nov. 16:20) ; ferme au clic ou Échap.
+  const [lightbox, setLightbox] = useState<CallCapture | null>(null);
+  useEffect(() => {
+    if (!lightbox || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key);
+  }, [lightbox]);
+  // Captures relayées par le desktop : dans le fil de l'appel, à leur place (NLR, 17 nov. 16:18).
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function' || window.location?.pathname !== '/desktop-call') return;
+    const receive = (event: MessageEvent) => {
+      if (event.source !== window.parent) return;
+      const added = captureLines(event.data, (engine.current as { callId?: string } | null)?.callId);
+      if (added.length) setLines(previous => [...previous.filter(item => !added.some(line => line.key === item.key)), ...added].slice(-40));
+    };
+    window.addEventListener('message', receive); return () => window.removeEventListener('message', receive);
+  }, []);
   const inCall = useRef<string[]>(['mind']);
   const [unseen, setUnseen] = useState(false);
   // Révélation échelonnée : une bulle nouvelle apparaît tout de suite, les suivantes à REVEAL_SPACING_MS d'intervalle.
@@ -218,7 +247,7 @@ export default function CallScreen() {
 
   const shownLines = lines.filter(item => visible.has(item.key));
   // Nouvelle bulle visible : suivie si NLR est en bas, sinon bouton « ↓ nouveaux messages ».
-  useLayoutEffect(() => { scrollFollow.contentChanged(); webFollow.invalidate(); if (!following && shownLines.length) setUnseen(true); },
+  useLayoutEffect(() => { scrollFollow.contentChanged(); webFollow.invalidate(); if (following) smoothNext.current = true; else if (shownLines.length) setUnseen(true); },
     [shownLines.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (following) setUnseen(false); }, [following]);
   // Nom de l'expéditeur au-dessus de la bulle, avec son emoji s'il est fourni par la passerelle.
@@ -282,13 +311,13 @@ export default function CallScreen() {
         contentContainerStyle={{ gap: 8, padding: 8 }}
         onLayout={event => { webFollow.invalidate(); scrollFollow.onLayout(event); }}
         onContentSizeChange={(width, height) => { webFollow.invalidate(); scrollFollow.onContentSizeChange(width, height); }}
-        onScroll={web ? webFollow.onScroll : undefined}
+        onScroll={web ? onTranscriptScroll : undefined}
         onScrollBeginDrag={scrollFollow.onScrollBeginDrag} onScrollEndDrag={scrollFollow.onScrollEndDrag}
         onMomentumScrollEnd={scrollFollow.onMomentumScrollEnd} onScrollToTop={scrollFollow.suspend}>
         {!shownLines.length ? <Text style={s.small}>{active ? 'La conversation s’affiche ici.' : 'Appuie sur Appeler pour commencer.'}</Text> : null}
         {shownLines.map(item => { const name = senderOf(item); const mood = moodOf(item); const body = mood ? mood.rest : item.text;
           const bubble = <View style={{ padding: 10, borderRadius: 14, backgroundColor: bubbleOf(item, name) }}>
-            <RichText text={body} />
+            {item.capture ? <Capture capture={item.capture} onOpen={setLightbox} /> : <RichText text={body} onImagePress={url => setLightbox({ image: url, caption: '' })} />}
             {item.error && item.detail && item.detail !== item.text ? <Text style={[s.small, { fontSize: 11, color: item.error ? colors.danger : colors.muted }]}>{item.detail}</Text> : null}
           </View>;
           return <FadeIn key={item.key}
@@ -307,7 +336,7 @@ export default function CallScreen() {
       </View>
       {/* NLR, 17 nov. 2026 : barre fixe hors de la liste, toujours visible même dans l'iframe courte du desktop. */}
       {active ? <View accessibilityLabel="Commandes de l’appel" style={{ flexShrink: 0, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        {canMute ? <Pressable accessibilityRole="switch" accessibilityState={{ checked: muted }}
+        {canMute ? <Pressable accessibilityRole="switch" accessibilityState={{ checked: muted }} aria-checked={muted}
           accessibilityLabel={muted ? 'Réactiver le micro' : 'Couper le micro'} onPress={toggleMute}
           style={{ flex: 1, height: 44, borderRadius: 22, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center',
             backgroundColor: muted ? colors.danger : colors.soft }}>
@@ -333,6 +362,7 @@ export default function CallScreen() {
         })}
       </ScrollView>
     </Overlay> : null}
+    {lightbox ? <Lightbox capture={lightbox} onClose={() => setLightbox(null)} /> : null}
     {settings ? <Overlay onClose={() => setSettings(false)} title="Réglages">
       <ScrollView contentContainerStyle={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -382,6 +412,41 @@ function ThresholdSlider({ value, level, onChange }: { value: number; level: num
       <View pointerEvents="none" style={{ position: 'absolute', left: pct(value), width: 16, height: 16, marginLeft: -8, borderRadius: 8, backgroundColor: colors.dark }} />
     </View>
     <Chip small label="+" on={false} onPress={() => step(2)} />
+  </View>;
+}
+
+const MONO = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'ui-monospace, Consolas, monospace' });
+/** Capture dans la bulle : image à largeur de bulle, ASCII en police normale et défilement horizontal ; toucher pour agrandir. */
+function Capture({ capture, onOpen }: { capture: CallCapture; onOpen: (capture: CallCapture) => void }) {
+  const [ratio, setRatio] = useState(16 / 9);
+  return <View style={{ gap: 6 }}>
+    <Text style={[s.small, { fontSize: 11 }]}>{capture.caption}</Text>
+    {capture.image ? <Pressable accessibilityRole="imagebutton" accessibilityLabel="Agrandir la capture" onPress={() => onOpen({ image: capture.image, caption: capture.caption })}>
+      <Image source={{ uri: capture.image }} resizeMode="contain" onLoad={e => { const src = e.nativeEvent?.source; if (src?.width && src?.height) setRatio(src.width / src.height); }}
+        style={{ width: '100%', aspectRatio: ratio, borderRadius: 8, backgroundColor: colors.soft }} />
+    </Pressable> : null}
+    {capture.ascii ? <Pressable accessibilityRole="button" accessibilityLabel="Agrandir la capture ASCII" onPress={() => onOpen({ ascii: capture.ascii, caption: capture.caption })}>
+      <ScrollView horizontal style={{ borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)' }} contentContainerStyle={{ padding: 8 }}>
+        <Text style={{ fontFamily: MONO, fontSize: 12, lineHeight: 16, color: colors.ink }}>{capture.ascii}</Text>
+      </ScrollView>
+    </Pressable> : null}
+  </View>;
+}
+
+/** Agrandissement plein écran : image ajustée à l'écran, ASCII pleine largeur défilable ; ferme au clic ou Échap. */
+function Lightbox({ capture, onClose }: { capture: CallCapture; onClose: () => void }) {
+  return <View accessibilityViewIsModal style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.88)', padding: 10, gap: 6 }}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Fermer l’agrandissement" onPress={onClose}
+      style={{ alignSelf: 'flex-end', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)' }}>
+      <Text style={{ color: '#fff', fontWeight: '700' }}>✕ Fermer</Text>
+    </Pressable>
+    {capture.image ? <Pressable accessibilityLabel="Fermer" onPress={onClose} style={{ flex: 1 }}>
+      <Image source={{ uri: capture.image }} resizeMode="contain" style={{ flex: 1, width: '100%' }} />
+    </Pressable> : <ScrollView style={{ flex: 1, borderRadius: 8, backgroundColor: '#111' }}>
+      <ScrollView horizontal contentContainerStyle={{ padding: 10 }}>
+        <Pressable onPress={onClose}><Text selectable style={{ fontFamily: MONO, fontSize: 13, lineHeight: 17, color: '#eee' }}>{capture.ascii}</Text></Pressable>
+      </ScrollView>
+    </ScrollView>}
   </View>;
 }
 

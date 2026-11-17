@@ -490,6 +490,7 @@ export const english: Readonly<Record<string, string>> = {
   "Indisponible": "Unavailable",
   "Choisir parmi ": "Choose from ",
   "Image agrandie": "Enlarged image",
+  "Capture ASCII agrandie": "Enlarged ASCII capture",
   "Agrandir : ": "Enlarge: ",
   "Cliquer pour agrandir": "Click to enlarge",
   "Ouverture impossible : ": "Unable to open: ",

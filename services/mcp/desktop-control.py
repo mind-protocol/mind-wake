@@ -373,10 +373,37 @@ def read_window(hwnd, box):
         gui.ReleaseDC(hwnd, dc)
 
 
-def ocr(image, x, y, *, with_lines=False):
-    engine = shutil.which("tesseract") or os.path.join(
-        os.environ["ProgramFiles"], "Tesseract-OCR", "tesseract.exe"
+def tesseract_path():
+    """Locate tesseract.exe without assuming a full environment.
+
+    MCP servers may be spawned with a reduced environment (no ProgramFiles,
+    sometimes a short PATH), so env lookups are optional and fixed paths
+    are tried last.
+    """
+    found = shutil.which("tesseract")
+    if found:
+        return found
+    env = os.environ.get
+    bases = [env("TESSERACT_HOME"), env("ProgramFiles"), env("ProgramW6432"),
+             env("ProgramFiles(x86)"), r"C:\Program Files", r"C:\Program Files (x86)"]
+    local = env("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Local")
+    bases.append(os.path.join(local, "Programs"))
+    candidates = []
+    for base in bases:
+        if not base:
+            continue
+        candidates.append(os.path.join(base, "tesseract.exe"))
+        candidates.append(os.path.join(base, "Tesseract-OCR", "tesseract.exe"))
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+    raise FileNotFoundError(
+        "Tesseract OCR introuvable (PATH, ProgramFiles, C:\\Program Files\\Tesseract-OCR)."
     )
+
+
+def ocr(image, x, y, *, with_lines=False):
+    engine = tesseract_path()
     buf = io.BytesIO()
     image.save(buf, "PNG")
     data = subprocess.run(

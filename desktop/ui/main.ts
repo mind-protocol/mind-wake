@@ -42,6 +42,7 @@ import { agentIsWorking, automaticBumpKind, BUMP_PROMPT_PATH, resolveBumpText, p
 import { activityModel, type ActivityModel } from "./activity.js";
 import { mountPromptEditor } from "./prompt-editor.js";
 import { callVisionFeed } from "./call-vision.js";
+import { messageSegments, asciiBlock } from "./message-ascii.js";
 import { mountAuthorizations } from "./authorizations.js";
 import { conversation, conversationText, conversationReceipt, plainText, renderConversationMeta } from "./conversation.js";
 import { projectBadge, projectMarker, undefinedObjectiveBadge } from "./project-marker.js";
@@ -55,7 +56,7 @@ import { appendMessageImages } from "./message-images.js";
 import { decorateMessageLinks } from "./message-links.js";
 import { LIGHT_LABELS, panelView, type Line, type PanelView, type StatusRead } from "./view.js";
 import { reloadGuard, pendingBadge } from "./reload-guard.js";
-import { shouldReopenCall, callWaitStatus } from "./call-frame.js";
+import { CALL_RETRY_MS, shouldReopenCall, callWaitStatus } from "./call-frame.js";
 
 interface TauriGlobal {
   readonly core: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> };
@@ -188,8 +189,20 @@ function conversationBody(text: string, kind: BumpKind | null, imageText = text)
   const body = document.createElement("div"), paragraph = document.createElement("p");
   body.className = "conversation-body"; body.append(paragraph);
   if (kind === null) {
-    paragraph.textContent = text;
-    messageLinks(paragraph);
+    // ASCII captures / fenced blocks: monospace <pre> at body scale (NLR 17 Nov 2026). Split the raw text so the grid keeps its exact spacing.
+    const segments = messageSegments(imageText);
+    if (segments.some(segment => segment.kind === "ascii")) {
+      body.replaceChildren(...segments.map(segment => {
+        if (segment.kind === "ascii") return asciiBlock(segment.text);
+        const part = document.createElement("p");
+        part.textContent = text === imageText ? segment.text : plainText(segment.text, true);
+        messageLinks(part);
+        return part;
+      }));
+    } else {
+      paragraph.textContent = text;
+      messageLinks(paragraph);
+    }
     appendMessageImages(body, imageText, (command, args) => {
       if (!tauri) return Promise.reject(Error(tr("Images locales disponibles dans l’app")));
       return tauri.core.invoke(command, args);
@@ -226,7 +239,7 @@ function outgoingBubble(key: string, text: string, follow = true): HTMLLIElement
   byId("chat").append(li);
   if (kind === null) messageFileLinks?.observe([{id:key,at:new Date().toISOString(),text}],false,true);
   byId("chat-note").textContent = "";
-  chatViewport.restore({...viewportPosition,follow:follow&&viewportPosition.follow});
+  chatViewport.restore({...viewportPosition,follow:follow&&viewportPosition.follow},{smooth:true});
   chatViewport.watch();
   return li;
 }
@@ -770,8 +783,10 @@ async function refreshChat(): Promise<void> {
   const objectives=oldObjectives?.dataset['renderSignature']===objectiveSignature?oldObjectives:projectWakesCard(model.projectWakes);
   if(objectives){objectives.dataset['viewportKey']=objectiveKey;objectives.dataset['renderSignature']=objectiveSignature;desired.push(objectives);}
   desired.push(...outgoingChat.values());
+  const shown=new Set(chatPane.children),arrived=desired.some(node=>!shown.has(node));
   reconcileConversationChildren(chatPane,desired);
-  chatViewport.restore(position);chatViewport.watch();
+  // A new message glides into view; late growth of existing ones is re-pinned instantly by the viewport.
+  chatViewport.restore(position,{smooth:!firstRender&&arrived});chatViewport.watch();
   chatLoadingOlder=false;
 }
 
@@ -1169,7 +1184,7 @@ const displayCallVision = callVisionFeed(byId("call-vision-feed"), async (call,a
   const result = JSON.parse(run.stdout);
   if (run.exitCode || result.error) throw Error(result.error ?? "Captures indisponibles");
   return result.events;
-});
+}, message => callFrame.contentWindow?.postMessage(message, callOrigin));
 type DesktopInvite = {id:string; label:string; until:number; ringtone?: "common" | "marco" | "vox" | "equerre" | "rose_des_vents" | "medicis"};
 let incomingCall: DesktopInvite | null = null;
 let callOpenedAt = 0;
@@ -1188,6 +1203,7 @@ let callTimer: ReturnType<typeof setTimeout> | undefined;
 let releaseTimer: ReturnType<typeof setTimeout> | undefined;
 function releaseCallFrame() {
   clearTimeout(releaseTimer);
+  clearTimeout(callTimer);
   callFrame.removeAttribute("src");
   callFrame.hidden = true;
 }
@@ -1209,6 +1225,9 @@ function openCall() {
     }
     byId("call-status").textContent = "Écran d’appel indisponible. Vérifie que la passerelle mobile est démarrée et que son export web est à jour.";
     byId("call-retry").hidden = false;
+    // Recover even when the native phone-poll event is absent. A late ready
+    // message cancels this retry before it can interrupt a loaded call.
+    callTimer = setTimeout(openCall, CALL_RETRY_MS);
   };
   callTimer = setTimeout(waitForCall, 10000);
 }

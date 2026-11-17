@@ -174,6 +174,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
     } catch (error) { report('micro', error); stop(); }
   }
   return {
+    get callId() { return scope.id; },
     /** Coupe ou rouvre le micro (NLR, 17 nov.) ; renvoie l'état effectif. */
     setMuted(next: boolean) {
       const change = signal.aborted ? 'none' : muteTransition(muted, next, vad.speaking);

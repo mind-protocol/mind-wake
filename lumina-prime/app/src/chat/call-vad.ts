@@ -10,13 +10,18 @@ export type VadOptions = { silenceMs?: number; minSpeechMs?: number; idleResetMs
 export const SPEAKING_HYSTERESIS_DB = 8;
 export type VadAction = 'none' | 'speech' | 'utterance' | 'discard' | 'cut';
 /** Seuil minimal de parole (dBFS) réglable dans l'appel (NLR, 17 nov. : le bruit de fond garde le micro « actif »). */
-export const FLOOR_DB_DEFAULT = -52;
+// NLR, 17 nov. 16:17 : défauts 2 s de silence et −35 dBFS (avant : 5 s et −52).
+export const FLOOR_DB_DEFAULT = -35;
+export const SILENCE_S_DEFAULT = 2;
+/** Anciens défauts, enregistrés automatiquement avant le 17 nov. 16:17 sans choix de NLR. */
+export const LEGACY_TUNING_DEFAULTS = { silence: 5, floorDb: -52 } as const;
+export const CALL_TUNING_VERSION = 2;
 export const FLOOR_DB_MIN = -70;
 export const FLOOR_DB_MAX = -20;
 export function clampFloorDb(value: number): number {
   return Number.isFinite(value) ? Math.round(Math.min(FLOOR_DB_MAX, Math.max(FLOOR_DB_MIN, value))) : FLOOR_DB_DEFAULT;
 }
-export function createCallVad({ silenceMs = 5000, minSpeechMs = 250, idleResetMs = 20_000, maxSegmentMs = 55_000,
+export function createCallVad({ silenceMs = SILENCE_S_DEFAULT * 1000, minSpeechMs = 250, idleResetMs = 20_000, maxSegmentMs = 55_000,
   marginDb = 14, floorDb = FLOOR_DB_DEFAULT }: VadOptions = {}) {
   let segmentStart = 0; let noise = -65; let aboveSince: number | null = null;
   let speaking = false; let lastVoice = 0;
@@ -62,6 +67,20 @@ export type MuteChange = 'none' | 'send' | 'discard' | 'resume';
 export function muteTransition(wasMuted: boolean, next: boolean, speaking: boolean): MuteChange {
   if (wasMuted === next) return 'none';
   return next ? (speaking ? 'send' : 'discard') : 'resume';
+}
+/**
+ * Réglages d'appel enregistrés → valeurs à appliquer. Un enregistrement d'avant la version 2 qui
+ * porte l'ancien défaut (5 s, −52 dB) l'avait seulement persisté : il revient au nouveau défaut.
+ * Une valeur choisie (différente de l'ancien défaut) est conservée.
+ */
+export function readCallTuning(value: unknown): { silence?: number; bargeMode?: BargeMode; floorDb?: number } {
+  const v = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
+  const legacy = v.v !== CALL_TUNING_VERSION;
+  const out: { silence?: number; bargeMode?: BargeMode; floorDb?: number } = {};
+  if (typeof v.silence === 'number' && [2, 3, 5, 8].includes(v.silence) && !(legacy && v.silence === LEGACY_TUNING_DEFAULTS.silence)) out.silence = v.silence;
+  if (typeof v.bargeMode === 'string' && ['sensible', 'normal', 'off'].includes(v.bargeMode)) out.bargeMode = v.bargeMode as BargeMode;
+  if (typeof v.floorDb === 'number' && Number.isFinite(v.floorDb) && !(legacy && v.floorDb === LEGACY_TUNING_DEFAULTS.floorDb)) out.floorDb = clampFloorDb(v.floorDb);
+  return out;
 }
 /** Niveau RMS en dBFS d'un échantillon temporel [-1, 1]. */
 export function levelDb(samples: ArrayLike<number>): number {

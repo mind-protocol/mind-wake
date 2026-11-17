@@ -18,10 +18,10 @@ export interface CallFrameState {
 export function shouldReopenCall(s: CallFrameState): boolean {
   if (!s.hidden) return false;
   const age = s.now - s.openedAt;
-  return s.loaded ? age >= CALL_RETRY_MS : age >= CALL_LOAD_LIMIT_MS;
+  return age >= CALL_LOAD_LIMIT_MS;
 }
 
 /** Après 10 s sans `ready` : encore en chargement, ou vraiment indisponible. */
 export function callWaitStatus(s: CallFrameState): "loading" | "unavailable" {
-  return !s.loaded && s.now - s.openedAt < CALL_LOAD_LIMIT_MS ? "loading" : "unavailable";
+  return s.now - s.openedAt < CALL_LOAD_LIMIT_MS ? "loading" : "unavailable";
 }

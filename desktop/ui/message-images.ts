@@ -141,7 +141,8 @@ export function openMessageImage(source: string, label: string, provenance: stri
   image.src = source; caption.textContent = label; origin.textContent = provenance;
   close.addEventListener('click', () => dialog.close());
   image.addEventListener('error', () => {image.hidden = true; caption.textContent = tr("Image indisponible · ") + label;}, {once: true});
-  dialog.addEventListener('click', event => {if (event.target === dialog) dialog.close();});
+  // NLR 17 Nov 2026: any click (image, caption, backdrop) or Escape closes the full-size view.
+  dialog.addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
     dialog.remove();
     if (trigger.isConnected) {trigger.focus({preventScroll: true}); return;}

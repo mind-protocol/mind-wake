@@ -42,16 +42,18 @@ const chunkId = (id, index, count) => (count > 1 ? `${id}~${index}` : id);
  * Une copie n'est jamais une réponse d'agent (notice de room, message pair au fil principal) :
  * elle n'est donc jamais recopiée à son tour, ne compte pas comme message humain et ne réveille
  * personne. Seule la parole de NLR réveille les participants ; les copies sont du contexte lu au
- * prochain réveil, avec la règle d'appel (Marco répond par défaut, les autres seulement s'ils
- * apportent du neuf) pour éviter trois réponses à une seule question.
+ * prochain réveil.
  */
 export const MIRROR_TAG = '[Appel]';
+// Retained only to recognize silence in older conversation entries.
 export const MIRROR_RULE = "(Règle d'appel : Marco répond par défaut ; les autres participants ne parlent que s'ils apportent quelque chose de neuf, sinon SILENCE.)";
 export const MIRROR_MAX_CHARS = 1200;
+/** Préavis d'appel (NLR, 17 nov. 2026) : l'appelé sait que NLR l'appelle avant la première phrase. */
+export const ringText = callId => `${MIRROR_TAG} 📞 NLR t'appelle — prépare-toi à décrocher et envoie-lui ce que tu as à lui dire (appel ${callId}).`;
 export const mirrorText = (speaker, text) => {
   const body = String(text).trim();
   const clipped = body.length > MIRROR_MAX_CHARS ? `${body.slice(0, MIRROR_MAX_CHARS - 1)}…` : body;
-  return `${MIRROR_TAG} ${speaker} : ${clipped}\n${MIRROR_RULE}`;
+  return `${MIRROR_TAG} ${speaker} : ${clipped}`;
 };
 /** Convention « pas de réponse » : texte SILENCE, ou dernière ligne SILENCE une fois la règle d'appel retirée. */
 export function isSilence(text) {
@@ -318,6 +320,30 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     return c;
   }
   function sessionView(c) { return { id:c.id, epoch:c.epoch, status:'active', revision:c.revision, handles:[...c.targets.keys()] }; }
+  /**
+   * Préavis « NLR t'appelle » : une notice par appelé et par appel, par le chemin des copies d'appel
+   * (noticeMain → owner inbox canal « call » ; noticeRoom → notice de room). Une room n'en reçoit
+   * qu'une même si la room et son agent sont appelés. Jamais bloquant pour l'ouverture de l'appel.
+   */
+  const rung = new Set();
+  function ring(id, targets) {
+    const notices = new Map();
+    for (const t of targets) {
+      const key = t.room ? `call-ring:${keySafe(id)}:room${t.room}` : `call-ring:${keySafe(id)}:${keySafe(t.handle)}`;
+      if (rung.has(key) || notices.has(key)) continue;
+      const mention = t.room ? '' : (t.mention ?? '');
+      notices.set(key, { channel: t.room ? `room:${t.room}` : 'main', text: mention ? `${mention} ${ringText(id)}` : ringText(id), main: !t.room });
+    }
+    let wakeNeeded = false;
+    for (const [key, n] of notices) {
+      rung.add(key);
+      while (rung.size > 512) rung.delete(rung.values().next().value);
+      if (n.main) wakeNeeded = true;
+      Promise.resolve().then(() => post(n.channel, key.slice(0, 128), n.text))
+        .then(ok => { if (!ok) rung.delete(key); }, () => { rung.delete(key); });
+    }
+    if (wakeNeeded) try { wakeMain(); } catch { /* Le scheduler décide. */ }
+  }
   function openSession(owner,id,epoch,handles) {
     const key=sessionKey(owner,id,epoch);
     if(closedSessions.has(key)) throw new ChatError('call_ended',410);
@@ -325,7 +351,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     if(existing) return sessionView(assertSession(owner,id,epoch));
     const at=now();
     const c={id,epoch,owner,revision:1,explicit:true,startedAt:at,lastActivity:at,targets:new Map(targets.map(target=>[target.handle,{target,joinedAt:at}])),seen:new Set(),sent:[]};
-    calls.set(id,c);return sessionView(c);
+    calls.set(id,c);ring(id,targets);return sessionView(c);
   }
   function addSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);
@@ -333,7 +359,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const targets=parseTargets(handles);
     const next=new Map(c.targets);const at=now();for(const target of targets)if(!next.has(target.handle))next.set(target.handle,{target,joinedAt:at});
     if(next.size>MAX_TARGETS)throw new ChatError('call_target_invalid');
-    c.targets=next;c.revision++;c.lastActivity=at;return sessionView(c);
+    const added=targets.filter(t=>!c.targets.has(t.handle));
+    c.targets=next;ring(id,added);c.revision++;c.lastActivity=at;return sessionView(c);
   }
   function removeSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);

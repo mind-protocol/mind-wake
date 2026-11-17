@@ -92,12 +92,12 @@ function Span({ item }: { item: Inline }) {
   return <>{item.text}</>;
 }
 
-function InlineImage({ url, alt }: { url: string; alt: string }) {
+function InlineImage({ url, alt, onPress }: { url: string; alt: string; onPress?: (url: string) => void }) {
   const [ratio, setRatio] = useState(4 / 3);
   const [failed, setFailed] = useState(false);
   useEffect(() => { Image.getSize(url, (w, h) => { if (w > 0 && h > 0) setRatio(w / h); }, () => {}); }, [url]);
   if (failed) return <Text style={s.small} onPress={() => open(url)}>🖼 {alt || url}</Text>;
-  return <Pressable accessibilityRole="imagebutton" accessibilityLabel={alt || 'Image'} onPress={() => open(url)}>
+  return <Pressable accessibilityRole="imagebutton" accessibilityLabel={alt || 'Image'} onPress={() => (onPress ?? open)(url)}>
     <Image source={{ uri: url }} onError={() => setFailed(true)} resizeMode="contain"
       style={{ width: 260, maxWidth: '100%', aspectRatio: ratio, borderRadius: 10, backgroundColor: colors.soft }} />
   </Pressable>;
@@ -119,12 +119,13 @@ function FileCard({ path, name, type }: { path: string; name: string; type: 'md'
 }
 
 /** Texte de bulle (Chat et Appel) : markdown simple (gras, italique, code, liens, sauts de ligne) et images en ligne ; sélectionnable. */
-export function RichText({ text }: { text: string }) {
+/** `onImagePress` : ouvrir l'image en grand dans l'écran (Appel) plutôt que dans le navigateur. */
+export function RichText({ text, onImagePress }: { text: string; onImagePress?: (url: string) => void }) {
   const blocks = useMemo(() => parseRich(text), [text]);
   if (!blocks.length) return <Text selectable style={s.body}>{text}</Text>;
   return <View style={{ gap: 6 }}>
     {blocks.map((block, index) => block.kind === 'image'
-      ? <InlineImage key={index} url={block.url} alt={block.alt} />
+      ? <InlineImage key={index} url={block.url} alt={block.alt} onPress={onImagePress} />
       : block.kind === 'file' ? <FileCard key={index} path={block.path} name={block.name} type={block.type} />
       : <Text key={index} selectable style={s.body}>{block.inlines.map((item, i) => <Span key={i} item={item} />)}</Text>)}
   </View>;

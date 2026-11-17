@@ -99,9 +99,14 @@ export function createCallFrameTracker(now: () => number = Date.now) {
   let loaded = false;
   let ready = false;
   return {
-    srcChanged(value: string | null): void {
+    /**
+     * `renewed` : `src` réaffecté (même valeur comprise). openCall() réaffecte la même URL à chaque
+     * relance (toutes les 20 s) : sans remise à zéro, l'âge et « load reçu » restaient ceux du
+     * premier chargement (incident du 17 nov. 2026 : « src posé il y a 131 s » après plusieurs relances).
+     */
+    srcChanged(value: string | null, renewed = false): void {
       const next = value ?? "";
-      if (next === src) return;
+      if (next === src && !renewed) return;
       src = next; since = now(); loaded = false; ready = false;
     },
     loaded(): void { loaded = true; },
@@ -149,7 +154,7 @@ ${frame.describe()}` : text, at }));
     const element = document.getElementById("call-frame") as HTMLIFrameElement | null;
     if (!element) return false;
     frame.srcChanged(element.getAttribute("src"));
-    new MutationObserver(() => { frame.srcChanged(element.getAttribute("src")); })
+    new MutationObserver(() => { frame.srcChanged(element.getAttribute("src"), true); })
       .observe(element, { attributes: true, attributeFilter: ["src"] });
     element.addEventListener("load", () => { if (element.getAttribute("src")) frame.loaded(); });
     element.addEventListener("error", () => {

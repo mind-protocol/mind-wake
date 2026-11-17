@@ -101,6 +101,21 @@ it("describes the call iframe state (src, load, mind.call.ready) attached to cal
   expect(frame.describe()).toContain("load reçu : non ; mind.call.ready reçu : non");
 });
 
+it("restarts the call iframe state when openCall() re-assigns the same src (retry every 20 s)", async () => {
+  const { createCallFrameTracker } = await import("./app-error-report.js");
+  let t = Date.parse("2026-11-17T15:43:46Z");
+  const frame = createCallFrameTracker(() => t);
+  const src = "http://127.0.0.1:8789/desktop-call?receiver=desktop";
+  frame.srcChanged(src);
+  frame.loaded();
+  t += 120_000;
+  frame.srcChanged(src);
+  expect(frame.describe()).toContain("src posé il y a 120 s ; load reçu : oui");
+  frame.srcChanged(src, true);
+  t += 11_000;
+  expect(frame.describe()).toBe(`[iframe appel : src=${src}, src posé il y a 11 s ; load reçu : non ; mind.call.ready reçu : non]`);
+});
+
 it("never treats conversation transcripts or message bubbles as displayed errors (#chat false positives)", async () => {
   const { watchableErrorZone, WATCHED, TRANSCRIPT } = await import("./app-error-report.js");
   const zone = (o: { watched: boolean; inTranscript: boolean; ownSendStatus?: boolean }) => ({

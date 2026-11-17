@@ -3,8 +3,9 @@ import { ChatClientError, chatErrorMessage, type ChatSession } from './client.ts
 import { callReplies, callSpeech, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, type CallSession, type CallReply } from './call-client.ts';
 import { createBargeIn, createCallVad, levelDb, muteTransition, MUTED_DB, type BargeMode } from './call-vad.ts';
 import { setCaptureSpeaking } from './voice-intent.ts';
+import type { CallCapture } from './call-frames.ts';
 
-export type CallLine = { key: string; who: 'me' | 'them' | 'info'; text: string; detail: string; error?: boolean; speaker?: string; /** Retirer la bulle (parole incompréhensible : rien affiché, rien envoyé). */ drop?: boolean };
+export type CallLine = { key: string; who: 'me' | 'them' | 'info'; text: string; detail: string; error?: boolean; speaker?: string; /** Capture partagée (image ou ASCII), affichée dans le fil. */ capture?: CallCapture; /** Retirer la bulle (parole incompréhensible : rien affiché, rien envoyé). */ drop?: boolean };
 export type CallPhase = 'connecting' | 'listening' | 'speaking' | 'playing' | 'ended';
 export type CallTuning = { silenceMs?: number; bargeMode?: BargeMode; floorDb?: number };
 type Events = { onLine: (line: CallLine) => void; onPhase: (phase: CallPhase) => void; onLevel: (db: number, threshold: number) => void };
@@ -200,6 +201,8 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
     return muted;
   }
   return {
+    /** Identifiant de l'appel (captures relayées par le desktop). */
+    get callId() { return scope.id; },
     setMuted,
     get muted() { return muted; },
     /** Réglages modifiables pendant l'appel (NLR, 17 nov.) : appliqués à la mesure suivante. */

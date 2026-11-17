@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { createChatServer } from './chat-server.mjs';
-import { createCallService, audioMime, callBody, speechChunks, CALL_INSTRUCTION, mirrorText, MIRROR_RULE, isSilence } from './chat-call.mjs';
+import { createCallService, audioMime, callBody, speechChunks, CALL_INSTRUCTION, mirrorText, MIRROR_RULE, isSilence, ringText } from './chat-call.mjs';
 
 const id = 'chat-382582c4-90f8-4dfb-910d-6c976ad77247';
 const code = 'pairing-code-123456789012';
@@ -231,7 +231,7 @@ function shared() {
   return { call, main, room3, room7, mainNotices, roomNotices, at, tick: ms => { clock += ms; } };
 }
 
-test('call = shared room: each reply is mirrored to the other participants as a labeled notice with the call rule', async () => {
+test('call = shared room: replies are mirrored without an instruction about who may speak', async () => {
   const f = shared();
   await f.call.deliver('mind,medicis,vox', id, 'on parle du budget');
   f.tick(1000);
@@ -239,8 +239,8 @@ test('call = shared room: each reply is mirrored to the other participants as a 
   f.main.push({ id: 'a1', role: 'agent', at: f.at(), text: 'Je regarde les chiffres.' });
   await f.call.mirrorTick();
   assert.deepEqual(f.mainNotices.map(n => n.text), [mirrorText('Médicis', 'Le trésor tient trois mois.')]);
-  assert.match(f.mainNotices[0].text, /^\[Appel\] Médicis : Le trésor tient trois mois\.\n/);
-  assert.match(f.mainNotices[0].text, /Marco répond par défaut.*sinon SILENCE/);
+  assert.equal(f.mainNotices[0].text, '[Appel] Médicis : Le trésor tient trois mois.');
+  assert.equal(f.mainNotices[0].text.includes(MIRROR_RULE), false);
   assert.deepEqual(f.roomNotices.map(n => [n.room, n.text.split('\n')[0]]).sort(), [
     [3, '[Appel] Marco : Je regarde les chiffres.'], [7, '[Appel] Marco : Je regarde les chiffres.'], [7, '[Appel] Médicis : Le trésor tient trois mois.']]);
   assert.equal(MIRROR_RULE.includes('SILENCE'), true);
@@ -318,4 +318,24 @@ test('a SILENCE reply is neither mirrored nor sent to the app transcript', async
   assert.deepEqual((await f.call.replies('vox', new Date(0).toISOString())).map(i => i.id), ['r7:4']);
   assert.deepEqual(await f.call.replies('mind', new Date(0).toISOString()), []);
   assert.equal(isSilence(`SILENCE\n${MIRROR_RULE}`), true);
+});
+
+test('opening a call sends one "NLR t\'appelle" notice per callee, idempotent on the call id', async () => {
+  const f = shared();
+  const callId = 'b5ad6e40-7e6b-4582-a5f5-0196eae36402';
+  f.call.openSession('owner', callId, 1, 'mind,medicis,room3');
+  f.call.openSession('owner', callId, 1, 'mind,medicis,room3');
+  await new Promise(r => setTimeout(r, 10));
+  assert.deepEqual(f.mainNotices.map(n => n.text), [ringText(callId)]);
+  assert.match(f.mainNotices[0].text, /NLR t'appelle — prépare-toi à décrocher et envoie-lui ce que tu as à lui dire \(appel b5ad6e40-/);
+  // Médicis et sa room partagent un fil : une seule notice.
+  assert.deepEqual(f.roomNotices.map(n => [n.room, n.text]), [[3, ringText(callId)]]);
+  // Un participant ajouté est prévenu ; les présents ne le sont pas deux fois.
+  f.call.addSession('owner', callId, 1, 'vox,mind', 1);
+  await new Promise(r => setTimeout(r, 10));
+  assert.deepEqual(f.roomNotices.map(n => n.room), [3, 7]);
+  assert.equal(f.mainNotices.length, 1);
+  // Le préavis n'est jamais recopié comme réplique.
+  await f.call.mirrorTick();
+  assert.equal(f.mainNotices.length, 1); assert.equal(f.roomNotices.length, 2);
 });

@@ -46,7 +46,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "node scripts/test-all.mjs",
-    "build:web": "expo export --platform web",
+    "build:web": "node scripts/build-web.mjs",
     "preview": "node scripts/serve-preview.mjs",
     "check:dev": "node scripts/check-dev.mjs"
   },

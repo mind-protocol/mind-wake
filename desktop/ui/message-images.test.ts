@@ -138,3 +138,14 @@ it('restores focus to the equivalent preview if a received message replaced the 
   newBody.querySelector('img')!.fire('load'); dialog.cancel();
   expect(doc.activeElement).toBe(newBody.querySelector('button'));
 });
+
+it('the enlarged image closes on a click anywhere in the viewer, including on the image itself (NLR 17 Nov 2026)', () => {
+  const {doc, body} = bubble();
+  appendMessageImages(body as unknown as HTMLElement, 'https://example.com/photo.png', async () => null);
+  const image = body.querySelector('img')!, button = body.querySelector('button')!;
+  image.fire('load'); button.fire('click');
+  const dialog = doc.body.querySelector('dialog')!;
+  expect(dialog.open).toBe(true);
+  dialog.fire('click', dialog.querySelector('img')! as never);
+  expect(doc.body.querySelector('dialog')).toBeNull(); expect(doc.activeElement).toBe(button);
+});

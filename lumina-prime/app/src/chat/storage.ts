@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { chatUrl, type ChatSession } from './client.ts';
+import { CALL_TUNING_VERSION, readCallTuning } from './call-vad.ts';
 const key = 'mind.wake.chat.v1';
 let memory: ChatSession | null = null;
 export async function saveChatSession(session: ChatSession) {
@@ -47,17 +48,13 @@ export async function loadCallTuning(): Promise<Partial<StoredCallTuning>> {
   try {
     const raw = Platform.OS === 'web' ? localStorage.getItem(callTuningKey)
       : (await SecureStore.isAvailableAsync()) ? await SecureStore.getItemAsync(callTuningKey) : null;
-    const value = raw ? JSON.parse(raw) : {};
-    const out: Partial<StoredCallTuning> = {};
-    if ([2, 3, 5, 8].includes(value?.silence)) out.silence = value.silence;
-    if (['sensible', 'normal', 'off'].includes(value?.bargeMode)) out.bargeMode = value.bargeMode;
-    if (typeof value?.floorDb === 'number' && Number.isFinite(value.floorDb)) out.floorDb = value.floorDb;
-    return out;
+    // Migration v2 (NLR, 17 nov.) : l'ancien défaut persisté laisse place au nouveau défaut.
+    return readCallTuning(raw ? JSON.parse(raw) : {});
   } catch { return {}; }
 }
 export async function saveCallTuning(value: StoredCallTuning) {
   try {
-    const raw = JSON.stringify(value);
+    const raw = JSON.stringify({ ...value, v: CALL_TUNING_VERSION });
     if (Platform.OS === 'web') localStorage.setItem(callTuningKey, raw);
     else if (await SecureStore.isAvailableAsync()) await SecureStore.setItemAsync(callTuningKey, raw);
   } catch { /* Réglage perdu au redémarrage : valeurs par défaut. */ }
