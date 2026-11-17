@@ -207,6 +207,42 @@ test("stale lock skips without deleting it or losing local commit", async (t) =>
   assert.equal(git(remote, "rev-parse", "refs/heads/destination"), before);
 });
 
+test("guard holds the push for a commit lock, ignored paths and paths outside the allow list", async (t) => {
+  const { repo, remote } = fixture(t);
+  const before = git(remote, "rev-parse", "refs/heads/destination");
+  const lock = path.join(repo, ".git", "mind-commit.lock");
+  fs.writeFileSync(lock, "other session");
+  commit(repo);
+  assert.match((await invoke(repo)).reason, /commit lock/);
+  assert.equal(fs.readFileSync(lock, "utf8"), "other session");
+  fs.rmSync(lock);
+
+  fs.writeFileSync(path.join(repo, ".gitignore"), "__pycache__/\n");
+  fs.mkdirSync(path.join(repo, "__pycache__"));
+  fs.writeFileSync(path.join(repo, "__pycache__", "x.pyc"), "junk");
+  git(repo, "add", ".gitignore");
+  git(repo, "add", "-f", "__pycache__/x.pyc");
+  git(repo, "commit", "-m", "junk");
+  assert.match((await invoke(repo)).reason, /ignored path.*__pycache__\/x\.pyc/);
+  git(repo, "rm", "--cached", "-q", "__pycache__/x.pyc");
+  git(repo, "commit", "-m", "untrack junk");
+
+  fs.writeFileSync(path.join(repo, ".auto-push-allow"), "# allowed\n.*\nsrc/\n*.md\n");
+  fs.mkdirSync(path.join(repo, "src"));
+  fs.writeFileSync(path.join(repo, "src", "a.ts"), "ok");
+  fs.writeFileSync(path.join(repo, "README.md"), "ok");
+  fs.writeFileSync(path.join(repo, "capture.png"), "private");
+  git(repo, "add", ".auto-push-allow", "src/a.ts", "README.md", "capture.png");
+  git(repo, "commit", "-m", "mixed");
+  assert.match((await invoke(repo)).reason, /1 path\(s\) outside \.auto-push-allow \(capture\.png\)/);
+  assert.equal(git(remote, "rev-parse", "refs/heads/destination"), before);
+
+  git(repo, "rm", "--cached", "-q", "capture.png");
+  const head = commit(repo, "allowed only");
+  assert.equal((await invoke(repo)).state, "pushed");
+  assert.equal(git(remote, "rev-parse", "refs/heads/destination"), head);
+});
+
 test("push receives noninteractive authentication environment", (t) => {
   const { repo } = fixture(t);
   fs.writeFileSync(

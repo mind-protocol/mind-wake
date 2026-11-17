@@ -114,6 +114,72 @@ function push(repo, args, env, timeoutMs) {
   });
 }
 
+export const COMMIT_LOCK = "mind-commit.lock";
+export const ALLOW_FILE = ".auto-push-allow";
+
+/** Anchored glob rules: `*` stays inside one path segment, a trailing `/` allows a directory. */
+export function allowMatcher(text) {
+  const rules = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map((rule) => {
+      const directory = rule.endsWith("/");
+      const body = rule
+        .replace(/\/$/, "")
+        .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*/g, "[^/]*");
+      return new RegExp(`^${body}${directory ? "/" : "$"}`);
+    });
+  return (file) => rules.some((rule) => rule.test(file));
+}
+
+/** Paths added or modified between upstream and commit; deletions never block a push. */
+function pushedPaths(repo, base, commit, env) {
+  const result = git(
+    repo,
+    ["diff", "--name-only", "-z", "--no-renames", "--diff-filter=d", base, commit],
+    env,
+  );
+  if (result.status !== 0) throw Error("Git diff unavailable");
+  return result.stdout.split("\0").filter(Boolean);
+}
+
+/**
+ * Why the push must wait, or null: another session holds the commit lock, the commit adds
+ * paths matching ignore rules, or (when .auto-push-allow exists) paths outside its list.
+ */
+export function guardReason(context, base, commit, env = process.env) {
+  if (fs.existsSync(path.join(context.gitDir, COMMIT_LOCK)))
+    return `commit lock ${COMMIT_LOCK} held by another session; commit kept, push once it is released`;
+  const files = pushedPaths(context.root, base, commit, env);
+  if (!files.length) return null;
+  const check = spawnSync(
+    "git",
+    ["-C", context.root, "check-ignore", "--no-index", "--stdin", "-z"],
+    {
+      env: gitEnvironment(env),
+      input: files.join("\0") + "\0",
+      encoding: "utf8",
+      windowsHide: true,
+      timeout: 10_000,
+      maxBuffer: 1_048_576,
+    },
+  );
+  if (check.status !== 0 && check.status !== 1) throw Error("Git ignore check unavailable");
+  const ignored = check.stdout.split("\0").filter(Boolean);
+  if (ignored.length)
+    return `commit adds ${ignored.length} ignored path(s) (${ignored.slice(0, 3).join(", ")}); commit kept, untrack them and push manually`;
+  const allowFile = path.join(context.root, ALLOW_FILE);
+  if (fs.existsSync(allowFile)) {
+    const allowed = allowMatcher(fs.readFileSync(allowFile, "utf8"));
+    const outside = files.filter((file) => !allowed(file));
+    if (outside.length)
+      return `commit adds ${outside.length} path(s) outside ${ALLOW_FILE} (${outside.slice(0, 3).join(", ")}); commit kept, review and push manually`;
+  }
+  return null;
+}
+
 /** Push exactly the captured commit to the existing upstream; no local ref mutation. */
 export async function autoPush({
   repo,
@@ -153,6 +219,13 @@ export async function autoPush({
     return skipped(
       "upstream tracking ref unavailable; commit kept, fetch/check upstream and push manually",
     );
+  const guard = guardReason(
+    context,
+    value(context.root, ["rev-parse", "--verify", "@{upstream}^{commit}"], env),
+    commit,
+    env,
+  );
+  if (guard) return skipped(guard);
   const urls = git(context.root, ["remote", "get-url", "--push", "--all", remote], env);
   if (urls.status !== 0 || urls.stdout.trim().split(/\r?\n/).filter(Boolean).length !== 1)
     return skipped("remote has no unique push destination; commit kept, push manually");
@@ -235,9 +308,17 @@ if (process.argv[1] && samePath(process.argv[1], fileURLToPath(import.meta.url))
     });
     if (!values.repo || !values["git-dir"]) throw Error("--repo and --git-dir required");
     const result = await autoPush({ repo: values.repo, gitDir: values["git-dir"] });
-    process.stderr.write(
-      `[auto-push] ${result.state === "pushed" ? `pushed ${result.commit.slice(0, 12)} to its configured upstream` : result.reason}.\n`,
-    );
+    const line = `[auto-push] ${result.state === "pushed" ? `pushed ${result.commit.slice(0, 12)} to its configured upstream` : result.reason}.`;
+    process.stderr.write(line + "\n");
+    try {
+      // Durable trace of every push decision, next to the lock, outside the work tree.
+      fs.appendFileSync(
+        path.join(values["git-dir"], "mind-auto-push.log"),
+        `${new Date().toISOString()} ${line}\n`,
+      );
+    } catch {
+      /* Logging is best effort; the push decision stands. */
+    }
     if (result.state === "failed") process.exitCode = 1;
   } catch {
     process.stderr.write(

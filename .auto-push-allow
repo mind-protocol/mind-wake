@@ -1,0 +1,26 @@
+# Paths that scripts/auto-push.mjs may push automatically.
+# One anchored rule per line: `*` stays inside one path segment, a trailing `/` allows a directory.
+# A commit that adds or modifies anything else is kept locally and must be pushed by hand.
+.*
+*.md
+*.json
+*.html
+*.ps1
+*.js
+*.ts
+LICENSE
+artifacts/
+desktop/
+docs/
+examples/
+inputs/
+lumina-prime/
+prompts/
+relations/
+scripts/
+services/
+skills/
+spikes/
+src/
+test/
+tools/
