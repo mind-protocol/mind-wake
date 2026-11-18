@@ -14,6 +14,9 @@ import { routeRoomMessage } from "../daemon/room-agents.js";
 import { SecondThreadStore } from "../daemon/second-thread.js";
 import { MENTION_PAIR_CAP, mentionsId } from "./mention-wake.js";
 import { loadPatternHolders, patternHolderSystemPrompt, tickPatternHolders } from "./pattern-holders.js";
+import { deliverLocalMessage } from "./local-message.js";
+import { readOwnerInboxHistory } from "./owner-inbox.js";
+import { seedSimulatedProfile } from "../../test/demo/harness.js";
 
 let dataDir: string;
 let space: string;
@@ -162,4 +165,36 @@ it("tells the holder how to wake its room's agents", () => {
   const prompt = patternHolderSystemPrompt(holder, dataDir);
   expect(prompt).toContain("Réveiller un agent : écris son @id dans ta réponse");
   expect(prompt).toContain("Agents de ta salle (Room 6) : Explorer et trouver @explorer-et-trouver, Se vendre @se-vendre, Assurer le poste @assurer-le-poste.");
+});
+
+it("the `message` tool to a holder lands in the fil it reads: the holder wakes by mention and its @agent gets a one-shot turn", async () => {
+  // Test réel du 18 nov. 2026 (20:30Z) : `message` vers chef-de-projet restait dans la boîte de la
+  // session principale ; ni le holder ni @explorer-et-trouver ne le voyaient.
+  seedSimulatedProfile(dataDir);
+  await tick();
+  clock += 1000;
+  const sent = deliverLocalMessage(dataDir, {
+    to: "chef-de-projet",
+    text: "Marco : salle six éteinte ; réveille @explorer-et-trouver pour son tri de dix minutes.",
+    author: "Principal",
+    key: "test-arobase-001",
+  });
+  expect(sent.status).toBe("recorded");
+  expect(
+    deliverLocalMessage(dataDir, { to: "chef-de-projet", text: "Marco : salle six éteinte ; réveille @explorer-et-trouver pour son tri de dix minutes.", author: "Principal", key: "test-arobase-001" }).status,
+  ).toBe("duplicate");
+  expect(readOwnerInboxHistory(dataDir)).toEqual([]);
+  const seen: string[] = [];
+  clock = Date.now() + 60_000;
+  const outcomes = await tick(replying("Je lance la phase un : @explorer-et-trouver, dix minutes de tri.", seen));
+  expect(outcomes).toContainEqual(expect.objectContaining({ slug: "chef-de-projet", state: "spoke", reason: "mention" }));
+  expect(seen.filter((p) => p.includes("Tu es mentionné directement"))).toHaveLength(1);
+  await tick();
+  const woken = notices();
+  // Une seule notice : la mention du message et celle de la réponse du holder viennent de deux auteurs.
+  expect(woken.map((e) => e.notice?.label)).toContain("@mention → Explorer et trouver");
+  expect(woken[0]!.text).toContain("la session principale t'a mentionné");
+  expect(room((s) => oneShotTriggers(s).map((e) => e.id))).toContain(woken[0]!.id);
+  expect(routeRoomMessage(woken[0]!, agentsOf6(), null).recipients).toEqual(["explorer-et-trouver"]);
+  expect(forkEnabled(dataDir, 6)).toBe(false);
 });
