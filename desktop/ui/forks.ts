@@ -6,6 +6,8 @@ import { tr, formatLocale } from "./i18n.js";
 import { projectWakesCard } from "./project-wakes.js";
 import { renderMarkdown } from "./markdown.js";
 import { roomName, setRoomLabels, setPrincipalName } from "./room-name.js";
+import { renderRoomParticipants } from "./room-participants.js";
+import { roomActivity } from "./room-activity.js";
 import { composeField, copyButton } from "./copy-button.js";
 import { agentTint, authorMarker, VOX_ROOM } from "./author-tint.js";
 import { readingHold } from "./scroll-hold.js";
@@ -143,6 +145,10 @@ export function mountForks(options: {
   };
   const status = document.createElement("p");
   status.setAttribute("role", "status");
+  // Agents et pattern holders de la room (holders-salles, 18 nov. 2026).
+  const participants = document.createElement("p");
+  participants.className = "room-participants";
+  participants.hidden = true;
   const messages = document.createElement("ol");
   messages.id = "fork-thread-messages";
   messages.className = "messages";
@@ -167,7 +173,7 @@ export function mountForks(options: {
   const voice=document.createElement('button'),cancelVoice=document.createElement('button'),voiceStatus=document.createElement('p');
   voice.type='button';voice.textContent='Voice';voice.setAttribute('aria-pressed','false');cancelVoice.type='button';cancelVoice.textContent='Annuler Voice';voiceStatus.setAttribute('role','status');
   form.append(composeField(text),send,voice,cancelVoice,voiceStatus,feedback);
-  panel.append(heading, status, messages, incoming, presence, form);
+  panel.append(heading, status, participants, messages, incoming, presence, form);
   const transcriptStatus=voiceTranscriptStatus(panel,"2");
   const updateVoice=voiceChatControls(voice,cancelVoice);
   updateVoice(false,false);
@@ -191,6 +197,8 @@ export function mountForks(options: {
       toggle: HTMLButtonElement;
       detail: HTMLElement;
       tab: HTMLButtonElement;
+      names: HTMLElement[];
+      awaiting: HTMLElement;
       unread: HTMLElement[];
       working: HTMLElement[];
     }
@@ -239,11 +247,58 @@ export function mountForks(options: {
   window.addEventListener('voice-stop',()=>{void capture.stop(true);});
   window.addEventListener('fork-voice-stop',()=>{void capture.stop(true);});
   window.addEventListener('beforeunload',()=>{void capture.stop(true);});
+  // Bandeau : seulement les salles actives (critère : room-activity.ts) ; les autres derrière « + N autres ».
+  let showAllRooms = false;
+  const moreRooms = document.createElement("button");
+  moreRooms.type = "button";
+  moreRooms.className = "fork-more-rooms";
+  moreRooms.hidden = true;
+  moreRooms.addEventListener("click", () => { showAllRooms = !showAllRooms; render(); });
+  element("tab-second").before(moreRooms);
+  // Renommer en un geste (NLR, 18 nov. 2026) : clic sur le nom dans l'en-tête → champ → Entrée.
+  // Nom affiché seulement : l'identifiant de la salle (fork:N, @roomN) ne change pas.
+  const headingName = document.createElement("button");
+  headingName.type = "button";
+  headingName.className = "room-name-edit";
+  headingName.title = tr("Renommer la salle (nom affiché seulement)");
+  let renaming = false;
+  headingName.addEventListener("click", () => {
+    if (renaming) return;
+    renaming = true;
+    const id = current;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 40;
+    input.value = roomName(id);
+    input.className = "room-name-input";
+    input.setAttribute("aria-label", tr("Nouveau nom de la salle (vide : nom par défaut)"));
+    let done = false;
+    const finish = (save: boolean) => {
+      if (done) return;
+      done = true;
+      const value = input.value.trim();
+      input.replaceWith(headingName);
+      renaming = false;
+      if (!save || value === roomName(id)) { render(); return; }
+      headingName.textContent = value || `Room ${String(id)}`;
+      void request("rename", { id, text: value }).then(apply).catch((error: unknown) => { showError(error); render(); });
+    };
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); finish(true); }
+      else if (event.key === "Escape") { event.preventDefault(); finish(false); }
+    });
+    input.addEventListener("blur", () => { finish(false); });
+    headingName.replaceWith(input);
+    input.focus();
+    input.select();
+  });
   for (let id = 2; id <= 8; id++) {
     const row = document.createElement("div");
     row.className = "fork-control";
     const label = document.createElement("strong");
-    label.append(icon(id), ` ${roomName(id)} · Codex`);
+    const labelName = document.createElement("span");
+    labelName.textContent = roomName(id);
+    label.append(icon(id), " ", labelName, " · Codex");
     const badge = (): HTMLElement => {
       const node = document.createElement("span");
       node.className = "fork-unread";
@@ -281,9 +336,16 @@ export function mountForks(options: {
     tab.dataset["forkTab"] = String(id);
     const tabUnread = badge(),
       tabWorking = working();
-    tab.append(icon(id), ` ${roomName(id)}`, tabWorking, tabUnread);
+    const tabName = document.createElement("span");
+    tabName.className = "fork-tab-name";
+    tabName.textContent = roomName(id);
+    const tabAwaiting = document.createElement("span");
+    tabAwaiting.className = "fork-unread fork-awaiting";
+    tabAwaiting.textContent = tr("attend ta réponse");
+    tabAwaiting.hidden = true;
+    tab.append(icon(id), " ", tabName, tabWorking, tabUnread, tabAwaiting);
     tab.hidden = true;
-    element("tab-second").before(tab);
+    moreRooms.before(tab);
     const select = () => {
       keepDraft(current, text.value);
       selections.set(current,{start:text.selectionStart,end:text.selectionEnd,direction:text.selectionDirection});
@@ -341,6 +403,8 @@ export function mountForks(options: {
       toggle,
       detail,
       tab,
+      names: [labelName, tabName],
+      awaiting: tabAwaiting,
       unread: [overviewUnread, tabUnread],
       working: [overviewWorking, tabWorking],
     });
@@ -409,25 +473,38 @@ export function mountForks(options: {
   }
   function render() {
     if (!model) return;
+    let hiddenRooms = 0;
     for (const fork of model.forks) {
       const row = rows.get(fork.id);
       if (!row) continue;
       row.toggle.textContent = fork.enabled ? "On" : "Off";
       row.toggle.setAttribute("aria-checked", String(fork.enabled));
       row.detail.textContent = `${forkStatus(fork, model)}${fork.projects.length ? ` · ${fork.projects.join(", ")}` : ""}`;
-      row.tab.hidden =
-        !fork.enabled &&
-        !fork.entries.length &&
-        fork.threadId === null &&
-        (fork.id !== current || panel.hidden);
+      for (const name of row.names) name.textContent = roomName(fork.id);
+      const used = fork.enabled || fork.entries.length > 0 || fork.threadId !== null || (fork.id === current && !panel.hidden);
+      const unread = readState.unread(fork);
+      const reason = used ? roomActivity(fork, {
+        selected: fork.id === current && !panel.hidden,
+        working: fresh && forkIsWorking(fork, model),
+        unread,
+      }) : null;
+      row.awaiting.hidden = reason !== "attend ta réponse" || unread > 0;
+      row.tab.dataset["active"] = String(reason !== null);
+      row.tab.title = reason ? `${roomName(fork.id)} · ${tr(reason)}` : roomName(fork.id);
+      if (used && reason === null) hiddenRooms++;
+      row.tab.hidden = !used || (reason === null && !showAllRooms);
     }
+    moreRooms.hidden = hiddenRooms === 0;
+    moreRooms.textContent = showAllRooms ? tr("Masquer les salles inactives") : tr("+ {0} autres", [String(hiddenRooms)]);
+    moreRooms.setAttribute("aria-expanded", String(showAllRooms));
     const fork = model.forks.find((f) => f.id === current);
     if (!fork) return;
-    heading.replaceChildren(
-      icon(current),
-      document.createTextNode(` ${roomName(current)} · Codex`),
-    );
+    if (!renaming) {
+      headingName.textContent = roomName(current);
+      heading.replaceChildren(icon(current), " ", headingName, document.createTextNode(" · Codex"));
+    }
     status.textContent = forkStatus(fork, model);
+    renderRoomParticipants(participants, fork);
     const conversation = forkConversationEntries(fork);
     prunePendings();
     const next = JSON.stringify([current, conversation, fork.projectWakes]);

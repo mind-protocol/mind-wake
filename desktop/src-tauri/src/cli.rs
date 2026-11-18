@@ -121,6 +121,19 @@ pub fn telegram_user(action: String, payload: Option<serde_json::Value>) -> Resu
     run_with_timeout(args, Some(input), Duration::from_secs(75))
 }
 
+/// Réglages « Pont pair-à-pair entre colonies » : `services/pont-p2p/desktop-main.ts`.
+/// Seules la clé publique et son empreinte sortent ; la clé privée reste dans `credentials/`.
+pub fn pont_p2p(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "status" | "enable" | "disable" | "set_annuaire" | "add_contact" | "forget" | "resolve_conflict") {
+        return Err("Action du pont pair-à-pair inconnue".into());
+    }
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/pont-p2p/desktop-main.ts").into());
+    let input = serde_json::json!({"action": action, "payload": payload}).to_string();
+    run_with_timeout(args, Some(input), Duration::from_secs(30))
+}
+
 pub fn fast_reply(action: &str) -> Result<CliRun, String> {
     let verb = match action { "status" => "status", "on" => "on", "off" => "off", _ => return Err("Action réponse rapide inconnue".into()) };
     run(wake_args(&["fast-reply", verb])?, None)
@@ -146,7 +159,8 @@ pub fn voice_graph() -> Result<CliRun, String> {
 }
 
 pub fn voice_input(action: String, audio: Option<String>) -> Result<CliRun, String> {
-    if !matches!(action.as_str(), "snapshot" | "transcribe") { return Err("Action vocale inconnue".into()); }
+    // `vocabulary` / `vocabulary_save` : vocabulaire STT des Réglages (texte JSON dans `audio`).
+    if !matches!(action.as_str(), "snapshot" | "transcribe" | "vocabulary" | "vocabulary_save") { return Err("Action vocale inconnue".into()); }
     if audio.as_ref().is_some_and(|value| value.len() > 5_500_000) { return Err("Audio trop volumineux".into()); }
     let mut args = owner_command();
     args.pop();
@@ -551,10 +565,12 @@ pub fn wake_forks(action: &str, id: Option<u8>, text: Option<String>, voice_scre
 }
 
 fn wake_forks_uncached(action: &str, id: Option<u8>, text: Option<String>, voice_screen_refs: Option<Vec<String>>) -> Result<CliRun, String> {
-    let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", "send" => "send", _ => return Err("Action inconnue".into()) };
-    let body = if matches!(action, "on" | "off" | "send") {
+    let verb = match action { "status" | "ensure" => "status", "on" => "on", "off" => "off", "send" => "send", "rename" => "rename", _ => return Err("Action inconnue".into()) };
+    let body = if matches!(action, "on" | "off" | "send" | "rename") {
         let slot = id.filter(|n| (2..=8).contains(n)).ok_or("Fork attendu : 2 à 8")?;
         if action == "send" && text.as_ref().is_none_or(|s| s.trim().is_empty() || s.chars().count() > 4000) { return Err("Message vide ou trop long".into()); }
+        // Renommage (nom affiché seulement) : texte vide = nom par défaut ; la CLI valide 2 à 40 caractères.
+        if action == "rename" && text.as_ref().is_some_and(|s| s.chars().count() > 40) { return Err("Nom trop long (40 caractères au plus)".into()); }
         let mut body = serde_json::json!({"id":slot,"text":text});
         if let Some(refs) = voice_screen_refs {
             if action != "send" || refs.len() > 3 || refs.iter().any(|r| r.len() > 100) {

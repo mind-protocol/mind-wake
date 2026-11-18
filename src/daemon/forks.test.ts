@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { setEngineChoice } from "./agent-engine.js";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -6,6 +7,7 @@ import {
   FORK_IDS,
   ONE_SHOT_CAP,
   ONE_SHOT_NOTE,
+  LISTENING_NOTE,
   claimOneShot,
   clusterStatusPublisher,
   oneShotTriggers,
@@ -22,6 +24,7 @@ import {
   setForkEnabled,
 } from "./forks.js";
 import { saveForkAssignment } from "./fork-assignment.js";
+import { saveExecutionMode } from "./execution-mode.js";
 import { SecondThreadStore } from "./second-thread.js";
 import { runForkTurn, type ForkTurnResult } from "./fork-runtime.js";
 import type { CodexProcess } from "../adapters/codex/launch.js";
@@ -37,6 +40,7 @@ import { readReceivedMessages } from "../communication/received-messages.js";
 let dir: string, workspace: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), "wake-forks-"));
+  setEngineChoice(dir, "codex");
   workspace = path.join(dir, "workspace");
   fs.mkdirSync(path.join(workspace, "artifacts"), { recursive: true });
   fs.writeFileSync(
@@ -672,6 +676,32 @@ describe("disabled room: one turn per human message", () => {
     expect(store.pendingHuman()).toHaveLength(1);
     // Once the oldest leaves the 24 h window, the message gets its turn.
     expect(claimOneShot(store, oneShotTriggers(store), now + 24 * 3_600_000 - 29 * 60_000 + 1)?.map((e) => e.text)).toEqual(["message au-delà du plafond"]);
+    store.close();
+  });
+
+  it("Off à l'écoute : une room activée répond par un tour unique au message humain (appel d'un autre PC), sans boucle", async () => {
+    saveExecutionMode(dir, "listening");
+    since(4);
+    // Message d'un autre PC routé vers la room (même chemin que routeTelegramHandle).
+    sendToFork(dir, 4, "[Appel] NLR · PC-2 : tu es là ?", "telegram-route:call-pc2-1", "telegram", undefined, [], true);
+    const calls: { id: number; message: string }[] = [];
+    await runForks({
+      dataDir: dir, workspace, profile: () => "run", claudeProfile: () => "run", maxTurns: 1, telegramInbound: false,
+      telegramReply: async () => undefined,
+      claudeTurn: async (input) => {
+        calls.push({ id: input.id, message: input.message });
+        return { outcome: "completed", text: "oui", tokens: null, accepted: true, detail: null, retryAtMs: null, sessionId: "s" };
+      },
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.id).toBe(4);
+    expect(calls[0]?.message).toContain(LISTENING_NOTE);
+    expect(calls[0]?.message).toContain("tu es là ?");
+    expect(forkEnabled(dir, 4)).toBe(true);
+    const store = new SecondThreadStore(forkDir(dir, 4));
+    // Le message est consommé : aucun déclencheur restant, donc aucun autre tour.
+    expect(oneShotTriggers(store)).toEqual([]);
+    expect(store.pendingHuman()).toEqual([]);
     store.close();
   });
 });

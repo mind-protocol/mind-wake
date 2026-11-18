@@ -4,6 +4,7 @@ import {voiceScreenComposer,type VoiceScreenDraft} from './voice-screen-composer
 import {mountVoiceGraph} from './voice-graph-view.js';
 import {mountVoiceMode,voiceModeStopsDictation,type VoiceModeState} from "./voice-mode-view.js";
 import {mountVoiceSettingsSwitch} from "./voice-settings-switch.js";
+import {mountSttVocabularySettings} from "./stt-vocabulary-settings.js";
 import {mountVoiceCycle,type VoiceCycleEvent} from "./voice-cycle.js";
 import { initDuo } from "./duo.js";
 import { tr, formatLocale } from "./i18n.js";
@@ -17,6 +18,7 @@ import {deliverVoiceTranscript} from "./deliver-voice.js";
 import { initElevenLabs } from "./elevenlabs.js";
 import { mountFastReply } from "./fast-reply.js";
 import { mountTelegramAccount } from "./telegram-account.js";
+import { mountPontP2P } from "./pont-p2p.js";
 import { initDocuments } from "./documents.js";
 import { bindChatDraft } from "./chat-draft.js";
 import { Outbox, sendOnEnter, trackTyping, typingIdle } from "./composer-kit.js";
@@ -1016,6 +1018,7 @@ if(tauri)voiceMode=mountVoiceMode((command,args)=>tauri.core.invoke(command,args
  changed:state=>{const stop=voiceModeStopsDictation(lastVoiceMode,state);lastVoiceMode=state;if(stop){voiceCycle.event({kind:'stop',at:Date.now()});clearPrincipalScreen();dictation.stop(true);}},
 });
 mountVoiceSettingsSwitch(byId<HTMLButtonElement>('voice-switch'),byId('voice-switch-note'),voiceMode);
+void mountSttVocabularySettings(byId<HTMLFormElement>('stt-vocabulary-form'),byId<HTMLTextAreaElement>('stt-vocabulary-terms'),byId<HTMLInputElement>('stt-vocabulary-elevenlabs'),byId('stt-vocabulary-status'),tauri?(action,audio)=>invoke('voice_input',{action,audio}):undefined);
 window.addEventListener('beforeunload',()=>voiceMode?.dispose());
 byId('chat-voice').addEventListener('click',()=>{if(dictation.active())dictation.stop();else void dictation.start();});
 void tauri?.event?.listen('voice-stop',()=>{clearPrincipalScreen();dictation.stop(true);window.dispatchEvent(new Event('fork-voice-stop'));voiceCycle.event({kind:'stop',at:Date.now()});});
@@ -1631,7 +1634,7 @@ async function showAppVersion(): Promise<void> {
 void showAppVersion();
 
 const engineSelect = byId("agent-engine") as HTMLSelectElement;
-let savedEngine = "";
+let savedEngine = "claude";
 async function updateAgentEngine(preferred?: string) {
   if (!tauri) return;
   engineSelect.disabled = true;
@@ -1640,8 +1643,8 @@ async function updateAgentEngine(preferred?: string) {
     const run = await tauri.core.invoke("agent_prompts", {request}) as CliRun;
     const result = JSON.parse(run.stdout);
     if (run.exitCode || result.error) throw Error(result.error ?? "Réglage indisponible");
-    savedEngine = result.preferred ?? "";
-    byId("agent-engine-status").textContent = preferred ? "Choix enregistré." : "";
+    savedEngine = result.preferred ?? "claude";
+    byId("agent-engine-status").textContent = preferred ? "Choix enregistré pour tous les agents." : "";
   } catch (err) {
     byId("agent-engine-status").textContent = String(err);
   } finally {
@@ -1657,6 +1660,7 @@ if (tauri) {const voicePlayer=initElevenLabs((command, args) => tauri.core.invok
   voiceChatBargeIn({enabled:()=>bargeInSetting.enabled(),interrupt:()=>{if(bargeInSetting.enabled())voicePlayer.interrupt();}});}
 if (tauri) mountFastReply((command,args)=>tauri.core.invoke(command,args));
 if (tauri) mountTelegramAccount((command,args)=>tauri.core.invoke(command,args));
+if (tauri) mountPontP2P((command,args)=>tauri.core.invoke(command,args));
 
 byId("tab-documents").addEventListener("click", () => { selectTab("documents"); });
 if (tauri) {

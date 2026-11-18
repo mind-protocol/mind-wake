@@ -290,6 +290,8 @@ export const english: Readonly<Record<string, string>> = {
   "Ajouté au second fil ; Claude Code le lira au prochain tour.": "Added to second chat; Claude Code will read it on the next turn.",
   "Éveillé": "Awake",
   "Allumé": "On",
+  "À l'écoute": "Listening",
+  "Off à l'écoute : répond aux messages entrants, sans réveil autonome": "Off, listening: answers incoming messages, no autonomous wakes",
   "Éteint": "Off",
   "Arrêt forcé": "Forced stop",
   "Désactivé": "Disabled",
@@ -604,5 +606,8 @@ export const english: Readonly<Record<string, string>> = {
   "Copié": "Copied",
   "Copie impossible": "Copy failed",
   "Joindre des images": "Attach images",
+  "Participants": "Participants",
+  "holder": "holder",
+  "introuvable": "not found",
   "https://github.com/organisation/depot.git ou git@github.com:organisation/depot.git": "https://github.com/organization/repository.git or git@github.com:organization/repository.git"
 };

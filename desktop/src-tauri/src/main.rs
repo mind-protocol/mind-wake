@@ -177,6 +177,11 @@ async fn telegram_user(action: String, payload: Option<serde_json::Value>) -> Re
 }
 
 #[tauri::command]
+async fn pont_p2p(action: String, payload: Option<serde_json::Value>) -> Result<CliRun, String> {
+    blocking(move || cli::pont_p2p(action, payload)).await
+}
+
+#[tauri::command]
 async fn app_error_report(screen: String, text: String, at: Option<String>) -> Result<CliRun, String> {
     blocking(move || cli::app_error(screen, text, at)).await
 }
@@ -262,6 +267,8 @@ async fn owner_reply(
 enum Light {
     Awake,
     On,
+    /// Off à l'écoute (`executionMode: "listening"`, démarrage de Windows) : profil prêt.
+    Listening,
     Off,
     ForcedOff,
     Unknown,
@@ -278,6 +285,7 @@ impl Light {
         }
         match json["data"]["profile"]["state"].as_str() {
             Some("running" | "checkpointing") => Light::Awake,
+            Some("ready" | "hibernating") if json["data"]["executionMode"] == "listening" => Light::Listening,
             Some("ready" | "hibernating") => Light::On,
             Some("paused" | "blocked" | "disabled") => Light::Off,
             Some("stopped") => Light::ForcedOff,
@@ -289,7 +297,7 @@ impl Light {
         match self {
             Light::Awake => include_bytes!("../icons/tray-awake.png"),
             Light::On => include_bytes!("../icons/tray-on.png"),
-            Light::Off => include_bytes!("../icons/tray-off.png"),
+            Light::Off | Light::Listening => include_bytes!("../icons/tray-off.png"),
             Light::ForcedOff => include_bytes!("../icons/tray-forced_off.png"),
             Light::Unknown => include_bytes!("../icons/tray-unknown.png"),
         }
@@ -299,6 +307,7 @@ impl Light {
         match self {
             Light::Awake => i18n::text("MIND Wake — éveillé : une session tourne", "MIND Wake — awake: a session is running"),
             Light::On => i18n::text("MIND Wake — allumé : réveils autorisés dans les fenêtres", "MIND Wake — on: wakes allowed in scheduled windows"),
+            Light::Listening => i18n::text("MIND Wake — Off à l'écoute : répond aux messages entrants, sans réveil autonome", "MIND Wake — off, listening: answers incoming messages, no autonomous wakes"),
             Light::Off => i18n::text("MIND Wake — éteint (pause, blocage ou désactivé)", "MIND Wake — off (paused, blocked or disabled)"),
             Light::ForcedOff => i18n::text("MIND Wake — arrêt", "MIND Wake — stopped"),
             Light::Unknown => i18n::text("MIND Wake — état indisponible", "MIND Wake — status unavailable"),
@@ -423,6 +432,7 @@ fn main() {
             workspace_sync_configure,
             elevenlabs,
             telegram_user,
+            pont_p2p,
             fast_reply_status,
             fast_reply_set,
             workspace_sync_now,

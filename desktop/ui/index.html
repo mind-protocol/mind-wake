@@ -216,12 +216,11 @@
       <div id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
         <section aria-labelledby="h-agent-engine">
           <h2 id="h-agent-engine">Moteur des agents</h2>
-          <label for="agent-engine">Moteur prioritaire</label>
+          <label for="agent-engine">Fournisseur pour tous les agents</label>
           <select id="agent-engine" disabled>
-            <option value="" disabled>Selon l’agent</option>
-            <option value="claude">Claude</option><option value="codex">Codex</option>
+            <option value="claude">Claude</option><option value="codex">ChatGPT</option>
           </select>
-          <p class="hint">Le choix s’applique aux prochains réveils. Si le moteur est indisponible, l’autre prend le relais.</p>
+          <p class="hint">Un seul fournisseur pour tous les agents, rooms et coaches. Le choix s’applique aux prochains tours.</p>
           <p id="agent-engine-status" role="status"></p>
         </section>
         <section aria-labelledby="h-voice-switch">
@@ -229,6 +228,17 @@
           <div class="fork-control"><button id="voice-switch" type="button" role="switch" aria-checked="false" aria-labelledby="h-voice-switch" aria-describedby="voice-switch-hint voice-switch-note">Off</button>
           <small id="voice-switch-hint">Micro et lecture vocale. Off coupe tout de suite.</small></div>
           <p id="voice-switch-note" class="hint" role="status"></p>
+        </section>
+        <section aria-labelledby="h-stt-vocabulary">
+          <h2 id="h-stt-vocabulary">Vocabulaire de transcription</h2>
+          <form id="stt-vocabulary-form" class="workspace-sync-form">
+            <label for="stt-vocabulary-terms">Mots à reconnaître (un par ligne)</label>
+            <textarea id="stt-vocabulary-terms" rows="8" maxlength="20000" spellcheck="false"></textarea>
+            <label><input id="stt-vocabulary-elevenlabs" type="checkbox" /> Envoyer aussi cette liste à ElevenLabs (keyterms, +20 % sur le coût de transcription)</label>
+            <button type="submit">Enregistrer</button>
+          </form>
+          <p class="hint">Rend ces mots plus probables pour la dictée, les vocaux Telegram et les appels (Whisper local). Aucun mot n’est corrigé après coup : un mot douteux reste à confirmer.</p>
+          <p id="stt-vocabulary-status" role="status"></p>
         </section>
         <section aria-labelledby="h-elevenlabs">
           <h2 id="h-elevenlabs">Voix · ElevenLabs</h2>
@@ -270,6 +280,10 @@
           </form>
           <button id="telegram-user-logout" type="button" hidden>Déconnecter</button>
           <p id="telegram-user-feedback" role="status"></p>
+        </section>
+        <section id="pont-p2p" aria-labelledby="h-pont-p2p" class="pont-p2p">
+          <h2 id="h-pont-p2p">Pont pair-à-pair entre colonies ⬡</h2>
+          <p id="pont-p2p-state" role="status">Chargement…</p>
         </section>
         <h1 data-i18n="Réglages">Réglages</h1>
         <section aria-labelledby="h-language">

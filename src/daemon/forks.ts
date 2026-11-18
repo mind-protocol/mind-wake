@@ -1,4 +1,5 @@
 import { engineChoice, engineAwareRetryAt } from "./agent-engine.js";
+import { listeningOnly } from "./execution-mode.js";
 import { readAgentRole } from "../adapters/agent-role.js";
 import { agentIdentity } from "../adapters/agent-identity.js";
 import { ForkPlanning } from "./fork-planning.js";
@@ -25,6 +26,7 @@ import { enqueueOwnerMessage } from "../communication/owner-inbox.js";
 import { forwardRoomReply, ownerTelegramSender, roomFileRoots, type OwnerTelegramSend } from "../communication/telegram-room-reply.js";
 import {
   assignedForkMessage,
+  readRoomDisplayName,
   roomLabel,
   roomLabelIn,
   assignedForkPrompt,
@@ -35,6 +37,7 @@ import {
 } from "./fork-assignment.js";
 import { hasPendingRoomRelays, roomInjected, runRoomAgentsTurn } from "./room-agents.js";
 import { runTelegramCoachInbound } from "./telegram-coach-inbound.js";
+import { holdersOnce, roomParticipants } from "./room-participants.js";
 
 /** The principal is agent 1; slots 2–8 are optional Codex forks. */
 export const FORK_IDS = [2, 3, 4, 5, 6, 7, 8] as const;
@@ -90,6 +93,7 @@ export function readForks(dataDir: string, workspace: string, codexHome?: string
   const landscape = readProjectLandscape(workspace);
   const running = forksRunning(dataDir);
   const planning = new ForkPlanning(dataDir);
+  const holders = holdersOnce(dataDir);
   try {
   return {
     running,
@@ -108,8 +112,10 @@ export function readForks(dataDir: string, workspace: string, codexHome?: string
         id,
         enabled: enabled.includes(id),
         engine: assignment?.engine ?? ("codex" as const),
-        label: roomLabel(id, assignment),
+        label: roomLabel(id, assignment, readRoomDisplayName(dir)),
         assignment,
+        // Agents et pattern holders de la room (holders : champ `holder` et `agents` kind holder).
+        participants: roomParticipants(dataDir, assignment, holders),
         ...(assignmentError === null ? {} : { assignmentError }),
         projects: assignment ? [] : forkProjects(landscape.order, enabled, id, landscape.mainProject),
       };
@@ -231,6 +237,9 @@ export function clusterStatusPublisher(dataDir: string, from: number, name: stri
 export const ONE_SHOT_CAP = 30;
 export const ONE_SHOT_NOTE =
   "(Runtime : ta room est désactivée. Ce tour unique sert à répondre au message reçu ; elle reste désactivée ensuite.)";
+/** « Off à l'écoute » (démarrage de Windows) : même tour unique, autre motif. */
+export const LISTENING_NOTE =
+  "(Runtime : Wake est en Off à l'écoute. Ce tour unique sert à répondre au message reçu ; ensuite la room se remet au repos jusqu'au prochain message ou au retour en On.)";
 const ONE_SHOT_WINDOW_MS = 24 * 60 * 60_000;
 export function oneShotTurns(store: Pick<SecondThreadStore, "get">, now = Date.now()): number[] {
   try {
@@ -335,8 +344,11 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
       const assignedTurn = async (
         assignment: ForkAssignment,
         profile: () => SecondThreadControl,
-        enabled: boolean,
+        roomEnabled: boolean,
+        listening = false,
       ): Promise<boolean> => {
+        // À l'écoute, une room activée se comporte comme une room désactivée (tour unique).
+        const oneShotOnly = !roomEnabled || listening;
         if (store.get("assignedAt") !== assignment.assignedAt) {
           // Nouvelle affectation : on oublie le fil Codex hérité ou la session Claude précédente.
           store.set("assignedAt", assignment.assignedAt);
@@ -348,7 +360,7 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
         const pending = store.pendingHuman();
         // Room désactivée : un tour unique par message humain reçu, jamais pour un message d'agent.
         let oneShot: SecondThreadEntry[] | null = null;
-        if (!enabled) {
+        if (oneShotOnly) {
           const triggers =
             profile() !== "run" || codexHold || Date.now() < retryAt ? [] : oneShotTriggers(store);
           oneShot =
@@ -399,7 +411,7 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
         }
         // Injections du hook pendant ce tour (room-inbox-hook.ts) : comptent pour le renvoi Telegram.
         const injectedBefore = roomInjected(store);
-        const message = (oneShot === null ? "" : `${ONE_SHOT_NOTE}
+        const message = (oneShot === null ? "" : `${roomEnabled ? LISTENING_NOTE : ONE_SHOT_NOTE}
 
 `) + assignedForkMessage(
           human.map((h) => ({
@@ -448,7 +460,7 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
             )
               await forwardRoomReply({
                 store, room: id, entryId, text: result.text.slice(0, 20_000), send: telegramReply, log: options.log,
-                name: roomLabel(id, assignment),
+                name: roomLabelIn(options.dataDir, id),
                 workspaces: roomFileRoots(options.dataDir, assignment.workspace),
               });
           }
@@ -498,7 +510,9 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
           )
             break;
           if (assignment !== null) {
-            if (await assignedTurn(assignment, profile, enabled.includes(id))) turns++;
+            // « Off à l'écoute » : la room répond comme une room désactivée, un tour unique par
+            // message humain (appel d'un autre PC compris), jamais en boucle autonome.
+            if (await assignedTurn(assignment, profile, enabled.includes(id), listeningOnly(options.dataDir))) turns++;
             continue;
           }
           const landscape = readProjectLandscape(options.workspace);
@@ -516,6 +530,8 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
           if (
             !enabled.includes(id) ||
             options.profile() === "hold" ||
+            // « Off à l'écoute » : pas de travail de projet autonome ; les messages attendent On.
+            listeningOnly(options.dataDir) ||
             (!engineChoice(options.dataDir) && Date.now() < quotaUntil) ||
             // Une réponse rapide en cours (attente bornée) est livrée avec son message humain.
             store.heldForFastReply(options.dataDir, forkThread(id))
