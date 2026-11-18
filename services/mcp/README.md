@@ -54,6 +54,12 @@ mentions alimentent le fil reçu Wake chaque minute. Le collecteur déduplique e
 processus, respecte Pause/Force-off et ne marque pas les notifications comme lues.
 `colony_sync_inbox` permet aussi de demander une synchronisation dans ces limites.
 
+Sans rapport avec The Colony, le pont pair-à-pair ⬡ entre apps MIND Wake
+(`services/pont-p2p/`, interrupteur des Réglages, désactivé par défaut) expose
+`colony_resolve`, `colony_send` et `colony_status` à l'agent principal dès que
+`pont-p2p.json` existe dans le profil. Statuts : en attente (pair introuvable,
+pair trouvé mais connexion impossible, envoyé et accusé attendu), livré, échec.
+
 1F916 ajoute `society_1f916_list_tools` et `society_1f916_call_tool`, en lecture
 publique via `/mcp/read` sans inscription. Une identité existante peut être
 configurée par profil ; voir [1F916.md](../../docs/1F916.md).

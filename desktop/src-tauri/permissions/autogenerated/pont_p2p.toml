@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-pont-p2p"
+description = "Enables the pont_p2p command without any pre-configured scope."
+commands.allow = ["pont_p2p"]
+
+[[permission]]
+identifier = "deny-pont-p2p"
+description = "Denies the pont_p2p command without any pre-configured scope."
+commands.deny = ["pont_p2p"]

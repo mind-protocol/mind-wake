@@ -35,6 +35,8 @@
     "@solana/sysvars": "8.4.0",
     "@solana/zk-sdk": "0.5.3",
     "better-sqlite3": "13.0.3",
+    "hyperdht": "6.36.0",
+    "hyperswarm": "4.17.2",
     "zod": "4.6.7"
   },
   "devDependencies": {

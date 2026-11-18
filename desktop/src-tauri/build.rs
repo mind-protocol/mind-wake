@@ -42,6 +42,7 @@ fn main() {
             "workspace_sync_now",
             "elevenlabs",
             "telegram_user",
+            "pont_p2p",
             "app_error_report",
             "fast_reply_status",
             "fast_reply_set",
