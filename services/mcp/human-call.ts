@@ -1,7 +1,5 @@
 import { registerUnifiedCall } from './unified-call.js';
-import {openStoreReadOnly} from "../../src/store/index.js";
-import {controlDbPath} from "../../src/daemon/paths.js";
-import {DEFAULT_PROFILE_ID} from "../../src/cli/context.js";
+import { callConversationAllowed } from "../../src/communication/call-policy.js";
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
 import { openPhoneBook } from "./phone-book.mjs";
@@ -17,11 +15,7 @@ export function registerHumanCall(server: McpServer, env: Readonly<Record<string
   if (!caller) return;
   registerAgentCallControl(server, {dir, caller, ...(signature ? {label: signature} : {})});
   const assertAllowed = () => {
-      const control = openStoreReadOnly(controlDbPath(dir));
-      try {
-        const profile=control.uow.profiles.get(DEFAULT_PROFILE_ID);
-        if(!profile || profile.emergencyStopLocked || ["paused","checkpointing","stopped","disabled"].includes(profile.state)) throw Error("Wake is paused or stopped; no human call may ring");
-      } finally { control.close(); }
+      if (!callConversationAllowed(dir)) throw Error("Call unavailable: no enabled, consented profile");
   };
   registerUnifiedCall(server,{dir,caller,label:signature ?? 'Marco',assertAllowed});
   server.registerTool("call_human", {

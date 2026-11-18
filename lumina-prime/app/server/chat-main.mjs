@@ -123,7 +123,7 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
   const phones = openPhoneBook(dataDir);
   const controls = openCallControls(dataDir);
   let canCall=()=>false;
-  try {const policy=await import(pathToFileURL(path.join(wakeRoot,'dist/communication/external-inbox-policy.js')).href);canCall=()=>policy.externalInboxSyncAllowed(dataDir);}catch{/* Fail closed until the runtime is built. */}
+  try {const policy=await import(pathToFileURL(path.join(wakeRoot,'dist/communication/call-policy.js')).href);canCall=()=>policy.callConversationAllowed(dataDir);}catch{/* Fail closed until the runtime is built. */}
   const peers = createCallPeers({ call, controls, phones, canRing:canCall, file: path.join(dataDir, 'credentials', 'call-peers.json') });
   await peers.ready();
   // Outil MCP invite_to_call : demandes des agents exécutées ici, avec les droits du serveur.

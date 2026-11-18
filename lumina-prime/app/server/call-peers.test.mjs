@@ -338,9 +338,9 @@ test('default human call opens one shared space and invites the human of every p
   });
 });
 
-test('paused agents and unknown colonies never create a call or a human invitation',async t=>{
+test('disallowed calls and unknown colonies never create a call or a human invitation',async t=>{
   const {a,b}=await fixture(t);
-  await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡beta',human:true})).error,'calls_paused');assert.equal(b.phones.pending('nlr'),null);},{canCall:()=>false});
+  await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡beta',human:true})).error,'calls_unavailable');assert.equal(b.phones.pending('nlr'),null);},{canCall:()=>false});
   await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡absent'})).error,'colony_unknown');assert.equal(a.call.active().length,0);});
 });
 

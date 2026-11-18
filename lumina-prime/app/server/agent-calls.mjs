@@ -73,7 +73,7 @@ export function createAgentCalls({
       if (!r) break;
       let result;
       try {
-        if (!canCall()) throw Error("calls_paused");
+        if (!canCall()) throw Error("calls_unavailable");
         const caller = localTarget(r.caller);
         const addresses = [...new Set(Array.isArray(r.target) ? r.target : [r.target])];
         if (addresses.length === 1 && addresses[0].startsWith("@")) {

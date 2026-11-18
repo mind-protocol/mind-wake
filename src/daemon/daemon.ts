@@ -742,7 +742,9 @@ export class WakeDaemon implements SessionLauncher {
         this.#pontP2P = new PontP2PSupervisor({
           dataDir: this.#o.dataDir,
           wakeupsDir: () => path.join(workspaceDirFor(this.#o.dataDir), "wakeups"),
-          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
+          // The enabled bridge keeps calls reachable while autonomous work is stopped.
+          // Ordinary incoming messages still enforce externalInboxSyncAllowed.
+          allowed: () => !this.#abort.signal.aborted,
           log: message => this.#log(message),
         });
         this.#pontP2P.start();

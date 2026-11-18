@@ -3,8 +3,8 @@
  *
  * Interrupteur « Pont pair-à-pair entre colonies » des Réglages, désactivé par défaut
  * (`pont-p2p.json`, `enabled: true` pour l'activer). Toutes les 10 s, le superviseur :
- * - ne lance rien si l'interrupteur est désactivé, si le daemon s'arrête ou si Force-off est
- *   posé : aucun processus, donc aucun accès réseau ;
+ * - ne lance rien si l'interrupteur est désactivé ou si le daemon s'arrête ;
+ * - reste joignable pour les appels ponctuels pendant l'arrêt du travail autonome ;
  * - lance le service s'il doit tourner et ne tourne pas, avec un délai croissant après un échec
  *   (0, 10 s, 30 s, 1 min, 2 min, 5 min) ;
  * - arrête le service qu'il a lancé dès que l'interrupteur est coupé (le service le constate aussi
