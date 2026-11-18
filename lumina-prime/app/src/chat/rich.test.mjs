@@ -7,6 +7,12 @@ test('inline markdown: bold, italic, code, links', () => {
     { kind: 'text', text: ' ' }, { kind: 'code', text: 'd' }, { kind: 'text', text: ' ' }, { kind: 'link', text: 'e', url: 'https://x.io' },
     { kind: 'text', text: ' ' }, { kind: 'link', text: 'https://y.io/z', url: 'https://y.io/z' }, { kind: 'text', text: '.' }]);
   assert.deepEqual(parseInline('2 * 3 * 4 et snake_case_name'), [{ kind: 'text', text: '2 * 3 * 4 et snake_case_name' }]);
+  assert.deepEqual(parseInline('en ligne : agent.mind-wake.pages.dev/blog/x/ .'), [
+    { kind: 'text', text: 'en ligne : ' }, { kind: 'link', text: 'agent.mind-wake.pages.dev/blog/x/', url: 'https://agent.mind-wake.pages.dev/blog/x/' }, { kind: 'text', text: ' .' }]);
+  assert.deepEqual(parseInline('thecolony.ai/post/5306, puis'), [
+    { kind: 'link', text: 'thecolony.ai/post/5306', url: 'https://thecolony.ai/post/5306' }, { kind: 'text', text: ', puis' }]);
+  for (const plain of ['client.ts et README.md', 'nom@mail.com', 'C:\\a\\b.com', 'e.g. x.company', 'https://y.io/a'])
+    assert.ok(parseInline(plain).every(p => p.kind !== 'link' || p.url === 'https://y.io/a'), plain);
 });
 
 test('images: markdown syntax and bare image URLs become image blocks; line breaks kept', () => {

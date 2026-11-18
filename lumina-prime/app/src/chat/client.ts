@@ -133,7 +133,7 @@ export type Block = { kind: 'text'; inlines: Inline[] } | { kind: 'image'; url: 
   | { kind: 'file'; path: string; name: string; type: 'md' | 'pdf' | 'other' };
 
 const IMAGE = /!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+?\.(?:png|jpe?g|webp|gif)(?:\?[^\s<>()]*)?)(?=$|[\s)\].,;!?])/gi;
-const INLINE = /\*\*([^*\n]+?)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|[^\s()]+?\.(?:md|pdf)(?:#[^\s)]*)?)\)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?'"])|(?<![*\w])\*([^*\s][^*\n]*?)\*(?![*\w])|(?<![\w_])_([^_\s][^_\n]*?)_(?![\w_])/g;
+const INLINE = /\*\*([^*\n]+?)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|[^\s()]+?\.(?:md|pdf)(?:#[^\s)]*)?)\)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?'"])|(?<![*\w])\*([^*\s][^*\n]*?)\*(?![*\w])|(?<![\w_])_([^_\s][^_\n]*?)_(?![\w_])|(?<![\w@/.:\\-])((?:[a-zA-Z0-9-]+\.)+(?:dev|ai|io|com|fr|org|net|app|co)(?:\/[^\s<>()]*[^\s<>().,;:!?'"])?)(?![\w-])/g;
 
 export function parseInline(text: string): Inline[] {
   const out: Inline[] = []; let last = 0;
@@ -144,6 +144,8 @@ export function parseInline(text: string): Inline[] {
     else if (m[2] !== undefined) out.push({ kind: 'code', text: m[2] });
     else if (m[3] !== undefined) out.push({ kind: 'link', text: m[3], url: m[4] });
     else if (m[5] !== undefined) out.push({ kind: 'link', text: m[5], url: m[5] });
+    // Adresse sans schéma (agent.mind-wake.pages.dev/…) : cliquable en https.
+    else if (m[8] !== undefined) out.push({ kind: 'link', text: m[8], url: `https://${m[8]}` });
     else out.push({ kind: 'italic', text: m[6] ?? m[7] });
     last = at + m[0].length;
   }
