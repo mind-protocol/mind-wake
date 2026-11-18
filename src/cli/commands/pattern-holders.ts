@@ -1,4 +1,5 @@
 import {
+  holderThreads,
   loadPatternHolders,
   patternHoldersEnabled,
   previewPatternHolder,
@@ -34,6 +35,7 @@ export async function patternHolders(
           name: h.name,
           quietMinutes: h.quietMs / 60_000,
           state: state[h.slug] ?? null,
+          threads: holderThreads(dataDir.path, h.slug),
         })),
         invalid,
       };
@@ -45,7 +47,7 @@ export async function patternHolders(
             `Pattern holders ${data.enabled ? "activés" : "désactivés"}.`,
             ...data.holders.map(
               (h) =>
-                `- @${h.slug} « ${h.name} » — dernier réveil : ${h.state?.lastResult?.state ?? "aucun"}`,
+                `- @${h.slug} « ${h.name} » [${h.threads.join(", ") || "aucun fil"}] — dernier réveil : ${h.state?.lastResult?.state ?? "aucun"}`,
             ),
             ...invalid.map((i) => `- ignoré ${i.file} : ${i.error}`),
           ].join("\n"),

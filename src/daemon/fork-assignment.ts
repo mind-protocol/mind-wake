@@ -57,6 +57,15 @@ export interface ForkAssignment {
    */
   readonly agents?: readonly RoomAgent[];
   /**
+   * Pattern holders de la room (NLR, 18 nov. 2026 14:19 : « les holders, il faut que ce soit
+   * assigné à des salles comme des agents normaux »). Même geste et même liste que les agents :
+   * une entrée `{ "id": "<slug>", "kind": "holder" }` de `agents` dans `assignment.json`. Gardés
+   * à part en mémoire : un holder n'a pas de session de room, il écoute le fil et y intervient
+   * (`pattern-holders.ts`). Un même holder peut être dans plusieurs rooms et reste dans le fil
+   * principal. Absent : aucun (le champ historique `holder` reste valable).
+   */
+  readonly roomHolders?: readonly string[];
+  /**
    * Agents détectés dans un dossier (NLR, 16 nov. 2026 11:47 : « il faut que ce soit auto
    * detecte qu'on ait pas a ajouter a chaque fois manuellement »). Relu à chaque tour par
    * `resolveRoomAgents` ; un agent explicite de `agents` garde la priorité sur le même id.
@@ -214,17 +223,41 @@ function validWritable(writable: unknown): writable is string[] {
   );
 }
 
-/** Liste `agents` d'une affectation ; `undefined` si absente (room à une session). */
-function validateRoomAgents(input: unknown, engine: ForkEngine): RoomAgent[] | undefined {
-  if (input === undefined) return undefined;
+/** Genre d'une entrée de `agents` : `holder` pour un pattern holder, absent pour un agent de room. */
+export const ROOM_HOLDER_KIND = "holder";
+const ROOM_HOLDER_KEYS = ["id", "kind"];
+
+/** Entrées `agents` d'une affectation, séparées : sessions d'agents et pattern holders. */
+interface RoomMembers {
+  readonly agents: RoomAgent[] | undefined;
+  readonly holders: string[] | undefined;
+}
+
+/** Liste `agents` d'une affectation ; vide si absente (room à une session). */
+function validateRoomAgents(input: unknown, engine: ForkEngine): RoomMembers {
+  if (input === undefined) return { agents: undefined, holders: undefined };
   if (!Array.isArray(input) || input.length === 0 || input.length > MAX_ROOM_AGENTS)
     throw Error(`Affectation : agents, liste de 1 à ${String(MAX_ROOM_AGENTS)} agents attendue.`);
-  if (engine !== "claude") throw Error("Affectation : des agents demandent le moteur claude (une session chacun).");
   const reserved = [...OWNER_CHANNEL_FORKS.values(), "NLR"].map((s) => s.toLowerCase());
   const agents: RoomAgent[] = [];
+  const holders: string[] = [];
   for (const raw of input as unknown[]) {
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) throw Error("Affectation : agent, objet attendu.");
     const a = raw as Record<string, unknown>;
+    if (a["kind"] !== undefined) {
+      // Pattern holder de la room : son slug suffit ; nom et emoji viennent de son dossier.
+      if (a["kind"] !== ROOM_HOLDER_KIND) throw Error("Affectation : kind d'agent attendu : holder (ou absent).");
+      const extra = Object.keys(a).filter((k) => !ROOM_HOLDER_KEYS.includes(k));
+      if (extra.length > 0) throw Error(`Affectation : champ de holder inconnu (${extra.join(", ")}).`);
+      const id = a["id"];
+      if (typeof id !== "string" || !HOLDER.test(id)) throw Error("Affectation : id de holder invalide (slug attendu).");
+      if (holders.includes(id) || agents.some((o) => o.id === id))
+        throw Error(`Affectation : agent ${id} en double (id ou nom).`);
+      holders.push(id);
+      continue;
+    }
+    // Un holder n'a pas de session : seuls les agents de room demandent le moteur claude.
+    if (engine !== "claude") throw Error("Affectation : des agents demandent le moteur claude (une session chacun).");
     const extra = Object.keys(a).filter((k) => !ROOM_AGENT_KEYS.includes(k));
     if (extra.length > 0) throw Error(`Affectation : champ d'agent inconnu (${extra.join(", ")}).`);
     const id = a["id"];
@@ -233,7 +266,7 @@ function validateRoomAgents(input: unknown, engine: ForkEngine): RoomAgent[] | u
     if (name.length < 2 || name.length > 60 || /\p{Cc}/u.test(name))
       throw Error(`Affectation : agent ${id}, nom de 2 à 60 caractères attendu.`);
     if (reserved.includes(name.toLowerCase())) throw Error(`Affectation : agent ${id}, nom réservé.`);
-    if (agents.some((o) => o.id === id || o.name.toLowerCase() === name.toLowerCase()))
+    if (holders.includes(id) || agents.some((o) => o.id === id || o.name.toLowerCase() === name.toLowerCase()))
       throw Error(`Affectation : agent ${id} en double (id ou nom).`);
     const instructions = a["instructions"];
     if (typeof instructions !== "string" || !path.isAbsolute(instructions))
@@ -279,7 +312,33 @@ function validateRoomAgents(input: unknown, engine: ForkEngine): RoomAgent[] | u
       ...(ollama === undefined ? {} : { engine: "ollama" as const, ollama }),
     });
   }
-  return agents;
+  return { agents: agents.length === 0 ? undefined : agents, holders: holders.length === 0 ? undefined : holders };
+}
+
+/**
+ * Holders d'une room, dans l'ordre : le champ historique `holder` (s'il est posé), puis les
+ * entrées `kind: "holder"` de `agents`, sans doublon.
+ */
+export function roomHolderSlugs(assignment: ForkAssignment | null): string[] {
+  if (assignment === null) return [];
+  return [...new Set([...(assignment.holder === null ? [] : [assignment.holder]), ...(assignment.roomHolders ?? [])])];
+}
+
+/**
+ * Forme écrite d'une affectation : les holders de room reviennent dans `agents`, après les
+ * agents, sous la forme où ils ont été posés (`{ "id": "<slug>", "kind": "holder" }`).
+ */
+export function assignmentJson(assignment: ForkAssignment): Record<string, unknown> {
+  const { roomHolders, agents, ...rest } = assignment;
+  const members = [...(agents ?? []), ...(roomHolders ?? []).map((id) => ({ id, kind: ROOM_HOLDER_KIND }))];
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(rest)) {
+    // `agents` garde sa place habituelle, juste après `owner`.
+    out[key] = value;
+    if (key === "owner" && members.length > 0) out["agents"] = members;
+  }
+  if (members.length > 0 && !("agents" in out)) out["agents"] = members;
+  return out;
 }
 
 /** Bloc `agentsFrom` d'une affectation ; `undefined` si absent. */
@@ -475,10 +534,47 @@ function validateRoomName(input: unknown): string | undefined {
 }
 
 /**
- * Nom d'une room pour un humain : `name` de l'affectation, sinon le nom de la signature
- * propriétaire (« VOX (Room 7) » → « VOX »), sinon « Room N ». Le numéro reste l'identifiant.
+ * Nom affiché choisi par l'humain (NLR, 18 nov. 2026 : « rendre facile le fait de changer les
+ * noms des rooms »). Un seul champ par room, dans l'état du profil : `<dataDir>/forks/<id>/name.json`
+ * (`{"name": "…"}`). Il ne change que l'affichage : identifiant `fork:N`, mentions `@roomN`,
+ * fichiers, jobs et affectation restent intacts, et une réaffectation ne l'efface pas.
  */
-export function roomLabel(id: number, assignment: ForkAssignment | null): string {
+export const ROOM_NAME_FILE = "name.json";
+export function readRoomDisplayName(dir: string): string | undefined {
+  try {
+    const raw = (JSON.parse(fs.readFileSync(path.join(dir, ROOM_NAME_FILE), "utf8")) as { name?: unknown }).name;
+    return validateRoomName(raw);
+  } catch {
+    return undefined;
+  }
+}
+/** Pose (ou efface avec `null` / chaîne vide) le nom affiché. Mêmes règles que `name` : 2 à 40 caractères. */
+export function setRoomDisplayName(dir: string, input: unknown): string | undefined {
+  let name: string | undefined;
+  try {
+    name = input === null || (typeof input === "string" && input.trim() === "") ? undefined : validateRoomName(input);
+  } catch {
+    throw Error("Nom de salle : 2 à 40 caractères sans caractère de contrôle (vide : nom par défaut).");
+  }
+  const file = path.join(dir, ROOM_NAME_FILE);
+  if (name === undefined) {
+    fs.rmSync(file, { force: true });
+    return undefined;
+  }
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = path.join(dir, `${randomUUID()}.tmp`);
+  fs.writeFileSync(tmp, JSON.stringify({ name, at: new Date().toISOString() }));
+  fs.renameSync(tmp, file);
+  return name;
+}
+
+/**
+ * Nom d'une room pour un humain : nom affiché choisi (`name.json`), sinon `name` de l'affectation,
+ * sinon le nom de la signature propriétaire (« VOX (Room 7) » → « VOX »), sinon « Room N ».
+ * Le numéro reste l'identifiant.
+ */
+export function roomLabel(id: number, assignment: ForkAssignment | null, displayName?: string): string {
+  if (displayName !== undefined) return displayName;
   if (assignment?.name !== undefined) return assignment.name;
   const signature = forkOwnerChannel(id, assignment)?.signature;
   const head = signature?.replace(/\s*\(.*?\)\s*/g, " ").trim();
@@ -493,7 +589,7 @@ export function roomLabelIn(dataDir: string, id: number): string {
   } catch {
     assignment = null;
   }
-  return roomLabel(id, assignment);
+  return roomLabel(id, assignment, readRoomDisplayName(path.join(dataDir, "forks", String(id))));
 }
 
 export function validateAssignment(input: Record<string, unknown>): ForkAssignment {
@@ -521,7 +617,8 @@ export function validateAssignment(input: Record<string, unknown>): ForkAssignme
   const owner = validateOwner(input["owner"]);
   if (owner !== null && engine !== "claude")
     throw Error("Affectation : un bloc owner demande le moteur claude (outils MCP).");
-  const agents = validateRoomAgents(input["agents"], engine);
+  const members = validateRoomAgents(input["agents"], engine);
+  const agents = members.agents;
   const agentsFrom = validateAgentsFrom(input["agentsFrom"], engine);
   const concurrency = input["agentsConcurrency"];
   if (concurrency !== undefined && (typeof concurrency !== "number" || !Number.isInteger(concurrency) || concurrency < 1 || concurrency > 16))
@@ -536,6 +633,7 @@ export function validateAssignment(input: Record<string, unknown>): ForkAssignme
     inbox,
     owner,
     ...(agents === undefined ? {} : { agents }),
+    ...(members.holders === undefined ? {} : { roomHolders: members.holders }),
     ...(agentsFrom === undefined ? {} : { agentsFrom }),
     ...(concurrency === undefined ? {} : { agentsConcurrency: concurrency }),
     ...(name === undefined ? {} : { name }),
@@ -558,7 +656,7 @@ export function saveForkAssignment(dir: string, input: Record<string, unknown>):
   }
   fs.mkdirSync(dir, { recursive: true });
   const tmp = path.join(dir, `${randomUUID()}.tmp`);
-  fs.writeFileSync(tmp, JSON.stringify(assignment, null, 2) + "\n");
+  fs.writeFileSync(tmp, JSON.stringify(assignmentJson(assignment), null, 2) + "\n");
   fs.renameSync(tmp, assignmentFile(dir));
   return assignment;
 }

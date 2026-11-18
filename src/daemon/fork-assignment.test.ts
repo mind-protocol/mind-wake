@@ -15,6 +15,8 @@ import {
   runAssignedClaudeTurn,
   saveForkAssignment,
   validateAssignment,
+  readRoomDisplayName,
+  setRoomDisplayName,
 } from "./fork-assignment.js";
 import { promptDigest } from "../adapters/claude/conversation.js";
 import type { runClaudeTurn, SecondThreadEntry } from "./second-thread.js";
@@ -445,6 +447,33 @@ describe("nom d'une room", () => {
       fs.writeFileSync(path.join(dataDir, "forks", "5", "assignment.json"), "{");
       expect(roomLabelIn(dataDir, 3)).toBe("Médicis");
       expect(roomLabelIn(dataDir, 5)).toBe("Room 5");
+      expect(roomLabelIn(dataDir, 6)).toBe("Room 6");
+    } finally {
+      fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+  it("renommage : nom affiché prioritaire, effaçable, sans toucher à l'affectation", () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "room-rename-"));
+    try {
+      const dir = path.join(dataDir, "forks", "3");
+      fs.mkdirSync(dir, { recursive: true });
+      const assignmentJson = JSON.stringify({ instructions, name: "Médicis" });
+      fs.writeFileSync(path.join(dir, "assignment.json"), assignmentJson);
+      expect(setRoomDisplayName(dir, "  Atelier son  ")).toBe("Atelier son");
+      expect(readRoomDisplayName(dir)).toBe("Atelier son");
+      expect(roomLabelIn(dataDir, 3)).toBe("Atelier son");
+      expect(fs.readFileSync(path.join(dir, "assignment.json"), "utf8")).toBe(assignmentJson);
+      expect(() => setRoomDisplayName(dir, "x")).toThrow(/Nom de salle/);
+      expect(() => setRoomDisplayName(dir, "La\nToile")).toThrow(/Nom de salle/);
+      expect(readRoomDisplayName(dir)).toBe("Atelier son");
+      expect(setRoomDisplayName(dir, "")).toBeUndefined();
+      expect(roomLabelIn(dataDir, 3)).toBe("Médicis");
+      // Salle sans affectation : le nom affiché suffit, repli « Room N » une fois effacé.
+      setRoomDisplayName(path.join(dataDir, "forks", "6"), "Veille");
+      expect(roomLabelIn(dataDir, 6)).toBe("Veille");
+      setRoomDisplayName(path.join(dataDir, "forks", "6"), null);
+      expect(roomLabelIn(dataDir, 6)).toBe("Room 6");
+      fs.writeFileSync(path.join(dataDir, "forks", "6", "name.json"), "{");
       expect(roomLabelIn(dataDir, 6)).toBe("Room 6");
     } finally {
       fs.rmSync(dataDir, { recursive: true, force: true });

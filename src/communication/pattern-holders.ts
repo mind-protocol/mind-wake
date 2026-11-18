@@ -540,6 +540,35 @@ export function holderThread(dataDir: string, slug: string): HolderThread | null
   return assigned ? null : "principal";
 }
 
+/**
+ * Tous les fils qu'écoute un holder (NLR, 18 nov. 2026 14:19 : holders « assignés à des salles
+ * comme des agents normaux »). D'abord son fil historique (`holderThread` : principal, ou la
+ * room du champ `holder`), puis chaque room active qui le compte parmi ses `agents`
+ * (`{ "id": slug, "kind": "holder" }`), par numéro. Une room désactivée n'est pas écoutée.
+ */
+export function holderThreads(dataDir: string, slug: string): HolderThread[] {
+  const first = holderThread(dataDir, slug);
+  const threads: HolderThread[] = first === null ? [] : [first];
+  for (const id of FORK_IDS) {
+    try {
+      if (!(readForkAssignment(forkDir(dataDir, id))?.roomHolders ?? []).includes(slug)) continue;
+      const thread = `fork:${String(id)}` as HolderThread;
+      if (forkEnabled(dataDir, id) && !threads.includes(thread)) threads.push(thread);
+    } catch {
+      // Affectation invalide : signalée par `forks status`, pas par les holders.
+    }
+  }
+  return threads;
+}
+
+/**
+ * Clé d'état d'un holder pour un fil : son slug pour son premier fil (état historique, une
+ * entrée par holder), `<slug>@<fil>` pour chaque room de plus.
+ */
+export function holderStateKey(slug: string, thread: HolderThread, first: boolean): string {
+  return first ? slug : `${slug}@${thread}`;
+}
+
 function forkIdOf(thread: HolderThread): number {
   return Number(thread.slice("fork:".length));
 }
@@ -728,6 +757,8 @@ interface PendingWake {
   fresh: FilMessage[];
   wake: Wake;
   handleHit?: (m: FilMessage) => boolean;
+  /** Clé d'état du holder pour ce fil (`holderStateKey`). */
+  key?: string;
 }
 
 async function routeHolders(
@@ -829,27 +860,34 @@ export async function tickPatternHolders(
   for (const holder of holders) {
     if (holder.slug === ROUTER) continue;
     if (options.only !== undefined && !options.only.includes(holder.slug)) continue;
-    const thread = holderThread(dataDir, holder.slug);
-    // Une affectation vers un fork désactivé reste une affectation : ce holder se tait
-    // jusqu'à la réactivation, sans lire le principal ni produire de bruit.
-    if (thread === null) continue;
+    // Une affectation historique vers un fork désactivé reste une affectation : ce holder se tait
+    // là jusqu'à la réactivation, sans lire le principal. Les rooms où il est agent s'ajoutent.
+    const listened = holderThreads(dataDir, holder.slug);
+    // Rooms quittées : leur curseur est oublié, un retour repartira du présent.
+    for (const key of Object.keys(state))
+      if (key.startsWith(`${holder.slug}@`) && !listened.slice(1).some((t) => holderStateKey(holder.slug, t, false) === key)) {
+        delete state[key];
+        dirty = true;
+      }
+    listened.forEach((thread, index) => {
+    const key = holderStateKey(holder.slug, thread, index === 0);
     const fil = filOf(thread);
     const latest = fil.at(-1);
     // Une série de dictées se lit d'un bloc.
-    if (latest !== undefined && now() - Date.parse(latest.at) < PATTERN_HOLDER_SETTLE_MS) continue;
-    if (!state[holder.slug] && initialCursors.has(thread)) {
-      state[holder.slug] = { cursor: initialCursors.get(thread)!, thread };
+    if (latest !== undefined && now() - Date.parse(latest.at) < PATTERN_HOLDER_SETTLE_MS) return;
+    if (index === 0 && !state[key] && initialCursors.has(thread)) {
+      state[key] = { cursor: initialCursors.get(thread)!, thread };
       dirty = true;
     }
-    const own = state[holder.slug];
+    const own = state[key];
     if (own === undefined || (own.thread ?? "principal") !== thread) {
       // Premier passage, ou holder déplacé vers un autre fil : il part du présent de ce fil.
-      state[holder.slug] = { ...own, cursor: latest?.at ?? "", thread };
+      state[key] = { ...own, cursor: latest?.at ?? "", thread };
       dirty = true;
-      continue;
+      return;
     }
     const fresh = fil.filter((m) => m.at > own.cursor);
-    if (fresh.length === 0) continue;
+    if (fresh.length === 0) return;
     const hitMap =
       thread === "principal" ? handleHitsOf(holder, fresh) : new Map<string, HandleHit[]>();
     const handleHit = (m: FilMessage) => hitMap.has(m.id);
@@ -863,7 +901,7 @@ export async function tickPatternHolders(
         own.cursor = cursor;
         dirty = true;
       }
-      continue;
+      return;
     }
     if (
       wake.reason === "fil" &&
@@ -876,11 +914,12 @@ export async function tickPatternHolders(
         dirty = true;
       }
       outcomes.push({ slug: holder.slug, state: "quiet", reason: wake.reason });
-      continue;
+      return;
     }
     const batch = pending.get(thread) ?? [];
-    batch.push({ holder, fresh, wake, handleHit });
+    batch.push({ holder, fresh, wake, handleHit, key });
     pending.set(thread, batch);
+    });
   }
   for (const [thread, batch] of pending) {
     const fil = filOf(thread);
@@ -908,13 +947,13 @@ export async function tickPatternHolders(
         }
       }
     }
-    for (const { holder, fresh, wake } of batch) {
+    for (const { holder, fresh, wake, key } of batch) {
       const chosen = wake.reason !== "fil" || selected.includes(holder.slug);
       if (options.dryRun) {
         if (chosen) outcomes.push({ slug: holder.slug, state: "planned", reason: wake.reason });
         continue;
       }
-      const own = state[holder.slug]!;
+      const own = state[key ?? holder.slug]!;
       own.cursor = fresh.at(-1)!.at;
       dirty = true;
       if (!chosen) continue;
