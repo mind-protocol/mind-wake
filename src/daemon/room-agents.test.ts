@@ -847,3 +847,33 @@ describe("lecture commune (agentsFrom.readable) et fil principal", () => {
     for (const x of resolveRoomAgents(a)) expect(roomAgentPrompt(2, a, x)).toContain("list_owner_messages (lecture seule");
   });
 });
+
+describe("patterns communs à tous les agents (_commun)", () => {
+  const room = () =>
+    validateAssignment({ instructions: path.join(workspace, "room-fixeurs", "ROOM2.md"), workspace, agents: AGENTS() });
+
+  it("ajoute les sections de _commun après le prompt propre, à chaque tour, et seulement si elles existent", () => {
+    const a = room();
+    const colony = a.agents!.find((x) => x.id === "coach-colony")!;
+    expect(roomAgentPrompt(2, a, colony)).not.toContain("Patterns communs à tous les agents (NLR) :");
+    fs.mkdirSync(path.join(holders, "_commun"));
+    expect(roomAgentPrompt(2, a, colony)).not.toContain("Patterns communs à tous les agents (NLR) :");
+    fs.writeFileSync(path.join(holders, "_commun", "prendre-le-temps.md"), "PATTERN-COMMUN-1");
+    const prompt = roomAgentPrompt(2, a, colony);
+    expect(prompt).toContain("Patterns communs à tous les agents (NLR) :\n\nPATTERN-COMMUN-1");
+    expect(prompt.indexOf("Je suis le coach Colony.")).toBeLessThan(prompt.indexOf("PATTERN-COMMUN-1"));
+    expect(prompt.indexOf("PATTERN-COMMUN-1")).toBeLessThan(prompt.indexOf("Note du runtime MIND Wake"));
+    // Room à un seul agent : même bloc.
+    expect(assignedForkPrompt(2, a)).toContain("Patterns communs à tous les agents (NLR) :\n\nPATTERN-COMMUN-1");
+  });
+
+  it("room à un seul agent : pas de bloc sans _commun", () => {
+    expect(assignedForkPrompt(2, room())).not.toContain("Patterns communs à tous les agents");
+  });
+
+  it("chaque agent peut lire, sans y écrire, les sections des pattern holders", () => {
+    const a = room();
+    for (const x of a.agents!)
+      expect(roomAgentPrompt(2, a, x)).toContain(`Tu peux aussi lire, sans y écrire, les sections des pattern holders : ${holders}.`);
+  });
+});

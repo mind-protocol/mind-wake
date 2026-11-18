@@ -530,3 +530,14 @@ it("sends a holder's reply to a Telegram @mention back to NLR once, prefixed, an
   await run("Non.");
   expect(sent).toHaveLength(2);
 });
+
+it("prompt système d'un holder : patterns communs de _commun et lecture des autres holders", async () => {
+  const { patternHolderSystemPrompt } = await import("./pattern-holders.js");
+  const holder = () => loadPatternHolders(dataDir).holders.find((h) => h.slug === "orga-agents")!;
+  expect(patternHolderSystemPrompt(holder())).not.toContain("Patterns communs à tous les agents");
+  expect(patternHolderSystemPrompt(holder())).toContain(`les sections des autres pattern holders : ${holdersDir()}.`);
+  fs.mkdirSync(path.join(holdersDir(), "_commun"));
+  fs.writeFileSync(path.join(holdersDir(), "_commun", "prendre-le-temps.md"), "PATTERN-COMMUN-1");
+  expect(loadPatternHolders(dataDir).holders.map((h) => h.slug)).not.toContain("_commun");
+  expect(patternHolderSystemPrompt(holder())).toContain("Patterns communs à tous les agents (NLR) :\n\nPATTERN-COMMUN-1");
+});
