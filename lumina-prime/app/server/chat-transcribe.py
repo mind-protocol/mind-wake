@@ -43,6 +43,19 @@ def speech_samples(data):
     return speech, len(audio) / RATE
 
 
+def transcribe_options(hotwords, language):
+    """Options de model.transcribe. Langue imposée (`fr` par défaut) : sans elle, Whisper devine
+    la langue de chaque extrait et se trompe sur les extraits courts (arabe, roumain...).
+    `auto` rétablit la détection."""
+    options = {"beam_size": 5}
+    if hotwords:
+        options["hotwords"] = hotwords
+    language = (language or "fr").strip().lower()
+    if language != "auto":
+        options["language"] = language
+    return options
+
+
 def load_model(device):
     return WhisperModel(sys.argv[1], device=device, compute_type="float16" if device == "cuda" else "int8",
                         local_files_only=True, cpu_threads=1)
@@ -84,8 +97,10 @@ def main():
             if len(audio):
                 def recognize():
                     # argv[3] : vocabulaire du profil (stt-vocabulary.json), biais natif faster-whisper.
-                    options = {"hotwords": sys.argv[3]} if len(sys.argv) > 3 and sys.argv[3] else {}
-                    segments, _ = model.transcribe(audio, beam_size=5, **options)
+                    # argv[4] : langue (`fr`, `en`, `auto`), réglée par transcription.language.
+                    options = transcribe_options(sys.argv[3] if len(sys.argv) > 3 else "",
+                                                 sys.argv[4] if len(sys.argv) > 4 else "fr")
+                    segments, _ = model.transcribe(audio, **options)
                     return " ".join(segment.text.strip() for segment in segments).strip()
                 try:
                     text = recognize()
