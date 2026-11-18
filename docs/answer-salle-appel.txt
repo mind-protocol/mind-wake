@@ -1,0 +1,68 @@
+Mandat : une salle présente dans l'appel doit répondre à chaque message
+Appel 6b69022e-2ccd-4215-8e15-c6c6078f7cbc, salle 6 (Emploi remote). Sous-session de Marco, 18 nov. 2026, vers 16:00Z.
+
+== 1. Cause : LE WORKER DES FORKS EST ARRÊTÉ depuis 15:03:58Z ==
+
+Le worker s'est arrêté proprement quand la dernière room activée est passée sur Off. Ce n'est pas un crash.
+
+Preuves :
+- forks/2/enabled.json ({"enabled":false}) a été écrit à 15:03:55.886Z. C'était la dernière room sur On : les rooms 2 à 8 sont toutes sur Off, et forks/1 n'existe pas.
+- forks.log a été modifié pour la dernière fois à 15:03:58.111Z, 2,2 s plus tard. Sa dernière ligne se termine par « État des forks Codex. ». C'est la sortie de `mind-wake forks run` quand runForks() rend la main (src/cli/commands/forks.ts:123).
+- Dans la boucle de chaque room (src/daemon/forks.ts, avant le correctif), on trouvait :
+      const enabled = FORK_IDS.filter((n) => forkEnabled(options.dataDir, n));
+      if (enabled.length === 0) break;
+  Quand plus aucune room n'est sur On, les sept boucles sortent et le processus se termine. Le tour unique des rooms désactivées (Telegram, appel) disparaît avec lui, pour toutes les rooms.
+- Personne ne relance le worker. scripts/engine-watchdog.mjs (forkWorker) et desktop/src-tauri/src/cli.rs (action on/ensure) ne le relancent que si `data.forks.some(f => f.enabled)`. Avec toutes les rooms sur Off, aucun des deux ne le relance.
+- forks/6/second-thread.sqlite (lu en lecture seule) :
+  * l'entrée 364 (15:47:23Z, agent, turn=NULL) est le « décroché ». Il est publié par le serveur de l'app (lumina-prime/app/server/call-opening-response.mjs, store.add('agent', …)), pas par le worker : turn=NULL, aucune entrée dans `turns`, aucune clé `oneshot:*` dans `state` ;
+  * les messages vocaux de NLR (368, 370, 373, 379, 385, 386, 388, 389, 392, 393, 395, 397…) sont bien d'origine humaine (`entry-human-origin:N` = telegram). Ce sont donc des déclencheurs valides du tour unique (oneshot-since = 2026-11-16T16:41:19Z). Ils restent delivered=0 parce qu'aucun worker ne tourne pour les servir ;
+  * le dernier tour (n=123) date du 17/11 : 16:59→17:08Z, interrupted.
+
+Pistes écartées :
+- Intervalle minimal : `capabilities.roleTools.calls.minIntervalMs = 300000` n'est lu que par services/mcp/room-call-coordination.ts, qui encadre l'outil `call_human` (faire sonner NLR). Il ne touche aucune réponse ni aucun tour.
+- Filtrage des « [Appel] … » : ce sont des notices étiquetées « Appel » (chat-main.mjs, noticeRoom → addNoticeOnce), donc non humaines. Elles ne déclenchaient pas de tour, mais elles sont remises comme contexte. Ce n'est pas la cause du silence, puisque les vrais messages de NLR n'ont pas eu de réponse non plus. Le correctif les fait maintenant déclencher un tour quand elles mentionnent la salle.
+- Décroché limité : le décroché (un par échange) n'est qu'un repli sur la sonnerie. Il ne remplace pas les tours.
+- Plafond de 30 tours uniques sur 24 h : il n'a pas joué ici (aucune clé oneshot). En revanche, pendant un appel un peu long, il aurait coupé la salle. Il est levé pour les appels (voir plus bas).
+- « Erreur : out of memory » dans forks.log : c'est l'incident du 17/11 (tour 123 interrupted), traité par une autre sous-session (memory-pressure.ts). Ce n'est pas la cause de l'arrêt de 15:03Z.
+
+== 2. Correctif (durable, pour toutes les salles) ==
+
+a) Le worker reste vivant quand toutes les rooms sont sur Off, s'il reste au moins une room affectée (src/daemon/forks.ts) :
+   `if (enabled.length === 0 && !anyRoomAssigned(dataDir)) break;`
+   Une room non affectée attend (sleep 1 s) au lieu de sortir. Un On ultérieur la reprend sans redémarrer le worker.
+   `forks status` expose aussi `workerNeeded` (une room sur On, ou une room affectée).
+
+b) Une salle présente dans un appel actif répond à chaque message (nouveau module src/daemon/room-call-presence.ts, branché dans assignedTurn) :
+   - Présence : la salle est dans un appel si mobile-call-control.sqlite (tenu par le serveur de l'app) contient une ligne avec state='active', last_seen datant de moins de 120 s, et dont les participants contiennent room<N>, room-<N> ou l'id d'un de ses agents. Lecture seule, relue au plus toutes les 2 s.
+   - Déclencheurs (callTriggers) : entrées en attente arrivées depuis le début de l'appel, pas encore servies (`oneshot:<id>` absent), qui sont soit d'origine humaine, soit une mention de la salle : @room<N>, @room-<N>, son nom affiché (mot entier, sans casse ni accents, par ex. « Emploi remote »), le nom ou @id d'un de ses agents. Un message d'une autre room (senderFork) ne déclenche jamais rien : pas de boucle entre salles.
+   - Cela vaut même si la room est sur Off : enabled.json n'est jamais écrit.
+   - Pas de plafond ni d'intervalle pour ces tours : claimOneShot(…, uncapped=true) réserve `oneshot:<id>` sans compter dans le plafond de 30 tours sur 24 h.
+   - Aucun doublon : chaque message est réservé avant le tour et ne déclenche qu'un seul tour. Plusieurs messages en attente partent en un seul tour, avec les copies non déclenchantes comme contexte. Le décroché répond à la sonnerie, qui n'est pas un déclencheur : il ne fait pas doublon avec ces tours.
+   - Prompt d'une room à un agent : note CALL_NOTE (« tu es dans un appel vocal en cours… réponds brièvement, à l'oral »). Room à plusieurs agents : routage inchangé (agent adressé, sinon hub, sinon premier agent).
+   - Hors appel, une room désactivée garde la règle existante : tour unique par message humain, plafond de 30 sur 24 h.
+   - Journal : « Room N dans l'appel <id> : tour pour le message … ».
+
+c) Documentation : docs/FORKS.md (section Runtime et contrôles).
+
+== 3. Fichiers modifiés ==
+
+- src/daemon/room-call-presence.ts (nouveau)
+- src/daemon/forks.ts. Attention : ce fichier contient aussi, non commitées, les modifications de la sous-session mémoire (MemoryGate, memory-pressure.ts). Mes changements : import room-call-presence et resolveRoomAgents, claimOneShot(uncapped), anyRoomAssigned, mergeTriggers, workerNeeded dans readForks, callWork et inCall dans assignedTurn, CALL_NOTE, condition de sortie de la boucle.
+- test/room-call-presence.test.ts (nouveau, 8 tests)
+- docs/FORKS.md
+- docs/answer-salle-appel.txt (ce fichier)
+
+Vérifications :
+- npm run build : OK (exit 0). dist/ est donc à jour.
+- vitest, à la suite, avec --testTimeout=60000 : src/daemon/forks.test.ts, room-agents.test.ts, ollama-agent.test.ts, src/communication/room-inbox-hook.test.ts et test/room-call-presence.test.ts → 5 fichiers, 83 tests, tous passés.
+  Avec le délai par défaut de 5 s, beaucoup de ces tests expirent sur ce poste. La mémoire libre est d'environ 1,2 à 2,5 Go, près du seuil de la MemoryGate (1 024 Mo). Les tests qui ne fournissent pas de sonde `freeMemory` attendent alors. Mes tests en fournissent une.
+- src/daemon/fork-planning.test.ts, « executes the fork's replacement queue… » : échec d'assertion (nextWakes non vide). Ce test passe par le chemin « projets » d'une room non affectée et sur On, que mon correctif ne modifie pas. Je ne l'ai pas comparé à HEAD, faute de pouvoir isoler forks.ts des modifications parallèles.
+
+== 4. À faire au redémarrage (décision de Marco ; rien n'a été relancé, tué ni commité) ==
+
+1. Relancer le worker des forks : `mind-wake forks run --data-dir <dataDir>`, sortie vers forks.log, comme le fait le watchdog. dist/ contient déjà le correctif.
+   Au démarrage, la salle 6 (toujours sur Off, appel actif) recevra UN tour groupé pour ses messages en attente : les messages vocaux de NLR depuis 15:48Z, et les copies qui la mentionnent depuis le début de l'appel (started_at = 15:36:05Z), puis un tour par nouveau message.
+   Si Marco préfère ne pas faire répondre la salle à cet arriéré, il peut les marquer servis avant le redémarrage. Je ne l'ai pas fait.
+2. Superviseurs, hors de mon périmètre d'écriture : scripts/engine-watchdog.mjs (forkWorker) et desktop/src-tauri/src/cli.rs (wake_forks on/ensure) ne relancent le worker que si une room est sur On. Il faut remplacer `data.forks.some(f => f.enabled)` par `data.workerNeeded` (champ ajouté à `forks status`). Sans cela, après un redémarrage du poste avec toutes les rooms sur Off, personne ne relance le worker.
+3. Observation, non modifiée : les messages d'appel routés vers une room portent la clé `telegram-route:call-…`, donc l'origine « telegram ». La réponse de la room est donc aussi renvoyée sur le Telegram de NLR (forwardRoomReply), en plus d'être lue dans l'appel. Si ce n'est pas voulu : humanOriginTag (src/daemon/second-thread.ts) pourrait marquer « call » les clés `telegram-route:call-`.
+4. Mention par nom : une copie de Marco ou d'un holder qui cite « Emploi remote » donne un tour à la salle. C'est voulu par le mandat. Les échanges agent ↔ salle restent bornés par le débit des copies (mirrorPerMinute 20) et par la réservation par message.

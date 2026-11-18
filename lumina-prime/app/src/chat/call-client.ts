@@ -4,7 +4,9 @@ export type CallSession = {id:string;epoch:1};
 export type CallSessionState = CallSession & {status:'active'|'ended';revision?:number;handles:string[]};
 export type CallTarget = { handle: string; label: string; kind: 'main' | 'room' | 'agent' | 'holder' | 'remote'; emoji?: string; available?: boolean };
 export type CallReply = { id: string; at: string; text: string; speaker: string | null; first?: boolean };
-export type CallUtterance = { status: 'queued' | 'empty'; text: string; label?: string; durationSeconds: number; transcribeMs: number };
+/** Agent invité parce qu'un de ses sujets déclarés est dans la phrase (NLR, 18 nov. 2026 14:55). */
+export type CallTopicInvite = { handle: string; label: string; topic: string };
+export type CallUtterance = { status: 'queued' | 'empty'; text: string; label?: string; durationSeconds: number; transcribeMs: number; invites?: CallTopicInvite[] };
 const auth = (session: ChatSession) => ({ Authorization: `Bearer ${session.token}` });
 const handle = (value: string) => { if (!/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(value)) throw new ChatClientError('call_target_invalid'); return value; };
 /** Plusieurs participants : une prise de parole part à chacun (`vox,mind`). */
@@ -48,7 +50,11 @@ export async function sendCallUtterance(session: ChatSession, targets: string[],
     { method: 'POST', headers: { ...auth(session), 'Content-Type': mime }, body: audio, signal }) as Partial<CallUtterance> & { schema?: unknown };
   if (value?.schema !== 'mind.chat.call.utterance.v1' || !['queued', 'empty'].includes(String(value.status)) || typeof value.text !== 'string')
     throw new ChatClientError('invalid_response');
-  return value as CallUtterance;
+  const invites = Array.isArray(value.invites) ? (value.invites as unknown[]).filter((i): i is CallTopicInvite => {
+    const v = i as Partial<CallTopicInvite> | null;
+    return typeof v?.handle === 'string' && /^[a-z0-9][a-z0-9_.-]{0,60}$/.test(v.handle) && typeof v.label === 'string' && typeof v.topic === 'string';
+  }).slice(0, 8) : [];
+  return { ...(value as CallUtterance), invites };
 }
 
 /** Raccrocher côté passerelle : fin de l'appel de ces participants (plus aucune copie entre eux). */

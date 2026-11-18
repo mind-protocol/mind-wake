@@ -14,7 +14,7 @@ export function registerHumanCall(server: McpServer, env: Readonly<Record<string
   const room = /^Room (\d+)$/i.exec(signature ?? "");
   const caller = room ? "room" + room[1] : signature ? signatureHandle(signature) : "mind";
   if (!caller) return;
-  registerAgentCallControl(server, {dir, caller});
+  registerAgentCallControl(server, {dir, caller, ...(signature ? {label: signature} : {})});
   server.registerTool("call_human", {
     description: "Ring a human's linked phones and Wake Desktop for 45 seconds. Defaults to NLR (@NLR-AI). Answering opens voice with the calling agent. Queued does not mean answered.",
     inputSchema: z.strictObject({ handle: z.string().trim().min(1).max(62).optional() }),

@@ -261,10 +261,10 @@ test("carnet manuel (sans annuaire) : carte collée dans les Réglages, refus du
   await assert.rejects(pontAction(carol.dataDir, "add_contact", { name: "⬡bob", key: (await pontAction(alice.dataDir, "status")).publicKey }), /déjà épinglé/);
 
   const tc = agentTools(carol);
+  await waitUntil(() => readJson(pontPaths(carol.dataDir).carnet, {})["⬡bob"]?.fiche);
   const s = await tc.send("⬡bob/fantome", "Il y a quelqu'un ?");
-  assert.equal(s.status, "en attente", JSON.stringify(s));
-  await waitUntil(() => outboxOf(carol, s.id)?.status === "échec");
-  assert.match((await tc.status(s.id)).reason, /agent inconnu/);
+  assert.equal(s.status, "échec", JSON.stringify(s));
+  assert.match(s.reason, /absent de la fiche publique/);
   const u = await tc.send("⬡inexistant/x", "?");
   assert.equal(u.status, "échec");
   assert.match(u.reason, /absente du carnet/);

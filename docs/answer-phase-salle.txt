@@ -1,0 +1,44 @@
+Phrase de phase d'une salle — rapport (suite de job_d96bfc97, rien commité, rien redémarré)
+
+Fichiers
+- NOUVEAU src/communication/room-phase.ts : bloc ```phase``` (extractPhase, parsePhaseLine), état
+  salle-phases.json (une phrase par salle : texte, auteur, setAt, until | wakes/wakesLeft/lastTurn),
+  setRoomPhase (pose / remplace / fin), roomPhaseWakeLine (injection + décompte + expiration),
+  phasePublicNote (fil), phaseStatusNote (note du chef), HOLDER_PHASE_NOTE (consigne).
+- src/communication/pattern-holders.ts : wakeHolder extrait le bloc après ```reveil```, l'applique
+  à la salle (holder.room, sinon la salle du fil), publie « (phase posée : … jusqu'à 16:45) » ;
+  chaque note de réveil d'un holder de salle rappelle la phrase active et son échéance
+  (Wake.phaseNote) ; HOLDER_PHASE_NOTE ajoutée au prompt système.
+- src/communication/holder-cadence.ts : la note cadencée/programmée cite ```phase``` et précise
+  que la proposition de découpage part dans le fil de la salle, remise à tous ses agents.
+- src/daemon/room-agents.ts : point d'injection des salles multi-agents (une fois par tour,
+  même ligne pour chaque agent réveillé, entre l'en-tête et les messages).
+- src/daemon/forks.ts : 2 lignes, même injection pour le tour mono-agent.
+- NOUVEAU src/communication/room-phase.test.ts ; docs/PATTERN-HOLDERS.md (section « Phrase de
+  phase d'une salle »).
+
+Choix
+- Décompte en réveils = tours de la salle (numéro n, comme la cadence) : 3 agents réveillés dans
+  le même tour consomment un seul réveil et voient le même reste.
+- Texte : « Phase de la salle 6 (posée par Chef) : <phrase> — budget restant 6 minutes. » /
+  « — budget restant 3 réveils. » / « — dernier réveil de la phase. »
+- Proposition de découpage aux agents : déjà le cas après d96bfc97 (publishInFork ajoute le
+  message signé + une notice « Pattern holder · … » routée en broadcast à tous les agents) ;
+  vérifié par test, seule la consigne a été précisée.
+
+Preuves
+- npx vitest run src/communication/room-phase.test.ts : 7/7 (pose, remplacement, fin,
+  expiration minutes, expiration réveils, textes du reste, injection multi-agents via
+  runRoomAgentsTurn, injection mono-agent via runForks, bloc du holder via tickPatternHolders
+  + rappel dans sa note de réveil + notice aux agents).
+- Non-régression : holder-cadence, pattern-holders, pattern-holders-rooms, room-agents,
+  forks : 99/99.
+- npm run build : OK.
+
+Reste
+- Le holder chef de la salle 6 doit être redémarré (daemon) pour recevoir la nouvelle consigne :
+  non fait (hors mandat).
+- eslint strict signale dans room-phase.ts les mêmes motifs que holder-alarms.ts (assertions `!`,
+  delete dynamique) ; non bloquant pour le build.
+- Agents ollama : la ligne passe dans le message (même chemin runOne) ; agents codex mono-agent
+  aussi (message commun de forks.ts).

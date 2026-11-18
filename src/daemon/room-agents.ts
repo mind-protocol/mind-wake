@@ -1,5 +1,6 @@
 import { roomPhaseWakeLine } from "../communication/room-phase.js";
 import { readRoomRoleCapabilities } from "./room-role-capability.js";
+import type { JobTrigger } from "./job-origin.js";
 import { readRoomWebSearchCapability } from "./room-web-capability.js";
 /**
  * Room à plusieurs agents (NLR, 16 nov. 2026 : « il faut decouper proprement un agent par
@@ -606,6 +607,7 @@ ${assignedForkMessage(items)}`;
         },
         // Messages arrivés pendant le tour : injectés à cet agent selon le routage de la room.
         inbox: { floor: roomFloor, agentId: agent.id },
+        ...roomTurnTrigger(input.id, mine, relayed, (id) => routes.get(id)?.fromAgent ?? null),
       });
       if (result.tokens !== null) tokens = (tokens ?? 0) + result.tokens;
       const reply = replyBody(result.text);
@@ -739,4 +741,28 @@ function relay(
     ...queue,
     { key, at: new Date().toISOString(), from: author.id, text: text.slice(0, 4000), to: named, depth },
   ]);
+}
+
+/**
+ * Dernier message remis à l'agent pour ce tour (origine des jobs, `job-origin.ts`) : entrée de la
+ * room `room<N>:entry:<id>` ou relais d'un autre agent `room<N>:relay:<clé>`. Humain sauf message
+ * d'un agent de la room ou d'une autre room.
+ */
+export function roomTurnTrigger(
+  room: number,
+  entries: readonly { id: number; at: string; senderFork?: number }[],
+  relays: readonly { key: string; at: string }[],
+  fromAgent: (entryId: number) => string | null,
+): { trigger?: JobTrigger } {
+  const candidates: JobTrigger[] = [
+    ...entries.map((e) => ({
+      id: `room${String(room)}:entry:${String(e.id)}`,
+      kind: (fromAgent(e.id) !== null || e.senderFork !== undefined ? "peer" : "human") as JobTrigger["kind"],
+      at: e.at,
+      basis: "turn" as const,
+    })),
+    ...relays.map((r) => ({ id: `room${String(room)}:relay:${r.key}`, kind: "peer" as const, at: r.at, basis: "turn" as const })),
+  ];
+  const last = candidates.sort((a, b) => (a.at ?? "").localeCompare(b.at ?? "")).at(-1);
+  return last === undefined ? {} : { trigger: last };
 }

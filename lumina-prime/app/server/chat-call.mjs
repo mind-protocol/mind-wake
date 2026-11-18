@@ -20,6 +20,33 @@ export const callBody = text => `${CALL_INSTRUCTION}\n\n${text.trim()}`;
 const HANDLE = /^[a-z0-9][a-z0-9_.-]{0,60}$/;
 const ITEM = /^(?:m:[A-Za-z0-9_.:-]{1,120}|r[2-9]:\d{1,12})(?:~\d{1,3})?$/;
 export const MAX_TARGETS = 8;
+/** Une invitation par sujet reste valable ce temps : l'agent ajouté reçoit la phrase qui l'a appelé. */
+export const TOPIC_PENDING_MS = 3 * 60_000;
+
+const foldTopic = text => String(text).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const escapeTopic = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/**
+ * Sujets déclarés présents dans un texte (NLR, 18 nov. 2026 14:55 : « tout ce qui parle de la
+ * visualisation, c'est l'agent Viz, il faut le rajouter au call »). Même règle que `topicIn` du
+ * runtime (pattern-holders.ts) : mot ou expression entière, sans accents ni casse, le sujet le
+ * plus long d'abord ; une correspondance au plus par agent. `registry` : [{ handle, topics }].
+ */
+export function topicHits(text, registry) {
+  const folded = foldTopic(text); const hits = [];
+  for (const entry of Array.isArray(registry) ? registry : []) {
+    if (!entry || typeof entry.handle !== 'string' || !Array.isArray(entry.topics)) continue;
+    const topic = entry.topics.filter(t => typeof t === 'string' && t.trim().length >= 3)
+      .sort((a, b) => b.length - a.length)
+      .find(t => new RegExp(`(^|[^\\p{L}\\p{N}])${escapeTopic(foldTopic(t).trim())}($|[^\\p{L}\\p{N}])`, 'u').test(folded));
+    if (topic) hits.push({ handle: entry.handle, topic });
+  }
+  return hits;
+}
+/** Identifiant de remise dérivé (format chat-<uuid>) : la phrase renvoyée à l'agent invité. */
+const derivedChatId = (id, handle) => {
+  const h = createHash('sha256').update(`${id}|topic|${handle}`).digest('hex');
+  return `chat-${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+};
 
 /** Phrases regroupées en morceaux courts ; le premier reste une seule phrase pour que la voix démarre vite. */
 export function speechChunks(text, max = 240) {
@@ -108,7 +135,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   sendMain, wakeMain = () => {}, mainReplies, roomEntries, speak, holders: holderList, owners: ownerMap,
   transcribing: busy = () => false, now = Date.now, cacheSize = 12,
   noticeMain = null, noticeRoom = null, answerCall = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000,
-  mirrorQuietMs = MIRROR_QUIET_MS, mirrorMaxWaitMs = MIRROR_MAX_WAIT_MS } = {}) {
+  mirrorQuietMs = MIRROR_QUIET_MS, mirrorMaxWaitMs = MIRROR_MAX_WAIT_MS, topics: topicList = null } = {}) {
   let transcribing = busy;
   let remote = null;
   if (typeof sendMain !== 'function' || typeof mainReplies !== 'function' || typeof speak !== 'function')
@@ -195,14 +222,39 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     if (!list.length || list.length > MAX_TARGETS) throw new ChatError('call_target_invalid');
     return list.map(resolve);
   }
+  /**
+   * Agents dont un sujet déclaré est dans la phrase de l'humain et qui ne sont pas dans l'appel :
+   * proposés une seule fois par appel (même retirés ensuite), dans la limite des places. L'app les
+   * ajoute (addSession) en l'annonçant d'une ligne ; la phrase leur est alors remise.
+   */
+  function topicInvites(c, id, text, context) {
+    if (typeof topicList !== 'function' || String(context.owner).startsWith('peer:')) return [];
+    let registry; try { registry = topicList() ?? []; } catch { return []; }
+    c.topicOffered ??= new Set(); c.topicPending ??= new Map();
+    const invites = [];
+    for (const hit of topicHits(text, registry)) {
+      if (c.targets.size + invites.length >= MAX_TARGETS) break;
+      if (c.targets.has(hit.handle) || c.topicOffered.has(hit.handle)) continue;
+      let target; try { target = resolve(hit.handle); } catch { continue; }
+      if (target.kind === 'remote') continue;
+      c.topicOffered.add(hit.handle);
+      c.topicPending.set(hit.handle, { id, text, speaker: context.speaker ?? null, at: now() });
+      invites.push({ handle: hit.handle, label: target.label, topic: hit.topic });
+    }
+    return invites;
+  }
   /** Une seule transcription, une remise par fil ; la consigne « réponds vite » précède le texte. */
   async function deliver(handles, id, text, context = null) {
-    let targets = parseTargets(handles);
+    let targets = parseTargets(handles); let invites = [];
     if (context) {
       const current = assertSession(context.owner, context.id, context.epoch);
       targets = targets.filter(t => current.targets.has(t.handle));
+      // Invités par un agent (invite_to_call) : l'app ne les connaît pas encore, ils entendent quand même.
+      for (const handle of current.agentInvited ?? [])
+        if (current.targets.has(handle) && !targets.some(t => t.handle === handle)) targets.push(current.targets.get(handle).target);
       if(!targets.length) return {status:'empty',at:new Date(now()).toISOString(),label:''};
       current.lastActivity = now();
+      invites = topicInvites(current, id, text, context);
     } else joinCall(targets);
     const distant = targets.filter(t => t.kind === 'remote');
     if (distant.length) {
@@ -253,7 +305,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       if (result?.status !== 'routed') throw new ChatError('call_target_unavailable', 503);
       delivered.push(...route.labels.map(label => label ?? result.label ?? route.fallback));
     }
-    return { label: [...delivered, ...distant.map(t => t.label)].join(' + '), at };
+    return { label: [...delivered, ...distant.map(t => t.label)].join(' + '), at, ...(invites.length ? { invites } : {}) };
   }
 
   /** Noms des participants connus → voix (id d'agent ou slug de holder). */
@@ -453,7 +505,51 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const next=new Map(c.targets);const at=now();for(const target of targets)if(!next.has(target.handle))next.set(target.handle,{target,joinedAt:at});
     if(next.size>MAX_TARGETS)throw new ChatError('call_target_invalid');
     const added=targets.filter(t=>!c.targets.has(t.handle));
-    c.targets=next;ring(id,added,c.caller);c.revision++;c.lastActivity=at;return sessionView(c);
+    c.targets=next;ring(id,added,c.caller);c.revision++;c.lastActivity=at;
+    forwardTopicPhrase(c,owner,added);
+    return sessionView(c);
+  }
+  /**
+   * Agent ajouté après une invitation par sujet : il reçoit la phrase qui l'a appelé, une fois.
+   * Holder du fil principal alors que Marco est dans l'appel : la phrase est déjà dans le fil, où
+   * son sujet le réveille (pattern-holders.ts) ; rien n'est renvoyé.
+   */
+  function forwardTopicPhrase(c,owner,added) {
+    for (const t of added) {
+      const pending = c.topicPending?.get(t.handle);
+      if (!pending) continue;
+      c.topicPending.delete(t.handle);
+      if (now() - pending.at > TOPIC_PENDING_MS) continue;
+      if (channelOf(t) === 'main' && [...c.targets.values()].some(v => v.target.kind === 'main')) continue;
+      const scope = { owner, id: c.id, epoch: c.epoch, ...(pending.speaker ? { speaker: pending.speaker } : {}) };
+      Promise.resolve().then(() => deliver(t.handle, derivedChatId(pending.id, t.handle), pending.text, scope))
+        .catch(error => console.error('Topic invite delivery failed:', error.message));
+    }
+  }
+  /**
+   * Invitation par un agent (outil MCP invite_to_call, NLR 18 nov. 2026 : « un outil pour tout le
+   * monde ») : le serveur ajoute lui-même, avec ses droits, sans session de l'app. Garde minimale :
+   * la cible doit exister et ne pas être déjà participante. Annonce d'une ligne dans le fil de chaque
+   * participant (qui a invité qui, pourquoi). L'invité reçoit ensuite les phrases de l'humain.
+   */
+  function inviteSession(id, epoch, handle, { by = '', reason = '' } = {}) {
+    const c = calls.get(id);
+    if (!c || !c.explicit || c.epoch !== epoch) throw new ChatError('call_session_unknown', 404);
+    const target = resolve(handle);
+    if (target.kind === 'remote') throw new ChatError('call_target_invalid');
+    const joined = [...c.targets.values()].map(v => v.target);
+    if (c.targets.has(target.handle) || joined.some(t => t.agentId && t.agentId === target.agentId && t.kind === target.kind))
+      return { ...sessionView(c), status: 'already_joined', label: target.label };
+    const state = addSession(c.owner, id, epoch, target.handle, c.revision);
+    c.agentInvited ??= new Set(); c.agentInvited.add(target.handle);
+    const who = String(by).replace(/\s+/g, ' ').trim().slice(0, 80) || 'Un agent';
+    const why = String(reason).replace(/\s+/g, ' ').trim().slice(0, 200);
+    const text = `${MIRROR_TAG} ➕ ${who} a invité ${target.label} dans l'appel${why ? ` — ${why}` : ''}.`;
+    const channels = [...new Set([...c.targets.values()].map(v => channelOf(v.target)))].filter(ch => !ch.startsWith('remote:'));
+    for (const channel of channels)
+      Promise.resolve().then(() => post(channel, `call-invite:${keySafe(id)}:${keySafe(target.handle)}:${state.revision}:${keySafe(channel)}`.slice(0, 128), text, c))
+        .catch(error => console.error('Call invite notice failed:', error.message));
+    return { ...state, status: 'added', label: target.label };
   }
   function removeSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);
@@ -621,8 +717,10 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     return post(channelOf(joined.target),key,text,c);
   }
   const syncRemote = scope => remote?.sync(assertSession(scope.owner,scope.id,scope.epoch));
-  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop,
-    attachRemote: value => { remote=value; }, syncRemote, sessionItems, sessionNotice, channelOf };
+  /** Après une invitation par un agent : pairs distants resynchronisés sans la session de l'app. */
+  const syncInvited = id => { const c = calls.get(id); return c?.explicit ? remote?.sync(c) : undefined; };
+  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, inviteSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop,
+    attachRemote: value => { remote=value; }, syncRemote, syncInvited, sessionItems, sessionNotice, channelOf };
 }
 
 /** Type audio d'après les octets : WAV (voix locale) ou MP3 (ElevenLabs), OGG en dernier recours. */

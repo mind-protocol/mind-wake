@@ -1,6 +1,6 @@
 import * as Crypto from 'expo-crypto';
 import { ChatClientError, chatErrorMessage, type ChatSession } from './client.ts';
-import { callReplies, callSpeech, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, cancelCallMessage, type CallSession, type CallReply } from './call-client.ts';
+import { callReplies, callSpeech, callSessionState, openCallSession, endCall, joinCallParticipants, removeCallParticipants, sendCallUtterance, cancelCallMessage, type CallSession, type CallReply, type CallTopicInvite } from './call-client.ts';
 import { createBargeIn, createCallVad, levelDb, muteTransition, MUTED_DB, type BargeMode } from './call-vad.ts';
 import { setCaptureSpeaking } from './voice-intent.ts';
 import type { CallCapture } from './call-frames.ts';
@@ -10,7 +10,9 @@ import { createHumanGuest } from './human-call-guest.ts';
 export type CallLine = { key: string; who: 'me' | 'them' | 'info'; text: string; detail: string; error?: boolean; speaker?: string; /** Capture partagée (image ou ASCII), affichée dans le fil. */ capture?: CallCapture; /** Retirer la bulle (parole incompréhensible : rien affiché, rien envoyé). */ drop?: boolean };
 export type CallPhase = 'connecting' | 'listening' | 'speaking' | 'playing' | 'ended';
 export type CallTuning = { silenceMs?: number; bargeMode?: BargeMode; floorDb?: number };
-type Events = { onLine: (line: CallLine) => void; onPhase: (phase: CallPhase) => void; onLevel: (db: number, threshold: number) => void };
+type Events = { onLine: (line: CallLine) => void; onPhase: (phase: CallPhase) => void; onLevel: (db: number, threshold: number) => void;
+  /** Agents à ajouter : un de leurs sujets déclarés est dans la phrase envoyée (une fois par appel, décidé par le serveur). */
+  onTopicInvite?: (invites: CallTopicInvite[]) => void };
 // Silence très court : WAV minimal joué dans le geste « Appeler » pour déverrouiller la lecture.
 const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 const OLD = () => new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
@@ -25,7 +27,7 @@ type TargetReply = CallReply & {target:string};
  * (seuil plus haut, ~300 ms) coupe la lecture, vide la file et devient une prise de parole.
  * `start` doit être appelé dans le geste utilisateur (micro, son, AudioContext).
  */
-export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel, inviteHumans = false, humanInvite }: Events & {
+export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel, onTopicInvite, inviteHumans = false, humanInvite }: Events & {
   session: ChatSession; targets: string[]; announce: boolean; silenceMs: number; bargeMode: BargeMode; floorDb?: number;
   /** Voix des réponses (NLR, 16 nov. : off par défaut) ; off, aucune synthèse n'est demandée au desktop. */
   voice?: () => boolean; inviteHumans?:boolean; humanInvite?:{id:string;label:string} }) {
@@ -117,6 +119,7 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
             line(result.status === 'empty'
               ? { key: id, who: 'me', text: '', detail: '', drop: true }
               : { key: id, who: 'me', text: result.text, detail: `envoyé · transcription ${(result.transcribeMs / 1000).toFixed(1)} s · ${latency} s après ta phrase` });
+            if (result.invites?.length && !ended) onTopicInvite?.(result.invites);
             break;
           } catch (error) {
             if (ended) return;

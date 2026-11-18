@@ -41,6 +41,7 @@ const tickMs = Number(process.env.MW_P2P_TICK_MS) || 1000;
 
 const node = new P2PNode({
   name: settings.name, keyFile: P.key, stateDir: P.state, wakeupsDir,
+  callEndpoint: () => { const e=readJson(path.join(P.state,'call-endpoint.json'),null); return e && Date.now()-e.at<30_000 ? {addresses:e.addresses,key:e.key} : null; },
   agents: DEFAULT_AGENTS, defaultAgent: DEFAULT_AGENT, annuaire: settings.annuaire,
   ...(bootstrap ? { bootstrap } : {}), ...(retryMs ? { retryMs, detailMs: Math.min(3000, retryMs) } : {}),
 });
@@ -109,6 +110,11 @@ async function tick() {
     for (const n of names.slice(0, 50)) await handleRequest(path.join(P.requests, n));
     // Résultats non lus au-delà de 10 min : supprimés.
     try { for (const n of fs.readdirSync(P.results)) { const f = path.join(P.results, n); if (Date.now() - fs.statSync(f).mtimeMs > 600_000) fs.rmSync(f, { force: true }); } } catch {}
+    const endpoint=node.cfg.callEndpoint();
+    if(JSON.stringify(endpoint)!==JSON.stringify(node.fiche.reach.call ?? null)) {
+      node.fiche=await node.buildFiche();
+      for(const peer of node.peers.values())peer.send({t:'hello',fiche:node.fiche});
+    }
     writeStatus();
   } catch (e) {
     log(`erreur de tick : ${String(e?.message ?? e).slice(0, 300)}`);

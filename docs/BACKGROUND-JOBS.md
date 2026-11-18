@@ -11,6 +11,19 @@ Un job est un programme Node local indépendant d'un tour de modèle. Il peut co
 
 Le statut faisant foi et les clés d'idempotence vivent dans `<dataDir>/background-jobs.sqlite`, hors de l'espace de travail. Les fins de jobs deviennent des événements du prochain réveil ; elles constituent aussi une échéance candidate pour le scheduler, qui conserve ses contrôles ordinaires. Les résultats restent consultables même si l'événement a déjà été présenté.
 
+## Origine automatique
+
+Constat de Viz (18 nov. 2026) : seuls 9 jobs sur 615 étaient reliés au message qui les avait lancés. Depuis, chaque `start_background_job` enregistre une origine dans le job, sans que l'agent ait à la fournir (`src/daemon/job-origin.ts`). Le serveur MCP la calcule à partir de l'environnement que le daemon lui a donné, jamais à partir des arguments de l'agent :
+
+- `launcher.kind` : `principal`, `room-agent` (avec `agentId` ; `agentId: null` pour le canal d'une salle, par exemple VOX) ou `holder` (`MIND_WAKE_PATTERN_HOLDER` ; aucun holder n'a encore l'outil) ;
+- `room` (`room:<N>`) et `roomNumber` ;
+- `session` : `MIND_WAKE_SESSION`, c'est-à-dire la session Wake du principal ou la session Claude du tour de salle ;
+- `trigger` : `basis: "turn"` quand le daemon a transmis le message du tour (salles à agents : `room<N>:entry:<id>` ou `room<N>:relay:<clé>`) ; pour le principal, `basis: "last-delivered"`, le dernier message humain ou pair remis par `owner-inbox.sqlite`. C'est une approximation : un réveil sans message garde le précédent, donc il faut comparer `deliveredAt` à `createdAt` ;
+- `parent`, `rootJobId` : si le serveur MCP tourne dans un job (`MIND_WAKE_JOB_ID` hérité), il s'agit du job parent et du premier job de la chaîne. La salle du parent est reprise si la session n'en a pas ;
+- `declared` : `why` et `trigger_message_id`, s'ils sont fournis par l'agent (tous deux facultatifs). Ils sont gardés à part et l'origine automatique n'en dépend pas.
+
+L'origine est exposée dans `list_background_jobs` (champ `origin` de chaque job) et dans `jobs/runs/<id>/job.json`, écrit dès la soumission. Elle est aussi passée au script : `MIND_WAKE_JOB_ORIGIN_AUTO` la reçoit toujours, et `MIND_WAKE_JOB_ORIGIN` seulement quand le lanceur n'est pas le principal. Pour les scripts existants (`jobs/atelier-worker-claude.mjs`), l'absence de cette variable signifie déjà « agent principal ». `jobs/vox-sous-session.mjs` continue d'écrire son propre `origin.json` et de poser `MIND_WAKE_JOB_ORIGIN` pour son enfant. Une relance (`relaunch`) garde l'origine du job relancé. Les jobs antérieurs n'ont pas d'origine.
+
 ## Cycle de vie
 
 Le daemon emploie le superviseur Job Object existant : le worker et tous ses descendants appartiennent à la même arborescence. La sortie brute va directement aux fichiers, sans s'accumuler dans le contexte du modèle. Les jobs continuent entre deux sessions ; l'absence de session IA active ne les arrête pas. Les contrôles persistés sont relus toutes les 500 ms. L'arrêt explicite d'un processus peut donc interrompre un fichier en cours d'écriture : les scripts longs doivent enregistrer leurs points de reprise et publier leurs résultats de façon atomique quand cela compte.

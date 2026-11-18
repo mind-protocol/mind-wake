@@ -4,7 +4,7 @@ import { trustedRoomRoleBySignature } from "../daemon/room-role-identity.js";
 import { readRoomWebSearchCapability } from "../daemon/room-web-capability.js";
 import { roomAgentMcpConfig } from "../daemon/fork-assignment.js";
 import { roomAgentPrompt } from "../daemon/room-agents.js";
-import { callContract } from "./human-call-capability.js";
+import { callContract, HUMAN_CALL_TOOLS } from "./human-call-capability.js";
 import { openStoreReadOnly } from "../store/index.js";
 import { controlDbPath } from "../daemon/paths.js";
 import { DEFAULT_PROFILE_ID } from "../cli/context.js";
@@ -34,9 +34,10 @@ export function roomVoiceLaunch(dataDir: string, args: readonly string[], cwd: s
     if (Object.keys(parsed.mcpServers??{}).length!==1 || args.includes("--disallowedTools")
       || ["tools","enabled_tools","disabled_tools"].some(key=>server[key]!==undefined)) return unchanged;
     const allowedIndex=args.indexOf("--allowedTools");
-    const expected=["call_human","list_active_calls","hangup_call"].map(name=>"mcp__mind_calls__"+name).sort();
+    // Liste canonique actuelle (avec invite_to_call) ou celle d'avant, pour une session lancée avant la mise à jour.
+    const canonical=[[...HUMAN_CALL_TOOLS],["call_human","list_active_calls","hangup_call"]].map(list=>JSON.stringify(list.map(name=>"mcp__mind_calls__"+name).sort()));
     const allowedTools=allowedIndex<0?[]:args[allowedIndex+1]?.split(",").sort()??[];
-    if (JSON.stringify(allowedTools)!==JSON.stringify(expected)) return unchanged;
+    if (!canonical.includes(JSON.stringify(allowedTools))) return unchanged;
     const role = trustedRoomRoleBySignature(dataDir,signature);
     if (!role?.capability.mindTools) return unchanged;
     const mcp = roomAgentMcpConfig(role.room,dataDir,role.agent);

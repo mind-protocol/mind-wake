@@ -136,6 +136,7 @@ import { openSharedInboxSession, type SharedInboxSession } from "../communicatio
 import { ownerMessagePending } from "../communication/owner-inbox.js";
 import { recordOwnerAttachmentRuntime } from "../communication/owner-attachment-runtime.js";
 import { BackgroundJobs } from "./background-jobs.js";
+import { MemoryGate } from "./memory-pressure.js";
 import { TelegramSupervisor } from "./telegram-supervisor.js";
 import { PontP2PSupervisor } from "./pont-p2p-supervisor.js";
 import { QuotaPacingStore } from "./pacing.js";
@@ -763,7 +764,8 @@ export class WakeDaemon implements SessionLauncher {
         this.#repairAgent = new RepairAgent(this.#o.dataDir, hostWorkAllowed, message => this.#log(message));
         this.#repairAgent.start();
         this.#backgroundJobs = new BackgroundJobs(this.#o.dataDir, hostWorkAllowed, (job, after) => this.#log(`job relancé après ${after} : ${job.id} (${job.title})`),
-        { log: message => this.#log(message) });
+        // Mémoire basse : les jobs attendent en file au lieu d'épuiser le poste (memory-pressure.ts).
+        { log: message => this.#log(message), memory: new MemoryGate({ maxWaitMs: 15 * 60_000 }) });
         this.#backgroundJobs.start();
       }
       await scheduler.run(this.#abort.signal);

@@ -33,7 +33,7 @@ const action = z.union([
   z.strictObject({ op: z.literal("click"), ...point, ...clickOptions, auto_scroll }),
   z.strictObject({ op: z.literal("click"), label, ...clickOptions, auto_scroll }),
   z.strictObject({ op: z.literal("move"), ...point }),
-  z.strictObject({ op: z.literal("scroll"), ...point, ticks: z.int().min(-100).max(100).describe("Wheel steps: positive up, negative down. Use ticks or pixels per action.") }),
+  z.strictObject({ op: z.literal("scroll"), ...point, ticks: z.int().min(-100).max(100).describe("Real mouse-wheel notches (120 units each, about 40-100 px): positive up, negative down. scroll[].moved reports the measured pixels. Use ticks or pixels per action.") }),
   z.strictObject({ op: z.literal("scroll"), ...point, pixels: z.int().describe("Vertical physical pixels, positive down, negative up") }),
   z.strictObject({ op: z.literal("text"), text: z.string().max(4000), auto_scroll }),
   z.strictObject({ op: z.literal("keys"), keys: z.array(z.string().min(1)).min(1).max(5).describe('Key names are case-insensitive; Control aliases ctrl. Example: ["ctrl", "a"] (also "Ctrl+A"). Unknown keys reject the batch before input.') }),
@@ -45,7 +45,7 @@ const definitions = {
     z.strictObject({ desktop, url: z.url().refine(value => { try { const u = new URL(value); return ["https:", "http:"].includes(u.protocol) && !u.username && !u.password; } catch { return false; } }, "HTTP(S) URL without credentials required") }),
   ],
   desktop_scrollto: [
-    'Scroll a window until OCR text or a copied Unicode pattern is visible, e.g. {"window":"Chrome","target":{"text":"Résultats"}}. Searches from the current view down by default; set direction to up to search above. For ASCII use the original columns and simplified settings. panel selects the scrolling pane by absolute screen point. Leaves the window at the last inspected view. On a match, pass capture and one candidate (excerpt, row, column) to desktop_click_excerpt.',
+    'Scroll a window until OCR text or a copied Unicode pattern is visible, e.g. {"window":"Chrome","target":{"text":"Résultats"}}. Searches from the current view down by default; set direction to up to search above. For ASCII use the original columns and simplified settings. panel selects the scrolling pane by absolute screen point; panes without an accessible scroll container are scrolled with the real wheel, then PageDown/PageUp (method in the result). Leaves the window at the last inspected view. On a match, pass capture and one candidate (excerpt, row, column) to desktop_click_excerpt.',
     z.strictObject({ desktop,
       window, target: z.union([z.strictObject({ text: label }), z.strictObject({ ascii: z.string().min(1).max(10000) })]),
       panel: z.strictObject(point).optional(), direction: z.enum(["down","up"]).default("down"),
@@ -100,7 +100,7 @@ const definitions = {
     z.strictObject({ desktop, window, targets: z.array(z.union([label, z.strictObject(point)])).min(1).max(32), auto_scroll }),
   ],
   desktop_act: [
-    'Perform actions in order in the target window. Focus an input before sending text. To scroll 400 pixels down in the panel under the pointer: {"window":"Chrome","actions":[{"op":"scroll","x":640,"y":420,"pixels":400}]}. Read scroll[].moved for the measured displacement. Pixels use accessible scroll containers; ticks send wheel steps. Set auto_scroll on individual click or text actions. On failure check the completed count before resuming. Use only within the owner\'s delegated task.',
+    'Perform actions in order in the target window. Focus an input before sending text. To scroll 400 pixels down in the panel under the pointer: {"window":"Chrome","actions":[{"op":"scroll","x":640,"y":420,"pixels":400}]}. Read scroll[].moved for the measured displacement (positive = content moved up) and scroll[].method. Pixels use the accessible scroll container when there is one, otherwise calibrated real wheel events, then PageDown/PageUp; ticks send real wheel notches. Set auto_scroll on individual click or text actions. On failure check the completed count before resuming. Use only within the owner\'s delegated task.',
     z.strictObject({ desktop, window, actions: z.array(action).min(1).max(32) }),
   ],
   desktop_page: [

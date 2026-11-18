@@ -6,6 +6,7 @@ import {callMcpConfig,roomCallIdentity} from '../communication/human-call-capabi
  * neuf, sans hériter du principal, lit son fichier d'instructions à chaque tour et ne prend
  * un tour que lorsqu'un message lui est adressé.
  */
+import { TURN_TRIGGER_ENV, withTurnOriginEnv, type JobTrigger } from "./job-origin.js";
 import fs from "node:fs";
 import { withHumanCallPrompt } from "../communication/human-call-prompt.js";
 import path from "node:path";
@@ -980,6 +981,11 @@ export async function runAssignedClaudeTurn(input: {
    * par le message initial ; `agentId`, agent d'une room à plusieurs agents. Absent : pas de hook.
    */
   inbox?: { readonly floor: number; readonly agentId?: string };
+  /**
+   * Message qui déclenche ce tour, transmis au serveur MCP (`MIND_WAKE_TURN_TRIGGER`) pour
+   * l'origine automatique des jobs (`job-origin.ts`) ; la session du tour l'accompagne toujours.
+   */
+  trigger?: JobTrigger;
 }): Promise<ForkTurnResult & { sessionId: string }> {
   const key = input.agent?.key ?? `fork-${String(input.id)}:${input.assignment.instructions}:${input.assignment.assignedAt}`;
   const prompt = input.agent?.prompt ?? assignedForkPrompt(input.id, input.assignment);
@@ -1031,7 +1037,14 @@ export async function runAssignedClaudeTurn(input: {
       session: { mode, id },
       message,
       control: input.control,
-      ...(mcpConfig === undefined ? {} : { mcpConfig }),
+      ...(mcpConfig === undefined
+        ? {}
+        : {
+            mcpConfig: withTurnOriginEnv(mcpConfig, {
+              MIND_WAKE_SESSION: id,
+              ...(input.trigger === undefined ? {} : { [TURN_TRIGGER_ENV]: JSON.stringify(input.trigger) }),
+            }) ?? mcpConfig,
+          }),
       ...(input.agent?.addDirs === undefined || input.agent.addDirs.length === 0 ? {} : { addDirs: input.agent.addDirs }),
       ...(input.agent?.webSearch === undefined ? {} : {webSearch:input.agent.webSearch}),
       ...(input.agent?.nativeDelegation === undefined ? {} : {nativeDelegation:input.agent.nativeDelegation}),

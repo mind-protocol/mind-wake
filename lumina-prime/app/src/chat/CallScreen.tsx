@@ -266,7 +266,8 @@ export default function CallScreen() {
         }
         setPhase(next);
       }, onLevel: (db, threshold) => setLevel({ db, threshold }),
-      onLine: value => setLines(previous => [...previous.filter(item => item.key !== value.key), ...(value.drop ? [] : [value])].slice(-40)) });
+      onLine: value => setLines(previous => [...previous.filter(item => item.key !== value.key), ...(value.drop ? [] : [value])].slice(-40)),
+      onTopicInvite: invites => { void joinByTopic(call, invites); } });
     engine.current = call;
     if (resumed?.muted) { call.setMuted(true); setMuted(true); }
     // Appel synchrone dans le geste : déverrouillage du son et demande du micro.
@@ -298,6 +299,30 @@ export default function CallScreen() {
       inCall.current = handles; setSelected(handles); setAdding(false);
     } catch (reason) { if (engine.current === current) setError(chatErrorMessage(reason)); }
     finally { setJoining(false); }
+  }
+  /**
+   * NLR, 18 nov. 2026 14:55 : « réveiller les bonnes personnes au bon moment ». Le serveur a reconnu
+   * un sujet déclaré d'un agent absent de l'appel : il est ajouté tout de suite, annoncé d'une ligne,
+   * et reçoit la phrase qui l'a appelé. On le retire comme tout participant. N'utilise que des refs :
+   * appelée depuis le moteur, hors du rendu courant.
+   */
+  async function joinByTopic(call: NonNullable<typeof engine.current>, invites: { handle: string; label: string; topic: string }[]) {
+    const key = `topic-${invites.map(i => i.handle).join('-')}-${Date.now()}`;
+    const names = invites.map(i => `${i.label} (sujet : ${i.topic})`).join(', ');
+    const show = (text: string, error = false) => { if (engine.current === call) setLines(previous => [...previous.filter(item => item.key !== key), { key, who: 'info' as const, text, detail: '', error }].slice(-40)); };
+    show(`➕ ${names} rejoint l'appel`);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (engine.current !== call) return;
+      try {
+        const handles = await call.addTargets(invites.map(i => i.handle));
+        if (engine.current !== call) return;
+        inCall.current = handles; setSelected(handles); return;
+      } catch (reason) {
+        // Un ajout manuel en cours : on réessaie un peu plus tard.
+        if (attempt === 4) { show(`➕ ${names} : ajout impossible — ${chatErrorMessage(reason)}`, true); return; }
+        await new Promise(resolve => setTimeout(resolve, 1200));
+      }
+    }
   }
   async function removeParticipant(handle: string) {
     const current=engine.current;if(!current){toggle(handle);return;}if(joining)return;

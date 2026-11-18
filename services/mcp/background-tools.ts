@@ -5,6 +5,7 @@ import { openStoreReadOnly } from "../../src/store/index.js";
 import { controlDbPath } from "../../src/daemon/paths.js";
 import { DEFAULT_PROFILE_ID } from "../../src/cli/context.js";
 import { resolvePolicy } from "../../src/policy/index.js";
+import { autoJobOrigin } from "../../src/daemon/job-origin.js";
 
 export function registerBackgroundTools(
   server: McpServer,
@@ -62,19 +63,42 @@ export function registerBackgroundTools(
         args: z.array(z.string()).default([]),
         idempotency_key: z.string().min(8).max(128),
         relaunch: z.boolean().default(false),
+        why: z
+          .string()
+          .trim()
+          .min(1)
+          .max(2000)
+          .optional()
+          .describe(
+            "Optional: why you launch it. Who launched it, room, session, trigger and parent job are recorded automatically.",
+          ),
+        trigger_message_id: z.string().trim().min(1).max(200).optional(),
       }),
       annotations: { openWorldHint: false },
     },
     (a) =>
       call(true, (s) => ({
-        job: s.submit(a.title, a.script, a.args, a.idempotency_key, { relaunch: a.relaunch }),
+        job: s.submit(a.title, a.script, a.args, a.idempotency_key, {
+          relaunch: a.relaunch,
+          // Calculée ici, depuis l'environnement posé par le daemon ; jamais depuis les arguments.
+          origin: autoJobOrigin(env, {
+            lookupJob: (id) => {
+              try {
+                return s.get(id);
+              } catch {
+                return null;
+              }
+            },
+            declared: { why: a.why, triggerMessageId: a.trigger_message_id },
+          }),
+        }),
       })),
   );
   server.registerTool(
     "list_background_jobs",
     {
       description:
-        "Read durable statuses and result/log paths of your supervised background jobs. A queued job has not yet started. Interrupted jobs are never silently replayed.",
+        "Read durable statuses and result/log paths of your supervised background jobs, with each job's recorded origin (who launched it, room, session, trigger message, parent job). A queued job has not yet started. Interrupted jobs are never silently replayed.",
       inputSchema: z.strictObject({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

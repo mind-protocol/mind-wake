@@ -1,3 +1,4 @@
+import { createCallColonies } from './call-colonies.mjs';
 import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
@@ -28,7 +29,7 @@ export function peerAddress(value) {
 }
 
 // Authenticated encryption also protects transcript/audio on plain HTTP LAN links.
-// The invitation carries 256 random bits, not a guessable PIN. No owner session crosses this port.
+// Colony signatures authenticate the X25519 exchange keys. No owner session crosses this port.
 export function sealPeer(secret, id, payload) {
   const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', Buffer.from(secret, 'hex'), iv);
   cipher.setAAD(Buffer.from(`mind.call.peer.v1:${id}`));
@@ -49,19 +50,18 @@ async function readJson(stream, limit) {
   try { return JSON.parse(Buffer.concat(chunks).toString()); } catch { fail('invalid_json'); }
 }
 
-export function createCallPeers({ call, controls = null, file = null, port = 8790, host = '0.0.0.0', now = Date.now, fetchImpl = fetch } = {}) {
+export function createCallPeers({ call, controls = null, file = null, dataDir = file ? path.dirname(path.dirname(file)) : null, colonies = dataDir ? createCallColonies(dataDir) : null, port = 8790, host = '0.0.0.0', now = Date.now, fetchImpl = fetch } = {}) {
   let config = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { id: randomUUID(), label: os.hostname(), caller: 'NLR', enabled: false, peers: [] };
-  const invites = new Map(), incoming = new Map(), outgoing = new Map(), directory = new Map(), replays = new Map();
-  let server = null, starting = null, startupError = null;
+  const incoming = new Map(), outgoing = new Map(), directory = new Map(), replays = new Map();
+  let server = null, starting = null, startupError = null, closed = false;
+  let blockedContacts=[];
   const save = () => {
     if (!file) return;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file + '.pending', JSON.stringify(config), { mode: 0o600 }); fs.renameSync(file + '.pending', file);
   };
-  // Existing associations also share all local targets; discard old allowlists.
-  const hadAllowlists = config.peers.some(p => Object.hasOwn(p, 'shared'));
-  for (const p of config.peers) delete p.shared;
-  if (hadAllowlists) save();
+  // Old invitation credentials are retired; contacts now come exclusively from the colony book.
+  config.peers=[]; config.blocked ??= []; save();
   const localTargets = () => call.targets().filter(t => t.kind !== 'remote');
   const peer = id => config.peers.find(p => p.id === id) ?? fail('peer_unknown', 404);
   const exported = () => localTargets().map(t => ({ handle: t.handle, label: t.label, kind: t.kind, channel: call.channelOf(call.resolve(t.handle)) }));
@@ -81,7 +81,9 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     call.stateSession(c.owner,c.id,1); return c;
   }
   async function dispatch(p, input) {
-    if (input.op === 'directory') return { label:config.label, targets:exported(), at:now() };
+    if (input.op === 'directory') return { label:config.label, caller:config.caller, targets:exported(), at:now() };
+    if(input.caller)p.caller=name(input.caller);
+    if(input.label)p.label=name(input.label);
     if (input.op === 'end') {
       const c = incoming.get(`${p.id}:${uuid(input.call)}`); if(c) closeIncoming(c);
       controls?.markEnded({id:inboundId(p.id,input.call),epoch:1});
@@ -173,25 +175,19 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
       const next=createServer(async(req,res)=>{
         const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
         try {
-          if(req.method!=='POST'||req.url!=='/mind-call/v1'||req.headers.origin||!isPrivateAddress(req.socket.remoteAddress))fail('peer_forbidden',403);
+          if(req.method!=='POST'||req.url!=='/mind-call/v2'||req.headers.origin||!isPrivateAddress(req.socket.remoteAddress))fail('peer_forbidden',403);
           const envelope=await readJson(req,40_000);
-          const invitation=invites.get(envelope.id);
-          const p=config.peers.find(p=>p.id===envelope.id&&p.direction==='in');
-          const secret=invitation?.secret??p?.secret;
-          if(!secret)fail('peer_unauthorized',401);
+          let authenticated;
+          try { authenticated=await colonies?.authorize(envelope); } catch {}
+          if(!authenticated || config.blocked.includes(authenticated.peer.id))fail('peer_unauthorized',401);
+          const {peer:p,secret}=authenticated;
           const input=openPeer(secret,envelope);
           if(typeof input.nonce!=='string'||!/^[a-f0-9]{32}$/.test(input.nonce)||!Number.isFinite(input.at)||Math.abs(now()-input.at)>120_000||replays.has(input.nonce))fail('peer_replay',409);
           if(replays.size>=20_000)fail('peer_rate_limited',429);
           replays.set(input.nonce,now()+180_000);
           let result;
           try {
-            if(invitation) {
-              if(input.op!=='pair'||invitation.expiresAt<now())fail('peer_invitation_expired',410);
-              if(config.peers.length>=32)fail('too_many_peers',429);
-              const paired={id:hex(8),secret:hex(32),direction:'in',label:name(input.label),caller:name(input.caller)};
-              config.peers.push(paired);save();invites.delete(envelope.id);
-              result={id:paired.id,secret:paired.secret,label:config.label,targets:exported()};
-            } else result=await dispatch(p,input);
+            result=await dispatch(p,input);
             send(200,sealPeer(secret,envelope.id,{nonce:input.nonce,result}));
           } catch(error) {send(200,sealPeer(secret,envelope.id,{nonce:input.nonce,error:error.code??'peer_unavailable',status:error.status??503}));}
         } catch(error) {send(error.status??503,{error:error.code??'peer_unavailable'});}
@@ -203,14 +199,20 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     })().finally(()=>{starting=null;});return starting;
   }
   async function rpc(p, data, timeout = 10_000) {
-    let response, nonce;
-    for(let attempt=0;attempt<2;attempt++) {
-      nonce=hex(16);const packet=sealPeer(p.secret,p.id,{...data,nonce,at:now()});
-      try {response=await fetchImpl(`${peerAddress(p.address)}/mind-call/v1`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});break;}
-      catch {if(attempt||data.op==='pair'||data.op==='speech')fail('peer_unavailable',503);}
+    if(!colonies?.identity() || config.blocked.includes(p.id))fail('peer_unauthorized',401);
+    // Re-read the book before every request: removed/replaced identities lose access immediately.
+    const current=(await colonies.contacts()).find(entry=>entry.id===p.id);
+    if(!current)fail('peer_unauthorized',401);
+    const secret=colonies.secret(current.exchangeKey), nonce=hex(16);
+    const packet=await colonies.wrap(sealPeer(secret,colonies.ownId(),{...data,caller:config.caller,label:config.label,nonce,at:now()}),current);
+    let response;
+    for(const address of current.addresses) {
+      try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});break;}
+      catch { /* Try another interface advertised by this colony. */ }
     }
+    if(!response)fail('peer_unavailable',503);
     if(!response.ok)fail(response.status===401?'peer_unauthorized':'peer_unavailable',response.status===401?401:503);
-    const value=openPeer(p.secret,await readJson(response.body,12*1024*1024));
+    const value=openPeer(secret,await readJson(response.body,12*1024*1024));
     if(value.nonce!==nonce)fail('peer_unauthorized',401);
     if(value.error)fail(value.error,value.status);
     return value.result;
@@ -225,9 +227,25 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     }
     p.online=true;
   }
-  async function refresh() {
+  let refreshTask=null;
+  function refresh() {
+    if(!refreshTask)refreshTask=refreshNow().finally(()=>{refreshTask=null;});
+    return refreshTask;
+  }
+  async function refreshNow() {
+    if(closed)return;
+    if(colonies?.identity()) { await start(); colonies.publish(status().addresses); }
+    const all=await colonies?.contacts() ?? [];
+    if(closed)return;
+    blockedContacts=all.filter(p=>config.blocked.includes(p.id));
+    const contacts=all.filter(p=>!config.blocked.includes(p.id));
+    const retained=new Set(contacts.map(p=>p.id));
+    for(const [h,t] of directory)if(!retained.has(t.peerId))directory.delete(h);
+    for(const c of [...incoming.values()])if(!retained.has(c.owner.slice(5)))closeIncoming(c);
+    for(const s of [...outgoing.values()])if(!retained.has(s.peerId))call.endSession(s.c.owner,s.c.id,s.c.epoch);
+    config.peers=contacts;
     await Promise.all(config.peers.filter(p=>p.direction==='out').map(async p=>{
-      try {const result=await rpc(p,{op:'directory'});cacheDirectory(p,result.targets);}
+      try {const result=await rpc(p,{op:'directory'},1500);if(closed||config.blocked.includes(p.id)||!colonies.identity())return;p.label=result.label;p.caller=result.caller;cacheDirectory(p,result.targets);}
       catch {p.online=false;}
     }));
   }
@@ -352,30 +370,17 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
   }
   function status() {
     const listenPort=server?.address()?.port??port;
-    return {label:config.label,caller:config.caller,enabled:Boolean(server),port:listenPort,error:startupError,
-      addresses:Object.values(os.networkInterfaces()).flat().filter(v=>v&&v.family==='IPv4'&&!v.internal&&isPrivateAddress(v.address)).map(v=>`http://${v.address}:${listenPort}`),
+    return {label:config.label,caller:config.caller,enabled:Boolean(server)&&Boolean(colonies?.identity()),port:listenPort,error:startupError,blocked:blockedContacts.map(({id,label})=>({id,label})),
+      addresses:host==='127.0.0.1'?[`http://127.0.0.1:${listenPort}`]:Object.values(os.networkInterfaces()).flat().filter(v=>v&&v.family==='IPv4'&&!v.internal&&isPrivateAddress(v.address)).map(v=>`http://${v.address}:${listenPort}`),
       peers:config.peers.map(({id,label,direction,address,online})=>({id,label,direction,address,online})),targets:localTargets()};
   }
   async function admin(action,input={}) {
-    if(action==='status')return status();
+    if(action==='status'){await refresh();return status();}
     if(action==='profile'){config.label=name(input.label);config.caller=name(input.caller);save();return status();}
-    if(action==='invite') {
-      await start();config.enabled=true;save();invites.clear();
-      const id=hex(8),secret=hex(32),expiresAt=now()+3_600_000;invites.set(id,{secret,expiresAt});
-      return {...status(),code:`${id}.${secret}`,expiresAt};
-    }
-    if(action==='pair') {
-      if(config.peers.length>=32)fail('too_many_peers',429);
-      const match=/^([a-f0-9]{16})\.([a-f0-9]{64})$/.exec(String(input.code).trim());if(!match)fail('peer_code_invalid');
-      const address=peerAddress(input.address);
-      const result=await rpc({id:match[1],secret:match[2],address},{op:'pair',label:config.label,caller:config.caller});
-      if(!/^[a-f0-9]{16}$/.test(result.id)||!/^[a-f0-9]{64}$/.test(result.secret))fail('invalid_response');
-      const p={id:result.id,secret:result.secret,address,label:name(result.label),direction:'out'};
-      config.peers.push(p);cacheDirectory(p,result.targets);save();return status();
-    }
+    if(action==='allow'){config.blocked=config.blocked.filter(id=>id!==input.id);save();await refresh();return status();}
     if(action==='refresh'){await refresh();return status();}
     if(action==='revoke') {
-      const p=peer(input.id);
+      const p=peer(input.id);config.blocked.push(p.id);
       for(const c of [...incoming.values()])if(c.owner===`peer:${p.id}`)closeIncoming(c);
       for(const s of [...outgoing.values()])if(s.peerId===p.id)call.endSession(s.c.owner,s.c.id,s.c.epoch);
       config.peers=config.peers.filter(item=>item.id!==p.id);
@@ -384,13 +389,15 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     }
     fail('invalid_request');
   }
+  let refreshing=false;
   const timer=setInterval(()=>{
+    if(!refreshing){refreshing=true;refresh().catch(()=>{}).finally(()=>{refreshing=false;});}
     for(const [key,until] of replays)if(until<now())replays.delete(key);
-    for(const [id,invite] of invites)if(invite.expiresAt<now())invites.delete(id);
+
     for(const c of [...incoming.values()])if(now()-c.lastSeen>45_000)closeIncoming(c);
   },5000);timer.unref();
-  return {admin,status,refresh,start,humanPending,humanGuest,humanRequest,ready:async()=>{if(config.enabled)try{await start();}catch{startupError='peer_port_unavailable';}await refresh();},
-    close:async()=>{clearInterval(timer);for(const c of [...incoming.values()])closeIncoming(c);for(const s of [...outgoing.values()])remote.end(s.c);
+  return {admin,status,refresh,start,humanPending,humanGuest,humanRequest,ready:async()=>{try{await refresh();}catch{startupError='peer_port_unavailable';}},
+    close:async()=>{closed=true;clearInterval(timer);colonies?.unpublish();for(const c of [...incoming.values()])closeIncoming(c);for(const s of [...outgoing.values()])remote.end(s.c);
       if(server){server.closeAllConnections();await new Promise(r=>server.close(r));server=null;}},
   };
 }

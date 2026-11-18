@@ -498,55 +498,15 @@ def move_pointer(x, y):
         mouse.moveTo(round(start_x + dx * px), round(start_y + dy * py), _pause=False)
 
 
-def type_text(text, hwnd):
-    # Send literal UTF-16 code units independently of the active keyboard layout.
-    from ctypes import wintypes
+def type_text(text, hwnd, method="auto"):
+    """Insert text in the focused field and report whether it is effectively there.
 
-    class Keyboard(ctypes.Structure):
-        _fields_ = [
-            ("vk", wintypes.WORD),
-            ("scan", wintypes.WORD),
-            ("flags", wintypes.DWORD),
-            ("time", wintypes.DWORD),
-            ("extra", ctypes.c_size_t),
-        ]
+    See desktop_text: clipboard paste (clipboard restored) for text of a few characters
+    or more, paced keystrokes otherwise, UI Automation read-back of the field."""
+    from desktop_text import insert_text
 
-    class Mouse(ctypes.Structure):
-        _fields_ = [
-            ("dx", wintypes.LONG),
-            ("dy", wintypes.LONG),
-            ("data", wintypes.DWORD),
-            ("flags", wintypes.DWORD),
-            ("time", wintypes.DWORD),
-            ("extra", ctypes.c_size_t),
-        ]
-
-    class Payload(ctypes.Union):
-        _fields_ = [("keyboard", Keyboard), ("mouse", Mouse)]
-
-    class Input(ctypes.Structure):
-        _fields_ = [("type", wintypes.DWORD), ("payload", Payload)]
-
-    # Bound the time spent animating a large insertion or a batch of insertions.
-    chunk_size = max(1, math.ceil(len(text) / 64))
-    for start in range(0, len(text), chunk_size):
-        check_focus(hwnd)
-        chunk = text[start : start + chunk_size]
-        data = chunk.encode("utf-16-le")
-        events = []
-        for i in range(0, len(data), 2):
-            unit = int.from_bytes(data[i : i + 2], "little")
-            for flags in (4, 6):
-                events.append(Input(1, Payload(keyboard=Keyboard(0, unit, flags, 0, 0))))
-        sent = ctypes.windll.user32.SendInput(
-            len(events), (Input * len(events))(*events), ctypes.sizeof(Input)
-        )
-        if sent != len(events):
-            raise OSError("Saisie Unicode incomplète")
-        if start + chunk_size < len(text):
-            last = chunk[-1]
-            delay = 0.024 if last.isspace() else 0.028 if not last.isalnum() else 0.018
-            time.sleep(delay)
+    return insert_text(text, hwnd, lambda: check_focus(hwnd),
+                       lambda: mouse.hotkey("ctrl", "v", interval=0.02), method)
 
 
 def locate_label(hwnd, label):
@@ -593,6 +553,28 @@ def normalize_keys(keys, allowed):
     return result
 
 
+def scroll_at(hwnd, x, y, action):
+    """Scroll under the (already placed) pointer and measure the real displacement.
+
+    ticks: real wheel notches (WHEEL_DELTA each). pixels: UIA ScrollPattern when the point has
+    one, else calibrated wheel, else PageDown/PageUp."""
+    import desktop_wheel
+
+    box = bounds(hwnd)
+    grab = lambda: capture(box)
+    if "ticks" in action:
+        return desktop_wheel.wheel_ticks(hwnd, (x, y), action["ticks"], grab)
+    from desktop_scroll import NoScrollContainer, scroll_pixels
+    try:
+        report = dict(method="uia", **scroll_pixels(hwnd, x, y, action["pixels"]))
+    except NoScrollContainer:
+        return desktop_wheel.scroll_any(hwnd, (x, y), action["pixels"], grab, mouse.press)
+    if report["moved"] or not action["pixels"]:
+        return report
+    # The pattern accepted the request but nothing moved (some Chromium/Qt panes): try the wheel.
+    return desktop_wheel.wheel_pixels(hwnd, (x, y), action["pixels"], grab) or report
+
+
 def act(hwnd, actions):
     # Reject a bad keyboard batch before focus, pointer gestures or text insertion.
     normalized = []
@@ -604,6 +586,7 @@ def act(hwnd, actions):
             raise ValueError(f"0 actions terminées, action {index + 1}: {exc}") from exc
     actions = normalized
     reports = []
+    texts = []
     taskbar = gui.GetClassName(hwnd) in ("Shell_TrayWnd", "Shell_SecondaryTrayWnd")
     if taskbar:
         if any(a["op"] not in ("click", "move") for a in actions):
@@ -645,15 +628,11 @@ def act(hwnd, actions):
                         button=action["button"], clicks=action["count"], interval=0.08
                     )
                 if op == "scroll":
-                    if "pixels" in action:
-                        from desktop_scroll import scroll_pixels
-                        reports.append(dict(action=index+1, **scroll_pixels(hwnd, x, y, action["pixels"])))
-                    else:
-                        mouse.scroll(action["ticks"])
+                    reports.append(dict(action=index+1, **scroll_at(hwnd, x, y, action)))
             elif op == "keys":
                 mouse.hotkey(*action["keys"], interval=0.015 + 0.003 * len(action["keys"]))
             elif op == "text":
-                type_text(action["text"], hwnd)
+                texts.append(dict(action=index+1, **type_text(action["text"], hwnd, action.get("method", "auto"))))
             else:
                 time.sleep(action["ms"] / 1000)
             if follow:
@@ -666,7 +645,7 @@ def act(hwnd, actions):
             raise ValueError(
                 f"{index} actions terminées, action {index + 1}: {e}"
             ) from e
-    return dict(completed=len(actions), **({"scroll": reports} if reports else {}))
+    return dict(completed=len(actions), **({"scroll": reports} if reports else {}), **({"text": texts} if texts else {}))
 
 
 def snapshot_grid(a, image, hwnd=None, box=None, frame_cache=None, frame_key=None):
@@ -792,9 +771,10 @@ def excerpt_matches(grid, a, controls=()):
 
 def scrollto(hwnd, a, cache):
     import re
-    from desktop_scroll import scroll_container, Desktop
+    from desktop_scroll import NoScrollContainer, scroll_container, Desktop
 
     focus(hwnd)
+    method = None
     box = bounds(hwnd)
     panel = a.get("panel") or dict(x=(box[0]+box[2])//2, y=(box[1]+box[3])//2)
     x, y = panel["x"], panel["y"]
@@ -830,15 +810,28 @@ def scrollto(hwnd, a, cache):
         if not hit or gui.GetAncestor(hit, win32con.GA_ROOT) != hwnd:
             raise ValueError("Le point du panneau est hors de la fenêtre ou recouvert.")
         if container is None:
-            container = scroll_container(hwnd, Desktop(backend="uia").from_point(x, y))
-        delta = max(1, int(container.rectangle().height() * .65))
-        movement = scroll_container(hwnd, container, delta if a["direction"] == "down" else -delta)
+            try:
+                container = scroll_container(hwnd, Desktop(backend="uia").from_point(x, y))
+            except NoScrollContainer:
+                container = False  # no accessible pane: real wheel, then PageDown/PageUp
+        if container is False:
+            import desktop_wheel
+            move_pointer(x, y)
+            delta = max(1, int((box[3] - box[1]) * .65))
+            movement = desktop_wheel.scroll_any(hwnd, (x, y), delta if a["direction"] == "down" else -delta,
+                                                lambda: capture(box), mouse.press)
+            method = movement["method"]
+        else:
+            delta = max(1, int(container.rectangle().height() * .65))
+            movement = scroll_container(hwnd, container, delta if a["direction"] == "down" else -delta)
+            method = "uia"
         if not movement["moved"]:
             status = "no_movement"
             break
         time.sleep(.15)
     ident, _ = store_snapshot(hwnd, a, cache, box, image, (grid, spans, controls))
     return dict(status=status, capture=ident, window=str(hwnd), steps=step,
+                **({"method": method} if method else {}),
                 candidates=candidates, grid_text=compact_grid(grid))
 
 

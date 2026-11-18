@@ -97,7 +97,7 @@ export class P2PNode extends EventEmitter {
     if (this.cfg.annuaire) this.swarm.join(ANNUAIRE_TOPIC, { server: true, client: true });
     await this.ownDiscovery.flushed();
     // Messages restés en file d'un lancement précédent : on recherche leurs destinataires.
-    for (const colony of this.pendingColonies()) this.seek(colony);
+    for (const colony of new Set([...this.pendingColonies(), ...Object.keys(this.carnet).filter(n=>this.carnet[n].source==="manuel")])) this.seek(colony);
     this.retryTimer = setInterval(() => this.retryTick(), this.cfg.retryMs);
     this.retryTimer.unref?.();
     this.detailTimer = setInterval(() => this.refreshDetails(), this.cfg.detailMs);
@@ -122,7 +122,7 @@ export class P2PNode extends EventEmitter {
       colony: this.name,
       displayName: this.cfg.displayName ?? this.name.slice(1),
       summary: this.cfg.summary ?? "",
-      reach: { p2p: { transport: "hyperswarm", noiseKey: this.noiseHex, topic: colonyTopic(this.keys.publicKey).toString("hex") } },
+      reach: { ...(this.cfg.callEndpoint?.() ? {call:this.cfg.callEndpoint()} : {}), p2p: { transport: "hyperswarm", noiseKey: this.noiseHex, topic: colonyTopic(this.keys.publicKey).toString("hex") } },
       agents: publicAgents.map(([id, a]) => ({ id, address: `${this.name}/${id}`, role: a.role })),
       rooms: (this.cfg.rooms ?? []).filter((r) => r.public === true && !r.thirdPartyIntent)
         .map((r) => ({ id: r.id, title: r.title, purpose: r.purpose, agents: (r.agents ?? []).filter((x) => ids.has(x)).map((x) => `${this.name}/${x}`) })),
@@ -193,7 +193,7 @@ export class P2PNode extends EventEmitter {
     this.conflicts = this.conflicts.filter((c) => !(c.name === name && (c.claimed === publicKey || c.pinned === publicKey || force)));
     writeJson(this.files.conflicts, this.conflicts);
     this.saveCarnet();
-    if (this.pendingColonies().includes(name)) this.seek(name);
+    this.seek(name);
     return { ok: true, name, fingerprint: fingerprint(publicKey) };
   }
 
@@ -275,7 +275,13 @@ export class P2PNode extends EventEmitter {
       if (!r.ok) { this.log.push(["refus_hello", fiche?.colony, r.reason]); return peer.conn.destroy(); }
       peer.colony = fiche.colony;
       const old = this.peers.get(peer.colony);
-      if (old && old !== peer) try { old.conn.destroy(); } catch {}
+      if (old && old !== peer) {
+        try { old.conn.destroy(); } catch {}
+        // An acknowledgement can be lost with the replaced stream. Resend on the
+        // new authenticated stream; the receiver deduplicates the message id.
+        for (const m of this.outbox) if (m.colony === peer.colony && m.status === STATUS.PENDING && m.detail === DETAIL.SENT)
+          this.setStatus(m, STATUS.PENDING, DETAIL.NOT_FOUND);
+      }
       this.peers.set(peer.colony, peer);
       this.emit("peer-online", peer.colony);
       // Le pair réapparaît : la file part tout de suite, sans attendre le prochain essai.
@@ -346,7 +352,7 @@ export class P2PNode extends EventEmitter {
     for (const m of this.outbox) {
       if (m.status === STATUS.PENDING && t - Date.parse(m.createdAt) > this.cfg.ttlMs) this.fail(m, "expiré : pair resté hors ligne au-delà du délai");
     }
-    const waiting = new Set(this.pendingColonies());
+    const waiting = new Set([...this.pendingColonies(), ...Object.keys(this.carnet).filter(n=>this.carnet[n].source==="manuel")]);
     for (const [colony, d] of this.joined) {
       if (!waiting.has(colony)) { this.joined.delete(colony); const k = this.carnet[colony]?.publicKey; if (k) this.swarm.leave(colonyTopic(k)).catch(() => {}); }
       else if (!this.peers.has(colony)) d.refresh({ server: false, client: true }).catch(() => {});

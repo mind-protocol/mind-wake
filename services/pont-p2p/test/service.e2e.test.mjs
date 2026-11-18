@@ -192,7 +192,7 @@ test("refus : faux expéditeur, message modifié, agent non public — aucun ré
   await mallory.stop();
 });
 
-test("ajout manuel, annuaire coupé : refus du destinataire → échec visible ; adresse inconnue → échec", { timeout: T * 3 }, async () => {
+test("ajout manuel, annuaire coupé : découverte préalable et refus des agents inconnus", { timeout: T * 3 }, async () => {
   const { dataDir } = dirs("carol");
   await pontAction(dataDir, "enable", { name: "⬡carol" });
   await pontAction(dataDir, "set_annuaire", { annuaire: false });
@@ -201,10 +201,10 @@ test("ajout manuel, annuaire coupé : refus du destinataire → échec visible ;
   assert.equal(pontStatus(dataDir).carnet[0].source, "manuel");
   await assert.rejects(pontAction(dataDir, "add_contact", { key: `⬡bob ${pontStatus(alice.dataDir).publicKey}` }), /déjà épinglé/);
   const carol = spawnService("carol"); await carol.ready;
+  await waitUntil(() => readJson(pontPaths(dataDir).carnet, {})["⬡bob"]?.fiche);
   const s = await send(carol, "⬡bob/fantome", "Il y a quelqu'un ?");
-  assert.equal(s.status, "en attente");
-  await waitUntil(() => messageStatus(dataDir, s.id).status === "échec");
-  assert.match(messageStatus(dataDir, s.id).reason, /refusé par le destinataire : agent inconnu/);
+  assert.equal(s.status, "échec");
+  assert.match(messageStatus(dataDir, s.id).reason, /absent de la fiche publique/);
   const u = await send(carol, "⬡inexistant/x", "?");
   assert.equal(u.status, "échec");
   assert.match(u.reason, /absente du carnet/);
@@ -259,4 +259,29 @@ test("désactivation en marche : le service s'arrête seul, file conservée", { 
   assert.ok(readJson(pontPaths(alice.dataDir).outbox, []).length > 0, "file conservée");
   assert.equal(pontStatus(alice.dataDir).service, "arrêté");
   await bob.stop();
+});
+
+ test('signed call endpoint is discovered and refreshed through the colony directory',async()=>{
+  const a=await startColony('call-directory-a','⬡call-directory-a');
+  const b=await startColony('call-directory-b','⬡call-directory-b');
+  try {
+    const file=path.join(pontPaths(a.dataDir).state,'call-endpoint.json');
+    fs.writeFileSync(file,JSON.stringify({addresses:['http://192.168.1.7:8790'],key:'test-exchange-key',at:Date.now()}));
+    await waitUntil(()=>readJson(pontPaths(b.dataDir).carnet,{})['⬡call-directory-a']?.fiche?.reach?.call?.addresses?.[0]==='http://192.168.1.7:8790');
+    fs.writeFileSync(file,JSON.stringify({addresses:['http://192.168.1.8:8790'],key:'new-key',at:Date.now()}));
+    await waitUntil(()=>readJson(pontPaths(b.dataDir).carnet,{})['⬡call-directory-a']?.fiche?.reach?.call?.key==='new-key');
+    fs.writeFileSync(file,'null');
+    await waitUntil(()=>!readJson(pontPaths(b.dataDir).carnet,{})['⬡call-directory-a']?.fiche?.reach?.call);
+  } finally {await a.stop();await b.stop();}
+ });
+
+test('manual contacts discover call endpoints without sending a message or enabling the directory',async()=>{
+  const a=await startColony('call-manual-a','⬡call-manual-a',{annuaire:false});
+  const b=await startColony('call-manual-b','⬡call-manual-b',{annuaire:false});
+  try {
+    fs.writeFileSync(path.join(pontPaths(b.dataDir).state,'call-endpoint.json'),JSON.stringify({addresses:['http://192.168.1.7:8790'],key:'manual-key',at:Date.now()}));
+    await pontAction(a.dataDir,'add_contact',{key:pontStatus(b.dataDir).card});
+    await waitUntil(()=>readJson(pontPaths(a.dataDir).carnet,{})['⬡call-manual-b']?.fiche?.reach?.call?.key==='manual-key');
+    assert.equal(wakeFiles(a).length,0);assert.equal(wakeFiles(b).length,0);
+  } finally {await a.stop();await b.stop();}
 });

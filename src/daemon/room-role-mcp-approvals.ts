@@ -6,7 +6,7 @@ const repository = fileURLToPath(new URL("../../",import.meta.url));
 const samePath = (a:string,b:string) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
 const TOOL_NAMES = [
   "start_background_job","list_background_jobs","cancel_background_job",
-  "call_human","list_active_calls","hangup_call",
+  "call_human","list_active_calls","hangup_call","invite_to_call",
   "desktop_open_url","desktop_scrollto","desktop_ascii","desktop_click_excerpt","desktop_taskbar",
   "desktop_list","desktop_windows","desktop_tabs","desktop_open","desktop_observe","desktop_sweep","desktop_click","desktop_act","desktop_page","desktop_slice",
   "message_owner","list_owner_messages","post_to_fork_thread",

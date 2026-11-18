@@ -35,6 +35,23 @@ class NumberedControlTests(unittest.TestCase):
         self.assertTrue(all(c in spans for c in controls))
         self.assertIn(words[-1], spans)
 
+    def test_toggle_state_is_rendered_in_the_token(self):
+        image = Image.new("RGB", (400, 40), "white")
+        grid = ["  Notifications            Sons                ", " " * 48]
+        words = [(0, 2, 15, 16, 4, 140, 16), (0, 27, 31, 216, 4, 252, 16)]
+        targets = [(10, 0, 150, 20, "Notifications", 1), (210, 0, 260, 20, "Sons", 0)]
+        lines, _, controls = annotate(grid, words, image, targets)
+        self.assertIn("[☑ Notifications]", lines[0])
+        self.assertIn("[☐ Sons]", lines[0])
+        self.assertEqual({lines[r][a:b]: box for r,a,b,*box in controls},
+                         {"[☑ Notifications]": [10,0,150,20], "[☐ Sons]": [210,0,260,20]})
+
+    def test_toggle_mark_dropped_when_cramped(self):
+        image = Image.new("RGB", (80, 20), "white")
+        grid = [" Wi-Fi "]
+        lines, _, _ = annotate(grid, [(0, 1, 6, 10, 2, 70, 16)], image, [(0, 0, 80, 20, "Wi-Fi", 1)])
+        self.assertEqual(lines, ["[Wi-Fi]"])
+
     def test_multi_digit_number_and_existing_clickable_label(self):
         lines = [list(("[+] " * 10).ljust(70) + "[+ #1]")]
         controls = [(0, n*4, n*4+3, n*8, 0, n*8+6, 6) for n in range(10)]

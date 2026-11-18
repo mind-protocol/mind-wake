@@ -624,6 +624,10 @@ export function registerForkJobTools(
                 args: [rel],
                 idempotency_key: `fork${String(origin.fork)}:${a.idempotency_key}`,
                 relaunch: false,
+                why: a.why,
+                ...(a.trigger_message_id === undefined
+                  ? {}
+                  : { trigger_message_id: a.trigger_message_id }),
               },
               extra,
             );

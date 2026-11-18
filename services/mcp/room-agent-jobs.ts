@@ -49,7 +49,7 @@ export function registerRoomAgentJobTools(server: McpServer, env: Readonly<Recor
         const relative = launchDir+digest+".json", file = path.join(workspaceDirFor(dataDir), relative);
         fs.mkdirSync(path.dirname(file), {recursive:true});
         if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({...launch,launchedAt:new Date().toISOString()},null,2));
-        return handler({title:prefix+args.title,script:ROOM_AGENT_JOB_LAUNCHER,args:[relative],idempotency_key:`role${role.room}:${role.agent.id}:${args.idempotency_key}`,relaunch:false},extra);
+        return handler({title:prefix+args.title,script:ROOM_AGENT_JOB_LAUNCHER,args:[relative],idempotency_key:`role${role.room}:${role.agent.id}:${args.idempotency_key}`,relaunch:false,why:args.why,...(args.trigger_message_id===undefined?{}:{trigger_message_id:args.trigger_message_id})},extra);
       } catch (error) { return failure(error); }
     });
     if (name === "list_background_jobs") return raw.call(server, name, {...config,description:"Your own supervised sub-agents and result paths."}, async (args:Record<string,unknown>,extra:unknown) => {

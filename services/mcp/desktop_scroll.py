@@ -10,6 +10,10 @@ from comtypes import COMError
 from comtypes.gen import UIAutomationClient as UIA
 
 
+class NoScrollContainer(ValueError):
+    """No UIA ScrollPattern under the point: callers fall back to the real wheel."""
+
+
 def scroll_container(hwnd, item, pixels=None):
     while item and win32gui.GetForegroundWindow() == hwnd:
         try:
@@ -37,7 +41,9 @@ def scroll_container(hwnd, item, pixels=None):
         if item.element_info.handle == hwnd:
             break
         item = item.parent()
-    raise ValueError("Aucun conteneur défilable accessible à cette position.")
+    if win32gui.GetForegroundWindow() != hwnd:
+        raise ValueError("La fenêtre cible a perdu le focus.")
+    raise NoScrollContainer("Aucun conteneur défilable accessible à cette position.")
 
 
 def scroll_pixels(hwnd, x, y, pixels):

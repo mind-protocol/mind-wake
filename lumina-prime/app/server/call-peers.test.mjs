@@ -1,3 +1,5 @@
+import { createCallColonies } from './call-colonies.mjs';
+import { generateKeypair, signFiche } from '../../../services/pont-p2p/crypto.mjs';
 import test from 'node:test';
 import { Buffer } from 'node:buffer';
 import assert from 'node:assert/strict';
@@ -93,7 +95,7 @@ test('human invitation HTTP is authenticated, desktop-only, and binds the accept
 
 async function fixture(t) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mind-call-peers-'));
-  function install(label) {
+  async function install(label) {
     const main=[],room=[],notices=[],sent=[],handles=new Map([['room3',{room:3,agent:null,label:'Room 3'}]]);
     const call=createCallService({mainLabel:label,mainAgentId:'marco',mirrorIntervalMs:0,mirrorQuietMs:0,
       handleTable:()=>handles,
@@ -102,41 +104,49 @@ async function fixture(t) {
       noticeMain:async(key,text)=>{if(!notices.some(n=>n.key===key))notices.push({key,text,channel:'main'});},
       noticeRoom:async(n,key,text)=>{if(!notices.some(n=>n.key===key))notices.push({key,text,channel:`room:${n}`});},
       speak:async text=>({bytes:Buffer.from(`RIFF${text}`),mime:'audio/wav',provider:'test'})});
-    const data=path.join(dir,label);fs.mkdirSync(data);
+    const data=path.join(dir,label);fs.mkdirSync(data);fs.mkdirSync(path.join(data,'credentials'));
+    const keys=await generateKeypair(), colony='⬡'+label.toLowerCase();
+    fs.writeFileSync(path.join(data,'credentials','pont-p2p-colonie.json'),JSON.stringify(keys));
+    fs.writeFileSync(path.join(data,'pont-p2p.json'),JSON.stringify({enabled:true,name:colony}));
+    const colonies=createCallColonies(data);
     const controls=openCallControls(data);
-    const file=path.join(dir,`${label}.json`), peers=createCallPeers({call,controls,file,port:0,host:'127.0.0.1'});
-    return {call,peers,controls,main,room,notices,sent,file,handles};
+    const file=path.join(dir,`${label}.json`), peers=createCallPeers({call,controls,file,dataDir:data,colonies,port:0,host:'127.0.0.1'});
+    return {call,peers,controls,main,room,notices,sent,file,handles,data,keys,colony,colonies};
   }
-  const a=install('Alpha'),b=install('Beta');
+  const a=await install('Alpha'),b=await install('Beta');
   t.after(async()=>{await a.peers.close();await b.peers.close();a.call.stop();b.call.stop();a.controls.close();b.controls.close();fs.rmSync(dir,{recursive:true,force:true});});
   await a.peers.admin('profile',{label:'PC A',caller:'NLR'});
   await b.peers.admin('profile',{label:'PC B',caller:'Aurore'});
-  const invite=await b.peers.admin('invite');
-  const address=`http://127.0.0.1:${invite.port}`;
-  await a.peers.admin('pair',{address,code:invite.code});
+  async function exchange() {
+    await a.peers.ready();await b.peers.ready();
+    for(const [owner,other] of [[a,b],[b,a]]) {
+      const endpoint=JSON.parse(fs.readFileSync(path.join(other.data,'pont-p2p','call-endpoint.json')));
+      const fiche=await signFiche(other.keys.privateKey,{colony:other.colony,publicKey:other.keys.publicKey,reach:{call:endpoint}});
+      fs.writeFileSync(path.join(owner.data,'pont-p2p','carnet.json'),JSON.stringify({[other.colony]:{publicKey:other.keys.publicKey,fiche}}));
+    }
+    await a.peers.refresh();await b.peers.refresh();
+  }
+  await exchange();
+  const address=`http://127.0.0.1:${b.peers.status().port}`;
   const remote=a.call.targets().filter(t=>t.kind==='remote');
   const scope={owner:'desktop-owner',id:randomUUID(),epoch:1};
   const open=async handles=>{a.call.openSession(scope.owner,scope.id,1,handles);await a.call.syncRemote(scope);};
-  return {a,b,address,invite,scope,open,remote};
+  return {a,b,address,scope,open,remote,exchange};
 }
 
-test('all targets are shared, including future targets and formerly restricted associations',async t=>{
+test('all current and future targets are available through the colony book without codes',async t=>{
   const {a,b,open}=await fixture(t);
-  assert.deepEqual(a.call.targets().filter(t=>t.kind==='remote').map(t=>t.remoteHandle).sort(),['mind','room3']);
-  const port=b.peers.status().port;
-  await b.peers.close();
-  const legacy=JSON.parse(fs.readFileSync(b.file));legacy.peers[0].shared=['mind'];fs.writeFileSync(b.file,JSON.stringify(legacy));
-  b.peers=createCallPeers({call:b.call,controls:b.controls,file:b.file,port,host:'127.0.0.1'});await b.peers.ready();
+  await assert.rejects(b.peers.admin('invite'));
+  await assert.rejects(a.peers.admin('pair',{code:'obsolete'}));
   b.handles.set('room4',{room:4,agent:null,label:'New room'});
   await a.peers.refresh();
   const targets=a.call.targets().filter(t=>t.kind==='remote');
   assert.deepEqual(targets.map(t=>t.remoteHandle).sort(),['mind','room3','room4']);
-  assert.equal(Object.hasOwn(JSON.parse(fs.readFileSync(b.file)).peers[0],'shared'),false);
   await open([targets.find(t=>t.remoteHandle==='room4').handle]);
   assert.equal(b.call.active().length,1);
 });
 
-test('two installations: pairing, pre-call notice, human delivery, all agent messages mirrored once and remote voice',async t=>{
+test('two installations: colony discovery, pre-call notice, human delivery, all agent messages mirrored once and remote voice',async t=>{
   const {a,b,scope,open,remote}=await fixture(t);
   b.main.push({id:'old',role:'agent',at:'2020-01-01T00:00:00Z',text:'Private history'});
   await open(['mind',...remote.map(t=>t.handle)]);
@@ -184,12 +194,12 @@ test('removed recipients stop receiving copies; revocation ends inbound call and
 test('inbound credentials cannot read history or an unjoined target, forge speech, or replay requests',async t=>{
   const {a,address,scope,open,remote}=await fixture(t);
   await open([remote.find(t=>t.remoteHandle==='mind').handle]);
-  const p=JSON.parse(fs.readFileSync(a.file)).peers[0];
+  const p=(await a.colonies.contacts())[0], secret=a.colonies.secret(p.exchangeKey);
   async function request(input,packet) {
     const nonce=randomBytes(16).toString('hex');
-    const body=packet??sealPeer(p.secret,p.id,{...input,nonce,at:Date.now()});
-    const res=await fetch(`${address}/mind-call/v1`,{method:'POST',body:JSON.stringify(body)});
-    const json=await res.json();return {status:res.status,value:json.data?openPeer(p.secret,json):json,packet:body};
+    const body=packet??await a.colonies.wrap(sealPeer(secret,a.colonies.ownId(),{...input,nonce,at:Date.now()}),p);
+    const res=await fetch(`${address}/mind-call/v2`,{method:'POST',body:JSON.stringify(body)});
+    const json=await res.json();return {status:res.status,value:json.data?openPeer(secret,json):json,packet:body};
   }
   const forbidden=await request({op:'read',call:scope.id,target:'room3'});
   assert.equal(forbidden.value.error,'call_target_not_joined');
@@ -232,16 +242,41 @@ test('desktop HTTP lifecycle forwards scoped replies and honors a remote agent h
   const denied=await fetch(`${base}/chat/call/peers`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'status'})});assert.equal(denied.status,401);
 });
 
-test('persistent association survives gateway restart; ended calls cannot resurrect',async t=>{
-  const {a,b,remote,scope,open}=await fixture(t);
+test('colony discovery survives gateway restart and exchange-key rotation; ended calls cannot resurrect',async t=>{
+  const {a,b,remote,scope,open,exchange}=await fixture(t);
   await open([remote[0].handle]);
   const port=b.peers.status().port;
   await b.peers.close();
-  b.peers=createCallPeers({call:b.call,controls:b.controls,file:b.file,port,host:'127.0.0.1'});
-  await b.peers.ready();await a.peers.refresh();
+  b.colonies=createCallColonies(b.data);
+  b.peers=createCallPeers({call:b.call,controls:b.controls,file:b.file,dataDir:b.data,colonies:b.colonies,port,host:'127.0.0.1'});
+  await exchange();
   assert.equal(a.peers.status().peers[0].online,true);
   await assert.rejects(a.call.syncRemote(scope),error=>error.code==='call_ended');
   const next={owner:scope.owner,id:randomUUID(),epoch:1};
   a.call.openSession(next.owner,next.id,1,[remote[0].handle]);await a.call.syncRemote(next);
   assert.equal(b.call.active().length,1);
 });
+
+ test('removed contact, disabled bridge and forged identity cannot call',async t=>{
+  const {a,b,address,scope,open,remote,exchange}=await fixture(t);
+  const p=(await a.colonies.contacts())[0],secret=a.colonies.secret(p.exchangeKey);
+  const packet=await a.colonies.wrap(sealPeer(secret,a.colonies.ownId(),{op:'directory',nonce:randomBytes(16).toString('hex'),at:Date.now()}),p);
+  const send=body=>fetch(address+'/mind-call/v2',{method:'POST',body:JSON.stringify(body)});
+  assert.equal((await send({...packet,to:'⬡someone-else'})).status,401);
+  assert.equal((await send({...packet,signature:'forged'})).status,401);
+  await open([remote[0].handle]);
+  fs.writeFileSync(path.join(b.data,'pont-p2p','carnet.json'),'{}');
+  assert.equal((await send(packet)).status,401);
+  await b.peers.refresh();assert.equal(b.call.active().length,0);
+  await exchange();
+  fs.writeFileSync(path.join(b.data,'pont-p2p.json'),JSON.stringify({enabled:false,name:b.colony}));
+  assert.equal((await send(packet)).status,401);
+  await assert.rejects(a.call.syncRemote(scope));
+ });
+ test('a modified endpoint is rejected unless signed by the pinned colony',async t=>{
+  const {a,b}=await fixture(t);
+  const file=path.join(a.data,'pont-p2p','carnet.json'),book=JSON.parse(fs.readFileSync(file));
+  book[b.colony].fiche.reach.call.addresses=['http://192.168.1.9:8790'];
+  fs.writeFileSync(file,JSON.stringify(book));await a.peers.refresh();
+  assert.equal(a.call.targets().filter(t=>t.kind==='remote').length,0);
+ });

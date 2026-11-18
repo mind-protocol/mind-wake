@@ -1,0 +1,28 @@
+invite_to_call — mandate of 18 Nov 2026 (NLR: "access first; we build a tool for everyone")
+
+HOW IT WORKS
+The agent only files a request (mobile-call-control.sqlite, the store hangup_call already uses). The app server that holds the call reads it once per second and performs the addition with its own rights (inviteSession -> the existing addSession). No key or token passes through the agent.
+The topic->agent job's diff (topicHits/topicInvites/forwardTopicPhrase in chat-call.mjs, topics in chat-call-directory/chat-main) was reused unchanged: the server-side addition goes through addSession, so its rules (ring, topic phrase) still apply.
+
+FILES
+- services/mcp/agent-hangup.ts: invite_to_call tool (target, call_id optional, reason); waits up to 6 s for the result.
+- services/mcp/call-control-store.mjs (+ .d.mts): call_invite_requests table; requestInvite / pendingInvites / settleInvite / invite.
+- services/mcp/human-call.ts: passes the signature (the "who" in the announcement).
+- lumina-prime/app/server/chat-call.mjs: inviteSession (target must exist, no duplicates, remote targets refused); one-line announcement "[Appel] ➕ X a invité Y dans l'appel — raison" in each participant's thread; deliver() also sends the human's sentences to agent-invited participants; syncInvited.
+- lumina-prime/app/server/chat-call-invites.mjs (new): processCallInvites + startCallInvites (1 s timer).
+- lumina-prime/app/server/chat-main.mjs: starts and stops the timer.
+- src/communication/human-call-capability.ts: HUMAN_CALL_TOOLS + invite_to_call (approvals, regexes). Restriction detection stays on the 3 original tools, so an existing config that lists all three is not treated as "restricted".
+- src/communication/fast-reply.ts (holders' allowedTools), room-voice-launch.ts (accepts the old and new canonical lists), src/daemon/room-role-mcp-approvals.ts, src/communication/pattern-holders.ts (one prompt line).
+- docs/CALLS-LAN.md: "Un agent invite un autre agent" section.
+- Tests: test/call-invite.test.ts (new, 5 tests). src/communication/human-call-capability.test.ts updated from 3 to 4 tools. test/mcp/fork-owner.test.ts and room-agent-tools.test.ts were already failing on main because they expected call_human without list_active_calls/hangup_call; they now expect the actual list.
+
+RESULTS
+- vitest: call-invite 5/5 (principal, room agent outside the call, target already present, unknown target, no active call); human-call-capability 30/30; fork-owner + room-agent-tools 13/13; pattern-holders 26/26; room-role-integration and codex-role-turn pass.
+- node --test chat-call.test.mjs call-peers.test.mjs chat-server.test.mjs: 47/47.
+- npm run build: OK. tsc -p tsconfig.json: no errors in the files touched (remaining errors are in test/memory-pressure.test.ts and other files from other jobs).
+
+TO CHECK AFTER RESTART (nothing restarted, nothing committed)
+1. Restart the app server (Lumina chat-main) so it loads chat-call-invites.mjs; restart the agents' MCP sessions so they see the tool.
+2. Real test during a call: Marco calls invite_to_call {target:"viz", reason:"…"} -> "added"; the announcement line appears; Viz receives the sentences.
+3. Remaining gap, outside my write scope (lumina-prime/app/src): the client does not adopt participants added server-side. On each GET /chat/call/session poll it only reads `revision`. As a result the app neither displays nor plays the invitee's replies (they still reach the other agents' threads). Fix: in the poll of call-engine.web.ts / call-engine.ts, when state.handles contains new handles, mark their old replies as seen (as addTargets does) and then set targets = state.handles.
+4. prompts/default-agents/artifacts/pattern-holders/_role-commun.md lists the call tools without invite_to_call (outside my scope).

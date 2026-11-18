@@ -55,7 +55,10 @@ export async function forks(
       workspace,
       profile,
       claudeProfile,
-      log: ctx.stderr,
+      // Une ligne horodatée par événement : forks.log doit permettre de dater un incident.
+      log: (line) => {
+        ctx.stderr(`${new Date().toISOString()} ${line.replace(/\n+$/, "")}\n`);
+      },
       ...(model === undefined ? {} : { model }),
     });
   } else if (["on", "off", "send", "assign", "unassign", "rename"].includes(action)) {

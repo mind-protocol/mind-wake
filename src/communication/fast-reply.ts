@@ -329,7 +329,7 @@ export function fastReplyArgs(model: string, systemPromptFile: string, humanCall
     systemPromptFile,
     "--tools",
     "",
-    ...(humanCall ? ["--mcp-config",callMcpConfig(undefined,humanCall),"--allowedTools","mcp__mind_calls__call_human,mcp__mind_calls__list_active_calls,mcp__mind_calls__hangup_call"] : []),
+    ...(humanCall ? ["--mcp-config",callMcpConfig(undefined,humanCall),"--allowedTools","mcp__mind_calls__call_human,mcp__mind_calls__list_active_calls,mcp__mind_calls__hangup_call,mcp__mind_calls__invite_to_call"] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "user",

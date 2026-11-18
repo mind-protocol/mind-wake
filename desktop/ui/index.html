@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title data-i18n="Que fait mon agent ? — MIND Wake">Que fait mon agent ? — MIND Wake</title>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="voice-graph.css" />
     <link rel="stylesheet" href="series-assembly.css" />
     <link rel="stylesheet" href="series-director-notes.css" />
     <link rel="stylesheet" href="loading.css" />
@@ -36,7 +35,7 @@
         <audio id="elevenlabs-audio" controls preload="none"></audio>
         <button id="elevenlabs-skip" type="button">Arrêter / passer</button>
       </aside>
-      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span><span id="voice-interlocutors" class="count" aria-label="Interlocuteurs vocaux raccordés">0</span>
+      <div class="app-brand"><span class="brand-symbol" aria-hidden="true">m</span><strong>MIND <span>Wake</span></strong><span id="app-status" class="app-status" data-i18n="Connexion…">Connexion…</span>
       <div class="app-controls" role="group" aria-label="Application">
         <button id="app-restart" type="button" data-i18n="Redémarrer l’app">Redémarrer l’app</button>
         <button id="app-fullscreen" type="button" title="F11 pour basculer, Échap pour quitter" data-i18n-title="F11 pour basculer, Échap pour quitter" data-i18n="Plein écran">Plein écran</button>
@@ -74,15 +73,7 @@
          data-i18n="Vue d’ensemble">
           Vue d’ensemble
         </button>
-        <button
-          id="tab-chat"
-          role="tab"
-          type="button"
-          aria-selected="false"
-          aria-controls="view-chat"
-         data-i18n="Conversation">
-          Conversation <span id="chat-new" class="dot" hidden aria-label="nouveau" data-i18n-aria-label="nouveau"></span>
-        </button>
+
         <button
           id="tab-threads"
           role="tab"
@@ -94,13 +85,13 @@
           Rencontres <span id="unread" class="count" hidden></span>
         </button>
         <button id="tab-call" role="tab" type="button" aria-selected="false" aria-controls="view-call">Appel</button>
-        <button id="tab-voice" role="tab" type="button" aria-selected="false" aria-controls="view-voice">Voice</button>
-        <button id="tab-history" role="tab" type="button" aria-selected="false" aria-controls="view-history" data-i18n="Réveils">Réveils</button>
-        <button id="tab-agents" role="tab" type="button" aria-selected="false" aria-controls="view-agents" data-i18n="Conseils">Conseils <span id="agents-count" class="count" hidden></span></button>
+
+
+
         <button id="tab-projects" role="tab" type="button" aria-selected="false" aria-controls="view-projects" data-i18n="Projets et tâches">Projets et tâches</button>
         <button id="tab-documents" role="tab" aria-selected="false" type="button" aria-controls="view-documents" data-i18n="Documents">Documents</button>
         <button id="tab-prompts" role="tab" type="button" aria-selected="false" aria-controls="view-prompts">Prompts système</button>
-        <button id="tab-authorizations" role="tab" type="button" aria-selected="false" aria-controls="view-authorizations" data-i18n="Autorisations">Autorisations</button>
+
         <button id="tab-settings" role="tab" type="button" aria-selected="false" aria-controls="view-settings" data-i18n="Réglages">Réglages</button>
         </div>
       </nav>
@@ -111,28 +102,7 @@
         <iframe id="call-frame" title="Appel vocal" allow="microphone; autoplay; screen-wake-lock; local-network-access; loopback-network" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" hidden></iframe>
         <section id="call-vision-feed" aria-label="Captures des participants" hidden></section>
       </section>
-      <section id="view-voice" role="tabpanel" aria-labelledby="tab-voice" hidden>
-        <div class="voice-mode-controls"><button id="voice-mode-toggle" type="button" aria-pressed="false">Play</button><span id="voice-mode-status" role="status">Voice Mode en pause</span></div>
-        <div id="voice-graph" aria-label="Graphe des sessions et messages"></div>
-        <div class="voice-mode-canvas" hidden aria-hidden="true">
-          <div id="voice-marker-fil1" class="voice-mode-marker">1</div><div id="voice-marker-fil2" class="voice-mode-marker">2</div><div id="voice-marker-fil3" class="voice-mode-marker">3</div>
-        </div>
-      <label class="voice-screenshots-setting" title="Pendant Voice, échantillonne l’écran principal environ cinq fois par seconde et joint les zones inédites à la dictée."><input id="voice-screenshots" type="checkbox"> Joindre les changements d’écran (fenêtres de 30 s)</label>
-<details id="voice-advanced"><summary>Réglages avancés</summary><div id="voice-advanced-controls">            <label for="chat-recipient" data-i18n="Destinataire">Destinataire</label>
-            <select id="chat-recipient" aria-describedby="chat-recipient-status">
-              <option value="all">Tous · agents actifs</option>
-              <option value="owner" selected data-i18n="Mon agent">Mon agent</option>
-              <option value="auroracle" hidden disabled data-i18n="Correspondant non configuré">Correspondant non configuré</option>
-            </select>
-            <p id="chat-recipient-status" class="hint" role="status"></p>
-            <details id="broadcast-receipt" hidden><summary>Détail des destinataires</summary><pre id="broadcast-receipt-details"></pre></details>
-          <label class="chat-transcription-provider">Transcription
-            <select id="chat-transcription-provider" aria-describedby="chat-voice-status">
-              <option value="current" selected>Dictée actuelle</option>
-              <option value="elevenlabs">ElevenLabs · sous-titres en direct</option>
-            </select>
-          </label>
-<p id="voice-processing-status" class="hint" role="status"></p><button id="chat-bump" type="button" title="Inviter ton agent à contribuer ; respecte Pause et Arrêt" data-i18n-title="Inviter ton agent à contribuer ; respecte Pause et Arrêt">Bump</button></div></details></section>
+
       <div id="view-projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
         <div class="projects-toolbar"><h1 data-i18n="Projets et tâches">Projets et tâches</h1><button id="projects-refresh" type="button" data-i18n="Actualiser">Actualiser</button></div>
         <p id="projects-status" role="status" class="hint"></p>
@@ -162,21 +132,7 @@
           <span id="prompt-status" role="status"></span></div>
         </div>
       </section>
-      <div id="view-authorizations" role="tabpanel" aria-labelledby="tab-authorizations" hidden>
-        <h1 data-i18n="Autorisations de mon agent">Autorisations de mon agent</h1>
-        <p data-i18n="Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.">Choisis ce que ton agent peut explorer et précise le périmètre de chaque action.</p>
-        <div class="authorization-toolbar">
-          <button id="authorization-reload" type="button" data-i18n="Recharger les choix">Recharger les choix</button>
-          <label class="button" data-i18n="Importer un JSON">Importer un JSON <input id="authorization-import" type="file" accept=".json,application/json"></label>
-          <button id="authorization-save" type="button" disabled data-i18n="Enregistrer">Enregistrer</button>
-          <input id="authorization-search" type="search" placeholder="Rechercher une action" aria-label="Rechercher une autorisation" data-i18n-placeholder="Rechercher une action" data-i18n-aria-label="Rechercher une autorisation">
-        </div>
-        <p id="authorization-file" class="hint"></p>
-        <p id="authorization-status" role="status" aria-live="polite"></p>
-        <p id="authorization-summary"></p>
-        <div id="authorization-entries"></div>
-        <details><summary data-i18n="Exemple et portée">Exemple et portée</summary><pre id="authorization-context"></pre></details>
-      </div>
+
       <aside id="view-documents" aria-label="Navigateur de documents">
         <header class="reader-header">
           <div><span class="reader-eyebrow" data-i18n="MIND / L’ATELIER">MIND / L’ATELIER</span><h2 id="document-title" data-i18n="Vos documents, au même endroit.">Vos documents, au même endroit.</h2></div>
@@ -223,12 +179,7 @@
           <p class="hint">Un seul fournisseur pour tous les agents, rooms et coaches. Le choix s’applique aux prochains tours.</p>
           <p id="agent-engine-status" role="status"></p>
         </section>
-        <section aria-labelledby="h-voice-switch">
-          <h2 id="h-voice-switch">Voice</h2>
-          <div class="fork-control"><button id="voice-switch" type="button" role="switch" aria-checked="false" aria-labelledby="h-voice-switch" aria-describedby="voice-switch-hint voice-switch-note">Off</button>
-          <small id="voice-switch-hint">Micro et lecture vocale. Off coupe tout de suite.</small></div>
-          <p id="voice-switch-note" class="hint" role="status"></p>
-        </section>
+
         <section aria-labelledby="h-stt-vocabulary">
           <h2 id="h-stt-vocabulary">Vocabulaire de transcription</h2>
           <form id="stt-vocabulary-form" class="workspace-sync-form">
@@ -334,30 +285,8 @@
         </section>
       </div>
 
-      <div id="view-history" role="tabpanel" aria-labelledby="tab-history" hidden>
-        <h2 data-i18n="Réveils de l’agent">Réveils de l’agent</h2>
-        <p class="runtime-links">
-          <button id="open-system-prompt" type="button" class="link" disabled data-i18n="Prompt système MIND ↗">Prompt système MIND ↗</button>
-          <span aria-hidden="true"> · </span>
-          <button id="open-agent-folder" type="button" class="link" data-i18n="Dossier de l’agent ↗">Dossier de l’agent ↗</button>
-        </p>
-        <p id="runtime-link-status" class="hint" role="status"></p>
-        <p class="hint" data-i18n="Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.">Prompts réellement reçus au réveil et réponses de l’agent, dans l’ordre.</p>
-        <p id="wake-history-status" class="hint" role="status"></p>
-        <ol id="wake-history-messages" class="messages" aria-label="Fil des réveils et réponses" data-i18n-aria-label="Fil des réveils et réponses"></ol>
-      </div>
-      <div id="view-agents" role="tabpanel" aria-labelledby="tab-agents" hidden>
-        <h2 data-i18n="Conseils et échanges">Conseils et échanges</h2>
-        <p class="hint" data-i18n="Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.">Les questions de ton agent aux sessions de tes repos et aux autres agents MIND.</p>
-        <p id="agents-status" class="hint" role="status"></p>
-        <ul id="agents-list" class="threads"></ul>
-        <article id="agent-thread" hidden>
-          <button id="agent-thread-back" type="button" class="link" data-i18n="← Conversations des agents">← Conversations des agents</button>
-          <h2 id="agent-thread-title"></h2>
-          <p id="agent-thread-pointers" class="hint repo-pointers"></p>
-          <ol id="agent-thread-messages" class="messages"></ol>
-        </article>
-      </div>
+
+
       <div id="view-panel" role="tabpanel" aria-labelledby="tab-panel">
 
 
@@ -428,51 +357,7 @@
         </footer>
       </div>
 
-      <div id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
-        <div class="view-heading">
-          <div class="conversation-tabs" role="tablist" aria-label="Conversation" data-i18n-aria-label="Conversation">
-            <button id="conversation-general" role="tab" type="button" aria-selected="true" aria-controls="general-conversation">Marco</button>
-            <button id="tab-coach" role="tab" type="button" aria-selected="false" aria-controls="view-coach">Coach</button>
-            <button id="tab-second" role="tab" type="button" aria-selected="false" aria-controls="view-second" hidden data-i18n="Fil Claude">Fil Claude<span id="second-thread-tab-presence" hidden data-i18n="· Travaille"> · Travaille</span></button>
-          </div>
-        </div>
-        <div id="general-conversation" role="tabpanel" aria-labelledby="conversation-general">
-        <button id="chat-older" class="link" type="button" hidden title="Afficher les messages précédents" aria-label="Afficher les messages précédents" data-i18n-title="Afficher les messages précédents" data-i18n-aria-label="Afficher les messages précédents"><span aria-hidden="true">↑</span></button>
-        <ol id="chat" class="messages" aria-live="polite"></ol>
-        <div id="chat-presence" role="status" aria-label="Ton agent travaille" hidden data-i18n-aria-label="Ton agent travaille"><span aria-hidden="true">•••</span><span class="sr-only" data-i18n="Ton agent travaille">Ton agent travaille</span></div>
-        <div id="chat-progress-reminder" role="status" hidden></div>
-        <p id="chat-note" class="hint"></p>
-        <form id="chat-form">
-          <div class="chat-compose">
-          <textarea
-            id="chat-text"
-            rows="3"
-            maxlength="4000"
-            required
-            aria-label="Message à ton agent"
-            placeholder="Écris à ton agent…"
-           data-i18n-aria-label="Message à ton agent" data-i18n-placeholder="Écris à ton agent…"></textarea>
-          <div class="chat-actions"><span class="chat-action-row"><button id="chat-voice" type="button" aria-pressed="false" title="Extrait toutes les 30 secondes, fenêtre audio de 35 secondes ; transcription ensuite ; capture de l’écran au début si activée.">🎙 Voice</button><label class="chat-image-picker" title="Joindre des images" data-i18n-title="Joindre des images"><span aria-hidden="true">📎</span><input id="chat-image-files" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple aria-label="Joindre des images" data-i18n-aria-label="Joindre des images"></label></span><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
-          </div>
-          <p id="chat-voice-status" class="hint" role="status">Dictée actuelle · prête. ElevenLabs reste un choix explicite.</p>
-          <div id="chat-image-preview" class="chat-image-preview" aria-label="Images du brouillon" hidden></div>
-          <p id="chat-status" class="hint" role="status"></p>
-        </form>
-        </div>
-        <div id="view-forks" role="tabpanel" hidden></div>
-        <div id="view-coach" role="tabpanel" aria-labelledby="tab-coach" hidden></div>
-<div id="view-second" role="tabpanel" aria-labelledby="tab-second" hidden>
 
-        <p id="second-thread-status" class="hint" role="status"></p>
-        <ol id="second-thread-messages" class="messages" aria-live="polite"></ol>
-        <div id="second-thread-presence" role="status" hidden data-i18n="Claude travaille"><span aria-hidden="true">•••</span> Claude travaille</div>
-        <form id="second-thread-form">
-          <textarea id="second-thread-text" rows="3" maxlength="4000" required aria-label="Message au second fil" placeholder="Écris au second fil…" data-i18n-placeholder="Écris au second fil…"></textarea>
-          <div class="chat-actions"><button type="submit" data-i18n="Envoyer">Envoyer</button></div>
-          <p id="second-thread-send-status" class="hint" role="status"></p>
-        </form>
-      </div>
-      </div>
 
 
       <div id="view-threads" role="tabpanel" aria-labelledby="tab-threads" hidden>

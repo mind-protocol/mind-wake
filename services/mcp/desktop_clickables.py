@@ -94,6 +94,22 @@ def _number_controls(lines, controls, text_spans):
     return updated
 
 
+# UIA ToggleState: Off, On, Indeterminate. Rendered inside the control token, e.g. [☑ Notifications].
+TOGGLE_MARKS = {0: "☐", 1: "☑", 2: "◪"}
+
+
+def toggle_state(element, uia):
+    """Cached UIA Toggle state (0/1/2) of a switch or check box, None when it has none."""
+    from comtypes import COMError
+    try:
+        if not element.GetCachedPropertyValue(uia.UIA_IsTogglePatternAvailablePropertyId):
+            return None
+        state = element.GetCachedPropertyValue(uia.UIA_ToggleToggleStatePropertyId)
+    except (COMError, OSError):
+        return None
+    return state if isinstance(state, int) and state in TOGGLE_MARKS else None
+
+
 def window_targets(hwnd, box):
     from comtypes import COMError
     from pywinauto.uia_defines import IUIA
@@ -113,7 +129,8 @@ def window_targets(hwnd, box):
     for prop, value in ((uia.UIA_IsOffscreenPropertyId, False), (uia.UIA_IsEnabledPropertyId, True)):
         condition = api.CreateAndCondition(condition, api.CreatePropertyCondition(prop, value))
     cache = api.CreateCacheRequest()
-    for prop in (uia.UIA_NamePropertyId, uia.UIA_BoundingRectanglePropertyId):
+    for prop in (uia.UIA_NamePropertyId, uia.UIA_BoundingRectanglePropertyId,
+                 uia.UIA_IsTogglePatternAvailablePropertyId, uia.UIA_ToggleToggleStatePropertyId):
         cache.AddProperty(prop)
     targets = []
     try:
@@ -124,8 +141,10 @@ def window_targets(hwnd, box):
             rect = element.CachedBoundingRectangle
             if (box[0] <= rect.left < rect.right <= box[2]
                     and box[1] <= rect.top < rect.bottom <= box[3]):
-                targets.append((rect.left-box[0], rect.top-box[1], rect.right-box[0],
-                                rect.bottom-box[1], element.CachedName or ""))
+                target = (rect.left-box[0], rect.top-box[1], rect.right-box[0],
+                          rect.bottom-box[1], element.CachedName or "")
+                state = toggle_state(element, uia)
+                targets.append(target if state is None else (*target, state))
     except (COMError, OSError):
         pass
     return targets
@@ -138,7 +157,7 @@ def annotate(grid, spans, image, targets):
     occupied = set()
     control_spans = []
     # Render the most specific control first in a nested accessibility tree.
-    for left, top, right, bottom, name in sorted(
+    for left, top, right, bottom, name, *state in sorted(
             set(targets), key=lambda t: ((t[2]-t[0])*(t[3]-t[1]), t)):
         center_x, center_y = (left+right)/2, (top+bottom)/2
         row = min(rows-1, int(center_y*rows/height))
@@ -167,15 +186,19 @@ def annotate(grid, spans, image, targets):
             if not label or len(label) > 48:
                 continue
             anchor = col - (len(label)+2)//2
-        token = "[" + label + "]"
-        if len(token) > cols:
+        mark = TOGGLE_MARKS.get(state[0]) if state else None
+        tokens = ["[" + label + "]"]
+        if mark and not label.startswith(mark):
+            tokens.insert(0, "[" + mark + " " + label + "]")  # fall back to the bare label when cramped
+        tokens = [t for t in tokens if len(t) <= cols]
+        if not tokens:
             continue
         # Only borrow adjacent unused cells. Keep other text and targets intact.
         def available(i):
             return ((row, i) not in occupied and
                     (any(s[1] <= i < s[2] for s in words) or
                      lines[row][i] in " ─│┼○□" or (not words and i == col and lines[row][i] == label)))
-        for offset in (0, 1, -1, 2, -2):
+        for token, offset in ((t, o) for t in tokens for o in (0, 1, -1, 2, -2)):
             start = min(cols-len(token), max(0, anchor+offset))
             end = start + len(token)
             if not all(available(i) for i in range(min(start,first), max(end,last))):

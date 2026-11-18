@@ -9,6 +9,8 @@ import { ProcessTreeSupervisor, type SessionProcess } from "../runner/process-tr
 import type { ProfileId, SessionId } from "../contracts/index.js";
 import { runtimeDirFor } from "../runner/paths.js";
 import { OwnerMessages } from "../communication/owner-messages.js";
+import { JOB_RECORD_FILE, jobOriginEnv, type JobOrigin } from "./job-origin.js";
+import type { MemoryGate } from "./memory-pressure.js";
 
 export type JobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "interrupted";
 export interface BackgroundJob {
@@ -41,6 +43,11 @@ export interface BackgroundJob {
   retriesExhausted?: boolean;
   /** Clé de la dernière alerte « boucle arrêtée » déposée dans le fil principal. */
   alertKey?: string;
+  /**
+   * Qui a lancé le job et pourquoi (`job-origin.ts`), enregistré au lancement par le serveur MCP.
+   * Absent pour les jobs antérieurs ou soumis hors MCP. Une relance garde l'origine du job relancé.
+   */
+  origin?: JobOrigin;
 }
 
 /** Attentes entre relances d'une boucle en échec : 30 s, 2 min, 10 min. */
@@ -137,7 +144,7 @@ export class BackgroundJobStore {
     script: string,
     args: string[],
     key: string,
-    options: { relaunch?: boolean; autoRetries?: string[] } = {},
+    options: { relaunch?: boolean; autoRetries?: string[]; origin?: JobOrigin } = {},
   ): BackgroundJob {
     return this.db
       .transaction(() => {
@@ -170,10 +177,12 @@ export class BackgroundJobStore {
           ...(options.relaunch === true && options.autoRetries?.length
             ? { autoRetries: options.autoRetries }
             : {}),
+          ...(options.origin === undefined ? {} : { origin: options.origin }),
         };
         this.db
           .prepare("INSERT INTO jobs(id,request_key,payload) VALUES(?,?,?)")
           .run(job.id, key, JSON.stringify(job));
+        writeJobRecord(job);
         return job;
       })
       .immediate();
@@ -210,6 +219,7 @@ export class BackgroundJobStore {
           const next = this.submit(job.title, job.script, job.args, `relaunch:${job.id}`, {
             relaunch: true,
             ...(job.autoRetries ? { autoRetries: job.autoRetries } : {}),
+            ...(job.origin ? { origin: job.origin } : {}),
           });
           this.update(job.id, { relaunchedAs: next.id });
           out.push(next);
@@ -260,6 +270,7 @@ export class BackgroundJobStore {
           const next = this.submit(job.title, job.script, job.args, `retry:${job.id}`, {
             relaunch: true,
             autoRetries: [...recentRetries(job, now), new Date(now).toISOString()],
+            ...(job.origin ? { origin: job.origin } : {}),
           });
           this.update(job.id, { relaunchedAs: next.id });
           out.push(next);
@@ -338,6 +349,11 @@ export class BackgroundJobs {
   readonly #retryDelays: readonly number[];
   readonly #notify: (text: string, key: string) => void;
   readonly #log: (line: string) => void;
+  /**
+   * Garde mémoire (memory-pressure.ts) : mémoire basse, les jobs restent en file ; et un seul
+   * lancement par tick. Absente (tests, appels directs) : comportement d'origine.
+   */
+  readonly #memory: Pick<MemoryGate, "check"> | undefined;
   constructor(
     readonly dataDir: string,
     readonly allowed: () => boolean,
@@ -348,12 +364,15 @@ export class BackgroundJobs {
       /** Dépose l'alerte dans le fil principal ; par défaut, l'avis runtime habituel. */
       notify?: (text: string, key: string) => void;
       log?: (line: string) => void;
+      /** Garde mémoire ; le daemon passe `new MemoryGate({ maxWaitMs: 15 min })`. */
+      memory?: Pick<MemoryGate, "check">;
     } = {},
   ) {
     this.#now = options.now ?? Date.now;
     this.#retryDelays = options.retryDelaysMs ?? RELAUNCH_RETRY_DELAYS_MS;
     this.#notify = options.notify ?? publishRuntimeNotice(dataDir);
     this.#log = options.log ?? (() => undefined);
+    this.#memory = options.memory;
     this.store = new BackgroundJobStore(dataDir);
     this.supervisor = new ProcessTreeSupervisor(runtimeDirFor(dataDir));
   }
@@ -394,13 +413,24 @@ export class BackgroundJobs {
       // Boucles en échec : relance après l'attente prévue, puis alerte si elles restent mortes.
       for (const next of this.store.relaunchFailed(this.#now())) this.onRelaunch?.(next, "échec");
       this.#alertDeadLoops();
+      // Un lancement par tick : chaque job (session Claude ≈ 550 Mo) a le temps de peser sur la
+      // mémoire mesurée avant le suivant ; une rafale ne vide plus la mémoire du poste d'un coup.
+      let launched = false;
       for (const job of this.store.list()) {
         const active = this.running.get(job.id);
         if (job.cancel && (job.status === "queued" || job.status === "running")) {
           if (active) await this.#stop(job.id, active.process, "Cancelled by agent", "cancelled");
           else
             this.store.update(job.id, { status: "cancelled", endedAt: new Date().toISOString() });
-        } else if (job.status === "queued" && !active) await this.#launch(job);
+        } else if (job.status === "queued" && !active && !launched) {
+          if (this.#memory !== undefined) {
+            const gate = this.#memory.check();
+            if (gate.note !== null) this.#log(`jobs : ${gate.note}`);
+            if (gate.wait) continue;
+            launched = true;
+          }
+          await this.#launch(job);
+        }
       }
     } finally {
       this.#busy = false;
@@ -430,6 +460,7 @@ export class BackgroundJobs {
       const script = resolveJobScript(this.dataDir, job.script, workspace);
       const out = jobOutputDir(this.dataDir, job.id);
       fs.mkdirSync(out, { recursive: true });
+      if (!fs.existsSync(path.join(out, JOB_RECORD_FILE))) writeJobRecord(job);
       // No shell or implicit credentials. This is the existing authorized host mode.
       const child = this.supervisor.spawn(this.#profile, job.id as SessionId, {
         executable: process.execPath,
@@ -444,6 +475,7 @@ export class BackgroundJobs {
           PATH: process.env["PATH"] ?? process.env["Path"] ?? "",
           MIND_WAKE_JOB_ID: job.id,
           MIND_WAKE_JOB_OUTPUT: out,
+          ...jobOriginEnv(job.origin),
         },
       });
       const finished = (async () => {
@@ -500,6 +532,25 @@ export class BackgroundJobs {
     for (const [id, active] of this.running) await this.#stop(id, active.process, "Daemon stopped");
     await Promise.all([...this.running.values()].map((r) => r.finished));
     this.store.close();
+  }
+}
+
+/**
+ * `jobs/runs/<id>/job.json` : l'enregistrement du job tel qu'au lancement, origine comprise, à
+ * lire sans la base. Écrit dès la soumission ; un échec d'écriture n'empêche pas le job.
+ */
+export function writeJobRecord(job: BackgroundJob): void {
+  try {
+    const out = path.join(job.workspaceDir ?? "", "jobs", "runs", job.id);
+    if (job.workspaceDir === undefined || !/^job_[0-9a-f-]{36}$/.test(job.id)) return;
+    fs.mkdirSync(out, { recursive: true });
+    const { id, title, script, args, createdAt, relaunch, origin } = job;
+    fs.writeFileSync(
+      path.join(out, JOB_RECORD_FILE),
+      JSON.stringify({ id, title, script, args, createdAt, ...(relaunch ? { relaunch } : {}), origin: origin ?? null }, null, 2),
+    );
+  } catch {
+    /* Le statut faisant foi reste dans background-jobs.sqlite. */
   }
 }
 

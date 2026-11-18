@@ -84,6 +84,24 @@ suspend tous les forks ; en l’absence d’heure officielle exploitable, le
 prochain essai attend quinze minutes. Cette attente survit au redémarrage du
 worker. Aucun changement de compte, de fournisseur ou d’API n’est effectué.
 
+Rooms sur Off : une room affectée répond encore, par un tour unique, à chaque
+message humain (plafond de 30 tours sur 24 h). Le worker reste donc vivant tant
+qu’une room est affectée, même si toutes sont sur Off. `forks status` expose
+`workerNeeded` : un superviseur relance le worker si `workerNeeded && !running`.
+Avant le 18 nov. 2026, le worker s’arrêtait dès que la dernière room passait sur
+Off, et plus aucune room ne répondait, appel compris.
+
+Room dans un appel (`src/daemon/room-call-presence.ts`) : l’appel actif et ses
+participants sont lus dans `mobile-call-control.sqlite`. Une room participante
+(`room<N>`, `room-<N>` ou l’id d’un de ses agents) reçoit un tour pour chaque
+message humain de l’appel et pour chaque message qui la mentionne : `@room<N>`,
+son nom affiché, le nom ou `@id` d’un de ses agents. Cela vaut même si la room
+est sur Off, et `enabled.json` ne change pas. Ces tours n’ont ni plafond ni
+intervalle. Chaque message est réservé (`oneshot:<id>`) et ne reçoit qu’une
+réponse. Un message d’une autre room ne déclenche jamais de tour. Le
+`minIntervalMs` de `capabilities.roleTools.calls` ne limite que `call_human`
+(faire sonner NLR), jamais une réponse.
+
 Stockages : `forks/<id>/enabled.json`, `forks/<id>/second-thread.sqlite`
 (schéma de transcription réutilisé), `forks-quota.json` et `forks.log` dans le
 dossier de données, ainsi que `fork-planning.sqlite` (files et réservations futures) et `project-leases/` (exécution). Le second fil Claude conserve sa propre rotation.

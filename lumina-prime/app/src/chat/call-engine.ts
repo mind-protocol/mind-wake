@@ -15,7 +15,7 @@ const preset = RecordingPresets.HIGH_QUALITY;
 const options = { ...preset, isMeteringEnabled: true, numberOfChannels: 1, bitRate: 64000,
   android: { ...preset.android, audioSource: 'voice_communication' as const } };
 
-export const createCallEngine: typeof webEngine = ({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onPhase, onLevel, onLine }) => {
+export const createCallEngine: typeof webEngine = ({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onPhase, onLevel, onLine, onTopicInvite }) => {
   targets = [...new Set(targets)];
   let joining = false;
   let membershipRevision = 1;
@@ -93,6 +93,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
           const result = await sendCallUtterance(session, recipients, id, bytes, 'audio/mp4', signal,scope);
           if (!signal.aborted) onLine(result.status === 'empty' || !result.text.trim() ? { key: id, who: 'me', text: '', detail: '', drop: true }
             : { key: id, who: 'me', text: result.text, detail: '' });
+          if (result.invites?.length && !signal.aborted) onTopicInvite?.(result.invites);
           return;
         } catch (error) {
           if (!(error instanceof ChatClientError && error.code === 'transcription_busy')) throw error;
