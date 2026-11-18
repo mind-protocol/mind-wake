@@ -48,6 +48,8 @@ export function changeExecutionMode(
   const detail =
     mode === "always-on"
       ? "Always-on : chaque réponse terminée déclenche la session suivante. Pause, arrêt et disponibilité du fournisseur restent appliqués."
-      : "On : retour aux réveils planifiés.";
+      : mode === "listening"
+        ? "Off à l'écoute : aucun réveil autonome ; un message entrant (fil, appel d'un autre PC) déclenche une réponse, puis retour au repos. On ou Always-on relancent les réveils."
+        : "On : retour aux réveils planifiés.";
   return { exitCode: 0, data: { changed: true, mode, detail }, human: (d) => d.detail };
 }

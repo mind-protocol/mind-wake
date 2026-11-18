@@ -178,6 +178,22 @@ describe("pause, arrêt et conditions inconnues", () => {
     expect(b.launcher.tickets).toHaveLength(1);
   });
 
+  it("Off à l'écoute : aucun réveil autonome ; un message entrant (réveil humain) lance une session, puis repos", async () => {
+    let human = false;
+    setup({}, { overrides: { listening: () => true, humanWakePending: () => human } });
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", state: "ready", detail: "execution_mode.listening" });
+    expect(b.launcher.tickets).toHaveLength(0);
+    expect(b.events()).toHaveLength(0);
+    human = true;
+    expect((await tickFresh()).kind).toBe("launched");
+    expect(b.launcher.tickets).toHaveLength(1);
+  });
+
+  it("Off à l'écoute : un réglage illisible (exception) ne lance rien", async () => {
+    setup({}, { overrides: { listening: () => { throw new Error("illisible"); }, humanWakePending: () => true } });
+    expect(await tickFresh()).toMatchObject({ kind: "inactive", detail: "execution_mode.listening" });
+  });
+
   it("fil principal : un réglage illisible (exception) laisse le fil actif", async () => {
     setup({}, { overrides: { mainThreadEnabled: () => { throw new Error("illisible"); } } });
     expect((await tickFresh()).kind).toBe("launched");

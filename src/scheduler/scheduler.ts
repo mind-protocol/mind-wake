@@ -97,6 +97,12 @@ export interface SchedulerOptions {
   readonly humanWakePending?: (nowMs: number) => boolean;
   readonly alwaysOn?: () => boolean;
   /**
+   * « Off à l'écoute » : aucun lancement autonome (cadence, réveils demandés par l'agent,
+   * jobs de fond) ; seul un réveil humain en attente (`humanWakePending` : message du fil,
+   * appel d'un autre PC, `wake`) passe, avec toutes les vérifications habituelles.
+   */
+  readonly listening?: () => boolean;
+  /**
    * Fil principal On/Off (réglage de l'humain). `false` : aucun nouveau lancement, sans
    * changer l'état du profil ; la session en cours termine normalement. Absent : On.
    */
@@ -311,6 +317,9 @@ export class Scheduler {
     if (this.#mainThreadOff()) {
       return { kind: "inactive", state: profile.state, detail: "main_thread.off" };
     }
+    if (this.#listeningIdle(nowMs)) {
+      return { kind: "inactive", state: profile.state, detail: "execution_mode.listening" };
+    }
     if (profile.state === "blocked" && profile.stateReason === "not_consented: runtime.adapterId_mismatch") {
       return this.#recheckAdapter(profile);
     }
@@ -362,6 +371,15 @@ export class Scheduler {
       state.save({...state.get(profileId),lastDenial:null},at);
       return {kind:"inactive",state:"ready",detail:"runtime.adapter_matched"};
     });
+  }
+
+  /** À l'écoute sans demande humaine. Lecture défensive : une erreur ne lance rien. */
+  #listeningIdle(nowMs: number): boolean {
+    try {
+      return this.#o.listening?.() === true && this.#o.humanWakePending?.(nowMs) !== true;
+    } catch {
+      return true;
+    }
   }
 
   /** Lecture défensive : un réglage illisible ou en erreur laisse le fil principal On. */
@@ -482,6 +500,9 @@ export class Scheduler {
     // Relu après la collecte des faits : un Off posé entre-temps l'emporte.
     if (this.#mainThreadOff()) {
       return { kind: "inactive", state: profile.state, detail: "main_thread.off" };
+    }
+    if (this.#listeningIdle(nowMs)) {
+      return { kind: "inactive", state: profile.state, detail: "execution_mode.listening" };
     }
     const resolution = resolvePolicy(uow.policies, profileId);
     const revision = resolution.status === "active" ? resolution.revision : null;

@@ -38,6 +38,27 @@ it("persists always-on, exposes it in status, resumes an explicit selection and 
   expect((await cli("on")).code).toBe(0);
   expect(executionMode(dir)).toBe("on");
 });
+it("listen (Off à l'écoute, Windows startup): lifts a pause, persisted and exposed, On leaves it; Pause stays above it", async () => {
+  await cli("always-on");
+  await cli("pause");
+  const listen = await cli("listen");
+  expect(listen.code).toBe(0);
+  expect(listen.json.data.mode).toBe("listening");
+  expect(executionMode(dir)).toBe("listening");
+  let status = (await cli("status")).json.data;
+  expect(status.executionMode).toBe("listening");
+  expect(status.profile.state).toBe("ready");
+  // Pause manuelle : profil en pause, le mode d'écoute reste mémorisé sous la pause.
+  await cli("pause");
+  status = (await cli("status")).json.data;
+  expect(status.profile.state).toBe("paused");
+  expect(executionMode(dir)).toBe("listening");
+  expect((await cli("on")).code).toBe(0);
+  expect(executionMode(dir)).toBe("on");
+  await cli("stop");
+  expect((await cli("listen")).code).toBe(1);
+  expect(executionMode(dir)).toBe("on");
+});
 it("never lifts an emergency stop or activates an unconfigured profile", async () => {
   await cli("stop");
   expect((await cli("always-on")).code).toBe(1);

@@ -184,3 +184,16 @@ it("always-on est affiché comme un mode persistant et ne dépasse pas l’arrê
   (stopped["profile"] as Record<string,unknown>)["emergencyStopLocked"] = true;
   expect(panelView(read(stopped), NOW)).toMatchObject({ alwaysOn: false, canAlwaysOn: true });
 });
+
+it("Off à l'écoute : voyant distinct d'« Éteint », On disponible ; une session ou la pause reprennent le dessus", () => {
+  const listening = (state: string) => {
+    const data = profileData(state) as Record<string, unknown>;
+    data["executionMode"] = "listening";
+    return panelView(read(data), NOW);
+  };
+  expect(listening("hibernating")).toMatchObject({ light: "listening", canResume: true, alwaysOn: false, canWake: true });
+  expect(listening("ready").headline).toMatch(/écoute/);
+  expect(listening("running").light).toBe("awake");
+  expect(listening("paused")).toMatchObject({ light: "off", canResume: true });
+  expect(listening("stopped").light).toBe("forced_off");
+});

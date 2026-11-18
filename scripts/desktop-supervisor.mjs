@@ -98,11 +98,14 @@ export function canStartOff(status) {
   );
 }
 /**
- * Off au démarrage de Windows : Wake passe en Pause (« Éteint » dans l'app) avant que le
- * moteur ne démarre, donc aucune session (principal, forks, second fil) tant que l'humain
- * ne choisit pas On ou Always-on. Le moteur démarre quand même, en pause : il réconcilie une
- * session interrompue par l'extinction et garde les services permanents ; le bouton On ou
- * Always-on le trouve prêt. Le mode mémorisé (On / Always-on) n'est pas modifié.
+ * Off au démarrage de Windows, « à l'écoute » (lot 2, NLR 18 nov. 2026) : `listen` avant que
+ * le moteur ne démarre. Aucun réveil autonome (cadence, Always-on, réveils de l'agent, travail
+ * de projet des rooms, second fil) ; un message entrant (fil, appel d'un autre PC, room) obtient
+ * un réveil ciblé, puis retour au repos. Une pause présente au démarrage (souvent celle du lot 1)
+ * est levée par `listen` ; arrêt, verrouillage et profil désactivé restent intouchés.
+ * CLI compilé sans `listen` (dist ancien) : repli sur la Pause, comme au lot 1.
+ * Le moteur démarre dans tous les cas : il réconcilie une session interrompue par l'extinction
+ * et héberge la réponse rapide. On ou Always-on relancent les réveils.
  */
 export function startOff(m, run = spawnSync, spawnIt = spawnEngine) {
   const args = [path.join(m.repoDir, "dist/cli/main.js")];
@@ -119,12 +122,14 @@ export function startOff(m, run = spawnSync, spawnIt = spawnEngine) {
   if (status.status !== 0) throw Error("Startup status unavailable");
   const parsed = JSON.parse(status.stdout);
   if (!canStartOff(parsed)) return "unchanged";
-  if (parsed.data.profile.state !== "paused") {
-    const paused = command("pause");
-    if (paused.status !== 0) throw Error("Startup pause refused");
+  let result = "listening";
+  if (command("listen").status !== 0) {
+    result = "paused";
+    if (parsed.data.profile.state !== "paused" && command("pause").status !== 0)
+      throw Error("Startup pause refused");
   }
   if (parsed.data?.daemon?.state !== "running") spawnIt(m, env);
-  return "paused";
+  return result;
 }
 /**
  * Moteur arrêté brutalement (exécution sans fin enregistrée) : on le relance, sans changer

@@ -17,17 +17,17 @@ function run(script: string, ...args: string[]): unknown {
   );
 }
 
-it("Windows startup defaults to Off: pause before the engine, mode untouched, no `on`", () => {
+it("Windows startup defaults to Off listening: `listen` before the engine, no `on`, pause fallback on an old CLI", () => {
   const out = run(
     `
     const {startOff,startScheduled,canStartOff}=await import(process.argv[1]);
     const m={repoDir:'R',dataDir:'D',node:'node'};
-    const scenario=(state,daemon='stopped',locked=false,startFn=startOff)=>{
+    const scenario=(state,daemon='stopped',locked=false,startFn=startOff,oldCli=false)=>{
       const calls=[];
       const runCli=(_n,args)=>{
         const verb=args[1]; calls.push(verb);
         const stdout=verb==='status'?JSON.stringify({ok:true,data:{profile:{state,emergencyStopLocked:locked},daemon:{state:daemon}}}):'{}';
-        return {status:0,stdout};
+        return {status:oldCli&&verb==='listen'?2:0,stdout};
       };
       const result=startFn===startOff?startOff(m,runCli,()=>calls.push('engine')):(startScheduled(m,{keepMode:true,run:runCli,spawnIt:()=>calls.push('engine')}),'resume');
       return {result,calls};
@@ -41,22 +41,28 @@ it("Windows startup defaults to Off: pause before the engine, mode untouched, no
       locked:scenario('ready','stopped',true),
       disabled:scenario('disabled'),
       resume:scenario('ready','stopped',false,'resume'),
+      oldCli:scenario('ready','stopped',false,startOff,true),
+      oldCliPaused:scenario('paused','stopped',false,startOff,true),
       missing:canStartOff({}),
     }));
   `,
     supervisorUrl,
   );
   expect(out).toEqual({
-    ready: { result: "paused", calls: ["status", "pause", "engine"] },
-    // Extinction pendant une session (Always-on) : pause puis moteur, qui clôt l'orpheline en pause.
-    alwaysOnCrashed: { result: "paused", calls: ["status", "pause", "engine"] },
-    alreadyPaused: { result: "paused", calls: ["status", "engine"] },
-    engineRunning: { result: "paused", calls: ["status", "pause"] },
+    ready: { result: "listening", calls: ["status", "listen", "engine"] },
+    // Extinction pendant une session (Always-on) : à l'écoute, le moteur clôt l'orpheline sans relancer.
+    alwaysOnCrashed: { result: "listening", calls: ["status", "listen", "engine"] },
+    // Pause laissée par le démarrage du lot 1 : `listen` la lève.
+    alreadyPaused: { result: "listening", calls: ["status", "listen", "engine"] },
+    engineRunning: { result: "listening", calls: ["status", "listen"] },
     stopped: { result: "unchanged", calls: ["status"] },
     locked: { result: "unchanged", calls: ["status"] },
     disabled: { result: "unchanged", calls: ["status"] },
     // Reprendre le dernier mode : moteur seul, sans `on` qui écraserait Always-on.
     resume: { result: "resume", calls: ["status", "engine"] },
+    // dist compilé avant le lot 2 (pas de `listen`) : repli sur la Pause du lot 1.
+    oldCli: { result: "paused", calls: ["status", "listen", "pause", "engine"] },
+    oldCliPaused: { result: "paused", calls: ["status", "listen", "engine"] },
     missing: false,
   });
 });

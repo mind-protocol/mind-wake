@@ -303,6 +303,20 @@ export class AgentWakeups {
     }
   }
 
+  /**
+   * « Off à l'écoute » : un message pair-à-pair ⬡ reçu (réveil `pont-…`, expérience `pont-p2p`,
+   * écrit par services/pont-p2p) est dû. Compte comme un message entrant, pas comme un réveil
+   * autonome de l'agent. Limite : le dossier est dans l'espace de l'agent, qui pourrait imiter
+   * ce nom pendant une session ; voir RESULTAT (lot 2) pour la variante hors espace.
+   */
+  incomingDue(nowMs: number): boolean {
+    return this.scan(nowMs).some((e) => {
+      if (!e.request.id.startsWith("pont-") || e.request.experiment !== "pont-p2p") return false;
+      const at = this.dueAt(e, nowMs, undefined);
+      return at !== null && at <= nowMs;
+    });
+  }
+
   /** Prochaine échéance candidate parmi les demandes valides. */
   async nextDue(nowMs: number, quota?: QuotaSource): Promise<number | null> {
     const entries = this.scan(nowMs);

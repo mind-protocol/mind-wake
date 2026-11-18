@@ -10,6 +10,7 @@ import {
   type SecondThreadView,
 } from "../../daemon/second-thread.js";
 import { workspaceDirFor } from "../../daemon/paths.js";
+import { listeningOnly } from "../../daemon/execution-mode.js";
 import { resolvePolicy } from "../../policy/index.js";
 import { DEFAULT_PROFILE_ID, type CliContext } from "../context.js";
 import type { DataDir } from "../paths.js";
@@ -106,7 +107,11 @@ export async function secondThread(
       const summary = await runSecondThread({
         dataDir: dataDir.path,
         workspace: () => workspaceDirFor(dataDir.path),
-        profile: () => secondThreadProfileControl(ctx, dataDir),
+        // « Off à l'écoute » : le second fil (boucle autonome) attend, comme en pause.
+        profile: () => {
+          const state = secondThreadProfileControl(ctx, dataDir);
+          return state === "run" && listeningOnly(dataDir.path) ? "hold" : state;
+        },
         log: (line) => {
           ctx.stderr(`${new Date().toISOString()} ${line}`);
         },

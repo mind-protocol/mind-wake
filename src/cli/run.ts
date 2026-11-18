@@ -81,6 +81,7 @@ Commandes :
   init          Prépare un profil désactivé, sans budget ni permission
   always-on     Enchaîne les réveils dès la fin de chaque réponse
   on            Revient aux réveils planifiés
+  listen        Off à l'écoute : aucun réveil autonome, un message entrant réveille
   status        État, expérience active, budget, prochain réveil
   journal       Derniers événements (--limit N, --after SÉQUENCE)
   policy show   Révision de policy active, consentement et révocations
@@ -219,6 +220,7 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
       case "forks run":
       case "forks assign":
       case "forks unassign":
+      case "forks rename":
         result = await forks(ctx, dataDir, second ?? "status");
         break;
       case "elevenlabs status":
@@ -302,6 +304,9 @@ export async function runCli(argv: readonly string[], ctx: CliContext): Promise<
         break;
       case "on":
         result = changeExecutionMode(ctx, dataDir, "on") as CommandResult<unknown>;
+        break;
+      case "listen":
+        result = changeExecutionMode(ctx, dataDir, "listening") as CommandResult<unknown>;
         break;
       case "wake":
         result = wake(ctx, dataDir) as CommandResult<unknown>;

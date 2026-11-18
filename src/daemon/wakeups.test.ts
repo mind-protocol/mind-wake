@@ -83,6 +83,17 @@ describe("demandes valides", () => {
     expect(await wakeups.nextDue(T0 + 7 * HOUR)).toBeNull();
   });
 
+  it("Off à l'écoute : seul un message ⬡ reçu (pont-…, pont-p2p) dû compte comme entrant", async () => {
+    const at = new Date(T0).toISOString();
+    put("agent.json", request("agent", { at }));
+    put("pont-early.json", request("pont-early", { at: new Date(T0 + HOUR).toISOString() }, { experiment: "pont-p2p" }));
+    put("pont-other.json", request("pont-other", { at }, { experiment: "autre" }));
+    expect(wakeups.incomingDue(T0)).toBe(false);
+    put("pont-m1.json", request("pont-m1", { at }, { experiment: "pont-p2p" }));
+    expect(wakeups.incomingDue(T0)).toBe(true);
+    expect(wakeups.incomingDue(T0 - 1)).toBe(false);
+  });
+
   it("`repeat` : reste en place, prochaine échéance depuis le dernier service", async () => {
     put("loop.json", request("loop", { afterHours: 2 }, { repeat: true }));
     await wakeups.nextDue(T0);

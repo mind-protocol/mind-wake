@@ -14,10 +14,11 @@ export type Tone = "active" | "idle" | "attention" | "stopped" | "unknown";
 
 /**
  * Voyant et position du sélecteur On / Réveil / Force-off. `awake` : une session tourne ;
- * `on` : Wake peut se réveiller dans ses fenêtres ; `off` : en pause, bloqué ou désactivé ;
- * `forced_off` : arrêt d'urgence ; `unknown` : état indisponible.
+ * `on` : Wake peut se réveiller dans ses fenêtres ; `listening` : Off à l'écoute (démarrage de
+ * Windows), aucun réveil autonome mais un message entrant obtient une réponse ; `off` : en
+ * pause, bloqué ou désactivé ; `forced_off` : arrêt d'urgence ; `unknown` : état indisponible.
  */
-export type Light = "awake" | "on" | "off" | "forced_off" | "unknown";
+export type Light = "awake" | "on" | "listening" | "off" | "forced_off" | "unknown";
 
 const LIGHTS: Readonly<Record<string, Light>> = {
   running: "awake",
@@ -33,6 +34,7 @@ const LIGHTS: Readonly<Record<string, Light>> = {
 export const LIGHT_LABELS: Readonly<Record<Light, string>> = {
   awake: tr("Éveillé"),
   on: tr("Allumé"),
+  listening: tr("À l'écoute"),
   off: tr("Éteint"),
   forced_off: tr("Arrêt"),
   unknown: tr("Inconnu"),
@@ -177,7 +179,11 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
   }
 
   const state = str(profile["state"]) ?? tr("inconnu");
-  const known = STATE_LABELS[state];
+  // Off à l'écoute : profil prêt (pas en pause), seuls les messages entrants le réveillent.
+  const listening = data["executionMode"] === "listening" && (state === "ready" || state === "hibernating");
+  const known = listening
+    ? { label: tr("Off à l'écoute : répond aux messages entrants, sans réveil autonome"), tone: "idle" as const }
+    : STATE_LABELS[state];
   const daemon = rec(data["daemon"]);
   const daemonState = str(daemon?.["state"]) ?? "never";
   const lastSession = rec(data["lastSession"]);
@@ -244,7 +250,7 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
     headline: known?.label ?? tr("État {0}", [state]),
     activeProject: str(data["activeProject"]),
     tone: known?.tone ?? "unknown",
-    light: LIGHTS[state] ?? "unknown",
+    light: listening ? "listening" : (LIGHTS[state] ?? "unknown"),
     canWake: !locked && (state === "ready" || state === "hibernating"),
     alwaysOn:
       data["executionMode"] === "always-on" &&
@@ -278,7 +284,8 @@ export function panelView(read: StatusRead | null, now: number): PanelView {
     protection,
     lastContact: relative(read.fetchedAt - now),
     canPause: !locked && state !== "paused" && state !== "stopped" && state !== "disabled",
-    canResume: !locked && state === "paused",
+    // Bouton On : lève une pause, ou quitte l'écoute pour les réveils planifiés.
+    canResume: !locked && (state === "paused" || listening),
     canStop: !locked,
   };
 }

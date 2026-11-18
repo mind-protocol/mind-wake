@@ -151,6 +151,19 @@ describe("rappels ponctuels (set_reminder)", () => {
     expect(hit.block).toContain("pour 2026-11-16 19:00 UTC (échu depuis 30 min, livré en retard)");
   });
 
+  it("échu pendant un Off (pause ou à l'écoute, aucun réveil pendant 14 h) : conservé, puis livré au premier réveil", () => {
+    take(1, 0);
+    const r = setOneShotReminder(dir, { text: "rappeler PC-2", why: "réponse promise", inMinutes: 10 }, T0);
+    // Off : aucun réveil, donc aucun takeWakeReminders ; le fichier garde le rappel tel quel.
+    expect(readReminders(dir).oneShots?.[0]).toMatchObject({ id: r.id, deliveredAt: null, ackedAt: null });
+    const first = take(2, 14);
+    expect(first.oneShotsDue.map((x) => x.id)).toEqual([r.id]);
+    expect(first.block).toContain("rappeler PC-2");
+    expect(first.block).toContain("livré en retard");
+    // Non acquitté : il revient « en souffrance » au réveil suivant.
+    expect(take(3, 15).oneShotsOverdue.map((x) => x.id)).toEqual([r.id]);
+  });
+
   it("livraison unique puis signalement « en souffrance » jusqu'à l'acquittement", () => {
     take(1, 0);
     const r = setOneShotReminder(dir, { text: "a", why: "b", inWakes: 1 }, T0);
