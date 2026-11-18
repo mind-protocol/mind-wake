@@ -12,6 +12,19 @@ export function launcherArguments(m, startup = false) {
     Buffer.from(script, "utf16le").toString("base64")
   );
 }
+/**
+ * Mode des réveils au démarrage de Windows, lu par `desktop-supervisor.mjs --startup` :
+ * `"off"` (défaut, Wake en Pause jusqu'au choix de l'humain) ou `"resume"` (dernier mode).
+ */
+export const STARTUP_MODES = ["off", "resume"];
+export function setStartupMode(manifestFile, mode) {
+  if (!STARTUP_MODES.includes(mode)) throw Error("Startup mode: off or resume");
+  const settings = path.join(path.dirname(manifestFile), "windows.json");
+  const previous = fs.existsSync(settings) ? JSON.parse(fs.readFileSync(settings, "utf8")) : {};
+  const next = { ...previous, startupMode: mode };
+  fs.writeFileSync(settings, JSON.stringify(next, null, 2));
+  return next;
+}
 export function windowsIntegration(manifestFile, action, folders = {}) {
   if (process.platform !== "win32") throw Error("Windows required");
   if (!["install", "status", "enable", "disable"].includes(action)) throw Error("Unknown action");
@@ -67,20 +80,24 @@ if ($env:WAKE_SHORTCUT_ACTION -ne 'status') {
   );
   if (result.error || result.status !== 0)
     throw Error(result.stderr || result.error?.message || "Windows shortcuts failed");
-  const state = JSON.parse(result.stdout.trim());
-  if (action !== "status") fs.writeFileSync(settings, JSON.stringify(state, null, 2));
+  const state = {
+    ...JSON.parse(result.stdout.trim()),
+    startupMode: previous?.startupMode === "resume" ? "resume" : "off",
+  };
+  if (action !== "status") fs.writeFileSync(settings, JSON.stringify({ ...previous, ...state }, null, 2));
   return state;
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   try {
     const dataDir =
       process.env.MIND_WAKE_DATA_DIR || path.join(process.env.LOCALAPPDATA || "", "mind-wake");
+    const manifest = path.join(dataDir, "installation/manifest.json");
+    const action = process.argv[2] || "status";
     console.log(
       JSON.stringify(
-        windowsIntegration(
-          path.join(dataDir, "installation/manifest.json"),
-          process.argv[2] || "status",
-        ),
+        action === "startup-mode"
+          ? setStartupMode(manifest, process.argv[3])
+          : windowsIntegration(manifest, action),
       ),
     );
   } catch (error) {

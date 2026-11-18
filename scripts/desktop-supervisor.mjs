@@ -52,11 +52,12 @@ export async function startSupervised(manifestFile) {
     fs.closeSync(log);
   }
 }
-export function startScheduled(m) {
+/** `keepMode` : démarre le moteur sans `on`, le mode mémorisé (On / Always-on) est repris. */
+export function startScheduled(m, { keepMode = false, run = spawnSync, spawnIt = spawnEngine } = {}) {
   const args = [path.join(m.repoDir, "dist/cli/main.js")];
   const env = { ...process.env, ...codexRuntimeEnv(m), MIND_WAKE_DATA_DIR: m.dataDir };
   const command = (verb) =>
-    spawnSync(m.node, [...args, verb, "--json"], {
+    run(m.node, [...args, verb, "--json"], {
       env,
       cwd: m.repoDir,
       windowsHide: true,
@@ -65,9 +66,65 @@ export function startScheduled(m) {
     });
   const status = command("status");
   if (status.status !== 0 || !canStartScheduled(JSON.parse(status.stdout))) return;
-  const on = command("on");
-  if (on.status !== 0) throw Error("Scheduled startup refused");
-  spawnEngine(m, env);
+  if (!keepMode) {
+    const on = command("on");
+    if (on.status !== 0) throw Error("Scheduled startup refused");
+  }
+  spawnIt(m, env);
+}
+/**
+ * Démarrage de Windows (raccourci Startup, `--startup`). Réglage `startupMode` de
+ * `installation/windows.json` : `"off"` (défaut) ou `"resume"`.
+ */
+export const STARTUP_MODES = ["off", "resume"];
+export function startupMode(manifestFile) {
+  try {
+    const settings = JSON.parse(
+      fs.readFileSync(path.join(path.dirname(manifestFile), "windows.json"), "utf8"),
+    );
+    return settings?.startupMode === "resume" ? "resume" : "off";
+  } catch {
+    return "off";
+  }
+}
+/** Off : la pause est applicable (profil configuré, ni arrêté ni verrouillé). */
+export function canStartOff(status) {
+  return (
+    status?.ok === true &&
+    !status.data?.profile?.emergencyStopLocked &&
+    ["ready", "hibernating", "running", "checkpointing", "paused"].includes(
+      status.data?.profile?.state,
+    )
+  );
+}
+/**
+ * Off au démarrage de Windows : Wake passe en Pause (« Éteint » dans l'app) avant que le
+ * moteur ne démarre, donc aucune session (principal, forks, second fil) tant que l'humain
+ * ne choisit pas On ou Always-on. Le moteur démarre quand même, en pause : il réconcilie une
+ * session interrompue par l'extinction et garde les services permanents ; le bouton On ou
+ * Always-on le trouve prêt. Le mode mémorisé (On / Always-on) n'est pas modifié.
+ */
+export function startOff(m, run = spawnSync, spawnIt = spawnEngine) {
+  const args = [path.join(m.repoDir, "dist/cli/main.js")];
+  const env = { ...process.env, ...codexRuntimeEnv(m), MIND_WAKE_DATA_DIR: m.dataDir };
+  const command = (verb) =>
+    run(m.node, [...args, verb, "--json"], {
+      env,
+      cwd: m.repoDir,
+      windowsHide: true,
+      encoding: "utf8",
+      timeout: 15000,
+    });
+  const status = command("status");
+  if (status.status !== 0) throw Error("Startup status unavailable");
+  const parsed = JSON.parse(status.stdout);
+  if (!canStartOff(parsed)) return "unchanged";
+  if (parsed.data.profile.state !== "paused") {
+    const paused = command("pause");
+    if (paused.status !== 0) throw Error("Startup pause refused");
+  }
+  if (parsed.data?.daemon?.state !== "running") spawnIt(m, env);
+  return "paused";
 }
 /**
  * Moteur arrêté brutalement (exécution sans fin enregistrée) : on le relance, sans changer
@@ -141,7 +198,9 @@ export async function supervise(manifestFile, startup, launch = startLocal, crea
     );
   if (startup) {
     try {
-      startScheduled(JSON.parse(fs.readFileSync(manifestFile, "utf8")));
+      const m = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+      if (startupMode(manifestFile) === "resume") startScheduled(m, { keepMode: true });
+      else log(`startup: off (${startOff(m)})`);
     } catch (error) {
       log(`startup: ${error.message}`);
     }
