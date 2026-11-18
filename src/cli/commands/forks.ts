@@ -2,7 +2,7 @@ import {engineChoice} from "../../daemon/agent-engine.js";
 import { startFastReply } from "./fast-reply.js";
 import { forkThread, storeThreadMessageId } from "../../communication/fast-reply-store.js";
 import { FORK_IDS, discardPendingBeforeAssignment, forkDir, forkEnabled, readForks, runForks, sendNoticeToFork, sendToFork, setForkEnabled } from "../../daemon/forks.js";
-import { clearForkAssignment, readForkAssignment, saveForkAssignment } from "../../daemon/fork-assignment.js";
+import { clearForkAssignment, readForkAssignment, saveForkAssignment, setRoomDisplayName } from "../../daemon/fork-assignment.js";
 import { readVoiceScreenPayloads, voiceScreenReferences } from "../../communication/voice-screen-images.js";
 import { workspaceDirFor } from "../../daemon/paths.js";
 import { secondThreadProfileControl } from "./second-thread.js";
@@ -58,10 +58,21 @@ export async function forks(
       log: ctx.stderr,
       ...(model === undefined ? {} : { model }),
     });
-  } else if (["on", "off", "send", "assign", "unassign"].includes(action)) {
+  } else if (["on", "off", "send", "assign", "unassign", "rename"].includes(action)) {
     const raw = JSON.parse((await ctx.readStdin?.()) ?? "{}") as { id?: unknown; text?: unknown; idempotency_key?: unknown; provenance?: unknown; voice_screen_refs?: unknown; notice_label?: unknown };
     if (typeof raw.id !== "number" || !FORK_IDS.includes(raw.id as (typeof FORK_IDS)[number]))
       throw Error("Room attendue : 2 à 8.");
+    if (action === "rename") {
+      // Nom affiché seulement (NLR, 18 nov. 2026) : identifiant, mentions, fichiers et jobs inchangés.
+      // `name` vide ou null : retour au nom par défaut (affectation, signature, « Room N »).
+      const named = raw as { name?: unknown; text?: unknown };
+      const name = setRoomDisplayName(forkDir(dataDir.path, raw.id), named.name !== undefined ? named.name : (named.text ?? null));
+      return {
+        exitCode: 0,
+        data: { id: raw.id, name: name ?? null, ...readForks(dataDir.path, workspace), dataDir: dataDir.path, profile: workerProfile() },
+        human: () => (name ? `Room ${String(raw.id)} renommée « ${name} ».` : `Room ${String(raw.id)} : nom par défaut.`),
+      };
+    }
     if (action === "assign" || action === "unassign") {
       // Affecter ou désaffecter ne lance rien : Off/On, Pause et Force-off restent inchangés.
       const dir = forkDir(dataDir.path, raw.id);

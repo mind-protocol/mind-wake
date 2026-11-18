@@ -45,3 +45,17 @@ it("une room nommée se joint par son nom et par @roomN, sous son nom", () => {
   expect(table.get("room5")?.label).toBe("Room 5");
   expect(table.get("vox")).toMatchObject({ room: 7, label: "VOX (Room 7)" });
 });
+
+// NLR, 18 nov. 2026 : renommage depuis l'app (name.json) — nom affiché seulement.
+it("une room renommée garde @roomN et son ancien nom, et se joint aussi par le nouveau", async () => {
+  const { setRoomDisplayName } = await import("../daemon/fork-assignment.js");
+  const instructions = path.join(os.tmpdir(), "DEPART.md");
+  const dataDir = dataDirWithRooms([3, 5]);
+  setRoomDisplayName(path.join(dataDir, "forks", "3"), "Atelier son");
+  setRoomDisplayName(path.join(dataDir, "forks", "5"), "Veille");
+  const table = telegramHandleTable(dataDir, (room) => (room === 3 ? validateAssignment({ instructions, name: "Médicis" }) : null), () => []);
+  expect(table.get("room3")).toMatchObject({ room: 3, label: "Atelier son (Room 3)" });
+  expect(table.get("medicis")?.room).toBe(3);
+  expect(table.get("atelierson")?.room).toBe(3);
+  expect(table.get("room5")).toMatchObject({ room: 5, label: "Veille (Room 5)" });
+});

@@ -20,6 +20,7 @@ import {
   forkOwnerChannel,
   readForkAssignment,
   resolveRoomAgents,
+  readRoomDisplayName,
   roomLabel,
   type ForkAssignment,
   type RoomAgent,
@@ -100,10 +101,13 @@ export function telegramHandleTable(
   for (const { room, assignment } of rooms) {
     const signature = forkOwnerChannel(room, assignment)?.signature ?? null;
     const name = signature === null ? null : signatureHandle(signature);
-    const shown = roomLabel(room, assignment);
+    const displayName = readRoomDisplayName(forkDir(dataDir, room));
+    const shown = roomLabel(room, assignment, displayName);
     const label = shown === `Room ${String(room)}` ? shown : `${shown} (Room ${String(room)})`;
     add(`room${String(room)}`, { room, agent: null, label });
     add(assignment?.name === undefined ? null : roomNameHandle(assignment.name), { room, agent: null, label });
+    // Nom affiché (renommage depuis l'app) : mention en plus ; @roomN et l'ancien nom restent valables.
+    add(displayName === undefined ? null : roomNameHandle(displayName), { room, agent: null, label });
     add(name, { room, agent: null, label });
     add(assignment?.holder, { room, agent: null, label });
   }
