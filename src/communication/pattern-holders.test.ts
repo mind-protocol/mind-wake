@@ -14,6 +14,9 @@ import {
   humanText,
   loadPatternHolders,
   mentionsTopic,
+  MAX_TOPICS,
+  parseTopics,
+  topicIn,
   withoutOwnPrefix,
   parsePatternHolder,
   PATTERN_HOLDER_NOTE,
@@ -154,6 +157,17 @@ it("wakes a mention-only holder by @slug, name, handle or reply, never by the fi
   const own = msg("e", T, "Un conseil.", { author: "agent", holder: "coach-colony" });
   const answer = msg("f", T2, "merci, et pour la suite ?");
   expect(wakeReason(holder, [own, answer], [answer])).toEqual({ reason: "reply" });
+
+  // Appel vocal passé à l'agent principal : ni réponse, ni fil, ni @handle ; le nom suffit.
+  const CALL = "[Appel vocal en cours] Réponds vite.\n\n";
+  const callAnswer = msg("f2", T2, `${CALL}merci, et pour la suite ?`);
+  expect(wakeReason(holder, [own, callAnswer], [callAnswer])).toBeNull();
+  const callOrdinary = msg("a2", T, `${CALL}bonjour tout le monde`);
+  expect(wakeReason(byAll.holder, [callOrdinary], [callOrdinary])).toBeNull();
+  const callHit = msg("d2", T, `${CALL}salut @spark-the-cat`);
+  expect(wakeReason(holder, [callHit], [callHit], false, (m) => m.id === "d2")).toBeNull();
+  const callName = msg("c2", T, `${CALL}Coach Colony, ton avis ?`);
+  expect(wakeReason(holder, [callName], [callName], true)).toEqual({ reason: "mention" });
   const other = msg("g", T, "autre voix", { author: "agent", holder: "autre" });
   expect(wakeReason(holder, [other, answer], [answer])).toBeNull();
 });
@@ -529,6 +543,55 @@ it("sends a holder's reply to a Telegram @mention back to NLR once, prefixed, an
   agent("@orga-agents réponds-moi", "pattern-holder:autre:x1", iso(-30_000));
   await run("Non.");
   expect(sent).toHaveLength(2);
+});
+
+// NLR, 18 nov. 2026 14:55 : « tout ce qui parle de la visualisation, c'est l'agent Viz ».
+it("parses declared topics leniently and never invalidates the holder for them", () => {
+  const head = (topics: string) => `\`\`\`json pattern-holder\n{"name":"Viz","topics":${topics}}\n\`\`\``;
+  const ok = parsePatternHolder("x/viz.md", head('["visualisation", "carte des agents", " Visualisation ", "ab", "@viz", 7]'));
+  expect("holder" in ok && ok.holder.topics).toEqual(["visualisation", "carte des agents"]);
+  const none = parsePatternHolder("x/viz.md", head('"visualisation"'));
+  expect("holder" in none && none.holder.topics).toBeUndefined();
+  expect(parseTopics(Array.from({ length: 40 }, (_, i) => `sujet ${String(i)}`))).toHaveLength(MAX_TOPICS);
+  expect(topicIn("où est la Carte des agents ?", ["carte", "carte des agents"])).toBe("carte des agents");
+  expect(topicIn("les visualisations", ["visualisation"])).toBeUndefined();
+});
+
+it("wakes a holder on a declared topic from a human message only, even in mention mode", () => {
+  const parsed = parsePatternHolder("x/viz.md", '```json pattern-holder\n{"name":"Viz","wake":"mention","topics":["visualisation","carte des agents"]}\n```');
+  if (!("holder" in parsed)) throw Error("holder attendu");
+  const T = "2026-11-18T14:55:00.000Z";
+  const m = (id: string, text: string, who: Partial<FilMessage> = {}): FilMessage => ({ id, at: T, author: "humain", text, ...who });
+  const ask = m("a", "Marco, tu peux retrouver la carte des agents ?");
+  expect(wakeReason(parsed.holder, [ask], [ask], true)).toEqual({ reason: "topic", topic: "carte des agents" });
+  const fromAgent = m("b", "Je cherche la carte des agents", { author: "agent" });
+  expect(wakeReason(parsed.holder, [fromAgent], [fromAgent], true)).toBeNull();
+  const fromHolder = m("c", "la visualisation", { holder: "crypto" });
+  expect(wakeReason(parsed.holder, [fromHolder], [fromHolder], true)).toBeNull();
+  const direct = m("d", "@viz la visualisation ?");
+  expect(wakeReason(parsed.holder, [direct], [direct], true)).toEqual({ reason: "mention" });
+});
+
+it("wakes a topic holder directly, without the router, and tells it why", async () => {
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  writeSections("viz", { "_holder.md": '```json pattern-holder\n{"name":"Viz","emoji":"🌳","topics":["visualisation","carte des agents"]}\n```' });
+  await tick(replying(""));
+  clock += 60_000;
+  human("ui-viz", "Où est la carte des agents ?", iso(-30_000));
+  const calls: string[] = [];
+  const prompts: string[] = [];
+  const call: typeof CallClaude = async (_, _args, input, dir) => {
+    calls.push(path.basename(dir));
+    prompts.push(input);
+    return { text: path.basename(dir) === "reveilleur" ? "[]" : "Elle est dans artifacts/projets/mind-representant-ia/carte-agents/." };
+  };
+  const outcomes = await tickPatternHolders({ dataDir, claude, call, now });
+  // Le réveilleur ne voit plus ce message (il est adressé) ; Viz est réveillé une fois.
+  expect(calls).toEqual(["viz"]);
+  expect(outcomes).toEqual([expect.objectContaining({ slug: "viz", state: "spoke", reason: "topic" })]);
+  expect(prompts[0]).toContain("« carte des agents »");
+  expect(await tickPatternHolders({ dataDir, claude, call, now })).toEqual([]);
+  expect(calls).toEqual(["viz"]);
 });
 
 it("prompt système d'un holder : patterns communs de _commun et lecture des autres holders", async () => {

@@ -114,6 +114,13 @@ export interface PatternHolder {
   readonly name: string;
   readonly emoji: string;
   readonly wakeHint?: string;
+  /**
+   * Sujets déclarés (NLR, 18 nov. 2026 14:55 : « tout ce qui parle de la visualisation, c'est
+   * l'agent Viz ») : un message humain qui contient l'un d'eux, mot ou expression entière sans
+   * tenir compte des accents, réveille ce holder (raison `topic`) et l'invite dans un appel en
+   * cours. Champ `topics` du bloc json ; absent = aucun.
+   */
+  readonly topics?: readonly string[];
   /** Délai choisi par le holder entre deux interventions spontanées (0 par défaut). */
   readonly quietMs: number;
   /** `"mention"` : ne se réveille que sur mention, @handle ou réponse (jamais « fil »). Absent = tout message frais. */
@@ -156,12 +163,14 @@ export function parsePatternHolder(file: string, text: string): HolderParse {
   const wakeMode = header["wake"];
   if (wakeMode !== undefined && wakeMode !== "mention")
     return { error: `\`wake\` inconnu : ${JSON.stringify(wakeMode)} (valeur admise : "mention")` };
+  const topics = parseTopics(header["topics"]);
   const cadence = parseCadence(header["cadence"], header["room"]);
   if ("error" in cadence) return { error: cadence.error };
   return {
     holder: {
       slug,
       ...cadence,
+      ...(topics.length > 0 ? { topics } : {}),
       ...(typeof header["wakeHint"] === "string" ? { wakeHint: header["wakeHint"].trim() } : {}),
       name: name.slice(0, 60),
       emoji: typeof header["emoji"] === "string" ? header["emoji"].slice(0, 8) : "🧭",
@@ -174,6 +183,37 @@ export function parsePatternHolder(file: string, text: string): HolderParse {
       file,
     },
   };
+}
+
+export const MAX_TOPICS = 24;
+
+/**
+ * Sujets d'un en-tête : chaînes de 3 à 60 caractères, sans doublon, au plus `MAX_TOPICS`.
+ * Une valeur mal formée est ignorée sans invalider le holder : un sujet raté ne doit jamais
+ * faire taire son porteur.
+ */
+export function parseTopics(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const topics: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") continue;
+    const topic = item.trim().replace(/\s+/g, " ");
+    // `@slug` reste l'affaire des mentions ; un sujet trop court réveillerait à tort.
+    if (topic.length < 3 || topic.length > 60 || topic.startsWith("@") || /\p{Cc}/u.test(topic)) continue;
+    const key = fold(topic);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    topics.push(topic);
+    if (topics.length >= MAX_TOPICS) break;
+  }
+  return topics;
+}
+
+/** Premier sujet déclaré (le plus long d'abord) présent dans le texte, ou `undefined`. */
+export function topicIn(text: string, topics: readonly string[] | undefined): string | undefined {
+  if (topics === undefined) return undefined;
+  return [...topics].sort((a, b) => b.length - a.length).find((t) => mentionsTopic(text, t));
 }
 
 export function patternHoldersDir(dataDir: string): string {
@@ -370,12 +410,19 @@ export function mentionsTopic(text: string, topic: string): boolean {
   );
 }
 
-export type WakeReason = "mention" | "reply" | "fil" | "handle" | "cadence";
+/** Message dicté pendant un appel vocal : le runtime le préfixe par « [Appel vocal en cours] ». */
+export function isVoiceCallMessage(text: string): boolean {
+  return text.trimStart().startsWith("[Appel vocal en cours]");
+}
+
+export type WakeReason = "mention" | "reply" | "fil" | "handle" | "topic" | "cadence";
 
 /** Raison du réveil, et les personnes mentionnées par @handle dont ce holder est le coach. */
 export interface Wake {
   reason: WakeReason;
   handles?: readonly HandleHit[];
+  /** Sujet déclaré qui a réveillé le holder (raison `topic`). */
+  topic?: string;
   /** Réveil cadencé ou programmé : réveils et temps écoulés, consigne d'appel, notes (`cadenceWakeNote`). */
   cadenceNote?: string;
   /** Phrase de phase de la salle du holder et son échéance (`room-phase.ts`). */
@@ -395,19 +442,31 @@ export function wakeReason(
   fresh: readonly FilMessage[],
   explicitMentionOnly = false,
   handleHit?: (m: FilMessage) => boolean,
-): { reason: WakeReason } | null {
+): { reason: WakeReason; topic?: string } | null {
   let reason: WakeReason | null = null;
+  let topic: string | undefined;
   for (const m of fresh) {
     if (m.holder !== undefined) continue;
-    if (mentionsTopic(m.text, `@${holder.slug}`) || (!explicitMentionOnly && mentionsTopic(m.text, holder.name))) {
+    const voice = m.author === "humain" && isVoiceCallMessage(m.text);
+    if (mentionsTopic(m.text, `@${holder.slug}`) || ((voice || !explicitMentionOnly) && mentionsTopic(m.text, holder.name))) {
       reason = "mention";
       continue;
     }
+    // Appel vocal passé à l'agent principal (NLR, 18 nov. : « j'appelle que Marco ») : un holder
+    // n'y parle que nommé ou mentionné, jamais par sujet, @handle, réponse ou « fil ».
+    if (voice) continue;
     if (handleHit?.(m) === true) {
       reason = "handle";
       continue;
     }
-    if (m.author === "humain" && reason !== "mention" && reason !== "handle") {
+    // Sujet déclaré : un message humain seulement, et même en mode « mention » (déclaration explicite).
+    const hit = m.author === "humain" && reason !== "mention" && reason !== "handle" && reason !== "reply" ? topicIn(m.text, holder.topics) : undefined;
+    if (hit !== undefined) {
+      reason = "topic";
+      topic = hit;
+      continue;
+    }
+    if (m.author === "humain" && reason !== "mention" && reason !== "handle" && reason !== "topic") {
       const before = fil.filter((x) => x.at < m.at && x.id !== m.id).at(-1);
       if (
         before?.holder === holder.slug &&
@@ -418,14 +477,15 @@ export function wakeReason(
     // Mode « mention » : jamais de réveil « fil ».
     if (holder.wake !== "mention") reason ??= "fil";
   }
-  return reason === null ? null : { reason };
+  if (reason === null) return null;
+  return reason === "topic" && topic !== undefined ? { reason, topic } : { reason };
 }
 
 // ---------------------------------------------------------------- prompt
 
 export const PATTERN_HOLDER_NOTE = [
   "Tu es un pattern holder de l'agent MIND : tu portes des patterns et leur pourquoi, dans ta conversation-semence ci-dessous. Ce n'est ni un compte rendu ni un registre de décisions. Tu dors le reste du temps ; le runtime te remet un échange quand tu es appelé, et c'est à toi de juger si un de tes patterns est en jeu.",
-  "Tes seuls outils propres sont les appels à ton humain (call_human, list_active_calls, hangup_call) ; ils ne donnent aucun accès fichier, publication ou desktop. Ton texte est publié tel quel dans le fil principal, sous ton nom, et remis à la session principale, qui a les outils et fait le travail.",
+  "Tes seuls outils propres sont les appels à ton humain (call_human, list_active_calls, hangup_call, invite_to_call pour ajouter un agent à l'appel en cours) ; ils ne donnent aucun accès fichier, publication ou desktop. Ton texte est publié tel quel dans le fil principal, sous ton nom, et remis à la session principale, qui a les outils et fait le travail.",
   "Ton rôle : aider l'agent à être en bonne posture, à partir des patterns et de leur pourquoi : conseil, vision, feedback sur sa façon de faire. Rappelle un pattern au moment où il est en jeu, relie une idée nouvelle à ce que tu portes, signale une contradiction ou une question restée ouverte. Tu ne fais pas le travail de la session principale et tu ne répètes pas ce qui vient d'être dit.",
   "Tu portes le comment et le pourquoi, pas le quoi ni le quand : c'est ton humain qui dirige le travail. Vérifier n'est pas un feu vert à attendre : ne bloque personne, propose d'avancer par petites passes et de corriger ensuite. Ce que ton humain n'a pas tranché reste ouvert : ne lui fais pas dire une décision qu'il n'a pas prise.",
   "Tes sections sont à toi et tu les entretiens toi-même. Quand tu reconnais un pattern important à garder, ou quand ton humain corrige ou complète un pattern, écris la section dans ta réponse avec un bloc ```section nom-de-section.md``` contenant la section entière (bout de discussion avec son pourquoi, dans le style de tes sections). Le runtime l'enregistre dans ton dossier et l'annonce dans le fil. Un pattern n'a pas besoin de s'être joué devant vous : il est vrai en soi. Un nom existant remplace la section : enrichis-la plutôt que d'en créer une qui la répète. Nom en minuscules et tirets ; pas de `_holder.md`, pas de nom commençant par `zz` (l'objectif reste en dernier). Au plus deux sections par réponse ; tu peux répondre SILENCE avec une section pour mémoriser discrètement.",
@@ -521,6 +581,8 @@ export function patternHolderPrompt(
       ? "Tu es mentionné directement : réponds."
       : wake.reason === "reply"
         ? "Ton humain répond à ton dernier message : réponds."
+        : wake.reason === "topic"
+        ? `Ton humain parle d'un de tes sujets déclarés (« ${wake.topic ?? ""} ») : tu es appelé parce que c'est ton domaine. Apporte ce que tu sais d'utile maintenant (où trouver, ce qui est déjà fait, ce qui reste ouvert) ; si tu n'as rien de neuf, SILENCE.`
         : "Nouveaux messages dans le fil. Interviens seulement si un de tes patterns est en jeu et que tu apportes quelque chose maintenant ; sinon SILENCE.";
   return [
     `Heure actuelle : ${localClock(new Date().toISOString())} (heure de Paris, celle de NLR). Toutes les heures ci-dessous et dans tes blocs \`\`\`reveil\`\`\` sont en heure de Paris.`,
