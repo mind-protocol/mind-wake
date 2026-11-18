@@ -68,3 +68,7 @@ Mesures historiques et conditions ci-dessous ; elles ne remplacent pas une recet
 - `--exit-after-sessions` et l'arrêt par Ctrl+C attendent la fin de la session en cours (au plus la durée maximale de session).
 - Rattachement de la session A à l'expérience choisie : écriture SQL directe (`SessionRepository` n'a pas de méthode dédiée).
 - `uninstall` ne détecte pas un daemon actif : l'arrêter d'abord.
+
+## Fournisseur global des agents
+
+Settings propose seulement Claude ou ChatGPT (identifiant interne `codex`). Le choix dans `agent-engine.json` s’applique aux prochains tours du principal, des rooms, des coaches et des réponses rapides. Sans ancien réglage global, Claude est le choix commun par défaut. Les affectations historiques par agent ne choisissent plus le fournisseur. Un quota épuisé ou une erreur ne déclenche aucun passage automatique à l’autre fournisseur ; seul un nouveau choix humain le change. Les tours déjà en cours se terminent avec leur fournisseur initial.

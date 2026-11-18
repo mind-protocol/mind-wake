@@ -9,15 +9,16 @@ export interface EngineChoice {
 }
 const filename = "agent-engine.json";
 export const alternate = (engine: Engine): Engine => (engine === "claude" ? "codex" : "claude");
-export function engineChoice(dir: string): EngineChoice | null {
+const defaultChoice: EngineChoice = { preferred: "claude", revision: "global-default-claude" };
+export function engineChoice(dir: string): EngineChoice {
   try {
     const value = JSON.parse(fs.readFileSync(path.join(dir, filename), "utf8")) as EngineChoice;
     return (value.preferred === "claude" || value.preferred === "codex") &&
       typeof value.revision === "string"
       ? value
-      : null;
+      : defaultChoice;
   } catch {
-    return null;
+    return defaultChoice;
   }
 }
 function write(dir: string, name: string, value: unknown) {
@@ -47,25 +48,18 @@ function unavailableUntil(dir: string, engine: Engine, choice: EngineChoice): nu
     return 0;
   }
 }
-export function preferredEngine(dir: string, choice: EngineChoice): Engine {
-  const other = alternate(choice.preferred);
-  return unavailableUntil(dir, choice.preferred, choice) > Date.now() &&
-    unavailableUntil(dir, other, choice) <= Date.now()
-    ? other
-    : choice.preferred;
+/** The selected provider is global and never changes after a provider failure. */
+export function preferredEngine(_dir: string, choice: EngineChoice): Engine {
+  return choice.preferred;
 }
 
-/** A room's legacy retry barrier is bypassed only when its provider cause is known. */
+/** Only a cooldown proven to belong to the other provider may be bypassed. */
 export function engineAwareRetryAt(dir: string, retryAt: number, now = Date.now()): number {
   const choice = engineChoice(dir);
-  if (!choice) return retryAt;
-  const claudeUntil = unavailableUntil(dir, "claude", choice);
-  const codexUntil = unavailableUntil(dir, "codex", choice);
-  // Disk/runtime/unknown barriers must not become a model retry loop.
-  if (retryAt > now && retryAt !== claudeUntil && retryAt !== codexUntil) return retryAt;
-  if (claudeUntil > now && codexUntil > now) return Math.min(claudeUntil, codexUntil);
-  // The shared router will choose the available backend without retrying the blocked one.
-  return retryAt > now ? 0 : retryAt;
+  const selectedUntil = unavailableUntil(dir, choice.preferred, choice);
+  const otherUntil = unavailableUntil(dir, alternate(choice.preferred), choice);
+  const localRetry = retryAt > now && retryAt === otherUntil && retryAt !== selectedUntil ? 0 : retryAt;
+  return Math.max(localRetry, selectedUntil > now ? selectedUntil : 0);
 }
 export function providerFailure(detail: string) {
   return /quota|rate.?limit|usage.?limit|429|overloaded|service unavailable|temporarily unavailable|provider\.rate_limited|authentication|auth_failed|not logged in|unauthorized|failed to connect|timed? ?out|délai Codex dépassé|system cannot find the file|fichier spécifié est introuvable|indisponible :|ECONNRESET|executable.*not found|exécutable.*introuvable|CreateProcess (?:2|3)\b|ENOENT|\b50[0234]\b/i.test(
@@ -85,38 +79,20 @@ export function recordEngineFailure(
 }
 export async function launchAgentSession<T>(
   dir: string,
-  original: Engine,
+  _original: Engine,
   run: (engine: Engine) => Promise<T>,
   failure: (result: T) => { retryAt?: number | null; replay: boolean } | null,
-  allowed: () => boolean,
+  _allowed: () => boolean,
 ) {
   const choice = engineChoice(dir);
-  if (!choice) return run(original);
-  const first = preferredEngine(dir, choice);
-  const second = alternate(first);
-  const attempt = async (engine: Engine) => {
-    let value: T;
-    try {
-      value = await run(engine);
-    } catch (error) {
-      if (providerFailure(String(error))) recordEngineFailure(dir, choice, engine);
-      throw error;
-    }
+  const engine = choice.preferred;
+  try {
+    const value = await run(engine);
     const failed = failure(value);
     if (failed) recordEngineFailure(dir, choice, engine, failed.retryAt);
-    return { value, failed };
-  };
-  try {
-    const { value, failed } = await attempt(first);
-    if (!failed?.replay || !allowed() || unavailableUntil(dir, second, choice) > Date.now())
-      return value;
+    return value;
   } catch (error) {
-    if (
-      !providerFailure(String(error)) ||
-      !allowed() ||
-      unavailableUntil(dir, second, choice) > Date.now()
-    )
-      throw error;
+    if (providerFailure(String(error))) recordEngineFailure(dir, choice, engine);
+    throw error;
   }
-  return (await attempt(second)).value;
 }
