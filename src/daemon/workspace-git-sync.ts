@@ -242,9 +242,11 @@ export class WorkspaceGitSync {
         /* Abort cancels the active command. */
       }
     }, 200);
+    // Must outlast the per-command limits (add and commit: 5 min each), or a large
+    // add is killed by this run-level timer before its own deadline.
     const timeout = setTimeout(() => {
       controller.abort();
-    }, 90_000);
+    }, 12 * 60_000);
     try {
       guard();
       state.repairNotified = false;

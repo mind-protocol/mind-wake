@@ -9,12 +9,21 @@ export class GitCommandError extends Error {
   constructor(
     operation: string,
     readonly transient: boolean,
+    reason: "network" | "file-changed" = "network",
   ) {
     super(
-      `Git ${operation} failed${transient ? " (temporary network failure; retry in one minute)" : "; inspect the repository locally"}.`,
+      `Git ${operation} failed${
+        !transient
+          ? "; inspect the repository locally"
+          : reason === "file-changed"
+            ? " (a file changed while Git was reading it; retry in one minute)"
+            : " (temporary network failure; retry in one minute)"
+      }.`,
     );
   }
 }
+/** Git reads a live workspace: a file rewritten mid-add is a race, not a broken repository. */
+export const FILE_CHANGED_WHILE_INDEXING = /short read while indexing|file changed as we read it/i;
 /** Remove only a newly-created lock after the supervised process is confirmed dead. */
 export function cleanupKilledGitIndexLock(
   indexLock: string,
@@ -94,6 +103,8 @@ export async function git(
     if (exit.mainExitCode !== 0 || line === null)
       throw new GitCommandError(args[0] ?? "operation", false);
     const result = JSON.parse(line) as { failed: boolean; stdout: string; stderr: string };
+    if (result.failed && FILE_CHANGED_WHILE_INDEXING.test(result.stderr))
+      throw new GitCommandError(args[0] ?? "operation", true, "file-changed");
     if (result.failed)
       throw new GitCommandError(
         args[0] ?? "operation",
