@@ -48,12 +48,23 @@ const chunkId = (id, index, count) => (count > 1 ? `${id}~${index}` : id);
 export const MIRROR_TAG = '[Appel]';
 // Retained only to recognize silence in older conversation entries.
 export const MIRROR_RULE = "(Règle d'appel : Marco répond par défaut ; les autres participants ne parlent que s'ils apportent quelque chose de neuf, sinon SILENCE.)";
-export const MIRROR_MAX_CHARS = 1200;
+/**
+ * Copie d'appel entière (NLR, 18 nov. 2026 14:50) : plus de coupe à 1 200 caractères. La limite
+ * reste sous le budget du hook du fil principal (OWNER_HOOK_MAX_CHARS = 8 000, src/communication/
+ * owner-inbox.ts) ; une coupe éventuelle est signalée en clair, jamais par un simple « … ».
+ */
+export const MIRROR_MAX_CHARS = 6000;
+/** Regroupement des morceaux d'un même orateur pour les agents : accalmie, puis plafond d'attente. */
+export const MIRROR_QUIET_MS = 5000;
+export const MIRROR_MAX_WAIT_MS = 20_000;
 /** Préavis d'appel (NLR, 17 nov. 2026) : l'appelé sait que NLR l'appelle avant la première phrase. */
 export const ringText = (callId, caller = 'NLR') => `${MIRROR_TAG} 📞 ${caller} t'appelle — prépare-toi à décrocher et envoie-lui ce que tu as à lui dire (appel ${callId}).`;
+/** Une copie : un ou plusieurs morceaux consécutifs du même orateur, dans l'ordre, séparés par une ligne vide. */
 export const mirrorText = (speaker, text) => {
-  const body = String(text).trim();
-  const clipped = body.length > MIRROR_MAX_CHARS ? `${body.slice(0, MIRROR_MAX_CHARS - 1)}…` : body;
+  const body = (Array.isArray(text) ? text : [text]).map(part => String(part).trim()).filter(Boolean).join('\n\n');
+  const clipped = body.length > MIRROR_MAX_CHARS
+    ? `${body.slice(0, MIRROR_MAX_CHARS)}… [copie d'appel coupée : ${body.length - MIRROR_MAX_CHARS} caractères non recopiés]`
+    : body;
   return `${MIRROR_TAG} ${speaker} : ${clipped}`;
 };
 /** Convention « pas de réponse » : texte SILENCE, ou dernière ligne SILENCE une fois la règle d'appel retirée. */
@@ -78,7 +89,8 @@ const keySafe = value => String(value).replace(/[^A-Za-z0-9_.:-]/g, '_');
 export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HANDLE, handleTable, routeHandle,
   sendMain, wakeMain = () => {}, mainReplies, roomEntries, speak, holders: holderList, owners: ownerMap,
   transcribing: busy = () => false, now = Date.now, cacheSize = 12,
-  noticeMain = null, noticeRoom = null, answerCall = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000 } = {}) {
+  noticeMain = null, noticeRoom = null, answerCall = null, mirrorPerMinute = 20, idleMs = 45_000, mirrorIntervalMs = 2000,
+  mirrorQuietMs = MIRROR_QUIET_MS, mirrorMaxWaitMs = MIRROR_MAX_WAIT_MS } = {}) {
   let transcribing = busy;
   let remote = null;
   if (typeof sendMain !== 'function' || typeof mainReplies !== 'function' || typeof speak !== 'function')
@@ -451,22 +463,51 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
             if (!c.seen.has(item.id) && Date.parse(item.at) >= floor && item.text.trim() && !item.text.startsWith(MIRROR_TAG))
               fresh.set(item.id, { ...item, channel: channelOf(target), source: target.handle });
         }
+        /*
+         * Regroupement (NLR, 18 nov. 2026 14:50) : un agent répond en plusieurs messages courts ; les
+         * autres agents reçoivent une seule copie par prise de parole. Les morceaux d'un même orateur
+         * s'accumulent jusqu'à une accalmie (mirrorQuietMs sans nouveau morceau) ou au plafond
+         * d'attente (mirrorMaxWaitMs depuis le premier). L'humain n'est pas concerné : l'app lit les
+         * réponses dans le fil de l'interlocuteur (replies/speech), sans attendre ces copies.
+         */
+        c.groups ??= new Map(); c.outbox ??= [];
+        const seenAt = now();
+        const freeze = (groupKey, group) => {
+          c.groups.delete(groupKey);
+          c.outbox.push({ ...group, dests: new Set(channels.filter(ch => ch !== group.channel)),
+            text: mirrorText(group.speaker, group.items.map(i => i.text)) });
+        };
         for (const item of [...fresh.values()].sort((x, y) => Date.parse(x.at) - Date.parse(y.at))) {
-          if (!calls.has(c.id)) break; // Raccroché pendant le passage.
-          if (!c.targets.has(item.source)) continue;
-          const dests = channels.filter(ch => ch !== item.channel);
-          c.sent = c.sent.filter(t => now() - t < 60_000);
-          // Plafond par appel : au-delà, la copie attend un passage suivant.
-          if (c.sent.length + dests.length > mirrorPerMinute) break;
-          const text = mirrorText(item.speaker, item.text);
-          let ok = true;
-          for (const dest of dests) {
-            if (!calls.has(c.id) || ![...c.targets.values()].some(v => channelOf(v.target) === dest)) continue;
-            // Clé d'idempotence par copie : un nouveau passage ou un redémarrage ne double rien.
-            const key = `call-mirror:${keySafe(c.id)}:${createHash('sha256').update(`${item.id}|${dest}`).digest('hex')}`;
-            try { if (await post(dest, key, text, c)) c.sent.push(now()); else ok = false; } catch { ok = false; }
+          c.seen.add(item.id);
+          const groupKey = `${item.source}|${item.channel}|${item.speaker}`;
+          const open = c.groups.get(groupKey);
+          // Un groupe trop long part tel quel ; le morceau suivant en ouvre un autre (pas de coupe).
+          if (open && open.items.reduce((n, i) => n + i.text.trim().length + 2, item.text.trim().length) > MIRROR_MAX_CHARS)
+            freeze(groupKey, open);
+          const group = c.groups.get(groupKey) ?? { source: item.source, channel: item.channel, speaker: item.speaker, items: [], first: seenAt, last: seenAt };
+          group.items.push({ id: item.id, text: item.text }); group.last = seenAt;
+          c.groups.set(groupKey, group);
+        }
+        for (const [groupKey, group] of [...c.groups].sort(([, x], [, y]) => x.first - y.first))
+          if (seenAt - group.last >= mirrorQuietMs || seenAt - group.first >= mirrorMaxWaitMs) freeze(groupKey, group);
+        // Envoi dans l'ordre ; une copie figée garde son texte et sa clé jusqu'à remise à chaque fil.
+        for (const entry of [...c.outbox]) {
+          if (!calls.has(c.id)) break; // Raccroché pendant le passage : plus aucune copie.
+          if (!c.targets.has(entry.source)) { c.outbox.splice(c.outbox.indexOf(entry), 1); continue; }
+          let capped = false;
+          for (const dest of [...entry.dests]) {
+            if (!calls.has(c.id)) break;
+            if (![...c.targets.values()].some(v => channelOf(v.target) === dest)) { entry.dests.delete(dest); continue; }
+            c.sent = c.sent.filter(t => now() - t < 60_000);
+            // Plafond par appel : au-delà, la copie attend un passage suivant.
+            if (c.sent.length + 1 > mirrorPerMinute) { capped = true; break; }
+            // Clé d'idempotence par groupe et par fil : un nouveau passage ou un redémarrage ne double
+            // rien (un groupe d'un seul morceau garde la clé d'avant le regroupement).
+            const key = `call-mirror:${keySafe(c.id)}:${createHash('sha256').update(`${entry.items.map(i => i.id).join(',')}|${dest}`).digest('hex')}`;
+            try { if (await post(dest, key, entry.text, c)) { c.sent.push(now()); entry.dests.delete(dest); } } catch { /* Nouvel essai au passage suivant. */ }
           }
-          if (ok) c.seen.add(item.id);
+          if (!entry.dests.size) c.outbox.splice(c.outbox.indexOf(entry), 1);
+          if (capped) break;
         }
       }
     })().finally(() => { ticking = null; });

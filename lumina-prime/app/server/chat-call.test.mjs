@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { createChatServer } from './chat-server.mjs';
-import { createCallService, audioMime, callBody, speechChunks, CALL_INSTRUCTION, mirrorText, MIRROR_RULE, isSilence, ringText } from './chat-call.mjs';
+import { createCallService, audioMime, callBody, speechChunks, CALL_INSTRUCTION, mirrorText, MIRROR_RULE, MIRROR_MAX_CHARS, isSilence, ringText } from './chat-call.mjs';
 
 const id = 'chat-382582c4-90f8-4dfb-910d-6c976ad77247';
 const code = 'pairing-code-123456789012';
@@ -238,11 +238,11 @@ test('speechChunks keeps the first sentence alone and groups the rest under the 
   assert.deepEqual(speechChunks('Sans ponctuation finale'), ['Sans ponctuation finale']);
 });
 
-function shared() {
+function shared(options = {}) {
   const main = []; const room3 = []; const room7 = []; const mainNotices = []; const roomNotices = []; let clock = Date.parse('2026-11-16T18:00:00.000Z');
   const medicis = { room: 3, agent: null, label: 'Médicis (Room 3)' }; const vox = { room: 7, agent: null, label: 'VOX (Room 7)' };
   const table = new Map([['room3', medicis], ['medicis', medicis], ['room7', vox], ['vox', vox]]);
-  const call = createCallService({ mainLabel: 'Marco', handleTable: () => table, now: () => clock, mirrorIntervalMs: 0, mirrorPerMinute: 4, idleMs: 45_000,
+  const call = createCallService({ mainLabel: 'Marco', handleTable: () => table, now: () => clock, mirrorIntervalMs: 0, mirrorPerMinute: 4, idleMs: 45_000, mirrorQuietMs: 0, ...options,
     routeHandle: async handle => ({ status: 'routed', label: table.get(handle).label }),
     sendMain: async () => ({ at: new Date(clock).toISOString() }), mainReplies: async () => main,
     roomEntries: async room => (room === 3 ? room3 : room === 7 ? room7 : []),
@@ -282,10 +282,10 @@ test('mirrored copies are never mirrored again, never voiced, and the rate is ca
   await f.call.mirrorTick(); await f.call.mirrorTick();
   assert.equal(f.roomNotices.length, 1); assert.equal(f.mainNotices.length, 1);
   assert.deepEqual((await f.call.replies('medicis', new Date(0).toISOString())).map(i => i.text), ['Un.']);
-  // Plafond : 4 copies par minute pour cet appel, la suite attend.
-  for (let n = 2; n < 9; n++) f.room3.push({ id: n, role: 'agent', at: f.at(), text: `R${n}.` });
-  await f.call.mirrorTick();
+  // Plafond : 4 copies par minute pour cet appel, la suite attend (une prise de parole par passage).
+  for (let n = 2; n < 9; n++) { f.room3.push({ id: n, role: 'agent', at: f.at(), text: `R${n}.` }); await f.call.mirrorTick(); }
   assert.equal(f.mainNotices.length + f.roomNotices.length, 4);
+  assert.deepEqual(f.mainNotices.map(n => n.text), ['[Appel] Médicis : Un.', '[Appel] Médicis : R2.', '[Appel] Médicis : R3.']);
   f.tick(61_000); f.call.replies('mind', new Date(0).toISOString());
   await f.call.mirrorTick();
   assert.equal(f.mainNotices.length + f.roomNotices.length, 8);
@@ -362,4 +362,63 @@ test('opening a call sends one "NLR t\'appelle" notice per callee, idempotent on
   // Le préavis n'est jamais recopié comme réplique.
   await f.call.mirrorTick();
   assert.equal(f.mainNotices.length, 1); assert.equal(f.roomNotices.length, 2);
+});
+
+test('an agent speaking in several short messages reaches the other agents as one whole copy after a lull', async () => {
+  const f = shared({ mirrorQuietMs: 5000, mirrorMaxWaitMs: 20_000 });
+  await f.call.deliver('mind,medicis', id, 'on parle du budget');
+  f.tick(1000);
+  const long = `Deuxième morceau ${'très détaillé '.repeat(150)}fin.`;
+  f.room3.push({ id: 1, role: 'agent', at: f.at(), text: 'Je regarde.' });
+  await f.call.mirrorTick();
+  f.tick(2000); f.room3.push({ id: 2, role: 'agent', at: f.at(), text: long });
+  await f.call.mirrorTick();
+  f.tick(3000); f.room3.push({ id: 3, role: 'agent', at: f.at(), text: 'Voilà la réponse.' });
+  await f.call.mirrorTick();
+  // Pas encore d'accalmie : rien n'est parti vers les agents, mais l'humain lit déjà chaque morceau.
+  assert.equal(f.mainNotices.length, 0);
+  assert.equal((await f.call.replies('medicis', new Date(0).toISOString())).length >= 3, true);
+  f.tick(5000); await f.call.mirrorTick();
+  assert.equal(f.mainNotices.length, 1);
+  assert.equal(f.mainNotices[0].text, `[Appel] Médicis : Je regarde.\n\n${long}\n\nVoilà la réponse.`);
+  assert.equal(f.mainNotices[0].text.length > 1500, true);
+  assert.equal(f.mainNotices[0].text.includes('…'), false);
+  // Idempotence : passages suivants, rien de plus ; la clé est stable pour le groupe.
+  f.tick(10_000); await f.call.mirrorTick(); await f.call.mirrorTick();
+  assert.equal(f.mainNotices.length, 1);
+  assert.match(f.mainNotices[0].key, /^call-mirror:/);
+});
+
+test('a speaker who never pauses is flushed at the max wait; speakers are grouped separately', async () => {
+  const f = shared({ mirrorQuietMs: 5000, mirrorMaxWaitMs: 20_000, mirrorPerMinute: 20 });
+  await f.call.deliver('mind,medicis,vox', id, 'go');
+  for (let n = 1; n <= 6; n++) {
+    f.tick(4000);
+    f.room3.push({ id: n, role: 'agent', at: f.at(), text: `M${n}.` });
+    f.room7.push({ id: n, role: 'agent', at: f.at(), text: `V${n}.` });
+    await f.call.mirrorTick();
+  }
+  // 20 s après le premier morceau, sans accalmie : une copie par orateur avec ses 6 morceaux, dans l'ordre.
+  assert.deepEqual(f.mainNotices.map(n => n.text).sort(), ['[Appel] Médicis : M1.\n\nM2.\n\nM3.\n\nM4.\n\nM5.\n\nM6.', '[Appel] VOX : V1.\n\nV2.\n\nV3.\n\nV4.\n\nV5.\n\nV6.']);
+  f.tick(4000); f.room3.push({ id: 7, role: 'agent', at: f.at(), text: 'M7.' }); f.room7.push({ id: 7, role: 'agent', at: f.at(), text: 'V7.' });
+  await f.call.mirrorTick();
+  assert.equal(f.mainNotices.length, 2);
+  f.tick(5000); await f.call.mirrorTick();
+  assert.deepEqual(f.mainNotices.map(n => n.text).slice(2).sort(), ['[Appel] Médicis : M7.', '[Appel] VOX : V7.']);
+  // Chaque room reçoit l'autre orateur, jamais le sien.
+  assert.equal(f.roomNotices.filter(n => n.room === 3 && n.text.includes('Médicis')).length, 0);
+  assert.equal(f.roomNotices.filter(n => n.room === 7 && n.text.includes('Médicis')).length, 2);
+});
+
+test('pending pieces are dropped on hang-up; an oversized reply is cut with an explicit notice', async () => {
+  const f = shared({ mirrorQuietMs: 5000 });
+  await f.call.deliver('mind,medicis', id, 'go');
+  f.tick(1000); f.room3.push({ id: 1, role: 'agent', at: f.at(), text: 'Morceau en attente.' });
+  await f.call.mirrorTick();
+  f.call.end('mind,medicis');
+  f.tick(10_000); await f.call.mirrorTick();
+  assert.equal(f.mainNotices.length, 0);
+  const huge = 'x'.repeat(MIRROR_MAX_CHARS + 50);
+  assert.equal(mirrorText('VOX', huge), `[Appel] VOX : ${'x'.repeat(MIRROR_MAX_CHARS)}… [copie d'appel coupée : 50 caractères non recopiés]`);
+  assert.equal(mirrorText('VOX', ['Un.', ' ', 'Deux.']), '[Appel] VOX : Un.\n\nDeux.');
 });

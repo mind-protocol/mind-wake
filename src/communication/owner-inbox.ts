@@ -28,6 +28,12 @@ export interface InboxMessage {
 }
 export const OWNER_HOOK_MAX_CHARS = 8_000;
 export const OWNER_PEER_MAX_CHARS = 1_500;
+/**
+ * Copies d'appel (canal « call », lumina-prime/app/server/chat-call.mjs) : une prise de parole entière
+ * en un seul message (NLR, 18 nov. 2026 14:50). Le serveur d'appel les borne déjà à 6 000 caractères
+ * de texte ; cette limite ne sert que de garde-fou et signale la coupe en clair.
+ */
+export const OWNER_CALL_MAX_CHARS = 6_500;
 const FILE = "owner-inbox.sqlite";
 const MAX_CLAIM_IMAGE_BYTES = 16_000_000;
 
@@ -355,10 +361,15 @@ export function takeOwnerMessagesForHook(
           ...(origin_json === null ? {} : { origin: JSON.parse(origin_json) as NonNullable<InboxMessage["origin"]> }),
         };
         const human = message.origin === undefined;
-        if (!human && message.text.length > OWNER_PEER_MAX_CHARS)
-          message.text = clipPeerText(message.text, OWNER_PEER_MAX_CHARS);
+        const call = message.origin?.channel === "call";
+        const limit = call ? OWNER_CALL_MAX_CHARS : OWNER_PEER_MAX_CHARS;
+        if (!human && message.text.length > limit)
+          message.text = call
+            ? `${message.text.slice(0, limit)}… [copie d'appel coupée : ${String(message.text.length - limit)} caractères non transmis]`
+            : clipPeerText(message.text, limit);
         const cost = ownerMessageText(message).length + 2; // exact encoded hook text plus separator
-        if (!human && size + cost > maxChars) {
+        // Un message pair seul passe toujours (une copie d'appel longue ne reste jamais bloquée).
+        if (!human && size > 0 && size + cost > maxChars) {
           deferred++;
           continue;
         }

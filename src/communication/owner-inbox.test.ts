@@ -12,6 +12,7 @@ import {
   confirmOwnerClaim,
   releaseOwnerClaims,
   takeOwnerMessagesForHook,
+  OWNER_CALL_MAX_CHARS,
 } from "./owner-inbox.js";
 import { ownerInboxHook } from "./owner-inbox-hook.js";
 import { claudeRunArgs } from "../adapters/claude/command.js";
@@ -109,6 +110,21 @@ it("injects desktop messages once, in order, and retains deduplication across wa
   expect(ownerInboxHook(dir, "session-1", input())).toBeNull();
   send();
   expect(ownerInboxHook(dir, "session-1", input("SessionStart"))).toBeNull();
+});
+
+it("delivers call copies whole up to the call limit, flags any cut, and never starves a lone copy", () => {
+  const origin = { kind: "peer_message" as const, channel: "call", author: "Appel", senderRef: "call", recipientRef: "principal", threadId: "call", messageId: "call-mirror:a", correlationId: "call-mirror:a" };
+  const whole = `[Appel] Coach des coachs : ${"mot ".repeat(1200)}fin.`;
+  enqueueOwnerMessage(dir, { id: "fast-reply-fyi:call-mirror:a", at: "2026-11-18T14:47:21Z", text: whole, origin });
+  enqueueOwnerMessage(dir, { id: "fast-reply-fyi:call-mirror:b", at: "2026-11-18T14:47:22Z", text: "C".repeat(OWNER_CALL_MAX_CHARS + 40), origin: { ...origin, messageId: "call-mirror:b", correlationId: "call-mirror:b" } });
+  const first = takeOwnerMessagesForHook(dir, "s1");
+  expect(first.messages.map(m => m.text)).toEqual([whole]);
+  expect(first.deferred).toBe(1);
+  // Seule et plus grande que le budget passé : elle passe quand même, coupe signalée en clair.
+  const second = takeOwnerMessagesForHook(dir, "s2", 1000);
+  expect(second.messages).toHaveLength(1);
+  expect(second.messages[0]!.text).toBe(`${"C".repeat(OWNER_CALL_MAX_CHARS)}… [copie d'appel coupée : 40 caractères non transmis]`);
+  expect(ownerMessagePending(dir)).toBe(false);
 });
 
 it("bounds peer hook delivery, preserves Reddit links, and never truncates human messages", () => {

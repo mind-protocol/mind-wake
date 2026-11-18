@@ -95,7 +95,7 @@ async function fixture(t) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mind-call-peers-'));
   function install(label) {
     const main=[],room=[],notices=[],sent=[],handles=new Map([['room3',{room:3,agent:null,label:'Room 3'}]]);
-    const call=createCallService({mainLabel:label,mainAgentId:'marco',mirrorIntervalMs:0,
+    const call=createCallService({mainLabel:label,mainAgentId:'marco',mirrorIntervalMs:0,mirrorQuietMs:0,
       handleTable:()=>handles,
       mainReplies:()=>main,roomEntries:()=>room,sendMain:async(id,text)=>{sent.push({id,text});return {};},
       routeHandle:async(handle,text,id)=>{sent.push({id,text,handle});return {status:'routed'};},
