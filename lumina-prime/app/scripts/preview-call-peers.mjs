@@ -21,7 +21,7 @@ for (const [label,port] of [['PC de test A',18789],['PC de test B',18790]]) {
   console.log(`Preview only: http://127.0.0.1:${port}/desktop-call`);
 }
 if(process.env.MIND_PREVIEW_HUMAN==='1') {
-  const [a,b]=running,invite=await b.peers.admin('invite',{shared:['mind']});
+  const [a,b]=running,invite=await b.peers.admin('invite');
   await a.peers.admin('pair',{address:`http://127.0.0.1:${invite.port}`,code:invite.code});
   const scope={owner:'preview-human',id:randomUUID(),epoch:1};
   a.call.openSession(scope.owner,scope.id,1,a.call.targets().filter(t=>t.kind==='remote').map(t=>t.handle));

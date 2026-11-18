@@ -3,12 +3,12 @@
 Dans le desktop : **Appel → Réglages → Appels avec d’autres PC**.
 
 1. Installer cette version sur les deux PC et les connecter au même réseau local.
-2. Sur le PC qui reçoit l’appel, renseigner le nom de l’installation et de son utilisateur, sélectionner les agents/rooms à partager et créer un code d’association.
-3. Sur le PC appelant, renseigner ses propres noms, saisir l’adresse locale affichée sur le PC distant et coller son code. Le code est valable cinq minutes, pour une seule association.
+2. Sur le PC qui reçoit l’appel, renseigner le nom de l’installation et de son utilisateur, créer un code d’association.
+3. Sur le PC appelant, renseigner ses propres noms, saisir l’adresse locale affichée sur le PC distant et coller son code. Le code est valable une heure, pour une seule association.
 4. Fermer les réglages, ouvrir « + », sélectionner les agents dans **Autres PC**, puis appeler. Il est possible de mélanger des agents locaux et distants (huit participants au total).
-5. Pour autoriser les appels dans l’autre sens, répéter l’association dans le sens inverse. « Révoquer » retire l’autorisation et termine les appels concernés. Pour modifier la sélection partagée, révoquer puis associer de nouveau.
+5. Pour autoriser les appels dans l’autre sens, répéter l’association dans le sens inverse. « Révoquer » retire l’autorisation et termine les appels concernés. Tous les agents et rooms locaux sont partagés par défaut, y compris ceux ajoutés après l’association. Cette règle s’applique aussi aux associations existantes.
 
-**Copier le prompt de liaison** prépare directement un texte à coller à l’agent de l’autre PC : noms, adresses locales, nouveau code, expiration, agents/rooms sélectionnés et procédure d’association dans les deux sens. Ce bouton remplace le code précédent ; le nouveau code reste valable cinq minutes et ne sert qu’une fois. Si le navigateur bloque le presse-papiers, le prompt reste affiché et peut être copié manuellement.
+**Copier le prompt de liaison** prépare directement un texte à coller à l’agent de l’autre PC : noms, adresses locales, nouveau code, expiration, tous les agents/rooms et procédure d’association dans les deux sens. Ce bouton remplace le code précédent ; le nouveau code reste valable une heure et ne sert qu’une fois. Si le navigateur bloque le presse-papiers, le prompt reste affiché et peut être copié manuellement.
 
 Le destinataire reçoit le préavis avec le nom de l’appelant et de son installation. Chaque agent reste exécuté sur son propre PC. Le PC appelant transcrit le microphone puis transmet le texte ; la voix des réponses est produite sur l’installation de l’agent et renvoyée à l’appelant.
 
@@ -34,7 +34,7 @@ La transcription humaine emprunte le routage habituel vers chaque destinataire ;
 
 Le service pair écoute sur **TCP 8790**, uniquement après création d’un code sur cette installation (et aux démarrages suivants). Le pare-feu Windows doit autoriser ce port depuis le réseau privé. Le réseau Wi-Fi ne doit pas isoler les appareils entre eux. Utiliser une adresse IPv4 privée ; la découverte automatique et les appels Internet ne sont pas inclus. Si l’adresse change, refaire l’association avec la nouvelle adresse.
 
-Le port 8790 expose exclusivement le protocole d’appel. Il n’expose ni la session du propriétaire, ni les outils de l’agent, ni l’historique général, ni les fichiers. Les lectures et la synthèse vocale sont limitées aux destinataires autorisés et aux messages de la session d’appel. Partager une room ou un agent dont le fil contient plusieurs voix partage les messages de ce fil accessibles au destinataire, uniquement pendant l’appel ; choisir un holder applique son filtre existant.
+Le port 8790 expose exclusivement le protocole d’appel. Il n’expose ni la session du propriétaire, ni les outils de l’agent, ni l’historique général, ni les fichiers. Les lectures et la synthèse vocale sont limitées aux participants de l’appel et aux messages de la session d’appel. Partager une room ou un agent dont le fil contient plusieurs voix partage les messages de ce fil accessibles au destinataire, uniquement pendant l’appel ; choisir un holder applique son filtre existant.
 
 Les corps de requêtes et réponses sont chiffrés et authentifiés par AES-256-GCM, y compris sur HTTP local. L’invitation utilise une clé aléatoire de 256 bits ; une clé différente est créée pour l’association persistante. Les requêtes comportent un nonce, une date et un contrôle de rejeu. Les clés sont conservées dans `credentials/call-peers.json` dans le profil local, jamais dans le navigateur ni dans le dépôt. L’administration des associations exige une session propriétaire sur une connexion loopback.
 

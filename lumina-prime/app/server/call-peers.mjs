@@ -58,11 +58,15 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file + '.pending', JSON.stringify(config), { mode: 0o600 }); fs.renameSync(file + '.pending', file);
   };
+  // Existing associations also share all local targets; discard old allowlists.
+  const hadAllowlists = config.peers.some(p => Object.hasOwn(p, 'shared'));
+  for (const p of config.peers) delete p.shared;
+  if (hadAllowlists) save();
   const localTargets = () => call.targets().filter(t => t.kind !== 'remote');
   const peer = id => config.peers.find(p => p.id === id) ?? fail('peer_unknown', 404);
-  const exported = p => localTargets().filter(t => p.shared.includes(t.handle)).map(t => ({ handle: t.handle, label: t.label, kind: t.kind, channel: call.channelOf(call.resolve(t.handle)) }));
-  const permitted = (p, handles) => {
-    for (const h of list(handles)) if (!exported(p).some(t => t.handle === h)) fail('peer_target_forbidden', 403);
+  const exported = () => localTargets().map(t => ({ handle: t.handle, label: t.label, kind: t.kind, channel: call.channelOf(call.resolve(t.handle)) }));
+  const permitted = handles => {
+    for (const h of list(handles)) if (!exported().some(t => t.handle === h)) fail('peer_target_forbidden', 403);
     return handles;
   };
   function closeIncoming(c) {
@@ -73,11 +77,11 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     const c = incoming.get(`${p.id}:${uuid(id)}`);
     if (!c) fail('call_ended',410);
     if (now() - c.lastSeen > 45_000 || controls?.control({id:c.id,epoch:1})?.status === 'ended') { closeIncoming(c); fail('call_ended',410); }
-    call.assertSession(c.owner,c.id,1); permitted(p,c.handles); c.lastSeen = now();
+    call.assertSession(c.owner,c.id,1); permitted(c.handles); c.lastSeen = now();
     call.stateSession(c.owner,c.id,1); return c;
   }
   async function dispatch(p, input) {
-    if (input.op === 'directory') return { label:config.label, targets:exported(p), at:now() };
+    if (input.op === 'directory') return { label:config.label, targets:exported(), at:now() };
     if (input.op === 'end') {
       const c = incoming.get(`${p.id}:${uuid(input.call)}`); if(c) closeIncoming(c);
       controls?.markEnded({id:inboundId(p.id,input.call),epoch:1});
@@ -89,7 +93,7 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
       if (!Number.isSafeInteger(input.revision) || input.revision < 1) fail('call_revision_invalid');
       const key = `${p.id}:${uuid(input.call)}`;
       if (replays.has(`ended:${key}`)) fail('call_ended',410);
-      const handles = permitted(p,list(input.handles));
+      const handles = permitted(list(input.handles));
       let c = incoming.get(key);
       if (!c) {
         if(input.create!==true)fail('call_ended',410);
@@ -133,7 +137,7 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
       return { items:await call.sessionItems(c.owner,c.id,1,input.target) };
     }
     if (input.op === 'deliver') {
-      const handles=permitted(p,list(input.handles));
+      const handles=permitted(list(input.handles));
       if(handles.some(h=>!c.handles.includes(h)))fail('call_target_not_joined',403);
       if(typeof input.text!=='string'||input.text.length>4000||typeof input.message!=='string'||input.message.length>100)fail('invalid_request');
       const key=`peer-${hash(`${p.id}:${input.call}:${input.message}`).slice(0,40)}`;
@@ -184,9 +188,9 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
             if(invitation) {
               if(input.op!=='pair'||invitation.expiresAt<now())fail('peer_invitation_expired',410);
               if(config.peers.length>=32)fail('too_many_peers',429);
-              const paired={id:hex(8),secret:hex(32),direction:'in',label:name(input.label),caller:name(input.caller),shared:invitation.shared};
+              const paired={id:hex(8),secret:hex(32),direction:'in',label:name(input.label),caller:name(input.caller)};
               config.peers.push(paired);save();invites.delete(envelope.id);
-              result={id:paired.id,secret:paired.secret,label:config.label,targets:exported(paired)};
+              result={id:paired.id,secret:paired.secret,label:config.label,targets:exported()};
             } else result=await dispatch(p,input);
             send(200,sealPeer(secret,envelope.id,{nonce:input.nonce,result}));
           } catch(error) {send(200,sealPeer(secret,envelope.id,{nonce:input.nonce,error:error.code??'peer_unavailable',status:error.status??503}));}
@@ -212,7 +216,7 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     return value.result;
   }
   function cacheDirectory(p, targets) {
-    if(!Array.isArray(targets)||targets.length>120)fail('invalid_response');
+    if(!Array.isArray(targets))fail('invalid_response');
     for(const [h,t] of directory)if(t.peerId===p.id)directory.delete(h);
     for(const t of targets) {
       if(!/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(t.handle)||!['main','room','agent','holder'].includes(t.kind)||!(/^(main|room:[2-9])$/).test(t.channel))fail('invalid_response');
@@ -350,15 +354,14 @@ export function createCallPeers({ call, controls = null, file = null, port = 879
     const listenPort=server?.address()?.port??port;
     return {label:config.label,caller:config.caller,enabled:Boolean(server),port:listenPort,error:startupError,
       addresses:Object.values(os.networkInterfaces()).flat().filter(v=>v&&v.family==='IPv4'&&!v.internal&&isPrivateAddress(v.address)).map(v=>`http://${v.address}:${listenPort}`),
-      peers:config.peers.map(({id,label,direction,shared,address,online})=>({id,label,direction,shared,address,online})),targets:localTargets()};
+      peers:config.peers.map(({id,label,direction,address,online})=>({id,label,direction,address,online})),targets:localTargets()};
   }
   async function admin(action,input={}) {
     if(action==='status')return status();
     if(action==='profile'){config.label=name(input.label);config.caller=name(input.caller);save();return status();}
     if(action==='invite') {
-      const shared=list(input.shared);if(shared.some(h=>!localTargets().some(t=>t.handle===h)))fail('call_target_unknown');
       await start();config.enabled=true;save();invites.clear();
-      const id=hex(8),secret=hex(32),expiresAt=now()+300_000;invites.set(id,{secret,shared,expiresAt});
+      const id=hex(8),secret=hex(32),expiresAt=now()+3_600_000;invites.set(id,{secret,expiresAt});
       return {...status(),code:`${id}.${secret}`,expiresAt};
     }
     if(action==='pair') {

@@ -5,7 +5,7 @@ import { call, type ChatSession } from './client';
 import { type CallTarget } from './call-client';
 import { colors, styles as s } from '../ui/theme';
 
-type Peer = { id: string; label: string; direction: 'in' | 'out'; online?: boolean; shared?: string[]; address?: string };
+type Peer = { id: string; label: string; direction: 'in' | 'out'; online?: boolean; address?: string };
 type PeerState = { label: string; caller: string; enabled: boolean; addresses: string[]; targets: CallTarget[]; peers: Peer[]; code?: string; expiresAt?: number; error?:string|null };
 const errors: Record<string,string> = {
   peer_admin_local_only: 'L’association se règle depuis le desktop de ce PC.',
@@ -26,7 +26,7 @@ function Button({text,disabled,onPress}:{text:string;disabled?:boolean;onPress:(
 /** Desktop-only management. The peer listener exposes calls, never these owner controls. */
 export function CallPeers({session,onChanged}:{session:ChatSession;onChanged:()=>void}) {
   const [state,setState]=useState<PeerState|null>(null),[label,setLabel]=useState(''),[caller,setCaller]=useState('');
-  const [shared,setShared]=useState<string[]>([]),[address,setAddress]=useState(''),[code,setCode]=useState('');
+  const [address,setAddress]=useState(''),[code,setCode]=useState('');
   const [invitation,setInvitation]=useState<{code:string;expiresAt:number}|null>(null);
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const [linkPrompt,setLinkPrompt]=useState(''),[copyStatus,setCopyStatus]=useState('');
@@ -61,16 +61,16 @@ Utilisateur : ${value.caller}
 Adresses locales à essayer depuis ton PC (pas localhost) :
 ${value.addresses.map(url=>`- ${url}`).join('\n')}
 Code d’association : ${value.code}
-Expiration : ${new Date(value.expiresAt).toISOString()} (UTC, valable 5 minutes, usage unique).
-Agents/rooms accessibles sur ce PC :
-${value.targets.filter(t=>shared.includes(t.handle)).map(t=>`- ${t.label} (${t.handle})`).join('\n')}
+Expiration : ${new Date(value.expiresAt).toISOString()} (UTC, valable 1 heure, usage unique).
+Tous les agents et rooms de ce PC sont accessibles par défaut, y compris ceux ajoutés ensuite. Liste actuelle :
+${value.targets.map(t=>`- ${t.label} (${t.handle})`).join('\n')}
 
 Sur TON PC :
 1. Vérifie que MIND Wake est installé et dispose des appels entre PC. Repère son installation locale ; ne suppose pas que les chemins du PC émetteur existent chez toi.
 2. Dans le desktop, ouvre Appel → Réglages → Appels avec d’autres PC. Renseigne le nom de ton installation et de son utilisateur.
 3. Sous « Appeler les agents d’un autre PC », saisis une des adresses ci-dessus et le code, puis clique « Associer ce PC ». Essaie une autre adresse fournie si la première est inaccessible. Si le code a expiré ou a déjà été utilisé, demande un nouveau prompt.
 4. Vérifie que les agents distants apparaissent dans « Autres PC ». Cette association permet à ton PC d’appeler les agents listés ci-dessus.
-5. Pour que le PC émetteur puisse aussi appeler tes agents, prépare l’association inverse : fais sélectionner les agents/rooms locaux à partager, puis utilise « Copier le prompt de liaison » et renvoie ce prompt à ton utilisateur. Ne partage pas tous les agents par défaut.
+5. Pour que le PC émetteur puisse aussi appeler tes agents, prépare l’association inverse : utilise « Copier le prompt de liaison » et renvoie ce prompt à ton utilisateur. Tous tes agents et rooms seront accessibles par défaut.
 
 Pendant un appel, les messages des agents participants sont partagés entre eux. Pour faire sonner aussi l’humain distant, l’appelant coche « Inviter aussi l’humain » ; celui-ci doit décrocher. N’ouvre pas le microphone et ne lance pas d’appel de test sans demande.
 Si la liaison échoue, vérifie le même réseau local, l’absence d’isolation Wi-Fi et l’accès au port TCP indiqué dans l’adresse (8790 par défaut). La voix humaine utilise aussi WebRTC/UDP local. Ne configure pas de redirection Internet.
@@ -92,17 +92,10 @@ Confirme ce qui est effectivement relié, le sens de l’association et ce qui r
       <TextInput accessibilityLabel="Nom de la personne qui appelle" placeholder="Ton nom" value={caller} onChangeText={setCaller} style={inputStyle}/>
       <Button text="Enregistrer les noms" disabled={busy} onPress={()=>void run('profile',{label,caller})}/>
       <Text style={[s.body,{fontWeight:'600'}]}>Autoriser un autre PC à appeler ici</Text>
-      <Text style={s.small}>Choisis les agents ou rooms à partager (8 maximum). Les messages de leurs fils produits pendant l’appel seront accessibles aux participants.</Text>
-      <View style={{flexDirection:'row',flexWrap:'wrap',gap:5}}>
-        {state.targets.map(t=><Pressable key={t.handle} accessibilityRole="checkbox" accessibilityState={{checked:shared.includes(t.handle)}} disabled={busy}
-          onPress={()=>setShared(old=>old.includes(t.handle)?old.filter(h=>h!==t.handle):old.length<8?[...old,t.handle]:old)}
-          style={{padding:8,borderRadius:10,backgroundColor:shared.includes(t.handle)?colors.dark:colors.soft}}>
-          <Text style={{color:shared.includes(t.handle)?colors.paper:colors.ink}}>{shared.includes(t.handle)?'✓ ':''}{t.label}</Text>
-        </Pressable>)}
-      </View>
-      <Button text="Créer un code d’association" disabled={busy||!shared.length} onPress={()=>void run('invite',{shared})}/>
-      <Button text="Copier le prompt de liaison" disabled={busy||!shared.length||!state.addresses.length} onPress={()=>void run('invite',{shared},true)}/>
-      <Text style={s.small}>Crée un nouveau code et copie les informations pour l’agent de l’autre PC. Sélectionne d’abord les agents à partager. Le nouveau code remplace le précédent.</Text>
+      <Text style={s.small}>Tous les agents et rooms sont partagés avec les PC associés, y compris ceux ajoutés ensuite. Pendant un appel, les messages sont partagés entre ses participants.</Text>
+      <Button text="Créer un code d’association" disabled={busy} onPress={()=>void run('invite')}/>
+      <Button text="Copier le prompt de liaison" disabled={busy||!state.addresses.length} onPress={()=>void run('invite',{},true)}/>
+      <Text style={s.small}>Crée un nouveau code et copie les informations pour l’agent de l’autre PC. Tous les agents et rooms sont inclus. Le nouveau code remplace le précédent.</Text>
       {!state.addresses.length?<Text style={s.small}>Connecte ce PC au Wi-Fi pour préparer un prompt avec son adresse locale.</Text>:null}
       {copyStatus?<Text accessibilityLiveRegion="polite" style={s.small}>{copyStatus}</Text>:null}
       {linkPrompt?<View style={{gap:5}}>
@@ -122,7 +115,7 @@ Confirme ce qui est effectivement relié, le sens de l’association et ce qui r
       <Text style={s.small}>Pour appeler dans les deux sens, fais aussi l’association inverse.</Text>
       {state.peers.map(p=><View key={p.id} style={{gap:4}}>
         <Text style={s.body}>{p.label} — {p.direction==='in'?'peut appeler ici':p.online===false?'injoignable':'agents disponibles'}</Text>
-        {p.direction==='in'?<Text style={s.small}>{p.shared?.map(h=>state.targets.find(t=>t.handle===h)?.label??h).join(', ')}</Text>:null}
+        {p.direction==='in'?<Text style={s.small}>Tous les agents et rooms</Text>:null}
         <Button text={`Révoquer ${p.label}`} disabled={busy} onPress={()=>void run('revoke',{id:p.id})}/>
       </View>)}
       <Button text={busy?'Connexion…':'Actualiser les installations'} disabled={busy} onPress={()=>void run('refresh')}/>
