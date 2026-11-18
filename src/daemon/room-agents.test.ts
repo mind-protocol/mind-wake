@@ -603,6 +603,28 @@ describe("hub : le coach des coachs centralise (NLR, 16 nov. 2026 11:49)", () =>
     expect(forkEnabled(dir, 2)).toBe(false);
   });
 
+  it("room désactivée : un message de NLR qui nomme un agent (@id) le réveille lui, pas le hub ; une notice @mention aussi", async () => {
+    assignHub();
+    setForkEnabled(dir, 2, false);
+    const room4 = path.join(workspace, "room4.md");
+    fs.writeFileSync(room4, "Consigne.");
+    saveForkAssignment(forkDir(dir, 4), { instructions: room4, engine: "claude", workspace });
+    setForkEnabled(dir, 4, true);
+    const s = new SecondThreadStore(forkDir(dir, 2));
+    s.set("oneshot-since", "1970-01-01T00:00:00.000Z");
+    s.close();
+    sendToFork(dir, 2, "@coach-colony-2 tu prends ça ?");
+    sendToFork(dir, 4, "tour 4 a");
+    expect(woken((await turn()).filter((c) => c.agent !== undefined))).toEqual(["coach-colony-2"]);
+    // Réveil par @id venu d'un holder ou d'une autre room (mention-wake.ts) : notice ciblée d'origine humaine.
+    sendNoticeToFork(dir, 2, "@coach-colony — le pattern holder t'a mentionné", "mention:abcdef0123456789:coach-colony", "@mention → Coach Colony", true);
+    sendToFork(dir, 4, "tour 4 b");
+    const calls = (await turn()).filter((c) => c.agent !== undefined);
+    expect(woken(calls)).toEqual(["coach-colony"]);
+    expect(calls[0]!.message).toContain("@mention → Coach Colony [");
+    expect(forkEnabled(dir, 2)).toBe(false);
+  });
+
   it("une réponse de coach va au hub seulement, même si elle nomme un autre coach : rien entre coachs", async () => {
     assignHub();
     sendToFork(dir, 2, "Bonjour à tous.");

@@ -17,7 +17,7 @@ import Database from "better-sqlite3";
 import { workspaceDirFor } from "../daemon/paths.js";
 import { commonPatternsBlock } from "../daemon/common-patterns.js";
 import { FORK_IDS, forkDir, forkEnabled } from "../daemon/forks.js";
-import { readForkAssignment } from "../daemon/fork-assignment.js";
+import { readForkAssignment, resolveRoomAgents } from "../daemon/fork-assignment.js";
 import { SecondThreadStore } from "../daemon/second-thread.js";
 import { withHolderImages } from "./holder-images.js";
 import {
@@ -55,6 +55,7 @@ import {
 import { extractPhase, HOLDER_PHASE_NOTE, phasePublicNote, phaseStatusNote, setRoomPhase } from "./room-phase.js";
 import { signatureHandle } from "./telegram-handle-route.js";
 import { routeHandleWakesToRooms } from "./room-handle-wake.js";
+import { routeMentionWakes } from "./mention-wake.js";
 import { OwnerMessages } from "./owner-messages.js";
 import { ownerTelegramSender, telegramReplyParts, type OwnerTelegramSend } from "./telegram-room-reply.js";
 import { enqueueOwnerMessage } from "./owner-inbox.js";
@@ -516,7 +517,27 @@ export function routerSystemPrompt(root: string, router?: PatternHolder): string
   return [holderRole(root, true), router?.seed ?? ""].join("\n");
 }
 
-export function patternHolderSystemPrompt(holder: PatternHolder): string {
+/** Le levier @id (mention-wake.ts) et, pour un holder rattaché à une salle, les agents qu'il peut réveiller. */
+export function mentionWakeLines(holder: PatternHolder, dataDir?: string): string[] {
+  let agents: { id: string; name: string }[] = [];
+  if (holder.room !== undefined && dataDir !== undefined) {
+    try {
+      const assignment = readForkAssignment(forkDir(dataDir, holder.room));
+      agents = assignment === null ? [] : resolveRoomAgents(assignment, dataDir);
+    } catch {
+      agents = [];
+    }
+  }
+  return [
+    "Réveiller un agent : écris son @id dans ta réponse (agent d'une room, ou autre pattern holder). Il fait un seul tour avec ton message comme note de réveil, même si sa room est éteinte, et sa room reste éteinte ensuite ; si elle tourne déjà, ton message lui est remis dans son tour. N'écris @id que pour un agent que tu veux faire agir.",
+    ...(agents.length === 0
+      ? []
+      : [`Agents de ta salle (Room ${String(holder.room)}) : ${agents.map((a) => `${a.name} @${a.id}`).join(", ")}.`]),
+    "",
+  ];
+}
+
+export function patternHolderSystemPrompt(holder: PatternHolder, dataDir?: string): string {
   const holdersDir = path.dirname(holder.file);
   const common = commonPatternsBlock(holdersDir);
   return withHumanCallPrompt([
@@ -526,6 +547,7 @@ export function patternHolderSystemPrompt(holder: PatternHolder): string {
     "",
     `Ton nom : ${holder.name} (@${holder.slug}).`,
     "",
+    ...mentionWakeLines(holder, dataDir),
     ...(holder.sections === undefined
       ? []
       : [`Tes sections, dans l'ordre : ${holder.sections.join(", ")}.`, ""]),
@@ -936,6 +958,16 @@ export async function tickPatternHolders(
     ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
     log,
   });
+  // Réveil par @id (mention-wake.ts) : agents de room remis ici, holders réveillés plus bas.
+  const mentionWakes = routeMentionWakes({
+    dataDir,
+    holders: holders.filter((h) => h.slug !== ROUTER),
+    holderThreadsOf: (slug) => holderThreads(dataDir, slug),
+    now: now(),
+    settleMs: PATTERN_HOLDER_SETTLE_MS,
+    ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
+    log,
+  });
   if (holders.length === 0) return [];
   const threads = new Map<HolderThread, FilMessage[]>();
   const filOf = (thread: HolderThread): FilMessage[] => {
@@ -1094,6 +1126,18 @@ export async function tickPatternHolders(
     }
   }
   if (dirty && !options.dryRun) saveState(dataDir, state);
+  // Mentions @slug que le réveil naturel ne couvre pas : un tour, publié dans le fil de la mention.
+  for (const w of mentionWakes) {
+    const holder = holders.find((h) => h.slug === w.slug);
+    if (holder === undefined || (options.only !== undefined && !options.only.includes(holder.slug))) continue;
+    if (options.dryRun) {
+      outcomes.push({ slug: holder.slug, state: "planned", reason: "mention" });
+      continue;
+    }
+    const fil = filOf(w.thread);
+    const context = fil.some((m) => m.id === w.message.id) ? fil : [...fil, w.message];
+    outcomes.push(await wakeHolder(options, holder, context, [w.message], { reason: "mention" }, w.thread, `mention-${w.message.id}`));
+  }
   outcomes.push(...(await tickCadences(options, holders)));
   return outcomes;
 }
@@ -1121,7 +1165,7 @@ export async function previewPatternHolder(options: {
   const dir = path.join(options.dataDir, "pattern-holders", holder.slug);
   fs.mkdirSync(dir, { recursive: true });
   const promptFile = path.join(dir, "system-prompt.preview.md");
-  fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder));
+  fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder, options.dataDir));
   const call = withHolderImages(
     fastReplyArgs(claude.model, promptFile),
     patternHolderPrompt(holder, fil, fresh, wake),
@@ -1148,7 +1192,7 @@ async function wakeHolder(
   const dir = path.join(dataDir, "pattern-holders", holder.slug);
   fs.mkdirSync(dir, { recursive: true });
   const promptFile = path.join(dir, "system-prompt.md");
-  fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder));
+  fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder, dataDir));
   const started = Date.now();
   const phaseRoom = holder.room ?? (thread === "principal" ? undefined : forkIdOf(thread));
   let phaseNote: string | undefined;
