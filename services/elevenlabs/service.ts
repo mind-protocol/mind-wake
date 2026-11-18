@@ -4,6 +4,7 @@ import {enqueueOwnerMessage} from "../../src/communication/owner-inbox.js";
 import {completedVoiceMessage} from "./voice-exchange.js";
 import path from "node:path";
 import { speechProse } from "./prose.js";
+import { elevenLabsKeyterms, readSttVocabulary } from "../voice/stt-vocabulary.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import * as z from "zod";
 import { externalInboxSyncAllowed } from "../../src/communication/external-inbox-policy.js";
@@ -526,7 +527,8 @@ export class ElevenLabs {
     check();
     const token = await this.scribeToken(undefined, "realtime_scribe");
     check();
-    return { token };
+    // Vide tant que l'option payante n'est pas cochée (≤ 50 termes de ≤ 20 caractères en temps réel).
+    return { token, keyterms: elevenLabsKeyterms(readSttVocabulary(this.dir), { realtime: true }) };
   }
   configureTranscription(enabled: boolean) {
     const config = this.config();
@@ -621,6 +623,10 @@ export class ElevenLabs {
       form.set("language_code", "fr");
       form.set("tag_audio_events", "false");
       form.set("diarize", "false");
+      // Vocabulaire du profil (stt-vocabulary.json) : seulement si NLR a coché l'option
+      // (ElevenLabs facture +20 %). Liste = champ répété, comme pour tout tableau multipart.
+      for (const term of elevenLabsKeyterms(readSttVocabulary(this.dir)))
+        form.append("keyterms", term);
       const response = await this.http(
         `https://api.elevenlabs.io/v1/speech-to-text?token=${encodeURIComponent(token)}`,
         {

@@ -83,7 +83,9 @@ def main():
             text = ""
             if len(audio):
                 def recognize():
-                    segments, _ = model.transcribe(audio, beam_size=5)
+                    # argv[3] : vocabulaire du profil (stt-vocabulary.json), biais natif faster-whisper.
+                    options = {"hotwords": sys.argv[3]} if len(sys.argv) > 3 and sys.argv[3] else {}
+                    segments, _ = model.transcribe(audio, beam_size=5, **options)
                     return " ".join(segment.text.strip() for segment in segments).strip()
                 try:
                     text = recognize()

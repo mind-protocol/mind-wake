@@ -63,7 +63,7 @@ export function voiceChatController(
   > & {
     owner: string;
     provider(): DictationProvider;
-    invoke(command: string, args: Record<string, unknown>): Promise<{ text?: string; token?: string }>;
+    invoke(command: string, args: Record<string, unknown>): Promise<{ text?: string; token?: string; keyterms?: unknown }>;
   },
 ) {
   let stream: MediaStream | undefined;
@@ -119,7 +119,7 @@ export function voiceChatController(
             const recorder = realtimeRecorder(acquired, async () => {
               const response = await options.invoke("elevenlabs", { action: "realtime_transcription_token" });
               if (!response.token) throw Error("ElevenLabs temps réel : jeton indisponible.");
-              return response.token;
+              return { token: response.token, keyterms: Array.isArray(response.keyterms) ? response.keyterms.filter((term): term is string => typeof term === "string") : [] };
             }, text => {
               if (sequence === captionSequence && !speaking) captions(text);
             }, () => realtime.delete(recorder));

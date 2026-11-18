@@ -4,6 +4,7 @@ import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { ChatError } from './chat-server.mjs';
+import { readSttVocabulary, whisperHotwords } from '../../../services/voice/stt-vocabulary.mjs';
 
 export function createLocalTranscriber({ dataDir }) {
   let config;
@@ -18,9 +19,14 @@ export function createLocalTranscriber({ dataDir }) {
   const script = fileURLToPath(new URL('./chat-transcribe.py', import.meta.url));
   let worker = null;
   let pending = null;
+  // Vocabulaire du profil (stt-vocabulary.json) relu à chaque extrait : s'il a changé dans
+  // Réglages, le worker repart avec les nouveaux hotwords (pas de redémarrage du serveur).
+  let vocabulary = readSttVocabulary(dataDir);
+  let workerHotwords = '';
   function start() {
     if (worker) return worker;
-    const child = spawn(config.python, [script, config.model, config.device ?? 'auto'],
+    workerHotwords = whisperHotwords(vocabulary);
+    const child = spawn(config.python, [script, config.model, config.device ?? 'auto', workerHotwords],
       { windowsHide: true, stdio: ['pipe', 'pipe', 'ignore'] });
     worker = child;
     function lost() {
@@ -53,6 +59,8 @@ export function createLocalTranscriber({ dataDir }) {
       throw new ChatError('audio_type_unsupported', 415);
     if (signal?.aborted) throw new ChatError('transcription_cancelled', 499);
     if (pending) throw new ChatError('transcription_busy', 429);
+    vocabulary = readSttVocabulary(dataDir);
+    if (worker && whisperHotwords(vocabulary) !== workerHotwords) { const old = worker; worker = null; old.kill(); }
     const child = start();
     return new Promise((resolve, reject) => {
       const abort = () => stop(new ChatError('transcription_cancelled', 499));

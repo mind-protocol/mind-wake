@@ -48,6 +48,23 @@ reformule les mêmes paroles. Une répétition de moins de trois mots est conser
 
 Tests : `npx vitest run desktop/ui/voice-input.test.ts`.
 
+## Vocabulaire de transcription
+
+`<données du profil>/stt-vocabulary.json` (`{ "version": 1, "terms": [...], "elevenlabsKeyterms": false }`),
+éditable dans Réglages · Vocabulaire de transcription (un mot ou une expression par ligne).
+Absent : liste initiale (Codex, ChatGPT, Claude, MIND, MIND Wake, Marco, VOX, …). Relu à chaque
+transcription. Module : `services/voice/stt-vocabulary.mjs`.
+
+- faster-whisper local (dictée desktop, vocaux Telegram, appels Lumina) : `hotwords`, gratuit.
+  S'ajoute au `initial_prompt` par défaut de `transcribe.py` (les appels Lumina n'en avaient aucun).
+- ElevenLabs Scribe (batch `keyterms` répétés en multipart ; temps réel `keyterms` répétés dans
+  l'URL, ≤ 50 termes de ≤ 20 caractères) : seulement si la case est cochée, car ElevenLabs facture
+  +20 %. L'encodage répété n'est pas décrit explicitement par la doc : à vérifier au premier essai.
+- Aucune correction après coup : le biais rend un mot plus probable, il ne réécrit rien. Un mot
+  douteux reste à faire confirmer.
+
+Tests : `npx vitest run test/voice/stt-vocabulary.test.ts`.
+
 ## Paint
 
 Quand le panneau est ouvert, maintenir **Ctrl + Shift** trace la trajectoire du

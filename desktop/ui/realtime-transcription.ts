@@ -25,7 +25,8 @@ export interface RealtimeRecorder extends VoiceRecorder {
 
 export function realtimeRecorder(
   stream: MediaStream,
-  getToken: () => Promise<string>,
+  /** Jeton seul, ou jeton + keyterms du vocabulaire du profil (stt-vocabulary.json, option payante). */
+  getToken: () => Promise<string | { token: string; keyterms?: string[] }>,
   caption: (text: string) => void,
   onFinish: () => void,
 ): RealtimeRecorder {
@@ -102,14 +103,16 @@ export function realtimeRecorder(
   }
 
   async function connect(): Promise<void> {
-    const token = await getToken();
+    const grant = await getToken();
     if (settled) return;
+    const { token, keyterms = [] } = typeof grant === "string" ? { token: grant } : grant;
     const query = new URLSearchParams({
       token,
       model_id: "scribe_v2_realtime",
       audio_format: "pcm_16000",
       commit_strategy: "manual",
     });
+    for (const term of keyterms) query.append("keyterms", term);
     socket = new WebSocket(`wss://api.elevenlabs.io/v1/speech-to-text/realtime?${query}`);
     socket.addEventListener("message", ({ data }: MessageEvent<unknown>) => {
       if (settled || typeof data !== "string") return;

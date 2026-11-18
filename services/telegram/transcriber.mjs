@@ -9,6 +9,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { readSttVocabulary, whisperHotwordArguments } from "../voice/stt-vocabulary.mjs";
 
 /** Lance un sous-processus ; rejette avec un message court (fin de stderr) en cas d'échec. */
 export function runProcess(command, args, { cwd, env, input, timeoutMs = 300_000 } = {}) {
@@ -55,10 +56,14 @@ export function transcriptionOptionArguments(transcription = {}) {
   return Object.entries(flags).flatMap(([key, flag]) => (typeof transcription[key] === "string" ? [flag, transcription[key]] : []));
 }
 
-/** Fonction `transcribe(bytes)` du bridge : OGG/Opus → texte. */
-export function localTranscriber(config, repo, run = runProcess) {
+/**
+ * Fonction `transcribe(bytes)` du bridge : OGG/Opus → texte. Avec `dataDir`, le vocabulaire du
+ * profil (stt-vocabulary.json, relu à chaque vocal) biaise Whisper (`hotwords`).
+ */
+export function localTranscriber(config, repo, run = runProcess, { dataDir } = {}) {
   return async (bytes) => {
     if (!config.transcription?.model) throw Error("Modèle vocal local non configuré");
+    const vocabulary = dataDir ? readSttVocabulary(dataDir) : null;
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), "mind-tg-"));
     try {
       const audio = path.join(temp, "voice.ogg");
@@ -66,7 +71,11 @@ export function localTranscriber(config, repo, run = runProcess) {
       const result = JSON.parse(
         await run(
           config.transcription.python ?? "python",
-          [path.join(repo, "services/telegram/transcribe.py"), audio, config.transcription.model, ...transcriptionOptionArguments(config.transcription)],
+          [
+            path.join(repo, "services/telegram/transcribe.py"), audio, config.transcription.model,
+            ...(vocabulary ? whisperHotwordArguments(vocabulary) : []),
+            ...transcriptionOptionArguments(config.transcription),
+          ],
           { cwd: repo },
         ),
       );

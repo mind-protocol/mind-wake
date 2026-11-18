@@ -186,7 +186,7 @@ const bridge = new TelegramBridge({
       throw Error("Message Telegram non enregistré");
     if (active()) requestHumanWake(dataDir, Date.now());
   },
-  transcribe: localTranscriber(config, repo),
+  transcribe: localTranscriber(config, repo, runProcess, { dataDir }),
   // Fichiers entrants (photos, documents…) : W/artifacts/inbox-telegram/<date>/ (mandat du 16 nov. 2026).
   inboxDir: () => path.join(workspaceDirFor(dataDir), "artifacts", "inbox-telegram"),
   // « @vox … » : vers le fil de la room ou de l'agent, table relue dans les affectations.

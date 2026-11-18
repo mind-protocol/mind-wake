@@ -5,7 +5,13 @@ import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { captureWakeScreenshot } from "../../dist/daemon/wake-screenshot.js";
 import { externalInboxSyncAllowed } from "../../dist/communication/external-inbox-policy.js";
-import { vocabularyArguments } from "./transcription-vocabulary.mjs";
+import {
+  formatSttVocabularyText,
+  parseSttVocabularyText,
+  readSttVocabulary,
+  whisperHotwordArguments,
+  writeSttVocabulary,
+} from "./stt-vocabulary.mjs";
 import { transcriptionOptionArguments } from "../telegram/transcriber.mjs";
 import { compactScreenshot } from "./compact-image.mjs";
 const dir =
@@ -19,10 +25,18 @@ for await (const chunk of process.stdin) {
 }
 try {
   const request = JSON.parse(input);
-  if (!externalInboxSyncAllowed(dir))
+  // Réglages : lecture/écriture du vocabulaire, permises même en pause (aucun envoi externe).
+  // Le texte du champ voyage dans `audio` pour ne pas changer la commande Tauri `voice_input`.
+  const vocabularyView = (v) => ({ text: formatSttVocabularyText(v), elevenlabsKeyterms: v.elevenlabsKeyterms, source: v.source ?? "file", error: v.error });
+  const settings = request.action === "vocabulary" || request.action === "vocabulary_save";
+  if (!settings && !externalInboxSyncAllowed(dir))
     throw Error("Dictée suspendue : Wake est en pause ou arrêté.");
   let data;
-  if (request.action === "snapshot") {
+  if (request.action === "vocabulary") data = vocabularyView(readSttVocabulary(dir));
+  else if (request.action === "vocabulary_save") {
+    const value = JSON.parse(typeof request.audio === "string" ? request.audio : "null");
+    data = vocabularyView(writeSttVocabulary(dir, { ...parseSttVocabularyText(value?.text), elevenlabsKeyterms: value?.elevenlabsKeyterms === true }));
+  } else if (request.action === "snapshot") {
     const image = await captureWakeScreenshot("primary");
     if (!image) throw Error("Capture de l’écran principal indisponible.");
     const bytes = await compactScreenshot(image.base64);
@@ -45,6 +59,7 @@ try {
       } catch {}
     }
     if (!config) throw Error("Configurer un modèle de transcription local dans voice-input.json.");
+    const vocabulary = readSttVocabulary(dir);
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), "wake-dictation-"));
     try {
       const file = path.join(temp, "voice.webm");
@@ -52,7 +67,7 @@ try {
       data = await new Promise((resolve, reject) => {
         const child = spawn(
           config.python ?? "python",
-          [path.join(repo, "services/telegram/transcribe.py"), file, config.model, "--allow-empty", ...vocabularyArguments(dir), ...transcriptionOptionArguments(config)],
+          [path.join(repo, "services/telegram/transcribe.py"), file, config.model, "--allow-empty", ...whisperHotwordArguments(vocabulary), ...transcriptionOptionArguments(config)],
           { windowsHide: true, stdio: ["ignore", "pipe", "ignore"] },
         );
         let out = "";
