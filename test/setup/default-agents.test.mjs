@@ -6,6 +6,36 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { installDefaultAgents } from "../../scripts/default-agents.mjs";
 const repo = path.resolve(import.meta.dirname, "../..");
+test("fresh setup assigns coaches to room 2, preserves edits and does not activate workers", t => {
+  const data = temporary(t), workspace = path.join(data, "workspace");
+  installDefaultAgents(repo, workspace, data);
+  const file = path.join(data, "forks/2/assignment.json");
+  const assignment = JSON.parse(fs.readFileSync(file));
+  assert.equal(assignment.holder, "coach-des-coachs");
+  assert.deepEqual(assignment.agents.map(a => a.id), ["coach-general"]);
+  assert.ok(fs.existsSync(assignment.agents[0].instructions));
+  assert.equal(assignment.workspace, workspace);
+  assert.deepEqual(fs.readdirSync(path.join(data, "forks/2")), ["assignment.json"]);
+  assert.ok(!fs.existsSync(path.join(data, "forks/1")));
+  fs.unlinkSync(file);
+  installDefaultAgents(repo, workspace, data);
+  assert.ok(!fs.existsSync(file));
+});
+
+test("setup preserves existing room assignments and existing personalities", t => {
+  const data = temporary(t), workspace = path.join(data, "workspace");
+  const room = path.join(data, "forks/2");
+  fs.mkdirSync(room, { recursive: true });
+  const file = path.join(room, "assignment.json");
+  fs.writeFileSync(file, "custom assignment");
+  installDefaultAgents(repo, workspace, data);
+  assert.equal(fs.readFileSync(file, "utf8"), "custom assignment");
+  const other = path.join(data, "existing"), personal = path.join(other, "workspace/artifacts");
+  fs.mkdirSync(personal, { recursive: true });
+  fs.writeFileSync(path.join(personal, "PERSONALITY.md"), "Existing agent");
+  installDefaultAgents(repo, path.join(other, "workspace"), other);
+  assert.ok(!fs.existsSync(path.join(other, "forks")));
+});
 const bundle = path.join(repo, "prompts/default-agents");
 const manifest = JSON.parse(fs.readFileSync(path.join(bundle, "manifest.json"), "utf8"));
 function temporary(t) {

@@ -6,6 +6,8 @@ Les sections des deux holders et `PERSONALITY.md` sont des copies exactes du wor
 
 ## Installation et personnalisation
 
+Sur une installation neuve, le setup affecte automatiquement Élan et le pattern holder au fil principal (room 1), puis le coach général et le coach des coachs à la room 2 « Coachs ». Le coach des coachs conserve son fonctionnement de holder et écoute uniquement cette room lorsqu'elle est active. Cette affectation ne démarre aucun worker : activer la room 2 et le service pattern holders pour leur travail commun. Une installation existante, une affectation personnalisée ou une affectation supprimée après installation sont conservées.
+
 `npm run setup -- --apply` copie le corpus aux destinations du manifeste dans le workspace actif. Les lecteurs existants chargent les rôles principaux et coach sous `artifacts/prompts/system/`, la personnalité sous `artifacts/PERSONALITY.md` et les holders sous `artifacts/pattern-holders/`. Le nom initial est modifiable dans `artifacts/agent-identity.json` ; le runtime précise séparément que les scènes historiques ne sont pas la biographie du nouvel agent ni des autorisations de son humain.
 
 Le document `marco/AGENTS.md`, qui contient des chemins et procédures de l'installation d'origine, est livré comme référence sous `artifacts/default-agents/marco/AGENTS.md`, pas comme instruction automatique à la racine. Les liens historiques vers des projets, skills ou registres extérieurs au corpus restent tels quels et peuvent ne pas être disponibles sur une nouvelle installation. Aucun compte, secret, historique de conversation, registre de contacts ou fichier d'autorisations n'est importé par ce mécanisme.

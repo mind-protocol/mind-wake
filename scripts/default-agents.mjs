@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
-export function installDefaultAgents(repoDir, workspace) {
+export function installDefaultAgents(repoDir, workspace, dataDir) {
   const bundle = path.join(repoDir, "prompts/default-agents");
   const manifestFile = path.join(bundle, "manifest.json");
   // Compatibility with older portable distributions.
@@ -45,6 +45,35 @@ export function installDefaultAgents(repoDir, workspace) {
     } catch (error) {
       if (error.code !== "EEXIST") throw error;
       skipped.push(entry.target);
+    }
+  }
+  // Room 1 is the principal thread: Élan and the unassigned pattern holder already use it.
+  // Only a fresh identity receives the default room layout; existing profiles keep theirs.
+  if (dataDir !== undefined && !existingPersonality) {
+    const room = path.join(path.resolve(dataDir), "forks", "2");
+    fs.mkdirSync(room, { recursive: true });
+    const coachPrompt = path.join(root, "artifacts/prompts/system/coach.md");
+    const assignment = {
+      name: "Coachs",
+      instructions: coachPrompt,
+      workspace: root,
+      engine: "claude",
+      inbox: "explicit",
+      writable: [],
+      // The holder follows this room exclusively, rather than also listening to Élan.
+      holder: "coach-des-coachs",
+      agents: [{
+        id: "coach-general", name: "Coach général", instructions: coachPrompt,
+        writable: ["artifacts/coachs/coach-general"], readable: [], tools: "none",
+        owner: { colony: null, profile: "publish" }, private: false,
+      }],
+      assignedAt: new Date().toISOString(),
+    };
+    fs.mkdirSync(path.join(root, "artifacts/coachs/coach-general"), { recursive: true });
+    try {
+      fs.writeFileSync(path.join(room, "assignment.json"), JSON.stringify(assignment, null, 2) + "\n", { flag: "wx" });
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error;
     }
   }
   fs.writeFileSync(marker, JSON.stringify({ version: manifest.version, created, skipped }, null, 2) + "\n", { flag: "wx" });

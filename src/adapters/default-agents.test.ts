@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { withWakePersonality } from "./wake-system-prompt.js";
 import { readAgentRole } from "./agent-role.js";
 import { agentIdentity } from "./agent-identity.js";
 import { loadPatternHolders, patternHolderSystemPrompt } from "../communication/pattern-holders.js";
 import { coachSystemPrompt } from "../daemon/coach.js";
+import { readForkAssignment, resolveRoomAgents } from "../daemon/fork-assignment.js";
+import { holderThreads } from "../communication/pattern-holders.js";
+import { setForkEnabled } from "../daemon/forks.js";
 let data: string;
 let workspace: string;
 beforeEach(() => {
@@ -21,6 +25,19 @@ beforeEach(() => {
   }
 });
 afterEach(() => fs.rmSync(data, { recursive: true, force: true }));
+it("routes a fresh installation to the principal and coach rooms through the runtime", () => {
+  const freshWorkspace = path.join(data, "fresh-workspace");
+  execFileSync(process.execPath, ["--input-type=module", "-e",
+    "import { installDefaultAgents } from './scripts/default-agents.mjs'; installDefaultAgents(process.cwd(), process.argv[1], process.argv[2]);",
+    freshWorkspace, data]);
+  const assignment = readForkAssignment(path.join(data, "forks", "2"));
+  expect(assignment).not.toBeNull();
+  expect(resolveRoomAgents(assignment!, data).map(a => a.id)).toEqual(["coach-general"]);
+  expect(holderThreads(data, "pattern-holder")).toEqual(["principal"]);
+  expect(holderThreads(data, "coach-des-coachs")).toEqual([]);
+  setForkEnabled(data, 2, true);
+  expect(holderThreads(data, "coach-des-coachs")).toEqual(["fork:2"]);
+});
 it("loads all shipped roles and distinguishes the new identity from the unchanged corpus", () => {
   expect(agentIdentity(workspace).name).toBe("Élan");
   for (const engine of ["codex", "claude"]) {

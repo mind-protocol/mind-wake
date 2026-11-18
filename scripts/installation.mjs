@@ -94,6 +94,6 @@ export function prepareInstallation(repoDir, dataDir, codex) {
     : path.join(dataDir, "workspace");
   if (typeof workspace !== "string" || !path.isAbsolute(workspace))
     throw Error("Invalid active workspace");
-  installDefaultAgents(repoDir, workspace);
+  installDefaultAgents(repoDir, workspace, dataDir);
   return { ...manifest, manifestFile, launcher, mcpFile };
 }
