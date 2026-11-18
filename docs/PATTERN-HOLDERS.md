@@ -129,6 +129,48 @@ dans 15 min : relire et envoyer l'offre 2
 
 Tests : `src/communication/holder-cadence.test.ts`.
 
+### Phrase de phase d'une salle
+
+NLR, 18 nov. 16:18–16:26Z : le holder chef de projet, rattaché à une salle, pose **une phrase
+de phase** qui s'ajoute au message de réveil de **tous les agents de cette salle**. Elle décrit,
+elle ne commande pas. Même mécanisme que `reveil` : un bloc `phase` dans sa réponse, une ligne,
+la durée puis la phrase.
+
+````markdown
+Découpage : tri d'abord, rédaction ensuite.
+```phase
+15 min : Phase de tri : nous regardons quels travaux méritent l'heure
+```
+````
+
+- Durée : `15 min`, `1 h` (1 minute à 24 h) ou `3 réveils` (1 à 200), éventuellement précédée
+  de « pour ». Phrase : 300 caractères au plus. `fin` retire la phrase active.
+- **Une seule phrase active par salle** : une nouvelle phrase remplace l'ancienne, jamais
+  d'empilement (dans un même bloc, la dernière ligne valide gagne). Elle **expire seule**.
+- **C'est le runtime qui ajoute le reste**, recalculé à chaque réveil. Chaque agent réveillé
+  reçoit, entre l'en-tête du runtime et les messages :
+  `Phase de la salle 6 (posée par Chef) : Phase de tri : … — budget restant 6 minutes.`,
+  `… — budget restant 3 réveils.` ou `… — dernier réveil de la phase.`
+- Un décompte en réveils baisse d'un cran par **tour de la salle** (le numéro de tour `n`, le
+  même que celui de la cadence) : les agents réveillés dans le même tour voient le même reste.
+  Après le dernier réveil, la phrase disparaît.
+- Le bloc n'est pas publié ; le fil annonce « (phase posée : … jusqu'à 16:45) », « (phase posée :
+  … pour 3 réveils de la salle) », « (phase remplacée : …) », « (phase retirée) », ou l'erreur.
+- Le chef **voit** la phrase active et son échéance : chaque note de réveil d'un holder rattaché
+  à une salle (ou qui parle dans le fil d'une salle) la rappelle (« Phrase de phase active dans
+  la salle 6, posée par Chef à 16:30 : « … » — jusqu'à 16:45 (encore 6 minutes) »), ou dit
+  qu'aucune n'est active.
+- Salle visée : `room` du holder, sinon la salle dont il parle dans le fil ; un holder du fil
+  principal sans salle se voit refuser le bloc (« phase non posée : aucune salle rattachée »).
+- Injection : `runRoomAgentsTurn` (`src/daemon/room-agents.ts`, salle à plusieurs agents) et le
+  tour mono-agent de `src/daemon/forks.ts`, tous deux par `roomPhaseWakeLine`.
+- La proposition de découpage du chef (sa réponse à un réveil cadencé ou programmé) part dans le
+  fil de la salle comme message signé, avec une notice remise à tous les agents de la salle.
+- État : `salle-phases.json` dans le dossier de données, une entrée par salle (phrase, auteur,
+  date de pose, échéance ou réveils restants, dernier tour compté).
+
+Tests : `src/communication/room-phase.test.ts`.
+
 ## Appel et publication
 
 C'est le même appel que ⚡ : Claude Code sans outils, sans MCP ni hooks, avec l'abonnement

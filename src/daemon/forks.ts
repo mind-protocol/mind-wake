@@ -36,6 +36,7 @@ import {
   type ForkAssignment,
 } from "./fork-assignment.js";
 import { hasPendingRoomRelays, roomInjected, runRoomAgentsTurn } from "./room-agents.js";
+import { roomPhaseWakeLine } from "../communication/room-phase.js";
 import { runTelegramCoachInbound } from "./telegram-coach-inbound.js";
 import { holdersOnce, roomParticipants } from "./room-participants.js";
 
@@ -411,7 +412,11 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
         }
         // Injections du hook pendant ce tour (room-inbox-hook.ts) : comptent pour le renvoi Telegram.
         const injectedBefore = roomInjected(store);
+        // Phrase de phase de la salle (room-phase.ts), posée par son holder chef de projet.
+        const phase = roomPhaseWakeLine(options.dataDir, id, n);
         const message = (oneShot === null ? "" : `${roomEnabled ? LISTENING_NOTE : ONE_SHOT_NOTE}
+
+`) + (phase === null ? "" : `${phase}
 
 `) + assignedForkMessage(
           human.map((h) => ({

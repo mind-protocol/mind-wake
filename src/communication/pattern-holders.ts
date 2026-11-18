@@ -51,6 +51,7 @@ import {
   readAlarms,
   takeAlarms,
 } from "./holder-alarms.js";
+import { extractPhase, HOLDER_PHASE_NOTE, phasePublicNote, phaseStatusNote, setRoomPhase } from "./room-phase.js";
 import { signatureHandle } from "./telegram-handle-route.js";
 import { routeHandleWakesToRooms } from "./room-handle-wake.js";
 import { OwnerMessages } from "./owner-messages.js";
@@ -376,6 +377,8 @@ export interface Wake {
   handles?: readonly HandleHit[];
   /** Réveil cadencé ou programmé : réveils et temps écoulés, consigne d'appel, notes (`cadenceWakeNote`). */
   cadenceNote?: string;
+  /** Phrase de phase de la salle du holder et son échéance (`room-phase.ts`). */
+  phaseNote?: string;
 }
 
 /**
@@ -456,6 +459,7 @@ export function patternHolderSystemPrompt(holder: PatternHolder): string {
   return withHumanCallPrompt([
     holderRole(path.dirname(holder.file), false),
     HOLDER_ALARM_NOTE,
+    HOLDER_PHASE_NOTE,
     "",
     `Ton nom : ${holder.name} (@${holder.slug}).`,
     "",
@@ -524,6 +528,7 @@ export function patternHolderPrompt(
     ...(wake.handles === undefined || wake.handles.length === 0
       ? []
       : [handleWakeNote(wake.handles)]),
+    ...(wake.phaseNote === undefined ? [] : [wake.phaseNote]),
   ].join("\n");
 }
 
@@ -1068,9 +1073,18 @@ async function wakeHolder(
   const promptFile = path.join(dir, "system-prompt.md");
   fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder));
   const started = Date.now();
+  const phaseRoom = holder.room ?? (thread === "principal" ? undefined : forkIdOf(thread));
+  let phaseNote: string | undefined;
+  if (phaseRoom !== undefined) {
+    try {
+      phaseNote = phaseStatusNote(dataDir, phaseRoom, (options.now ?? Date.now)());
+    } catch (error) {
+      log(`pattern holder ${holder.slug} : phase illisible — ${String(error)}`);
+    }
+  }
   const call = withHolderImages(
     fastReplyArgs(claude.model, promptFile,{dataDir,signature:holder.name}),
-    patternHolderPrompt(holder, fil, fresh, wake, threadLabel(thread)),
+    patternHolderPrompt(holder, fil, fresh, phaseNote === undefined ? wake : { ...wake, phaseNote }, threadLabel(thread)),
     workspaceDirFor(dataDir),
     recentTexts(fil, fresh),
   );
@@ -1081,7 +1095,8 @@ async function wakeHolder(
   }
   const sectionEdits = extractSections(withoutOwnPrefix(holder, result.text));
   const alarmEdits = extractAlarms(sectionEdits.text);
-  const edits = { ...sectionEdits, text: alarmEdits.text };
+  const phaseEdits = extractPhase(alarmEdits.text);
+  const edits = { ...sectionEdits, text: phaseEdits.text };
   const written = writeHolderSections(dataDir, holder, edits.sections);
   for (const w of written)
     log(`pattern holder ${holder.slug} : section ${w.name} ${w.state}${w.error === undefined ? "" : ` — ${w.error}`}`);
@@ -1092,6 +1107,20 @@ async function wakeHolder(
   } catch (error) {
     log(`pattern holder ${holder.slug} : réveils non enregistrés — ${String(error)}`);
   }
+  let phases: ReturnType<typeof setRoomPhase> = [];
+  if (phaseEdits.lines.length > 0) {
+    if (phaseRoom === undefined) {
+      phases = [{ line: phaseEdits.lines.join(" / "), state: "refusée", error: "aucune salle rattachée" }];
+    } else {
+      try {
+        phases = setRoomPhase(dataDir, phaseRoom, holder.name, phaseEdits.lines, nowMs);
+      } catch (error) {
+        log(`pattern holder ${holder.slug} : phase non enregistrée — ${String(error)}`);
+      }
+    }
+  }
+  for (const p of phases)
+    log(`pattern holder ${holder.slug} : phase ${p.state}${phaseRoom === undefined ? "" : ` (salle ${String(phaseRoom)})`}${p.error === undefined ? "" : ` — ${p.error}`}`);
   for (const a of alarms)
     log(`pattern holder ${holder.slug} : réveil ${a.state}${a.at === undefined ? "" : ` ${a.at}`}${a.error === undefined ? "" : ` — ${a.error}`}`);
   const notes = [
@@ -1102,6 +1131,7 @@ async function wakeHolder(
         : `(section ${w.name} ${w.state})`,
     })),
     ...alarms.map((a) => ({ refused: a.state === "refusé", text: alarmPublicNote(a, nowMs) })),
+    ...phases.map((p) => ({ refused: p.state === "refusée", text: phasePublicNote(p, nowMs) })),
   ];
   // « [rien] » est la convention de silence de Crypto pour Telegram : elle ne doit pas finir publiée dans le fil.
   const bare = edits.text.trim();

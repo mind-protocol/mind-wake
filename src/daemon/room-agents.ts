@@ -1,3 +1,4 @@
+import { roomPhaseWakeLine } from "../communication/room-phase.js";
 import { readRoomRoleCapabilities } from "./room-role-capability.js";
 import { readRoomWebSearchCapability } from "./room-web-capability.js";
 /**
@@ -535,6 +536,8 @@ export async function runRoomAgentsTurn(input: {
   }
   // Objet plutôt que variables : modifié depuis les agents parallèles (fermetures).
   const stop = { rateLimited: false, interrupted: false };
+  // Phrase de phase de la salle (room-phase.ts) : une fois par tour, la même pour chaque agent réveillé.
+  const phase = work.length === 0 ? null : roomPhaseWakeLine(input.dataDir, input.id, input.n);
 
   const runOne = async ({ agent, entries: mine, relays: relayed }: AgentWork): Promise<void> => {
     const done = cursor(agent.id);
@@ -571,7 +574,9 @@ export async function runRoomAgentsTurn(input: {
       }),
       ...relayed.map((r) => ({ at: r.at, text: r.text, label: r.label ?? fromLabel(r.from) })),
     ].sort((a, b) => a.at.localeCompare(b.at));
-    const body = assignedForkMessage(items);
+    const body = phase === null ? assignedForkMessage(items) : `${phase}
+
+${assignedForkMessage(items)}`;
     const own = agentStore(store, agent.id);
     // Injections de ce tour (hook) : un message Telegram injecté renvoie aussi la réponse au téléphone.
     const injectedBefore = roomAgentInjected(store, agent.id);
