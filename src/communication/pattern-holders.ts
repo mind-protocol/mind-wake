@@ -20,12 +20,38 @@ import { readForkAssignment } from "../daemon/fork-assignment.js";
 import { SecondThreadStore } from "../daemon/second-thread.js";
 import { withHolderImages } from "./holder-images.js";
 import {
+  cadenceDue,
+  cadenceThread,
+  cadenceWakeNote,
+  callSituation,
+  checkReviewCall,
+  holderCallKeys,
+  parseCadence,
+  readCadenceState,
+  reviewCallNote,
+  saveCadenceState,
+  wakeCounter,
+  type HolderCadence,
+} from "./holder-cadence.js";
+import {
   handleHits,
   handleWakeNote,
   readCoachRegistry,
   type CoachRegistry,
   type HandleHit,
 } from "./coach-handles.js";
+import {
+  HOLDER_ALARM_NOTE,
+  addAlarms,
+  alarmPublicNote,
+  alarmWakeLine,
+  dueAlarms,
+  extractAlarms,
+  pruneAlarms,
+  readAlarms,
+  takeAlarms,
+} from "./holder-alarms.js";
+import { signatureHandle } from "./telegram-handle-route.js";
 import { routeHandleWakesToRooms } from "./room-handle-wake.js";
 import { OwnerMessages } from "./owner-messages.js";
 import { ownerTelegramSender, telegramReplyParts, type OwnerTelegramSend } from "./telegram-room-reply.js";
@@ -90,6 +116,14 @@ export interface PatternHolder {
   readonly quietMs: number;
   /** `"mention"` : ne se réveille que sur mention, @handle ou réponse (jamais « fil »). Absent = tout message frais. */
   readonly wake?: "mention";
+  /**
+   * Réveil à cadence (NLR, 18 nov. 2026 15:59Z : « le manager du budget ») : tous les
+   * `everyWakes` réveils de sa salle (ou du principal) ou toutes les `everyMinutes` minutes.
+   * Champ `cadence` du bloc json ; absent ou 0 = aucun (voir `holder-cadence.ts`).
+   */
+  readonly cadence?: HolderCadence;
+  /** Salle de rattachement du réveil cadencé (champ `room`, 2 à 8) : compteur, registre, fil. */
+  readonly room?: number;
   /** Conversation-semence complète (fichier entier ou sections bout à bout), mémoire du holder. */
   readonly seed: string;
   /** `<slug>.md`, ou le dossier `<slug>/` pour un holder en sections. */
@@ -120,9 +154,12 @@ export function parsePatternHolder(file: string, text: string): HolderParse {
   const wakeMode = header["wake"];
   if (wakeMode !== undefined && wakeMode !== "mention")
     return { error: `\`wake\` inconnu : ${JSON.stringify(wakeMode)} (valeur admise : "mention")` };
+  const cadence = parseCadence(header["cadence"], header["room"]);
+  if ("error" in cadence) return { error: cadence.error };
   return {
     holder: {
       slug,
+      ...cadence,
       ...(typeof header["wakeHint"] === "string" ? { wakeHint: header["wakeHint"].trim() } : {}),
       name: name.slice(0, 60),
       emoji: typeof header["emoji"] === "string" ? header["emoji"].slice(0, 8) : "🧭",
@@ -331,12 +368,14 @@ export function mentionsTopic(text: string, topic: string): boolean {
   );
 }
 
-export type WakeReason = "mention" | "reply" | "fil" | "handle";
+export type WakeReason = "mention" | "reply" | "fil" | "handle" | "cadence";
 
 /** Raison du réveil, et les personnes mentionnées par @handle dont ce holder est le coach. */
 export interface Wake {
   reason: WakeReason;
   handles?: readonly HandleHit[];
+  /** Réveil cadencé ou programmé : réveils et temps écoulés, consigne d'appel, notes (`cadenceWakeNote`). */
+  cadenceNote?: string;
 }
 
 /**
@@ -416,6 +455,7 @@ export function routerSystemPrompt(root: string, router?: PatternHolder): string
 export function patternHolderSystemPrompt(holder: PatternHolder): string {
   return withHumanCallPrompt([
     holderRole(path.dirname(holder.file), false),
+    HOLDER_ALARM_NOTE,
     "",
     `Ton nom : ${holder.name} (@${holder.slug}).`,
     "",
@@ -464,7 +504,9 @@ export function patternHolderPrompt(
     HISTORY_CHARS,
   );
   const why =
-    wake.reason === "handle"
+    wake.reason === "cadence"
+      ? wake.cadenceNote ?? "Réveil cadencé."
+      : wake.reason === "handle"
       ? ""
       : wake.reason === "mention"
       ? "Tu es mentionné directement : réponds."
@@ -475,7 +517,7 @@ export function patternHolderPrompt(
     `${threadLabel} récent (le plus récent en dernier) :`,
     ...earlier.map(show),
     "",
-    "Nouveaux messages depuis ton dernier réveil :",
+    wake.reason === "cadence" ? "Messages depuis ton dernier passage cadencé :" : "Nouveaux messages depuis ton dernier réveil :",
     ...fresh.map(show),
     "",
     ...(why === "" ? [] : [why]),
@@ -970,6 +1012,7 @@ export async function tickPatternHolders(
     }
   }
   if (dirty && !options.dryRun) saveState(dataDir, state);
+  outcomes.push(...(await tickCadences(options, holders)));
   return outcomes;
 }
 
@@ -1015,6 +1058,7 @@ async function wakeHolder(
   fresh: readonly FilMessage[],
   wake: Wake,
   thread: HolderThread = "principal",
+  triggerId?: string,
 ): Promise<PatternHolderOutcome> {
   const { dataDir } = options;
   const log = options.log ?? (() => undefined);
@@ -1035,32 +1079,71 @@ async function wakeHolder(
     log(`pattern holder ${holder.slug} : échec — ${result.error}`);
     return { slug: holder.slug, state: "failed", reason: wake.reason, detail: result.error };
   }
-  const edits = extractSections(withoutOwnPrefix(holder, result.text));
+  const sectionEdits = extractSections(withoutOwnPrefix(holder, result.text));
+  const alarmEdits = extractAlarms(sectionEdits.text);
+  const edits = { ...sectionEdits, text: alarmEdits.text };
   const written = writeHolderSections(dataDir, holder, edits.sections);
   for (const w of written)
     log(`pattern holder ${holder.slug} : section ${w.name} ${w.state}${w.error === undefined ? "" : ` — ${w.error}`}`);
-  const notes = written.map((w) =>
-    w.state === "refusée"
-      ? `(section ${w.name} non enregistrée : ${w.error ?? "refusée"})`
-      : `(section ${w.name} ${w.state})`,
-  );
+  const nowMs = (options.now ?? Date.now)();
+  let alarms: ReturnType<typeof addAlarms> = [];
+  try {
+    alarms = addAlarms(dataDir, holder.slug, alarmEdits.lines, nowMs);
+  } catch (error) {
+    log(`pattern holder ${holder.slug} : réveils non enregistrés — ${String(error)}`);
+  }
+  for (const a of alarms)
+    log(`pattern holder ${holder.slug} : réveil ${a.state}${a.at === undefined ? "" : ` ${a.at}`}${a.error === undefined ? "" : ` — ${a.error}`}`);
+  const notes = [
+    ...written.map((w) => ({
+      refused: w.state === "refusée",
+      text: w.state === "refusée"
+        ? `(section ${w.name} non enregistrée : ${w.error ?? "refusée"})`
+        : `(section ${w.name} ${w.state})`,
+    })),
+    ...alarms.map((a) => ({ refused: a.state === "refusé", text: alarmPublicNote(a, nowMs) })),
+  ];
   // « [rien] » est la convention de silence de Crypto pour Telegram : elle ne doit pas finir publiée dans le fil.
   const bare = edits.text.trim();
   const said = bare === SILENCE || bare.endsWith(`\n${SILENCE}`) || /^\[?rien\]?\.?$/i.test(bare) ? "" : edits.text;
-  const publicNotes = said === "" ? notes.filter((_, i) => written[i]?.state === "refusée") : notes;
+  const publicNotes = (said === "" ? notes.filter((n) => n.refused) : notes).map((n) => n.text);
   const text = [said, ...publicNotes].filter((t) => t !== "").join("\n");
   if (text === "") {
     log(`pattern holder ${holder.slug} (${wake.reason}) : silence`);
     return { slug: holder.slug, state: "silent", reason: wake.reason };
   }
-  const trigger = fresh.at(-1)?.id ?? "fil";
+  const trigger = triggerId ?? fresh.at(-1)?.id ?? "fil";
   if (thread !== "principal") {
     const replyId = publishInFork(dataDir, holder, thread, text, trigger);
     log(
       `pattern holder ${holder.slug} (${wake.reason}) publié dans ${thread} (${replyId}) en ${String(Date.now() - started)} ms`,
     );
+    // Réveil cadencé d'une salle : le fil principal seulement si NLR est nommé explicitement.
+    if (wake.reason === "cadence" && mentionsTopic(said, "NLR")) {
+      publishInPrincipal(options, holder, `(${threadLabel(thread)}) ${text}`, trigger);
+      log(`pattern holder ${holder.slug} (cadence) : NLR mentionné, copie dans le fil principal`);
+    }
     return { slug: holder.slug, state: "spoke", reason: wake.reason, text };
   }
+  publishInPrincipal(options, holder, text, trigger);
+  // Mention venue de Telegram : la réponse repart vers le téléphone de NLR, et rien d'autre.
+  const fromTelegram = wake.reason === "cadence" ? undefined : telegramMentionOf(holder, fresh);
+  if (fromTelegram !== undefined)
+    await sendHolderReplyToTelegram(holder, fromTelegram, said === "" ? text : said, options.telegramReply ?? ownerTelegramSender(dataDir), log);
+  log(
+    `pattern holder ${holder.slug} (${wake.reason}) publié en ${String(Date.now() - started)} ms`,
+  );
+  return { slug: holder.slug, state: "spoke", reason: wake.reason, text };
+}
+
+/** Publie dans le fil principal sous l'identité de l'agent et remet le texte à la session principale. */
+function publishInPrincipal(
+  options: PatternHolderTickOptions,
+  holder: PatternHolder,
+  text: string,
+  trigger: string,
+): void {
+  const { dataDir } = options;
   const messages = new OwnerMessages(dataDir, PATTERN_HOLDER_AGENT_ID);
   let replyId: string;
   try {
@@ -1075,16 +1158,157 @@ async function wakeHolder(
   try {
     deliverHolderMessage(dataDir, holder, { replyId, text, triggerId: trigger });
   } catch (error) {
-    log(`pattern holder ${holder.slug} : remise au principal en échec — ${String(error)}`);
+    options.log?.(`pattern holder ${holder.slug} : remise au principal en échec — ${String(error)}`);
   }
-  // Mention venue de Telegram : la réponse repart vers le téléphone de NLR, et rien d'autre.
-  const fromTelegram = telegramMentionOf(holder, fresh);
-  if (fromTelegram !== undefined)
-    await sendHolderReplyToTelegram(holder, fromTelegram, said === "" ? text : said, options.telegramReply ?? ownerTelegramSender(dataDir), log);
-  log(
-    `pattern holder ${holder.slug} (${wake.reason}) publié en ${String(Date.now() - started)} ms`,
+}
+
+// ---------------------------------------------------------------- réveils cadencés et programmés
+
+/**
+ * Fil d'un réveil cadencé ou programmé : la salle déclarée (`room`) si elle est active, sinon le
+ * fil écouté par le holder (`holderThread`). `null` : salle rattachée éteinte, pas de réveil.
+ */
+function scheduledThread(dataDir: string, holder: PatternHolder): HolderThread | null {
+  if (holder.room !== undefined) return forkEnabled(dataDir, holder.room) ? cadenceThread(holder.room) : null;
+  return holderThread(dataDir, holder.slug);
+}
+
+/**
+ * Réveille les holders dont la cadence est échue (`holder-cadence.ts`) ou dont un réveil qu'ils se
+ * sont programmé est échu (`holder-alarms.ts`) ; les deux ensemble donnent un seul réveil. La
+ * référence de cadence est remise au présent, et les réveils programmés retirés, avant l'appel :
+ * un échec ne se rejoue pas, une longue pause donne un seul réveil. Premier passage d'une
+ * cadence : référence posée, aucun réveil. Un réveil cadencé est la revue avec appel à NLR ; le
+ * runtime vérifie ensuite que l'appel est parti et le signale dans le fil sinon.
+ */
+async function tickCadences(
+  options: PatternHolderTickOptions,
+  holders: readonly PatternHolder[],
+): Promise<PatternHolderOutcome[]> {
+  const { dataDir } = options;
+  const now = options.now ?? Date.now;
+  const log = options.log ?? (() => undefined);
+  const eligible = holders.filter(
+    (h) => h.slug !== ROUTER && (options.only === undefined || options.only.includes(h.slug)),
   );
-  return { slug: holder.slug, state: "spoke", reason: wake.reason, text };
+  const state = readCadenceState(dataDir);
+  let dirty = false;
+  if (options.only === undefined) {
+    // Holders qui n'ont plus de cadence : leur référence est oubliée, un retour repartira du présent.
+    for (const slug of Object.keys(state))
+      if (!eligible.some((h) => h.slug === slug && h.cadence !== undefined)) {
+        delete state[slug];
+        dirty = true;
+      }
+    if (!options.dryRun) {
+      try {
+        pruneAlarms(dataDir, holders.map((h) => h.slug));
+      } catch (error) {
+        log(`réveils programmés : nettoyage en échec — ${String(error)}`);
+      }
+    }
+  }
+  const alarmState = readAlarms(dataDir);
+  const outcomes: PatternHolderOutcome[] = [];
+  for (const holder of eligible) {
+    const cadence = holder.cadence;
+    if (cadence === undefined && (alarmState[holder.slug] ?? []).length === 0) continue;
+    const thread = scheduledThread(dataDir, holder);
+    if (thread === null) continue;
+    const nowMs = now();
+    let due: ReturnType<typeof cadenceDue> = null;
+    let wakes: number | null = null;
+    const entry = state[holder.slug];
+    if (cadence !== undefined) {
+      wakes = cadence.everyWakes > 0 ? wakeCounter(dataDir, holder.room) : null;
+      if (entry === undefined || entry.thread !== thread) {
+        if (!options.dryRun) {
+          state[holder.slug] = { thread, lastAt: new Date(nowMs).toISOString(), lastWakes: wakes };
+          dirty = true;
+        }
+      } else {
+        let reset = false;
+        // Compteur devenu lisible, ou qui recule (fil de salle recréé) : nouvelle référence.
+        if (wakes !== null && (entry.lastWakes === null || wakes < entry.lastWakes)) {
+          if (!options.dryRun) {
+            entry.lastWakes = wakes;
+            dirty = true;
+          }
+          reset = cadence.everyMinutes === 0;
+        }
+        if (!reset) due = cadenceDue(cadence, entry, wakes, nowMs);
+      }
+    }
+    const alarms = dueAlarms(alarmState, holder.slug, nowMs);
+    if (due === null && alarms.length === 0) continue;
+    const fil = readThread(dataDir, thread, holders);
+    const latest = fil.at(-1);
+    // Une série de dictées se lit d'un bloc : le réveil attend le calme.
+    if (latest !== undefined && nowMs - Date.parse(latest.at) < PATTERN_HOLDER_SETTLE_MS) continue;
+    if (options.dryRun) {
+      outcomes.push({ slug: holder.slug, state: "planned", reason: "cadence" });
+      continue;
+    }
+    const at = new Date(nowMs).toISOString();
+    const review = due !== null && entry !== undefined ? { due, entry, since: entry.lastAt, first: entry.woke !== true } : null;
+    if (review !== null) {
+      review.entry.lastAt = at;
+      review.entry.lastWakes = wakes;
+      review.entry.woke = true;
+      saveCadenceState(dataDir, state);
+      dirty = false;
+    }
+    if (alarms.length > 0) takeAlarms(dataDir, holder.slug, alarms);
+    const since = review?.since ?? alarms.map((a) => a.setAt).sort()[0] ?? at;
+    const callerHandle = signatureHandle(holder.name);
+    const keys = holderCallKeys(holder.slug, callerHandle, holder.room);
+    const situation = review !== null ? callSituation(dataDir, keys, nowMs) : null;
+    const wake: Wake = {
+      reason: "cadence",
+      cadenceNote: cadenceWakeNote({
+        room: thread === "principal" ? undefined : forkIdOf(thread),
+        ...(review !== null && cadence !== undefined && situation !== null
+          ? { cadence: { cadence, due: review.due, first: review.first, call: reviewCallNote(holder.slug, situation) } }
+          : {}),
+        alarms: alarms.map((a) => alarmWakeLine(a, nowMs)),
+      }),
+    };
+    const fresh = bound(fil.filter((m) => m.at > since), HISTORY_CHARS);
+    const kinds = [
+      ...(review !== null ? [`cadencé (${review.due.by})`] : []),
+      ...(alarms.length > 0 ? [`programmé (${String(alarms.length)})`] : []),
+    ].join(" + ");
+    log(`pattern holder ${holder.slug} : réveil ${kinds} dans ${thread}`);
+    const outcome = await wakeHolder(options, holder, fil, fresh, wake, thread, `cadence-${at}`);
+    if (review !== null) {
+      // Revue cadencée : l'appel à NLR est-il parti ? Sinon, le fil le dit.
+      const call = outcome.state === "failed" ? "missing" : checkReviewCall(dataDir, keys, callerHandle, nowMs, now());
+      if (call === "missing") {
+        const note = outcome.state === "failed"
+          ? "(revue cadencée : réveil en échec, aucun appel à NLR)"
+          : "(revue cadencée : aucun appel à NLR n'est parti)";
+        log(`pattern holder ${holder.slug} : ${note}`);
+        try {
+          if (thread === "principal") publishInPrincipal(options, holder, note, `cadence-call-${at}`);
+          else publishInFork(dataDir, holder, thread, note, `cadence-call-${at}`);
+        } catch (error) {
+          log(`pattern holder ${holder.slug} : signalement de l'appel manqué en échec — ${String(error)}`);
+        }
+      } else {
+        log(`pattern holder ${holder.slug} : appel de revue ${call === "joined" ? "dans l'appel en cours" : "mis en file"}`);
+      }
+      review.entry.lastResult = {
+        at: new Date(now()).toISOString(),
+        state: outcome.state,
+        call,
+        ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),
+      };
+      saveCadenceState(dataDir, state);
+    }
+    outcomes.push(outcome);
+  }
+  if (dirty) saveCadenceState(dataDir, state);
+  return outcomes;
 }
 
 // ---------------------------------------------------------------- sections écrites par le holder

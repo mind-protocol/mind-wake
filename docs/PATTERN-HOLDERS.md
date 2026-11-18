@@ -38,6 +38,97 @@ un nouveau spécialiste hérite du dernier curseur connu du fil.
 
 Le champ optionnel `"wake": "mention"` de l’en-tête `pattern-holder` limite le réveil d’un holder à la mention (`@slug` ou nom), au `@handle` d’une personne qu’il coache et à la réponse humaine qui suit son message ; jamais à un simple message du fil (autre valeur : holder invalide).
 
+## Holder cadencé (gestionnaire du budget)
+
+Un holder peut aussi être réveillé **à cadence**, sans message déclencheur (NLR, 18 nov. 2026 :
+« le manager du budget », un holder qui vit sur une temporalité plus longue). Dans l'en-tête de
+son `_holder.md` (ou de son `<slug>.md`) :
+
+````markdown
+```json pattern-holder
+{"name":"Budget","emoji":"⏳","wake":"mention","room":6,"cadence":{"everyWakes":5}}
+```
+````
+
+- `cadence.everyWakes` : tous les N réveils. Avec `room`, ce sont les tours de la salle (table
+  `turns` de son fil) ; sans `room`, les réveils du principal (`wake_prompts`).
+- `cadence.everyMinutes` : toutes les N minutes. Les deux ensemble : le premier seuil atteint
+  réveille et remet les deux compteurs à zéro.
+- `room` : salle de rattachement (2 à 8). Le holder lit le fil de cette salle et y publie. Une
+  salle désactivée suspend la cadence et les réveils programmés.
+- 0 ou absent = désactivé. Il n'y a ni quota ni intervalle minimal.
+
+**Pas de registre** (NLR, 18 nov. 2026 16:13Z : « pas de registre, c'est des holders qui sont des
+agents, c'est ça le pattern »). Aucun `BUDGET.md` n'est lu. Le plan du holder — le partage du
+temps, ce qui est prévu — vit dans ses propres sections, relues depuis le disque à chaque réveil,
+y compris cadencé. Il les crée et les réécrit lui-même par des blocs ```` ```section nom.md ```` ````
+dans sa réponse (voir plus haut) ; cela marche aussi à un réveil cadencé ou programmé.
+
+**Revue avec appel** (NLR 16:15Z : « tu dois m'appeler, faire un call à chaque 30 minutes » ;
+« s'il n'y a rien à bouger en 30 minutes, c'est qu'il y a un problème, et ça mérite un appel »).
+À chaque réveil cadencé, le holder reçoit le nombre de réveils et le temps écoulés, les derniers
+messages du fil de la salle, et la consigne de faire la revue : ce qui a été envoyé, l'écart avec
+le partage du temps prévu dans ses sections, ce que la salle a décidé de changer ; si rien n'a
+bougé, il le dit et dit ce qui bloque (pas de `SILENCE`). Pour l'appel, il utilise ses outils
+habituels (`mind_calls`) ; le runtime lui dit lequel, d'après `mobile-call-control.sqlite` :
+
+- aucun appel actif : `call_human` sans handle (NLR), une seule fois ;
+- un appel en cours sans lui : ne pas faire sonner, `invite_to_call` avec `target` = son slug,
+  puis sa réponse est lue dans l'appel (elle est publiée après son ajout) ;
+- il est déjà dans l'appel (son slug, son handle d'appelant ou `room<N>` de sa salle) : sa
+  réponse y est lue, sans sonnerie.
+
+Après le réveil, le runtime vérifie que l'appel est parti (invitation à son nom dans
+`mobile-calls.sqlite`, ou présence dans l'appel actif) et l'inscrit dans
+`pattern-holders-cadence.json` (`lastResult.call` : `rang`, `joined` ou `missing`). Sinon il
+publie dans le fil de la salle : « (revue cadencée : aucun appel à NLR n'est parti) ». `call_human`
+refuse de sonner quand Wake est en Pause ou Force-off.
+
+Sa réponse ordinaire est publiée dans le fil de la salle et remise à la session de la salle. Elle
+n'est copiée dans le fil principal que s'il nomme NLR explicitement.
+
+État : `pattern-holders-cadence.json` dans le dossier de données. Le premier passage pose la
+référence sans réveiller le holder. Avant chaque appel, la référence est remise au présent : un
+holder n'est pas réveillé deux fois pour la même échéance, et une longue pause ne donne qu'un réveil.
+Un appel en échec n'est pas rejoué ; la prochaine échéance suit la cadence normale. Comme les
+autres holders, il attend huit secondes de calme dans le fil. Il obéit à
+`pattern-holders on|off` et à Force-off. Sa cadence n'empêche pas les réveils réactifs habituels
+(mention, sujets…). Pour qu'il ne parle qu'à sa cadence, mettez `"wake":"mention"`.
+
+### Réveils programmés par le holder
+
+NLR, 16:14Z : « Tu es le manager du temps, donc ce que tu peux faire, c'est te mettre des réveils
+pour sous-découper tes différentes parties. » Le holder n'a pas d'outil fichier : il programme ses
+réveils dans sa réponse, avec un bloc `reveil`, une ligne par réveil, l'heure puis une note pour
+lui-même :
+
+````markdown
+Dix minutes d'idéation sur l'offre 2, puis rédaction.
+```reveil
+dans 10 min : fin de l'idéation de l'offre 2, passer à la rédaction
+dans 15 min : relire et envoyer l'offre 2
+à 16:45 : point sur les trois offres
+```
+````
+
+- Heures acceptées : `dans N min`, `dans N h`, `+N` (minutes) ; `à 16:45`, `16h45` (heure locale
+  de la machine, prochaine occurrence, donc le lendemain si elle est passée) ; une date ISO.
+- Note : 300 caractères au plus. `annuler` vide ses réveils en attente.
+- Le bloc n'est pas publié ; le fil annonce « (réveil programmé à 16:45 : …) », ou l'erreur.
+- Au réveil, il reçoit ses notes (« prévu à 16:45 : … », avec le retard s'il y en a) et le fil de
+  la salle depuis la programmation. Un réveil programmé n'appelle pas NLR ; seul le réveil cadencé
+  fait la revue.
+- Mêmes règles que la cadence : salle rattachée active seulement (sinon celle que le holder
+  écoute) ; un même réveil (même minute, même note) n'est enregistré qu'une fois ; il est retiré
+  avant l'appel, donc jamais rejoué ; plusieurs réveils échus ensemble, ou rattrapés après une
+  pause, donnent un seul réveil avec toutes les notes ; s'il coïncide avec la cadence, un seul
+  réveil aussi. Ni quota ni plancher.
+- Un holder sans cadence peut aussi se programmer des réveils (par exemple quand on le mentionne).
+- État : `pattern-holders-reveils.json` dans le dossier de données ; les réveils d'un holder
+  supprimé sont oubliés.
+
+Tests : `src/communication/holder-cadence.test.ts`.
+
 ## Appel et publication
 
 C'est le même appel que ⚡ : Claude Code sans outils, sans MCP ni hooks, avec l'abonnement
