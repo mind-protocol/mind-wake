@@ -3,10 +3,11 @@ import { conversationWindow, conversationMessageCount } from "./conversation-vie
 import { bindChatDraft } from "./chat-draft.js";
 import { copyButton } from "./copy-button.js";
 import { authorMarker } from "./author-tint.js";
+import { requestConversationReply, type ConversationInvoke } from "./conversation-send.js";
 
 /** The saved human/agent conversation is independent of the lifetime of a call. */
 export function mountConversation(options: {
-  invoke(command: string, args: Record<string, unknown>): Promise<{ok?: unknown; error?: {message?: unknown}}>;
+  invoke: ConversationInvoke;
   decorate(body: HTMLElement, text: string): void;
 }): {refresh(): Promise<void>} {
   const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -81,7 +82,8 @@ export function mountConversation(options: {
       if (field.value.trim() === text) { field.value = ""; saveDraft(); }
       pending = null;
       status.textContent = "Message enregistré.";
-      await refresh();
+      void refresh();
+      status.textContent = await requestConversationReply(options.invoke);
     } catch (error) {
       status.textContent = `Non envoyé : ${error instanceof Error ? error.message : String(error)}. Brouillon conservé.`;
     } finally { sending = false; button.disabled = false; }

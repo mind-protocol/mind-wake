@@ -658,8 +658,9 @@ function selectTab(tab: Tab): void {
   byId("tab-documents").setAttribute("aria-selected", String(tab === "documents"));
   for (const name of tabs) {
     byId(`tab-${name}`).setAttribute("aria-selected", String(name === tab));
-    byId(`view-${name}`).hidden = name !== tab;
+    byId(`view-${name}`).hidden = name !== "chat" && name !== tab;
   }
+  byId("view-documents").hidden = tab !== "documents" && tab !== "chat";
   // WebView2 can suspend a display:none cross-origin frame before React mounts.
   // Keep the phone receiver laid out behind the desktop, inert and inaccessible.
   if (tauri) {
@@ -670,7 +671,7 @@ function selectTab(tab: Tab): void {
     callView.setAttribute("aria-hidden", String(tab !== "call"));
   }
   if (tab === "prompts") void prompts.open();
-  if (tab === "chat") void conversationPanel?.refresh();
+  void conversationPanel?.refresh();
   if (tab === "threads") void refreshThreads();
   try { localStorage.setItem("mind-wake-active-tab", tab); } catch { /* Display preference only. */ }
 }

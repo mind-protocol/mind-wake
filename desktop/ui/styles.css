@@ -1108,13 +1108,17 @@ main > #view-chat { min-width:0; grid-template-columns:minmax(0,1fr); }
 .room-participant { padding:.1rem .5rem; border-radius:999px; border:1px solid #8885; }
 .room-participant-holder { background:#f5d54a33; border-color:#c9a80066; }
 
-/* Desktop navigation: one selected view next to the sidebar. */
-main { grid-template-columns:190px minmax(0,1fr); grid-template-rows:68px minmax(0,1fr); }
+/* Keep the conversation on the left and the selected tool on the right. */
+main { grid-template-columns:190px minmax(0,1fr) minmax(0,1.15fr); grid-template-rows:68px minmax(0,1fr); }
 main > .tabs { grid-column:1; grid-row:2; }
-main[data-active-tab] > #view-documents, main[data-active-tab] > :is(#view-panel, #view-call, #view-settings, #view-projects, #view-prompts, #view-threads) { grid-column:2; grid-row:2; min-width:0; }
+main > #view-chat { grid-column:2; grid-row:2; min-width:0; overflow:hidden; border-right:1px solid var(--line); }
+main > #view-chat > #chat { flex:1; min-height:0; }
+#view-chat > h2 { margin:0; padding:14px 24px; }
+main[data-active-tab] > #view-documents, main[data-active-tab] > :is(#view-panel, #view-call, #view-settings, #view-projects, #view-prompts, #view-threads) { grid-column:3; grid-row:2; min-width:0; }
 main > [hidden] { display:none !important; }
 @media(max-width:700px) {
-  main { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr); }
+  main { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto minmax(180px,1fr) minmax(180px,1fr); }
   main > .tabs { grid-column:1; grid-row:2; }
-  main[data-active-tab] > #view-documents, main[data-active-tab] > :is(#view-panel, #view-call, #view-settings, #view-projects, #view-prompts, #view-threads) { grid-column:1; grid-row:3; }
+  main > #view-chat { grid-column:1; grid-row:3; }
+  main[data-active-tab] > #view-documents, main[data-active-tab] > :is(#view-panel, #view-call, #view-settings, #view-projects, #view-prompts, #view-threads) { grid-column:1; grid-row:4; }
 }
