@@ -1,3 +1,4 @@
+import { registerUnifiedMessage } from "./unified-message.js";
 import { queueOwnerToast } from "./owner-toast.js";
 import { generatedImageMessage, saveGeneratedImage, ImagePublicationError } from "../../src/communication/generated-images.js";
 import { workspaceDirFor } from "../../src/daemon/paths.js";
@@ -122,24 +123,15 @@ export function registerOwnerTools(
         replies: readReplies({ path: dir!, source: "environment" }),
       })),
   );
-  server.registerTool(
-    "message_owner",
-    {
-      description:
-        "Publish one short message in your human's desktop conversation. Use a unique idempotency_key per message; edit that message later instead of reposting the whole history. Optional toast queues a short local overlay without stealing focus; its visibility is not confirmed. No external delivery or automatic wake.",
-      inputSchema: z.strictObject({ text, idempotency_key: z.string().min(8).max(128), toast: z.strictObject({ text: z.string().trim().min(1).max(240), duration_ms: z.int().min(3000).max(30000).optional() }).optional() }),
-      annotations: { openWorldHint: false },
-    },
-    (args) =>
-      call("message_owner", (store) => {
+  registerUnifiedMessage(server, env, (args) =>
+      call("message", (store) => {
         const message=store.publish(args.text,args.idempotency_key);
         return {message,...(args.toast===undefined?{}:{toast:queueOwnerToast(dir!,message.id,args.toast)})};
-      }),
-  );
+      }));
   server.registerTool(
     "publish_image",
     {
-      description: "Save a generated image permanently and publish its clickable preview in your human's Wake conversation. Generate it first with your native image-generation tool, then place the output inside your authorized workspace. This tool does not generate images or call a paid API. source_path is local to the workspace. Reuse idempotency_key for retries; do not publish the same image again via message_owner.",
+      description: "Save a generated image permanently and publish its clickable preview in your human's Wake conversation. Generate it first with your native image-generation tool, then place the output inside your authorized workspace. This tool does not generate images or call a paid API. source_path is local to the workspace. Reuse idempotency_key for retries; do not publish the same image again via message.",
       inputSchema: z.strictObject({
         source_path: z.string().min(1).max(4096),
         title: z.string().trim().min(1).max(240),

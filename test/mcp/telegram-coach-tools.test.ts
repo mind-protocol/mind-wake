@@ -153,7 +153,7 @@ it("serveur d'un agent : un coach Telegram reçoit les deux outils ; sans régla
     return tools;
   };
   expect(names(env())).toEqual([
-    "list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, "call_human", "telegram_user_send", "telegram_user_recent", "telegram_user_search", "post_to_fork_thread",
+    "list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, "list_active_calls", "invite_to_call", "hangup_call", "call", "call_human", "telegram_user_send", "telegram_user_recent", "telegram_user_search",
   ]);
-  expect(names({})).toEqual(["list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, "call_human", "post_to_fork_thread"]);
+  expect(names({})).toEqual(["list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, "list_active_calls", "invite_to_call", "hangup_call", "call", "call_human"]);
 });

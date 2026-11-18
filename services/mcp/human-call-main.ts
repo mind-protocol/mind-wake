@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 import { registerHumanCall } from "./human-call.js";
 
-/** Only the three call tools: no owner channel, publishing, filesystem or desktop. */
+/** Only call tools: no owner channel, publishing, filesystem or desktop. */
 export function registerCallOnly(
   server: McpServer,
   env: Readonly<Record<string, string | undefined>>,

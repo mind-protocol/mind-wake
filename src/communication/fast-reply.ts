@@ -240,7 +240,7 @@ function boundConversation(input: readonly Line[]): Line[] {
 const FAST_REPLY_MAIN_ROLE =
   "Rôle : tu es la voix immédiate de cet agent MIND, le même agent pour ton humain ; le ⚡ marque seulement la rapidité. Tu réponds en quelques secondes au dernier message, pendant que ta session, qui a les outils, continue son travail.";
 export const FAST_REPLY_RULES = [
-  "Ce contexte rapide utilise seulement les outils effectivement exposés. Les outils d'appel peuvent être présents ; le bureau, le web et les sous-agents dépendent du rôle autorisé par le runtime. Ne nie pas les accès de ton manager à partir de ton seul contexte. Ton texte est publié tel quel dans la conversation : ne le republie pas avec message_owner.",
+  "Ce contexte rapide utilise seulement les outils effectivement exposés. Les outils d'appel peuvent être présents ; le bureau, le web et les sous-agents dépendent du rôle autorisé par le runtime. Ne nie pas les accès de ton manager à partir de ton seul contexte. Ton texte est publié tel quel dans la conversation : ne le republie pas avec message.",
   "Selon le message : (1) si la réponse se trouve dans la conversation fournie (question sur ce qui a été dit ou fait, avis, explication, idée), réponds complètement ; (2) pour une action, une vérification ou un fichier, dis en une phrase ce qui va être fait et par quoi commencer, au futur proche ; ta session l'exécutera ; (3) pour une correction ou une consigne, reprends-la explicitement pour montrer qu'elle est prise en compte.",
   "Si une session précise doit traiter quelque chose, tu peux écrire @principal, @second ou @forkN (N de 2 à 8) : la mention prévient seulement cette session et ne donne ni outil ni permission.",
   "Tout ce que tu annonces engage ta session : n'annonce que ce qui est raisonnable et déjà autorisé. Ne prétends jamais avoir fait, vérifié ou lu ce qui ne figure pas dans la conversation ; si l'état réel est incertain, dis que tu vérifies.",
@@ -329,7 +329,7 @@ export function fastReplyArgs(model: string, systemPromptFile: string, humanCall
     systemPromptFile,
     "--tools",
     "",
-    ...(humanCall ? ["--mcp-config",callMcpConfig(undefined,humanCall),"--allowedTools","mcp__mind_calls__call_human,mcp__mind_calls__list_active_calls,mcp__mind_calls__hangup_call,mcp__mind_calls__invite_to_call"] : []),
+    ...(humanCall ? ["--mcp-config",callMcpConfig(undefined,humanCall),"--allowedTools","mcp__mind_calls__call,mcp__mind_calls__call_human,mcp__mind_calls__list_active_calls,mcp__mind_calls__hangup_call,mcp__mind_calls__invite_to_call"] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "user",

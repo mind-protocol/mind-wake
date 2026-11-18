@@ -213,8 +213,8 @@ export default function CallScreen() {
   useEffect(() => {
     if (!phone?.accepted || !session || engine.current) return;
     const invitation=phone.accepted;
-    const handles = invitation.kind==='peer-human'?[]:[invitation.caller];
-    phone.consume(); setSelected(handles); start(handles,invitation.kind==='peer-human'?invitation:undefined);
+    const handles = invitation.kind==='peer-human'?[]:invitation.caller.split(',');
+    phone.consume(); setSelected(handles); setInviteHumans(Boolean(invitation.inviteHumans)); start(handles,invitation.kind==='peer-human'?invitation:undefined,undefined,Boolean(invitation.inviteHumans),invitation.callId);
   }, [phone, session]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -243,7 +243,7 @@ export default function CallScreen() {
     return () => clearInterval(timer);
   }, [recovery, active, phase, selected, muted, inviteHumans, humanGuest]);
 
-  function start(handles = selected, humanInvite?:{id:string;label:string}, resumed?: CallRecovery) {
+  function start(handles = selected, humanInvite?:{id:string;label:string}, resumed?: CallRecovery, invitedHumans?:boolean, existingCallId?:string) {
     if (!session || engine.current) return;
     recoveryAttempted.current = true;
     if (!resumed) recovery?.clear();
@@ -253,7 +253,7 @@ export default function CallScreen() {
     revealTimer.current = null; queue.current = []; known.current = new Set(); setVisible(new Set()); scrollFollow.reset(); pinUntil.current = Date.now() + PIN_WINDOW_MS;
     inCall.current = handles;
     toneTransitions.current?.reset();
-    const call = createCallEngine({ session, targets: handles, humanInvite, inviteHumans:resumed?.inviteHumans ?? (inviteHumans&&handles.some(h=>targets.find(t=>t.handle===h)?.kind==='remote')),
+    const call = createCallEngine({ session, targets: handles, humanInvite, existingCallId, inviteHumans:invitedHumans ?? resumed?.inviteHumans ?? (inviteHumans&&handles.some(h=>targets.find(t=>t.handle===h)?.kind==='remote')),
       announce: false /* NLR 16 nov. 2026 : ne pas lire à voix haute qui envoie le message */, voice: () => voiceRef.current, silenceMs: silence * 1000, bargeMode, floorDb,
       onPhase: next => {
         if (engine.current !== call) return;
@@ -267,6 +267,7 @@ export default function CallScreen() {
         setPhase(next);
       }, onLevel: (db, threshold) => setLevel({ db, threshold }),
       onLine: value => setLines(previous => [...previous.filter(item => item.key !== value.key), ...(value.drop ? [] : [value])].slice(-40)),
+      onParticipants: handles => {inCall.current=handles;setSelected(handles);void callTargets(session).then(setTargets).catch(()=>{});},
       onTopicInvite: invites => { void joinByTopic(call, invites); } });
     engine.current = call;
     if (resumed?.muted) { call.setMuted(true); setMuted(true); }

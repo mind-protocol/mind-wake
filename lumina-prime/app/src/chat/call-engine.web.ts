@@ -12,6 +12,7 @@ export type CallPhase = 'connecting' | 'listening' | 'speaking' | 'playing' | 'e
 export type CallTuning = { silenceMs?: number; bargeMode?: BargeMode; floorDb?: number };
 type Events = { onLine: (line: CallLine) => void; onPhase: (phase: CallPhase) => void; onLevel: (db: number, threshold: number) => void;
   /** Agents à ajouter : un de leurs sujets déclarés est dans la phrase envoyée (une fois par appel, décidé par le serveur). */
+  onParticipants?: (handles:string[]) => void;
   onTopicInvite?: (invites: CallTopicInvite[]) => void };
 // Silence très court : WAV minimal joué dans le geste « Appeler » pour déverrouiller la lecture.
 const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
@@ -27,15 +28,15 @@ type TargetReply = CallReply & {target:string};
  * (seuil plus haut, ~300 ms) coupe la lecture, vide la file et devient une prise de parole.
  * `start` doit être appelé dans le geste utilisateur (micro, son, AudioContext).
  */
-export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel, onTopicInvite, inviteHumans = false, humanInvite }: Events & {
+export function createCallEngine({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onLine, onPhase, onLevel, onTopicInvite, onParticipants, inviteHumans = false, humanInvite, existingCallId }: Events & {
   session: ChatSession; targets: string[]; announce: boolean; silenceMs: number; bargeMode: BargeMode; floorDb?: number;
   /** Voix des réponses (NLR, 16 nov. : off par défaut) ; off, aucune synthèse n'est demandée au desktop. */
-  voice?: () => boolean; inviteHumans?:boolean; humanInvite?:{id:string;label:string} }) {
+  voice?: () => boolean; inviteHumans?:boolean; humanInvite?:{id:string;label:string}; existingCallId?:string }) {
   if(humanInvite)return createHumanGuest({session,invite:humanInvite,silenceMs,floorDb,onLine,onPhase,onLevel});
   targets = [...new Set(targets)];
   let joining = false;
   let membershipRevision = 1;
-  const scope:CallSession={id:Crypto.randomUUID(),epoch:1};
+  const scope:CallSession={id:existingCallId??Crypto.randomUUID(),epoch:1};
   const abort = new AbortController(); let ended = false;
   const audio = new Audio(); let objectUrl: string | null = null;
   let context: AudioContext | null = null; let stream: MediaStream | null = null;
@@ -135,7 +136,10 @@ export function createCallEngine({ session, targets, announce, voice = () => fal
       try {
         const state=await callSessionState(session,scope,abort.signal);
         if(state.status==='ended'){stop();return;}
-        if(state.revision)membershipRevision=state.revision;
+        if(state.revision && state.revision>=membershipRevision){
+          membershipRevision=state.revision;
+          if(JSON.stringify(targets)!==JSON.stringify(state.handles)){targets=state.handles;onParticipants?.([...targets]);}
+        }
         for (const reply of await allReplies()) {
           if (!targets.includes(reply.target) || seen.has(reply.id)) continue;
           seen.add(reply.id);

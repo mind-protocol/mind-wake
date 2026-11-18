@@ -145,7 +145,7 @@ describe("écriture d'un fork affecté", () => {
       expect(Object.keys(JSON.parse(forkOwnerMcpConfig(id, "D:/data", "node", "R:/repo", a)!).mcpServers)).toEqual(["mind_calls"]);
       const prompt = assignedForkPrompt(id, a);
       expect(prompt).toContain("Aucun envoi externe.");
-      expect(prompt).not.toContain("message_owner");
+      expect(prompt).not.toContain("mcp__mind__message");
       expect(prompt).not.toContain("colony_call_tool");
       expect(reloadsPromptOnChange(id, a)).toBe(true);
     }
@@ -249,7 +249,7 @@ describe("rechargement du prompt système (Fork 7)", () => {
   });
 });
 
-// NLR 6 nov. 2026 : VOX (Fork 7) écrit elle-même à NLR par message_owner, signé ; pas le Fork 8.
+// NLR 6 nov. 2026 : VOX (Fork 7) écrit elle-même à NLR par message, signé ; pas le Fork 8.
 describe("canal propriétaire du Fork 7", () => {
   it("note du runtime et configuration MCP pour le Fork 7 seulement", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "fork-owner-"));
@@ -257,10 +257,10 @@ describe("canal propriétaire du Fork 7", () => {
       const instructions = path.join(root, "DEPART.md");
       fs.writeFileSync(instructions, "Tu es VOX.");
       const a = validateAssignment({ instructions, workspace: root });
-      expect(assignedForkPrompt(7, a)).toContain("Tu peux écrire à NLR dans le fil principal avec message_owner");
+      expect(assignedForkPrompt(7, a)).toContain("Tu peux écrire à NLR dans le fil principal avec message");
       expect(assignedForkPrompt(7, a)).toContain("« VOX (Room 7) »");
-      expect(assignedForkPrompt(8, a)).not.toContain("message_owner");
-      expect(assignedForkPrompt(7, { ...a, engine: "codex" })).not.toContain("message_owner");
+      expect(assignedForkPrompt(8, a)).not.toContain("mcp__mind__message");
+      expect(assignedForkPrompt(7, { ...a, engine: "codex" })).not.toContain("mcp__mind__message");
       expect(Object.keys(JSON.parse(forkOwnerMcpConfig(8, "D:/data", "node", "R:/repo")!).mcpServers)).toEqual(["mind_calls"]);
       const config = JSON.parse(forkOwnerMcpConfig(7, "D:/data", "node", "R:/repo")!) as {
         mcpServers: { mind: { command: string; args: string[]; env: Record<string, string> } };

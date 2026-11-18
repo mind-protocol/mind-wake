@@ -8,7 +8,7 @@ import { phoneToken, phoneRingtoneKeys } from './phone-token';
 import { advertiseRingtoneCapabilities } from './phone-ringtone-registration';
 import { useReportedError } from './app-error-report.ts';
 
-type Invite = { id: string; caller: string; label: string; until: number; kind?: 'peer-human'; ringtone?: 'common' | 'marco' | 'vox' | 'equerre' | 'rose_des_vents' | 'medicis' };
+type Invite = { callId?: string; inviteHumans?: boolean | number; id: string; caller: string; label: string; until: number; kind?: 'peer-human'; ringtone?: 'common' | 'marco' | 'vox' | 'equerre' | 'rose_des_vents' | 'medicis' };
 const Context = createContext<{accepted: Invite | null; consume: () => void; busy: (on: boolean) => void} | null>(null);
 export function useIncomingPhone() { return useContext(Context); }
 

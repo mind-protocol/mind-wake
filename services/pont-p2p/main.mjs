@@ -39,10 +39,11 @@ const bootstrap = process.env.MW_P2P_BOOTSTRAP ? JSON.parse(process.env.MW_P2P_B
 const retryMs = Number(process.env.MW_P2P_RETRY_MS) || undefined;
 const tickMs = Number(process.env.MW_P2P_TICK_MS) || 1000;
 
+const {localMessageTargets,deliverLocalMessage}=await import('../../dist/communication/local-message.js');
 const node = new P2PNode({
   name: settings.name, keyFile: P.key, stateDir: P.state, wakeupsDir,
   callEndpoint: () => { const e=readJson(path.join(P.state,'call-endpoint.json'),null); return e && Date.now()-e.at<30_000 ? {addresses:e.addresses,key:e.key} : null; },
-  agents: DEFAULT_AGENTS, defaultAgent: DEFAULT_AGENT, annuaire: settings.annuaire,
+  agents: {...DEFAULT_AGENTS,...localMessageTargets(dataDir)}, receiveMessage: (env,agent) => env.kind==="message" ? deliverLocalMessage(dataDir,{to:agent??DEFAULT_AGENT,text:env.body,author:env.from,key:env.id}) : node.writeWakeup(env,agent), defaultAgent: DEFAULT_AGENT, annuaire: settings.annuaire,
   ...(bootstrap ? { bootstrap } : {}), ...(retryMs ? { retryMs, detailMs: Math.min(3000, retryMs) } : {}),
 });
 
@@ -75,7 +76,7 @@ async function handleRequest(file) {
   let result;
   try {
     if (req.op === "send") {
-      result = { ok: true, message: await node.send(String(req.to ?? ""), req.body, { id: req.id, replyTo: req.replyTo }) };
+      result = { ok: true, message: await node.send(String(req.to ?? ""), req.body, { id: req.id, replyTo: req.replyTo, kind: req.kind??"call" }) };
       log(`envoi ${result.message.id} → ${result.message.to} : ${result.message.label}`);
     } else if (req.op === "addContact") {
       result = node.addContact(String(req.name ?? ""), String(req.publicKey ?? ""), { force: req.force === true });
@@ -110,8 +111,11 @@ async function tick() {
     for (const n of names.slice(0, 50)) await handleRequest(path.join(P.requests, n));
     // Résultats non lus au-delà de 10 min : supprimés.
     try { for (const n of fs.readdirSync(P.results)) { const f = path.join(P.results, n); if (Date.now() - fs.statSync(f).mtimeMs > 600_000) fs.rmSync(f, { force: true }); } } catch {}
+    const agents={...DEFAULT_AGENTS,...localMessageTargets(dataDir)};
+    const agentsChanged=JSON.stringify(agents)!==JSON.stringify(node.cfg.agents);
+    node.cfg.agents=agents;
     const endpoint=node.cfg.callEndpoint();
-    if(JSON.stringify(endpoint)!==JSON.stringify(node.fiche.reach.call ?? null)) {
+    if(agentsChanged||JSON.stringify(endpoint)!==JSON.stringify(node.fiche.reach.call ?? null)) {
       node.fiche=await node.buildFiche();
       for(const peer of node.peers.values())peer.send({t:'hello',fiche:node.fiche});
     }

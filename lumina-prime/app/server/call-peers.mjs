@@ -50,8 +50,9 @@ async function readJson(stream, limit) {
   try { return JSON.parse(Buffer.concat(chunks).toString()); } catch { fail('invalid_json'); }
 }
 
-export function createCallPeers({ call, controls = null, file = null, dataDir = file ? path.dirname(path.dirname(file)) : null, colonies = dataDir ? createCallColonies(dataDir) : null, port = 8790, host = '0.0.0.0', now = Date.now, fetchImpl = fetch } = {}) {
+export function createCallPeers({ call, controls = null, phones = null, canRing = () => true, file = null, dataDir = file ? path.dirname(path.dirname(file)) : null, colonies = dataDir ? createCallColonies(dataDir) : null, port = 8790, host = '0.0.0.0', now = Date.now, fetchImpl = fetch } = {}) {
   let config = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { id: randomUUID(), label: os.hostname(), caller: 'NLR', enabled: false, peers: [] };
+  const ringResults=new Map();
   const incoming = new Map(), outgoing = new Map(), directory = new Map(), replays = new Map();
   let server = null, starting = null, startupError = null, closed = false;
   let blockedContacts=[];
@@ -64,7 +65,7 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
   config.peers=[]; config.blocked ??= []; save();
   const localTargets = () => call.targets().filter(t => t.kind !== 'remote');
   const peer = id => config.peers.find(p => p.id === id) ?? fail('peer_unknown', 404);
-  const exported = () => localTargets().map(t => ({ handle: t.handle, label: t.label, kind: t.kind, channel: call.channelOf(call.resolve(t.handle)) }));
+  const exported = () => localTargets().map(t => ({ handle: t.handle, label: t.label, kind: t.kind, aliases:call.identityKeys([t.handle]), channel: call.channelOf(call.resolve(t.handle)) }));
   const permitted = handles => {
     for (const h of list(handles)) if (!exported().some(t => t.handle === h)) fail('peer_target_forbidden', 403);
     return handles;
@@ -84,6 +85,19 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
     if (input.op === 'directory') return { label:config.label, caller:config.caller, targets:exported(), at:now() };
     if(input.caller)p.caller=name(input.caller);
     if(input.label)p.label=name(input.label);
+    if(input.op==='ring') {
+      if(!phones||!canRing())fail('calls_paused',403);
+      const handles=permitted(list(input.handles));
+      if(typeof input.callerHandle!=='string')fail('call_target_invalid');
+      await refresh();
+      const caller=[...directory.values()].find(t=>t.peerId===p.id&&t.remoteHandle===input.callerHandle);
+      if(!caller)fail('call_target_unknown',404);
+      const key=`ring:${p.id}:${uuid(input.request)}`;
+      if(ringResults.has(key))return ringResults.get(key);
+      const result=phones.invite(undefined,[...new Set([caller.handle,...handles])].join(','),`${p.caller} · ${p.label}`);
+      ringResults.set(key,result);while(ringResults.size>256)ringResults.delete(ringResults.keys().next().value);
+      return result;
+    }
     if (input.op === 'end') {
       const c = incoming.get(`${p.id}:${uuid(input.call)}`); if(c) closeIncoming(c);
       controls?.markEnded({id:inboundId(p.id,input.call),epoch:1});
@@ -204,7 +218,7 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
     const current=(await colonies.contacts()).find(entry=>entry.id===p.id);
     if(!current)fail('peer_unauthorized',401);
     const secret=colonies.secret(current.exchangeKey), nonce=hex(16);
-    const packet=await colonies.wrap(sealPeer(secret,colonies.ownId(),{...data,caller:config.caller,label:config.label,nonce,at:now()}),current);
+    const packet=await colonies.wrap(sealPeer(secret,colonies.ownId(),{...data,caller:data.caller??config.caller,label:config.label,nonce,at:now()}),current);
     let response;
     for(const address of current.addresses) {
       try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});break;}
@@ -223,7 +237,7 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
     for(const t of targets) {
       if(!/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(t.handle)||!['main','room','agent','holder'].includes(t.kind)||!(/^(main|room:[2-9])$/).test(t.channel))fail('invalid_response');
       const handle=`lan-${p.id}-${hash(t.handle).slice(0,16)}`;
-      directory.set(handle,{handle,label:`${name(t.label)} · ${p.label}`,kind:'remote',peerId:p.id,remoteHandle:t.handle,channel:`remote:${p.id}:${t.channel}`});
+      directory.set(handle,{handle,label:`${name(t.label)} · ${p.label}`,kind:'remote',remoteKind:t.kind,peerId:p.id,remoteHandle:t.handle,remoteAliases:Array.isArray(t.aliases)?t.aliases.filter(x=>typeof x==='string'&&/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(x)).slice(0,64):[],channel:`remote:${p.id}:${t.channel}`});
     }
     p.online=true;
   }
@@ -264,7 +278,7 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
       const p=peer(id),key=`${c.id}:${id}`;
       let state=outgoing.get(key);
       if(!state){state={c,peerId:id,offset:0,revision:0};outgoing.set(key,state);}
-      const result=await rpc(p,{op:'sync',call:c.id,handles:targets.map(t=>t.remoteHandle),revision:c.revision,create:state.revision===0});
+      const result=await rpc(p,{op:'sync',caller:c.caller,call:c.id,handles:targets.map(t=>t.remoteHandle),revision:c.revision,create:state.revision===0});
       if(!state.revision)state.offset=now()-result.at;
       state.revision=Math.max(state.revision,result.revision);
       try {call.assertSession(c.owner,c.id,c.epoch);}catch(error){await rpc(p,{op:'end',call:c.id}).catch(()=>{});throw error;}
@@ -396,7 +410,20 @@ export function createCallPeers({ call, controls = null, file = null, dataDir = 
 
     for(const c of [...incoming.values()])if(now()-c.lastSeen>45_000)closeIncoming(c);
   },5000);timer.unref();
-  return {admin,status,refresh,start,humanPending,humanGuest,humanRequest,ready:async()=>{try{await refresh();}catch{startupError='peer_port_unavailable';}},
+  async function resolveAddress(address) {
+    const match=/^(⬡[a-z0-9][a-z0-9-]{1,30})(?:\/([a-z0-9][a-z0-9_.-]{0,60}))?$/.exec(address);
+    if(!match)fail('call_target_invalid');
+    await refresh();
+    const p=config.peers.find(p=>p.colony===match[1]);
+    if(!p)fail('colony_unknown',404);
+    if(!p.online)fail('peer_unavailable',503);
+    const wanted=match[2]??'principal';
+    const candidates=[...directory.values()].filter(t=>t.peerId===p.id);
+    const t=candidates.find(t=>wanted==='principal'?t.remoteHandle==='mind':t.remoteHandle===wanted)??candidates.find(t=>t.remoteAliases.includes(wanted));
+    if(!t)fail('call_target_unknown',404);return t;
+  }
+  const ringHuman=(target,callerHandle,caller,request,targets=[target])=>rpc(peer(target.peerId),{op:'ring',handles:targets.map(t=>t.remoteHandle),callerHandle,caller,request});
+  return {admin,status,refresh,start,resolveAddress,ringHuman,humanPending,humanGuest,humanRequest,ready:async()=>{try{await refresh();}catch{startupError='peer_port_unavailable';}},
     close:async()=>{closed=true;clearInterval(timer);colonies?.unpublish();for(const c of [...incoming.values()])closeIncoming(c);for(const s of [...outgoing.values()])remote.end(s.c);
       if(server){server.closeAllConnections();await new Promise(r=>server.close(r));server=null;}},
   };

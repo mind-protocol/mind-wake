@@ -359,7 +359,7 @@ export function routeMentionWakes(options: {
           `@${target.id} — ${authorLabel(author)} t'a mentionné dans ${threadName(source.thread)} [${m.at}] :`,
           quoted,
           "",
-          `(Runtime : réveil par @${target.id}, un seul tour pour ce message${forkEnabled(dataDir, home.room.room) ? "" : " ; ta room reste éteinte ensuite"}. Pour répondre à l'auteur, mentionne son @id dans ta réponse, ou écris à NLR par message_owner.)`,
+          `(Runtime : réveil par @${target.id}, un seul tour pour ce message${forkEnabled(dataDir, home.room.room) ? "" : " ; ta room reste éteinte ensuite"}. Pour répondre à l'auteur, mentionne son @id dans ta réponse, ou écris à NLR par message.)`,
         ].join("\n");
         const key = `mention:${createHash("sha256").update(m.id).digest("hex").slice(0, 24)}:${target.id}`.slice(0, 128);
         what = `${home.agent.name} (Room ${String(home.room.room)})`;

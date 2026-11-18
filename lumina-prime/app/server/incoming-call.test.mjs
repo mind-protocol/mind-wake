@@ -1,3 +1,6 @@
+import { openStore } from '../../../dist/store/index.js';
+import { controlDbPath } from '../../../dist/daemon/paths.js';
+import { DEFAULT_PROFILE_ID, DEFAULT_AGENT_ID } from '../../../dist/cli/context.js';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,6 +14,8 @@ import { createChatServer } from './chat-server.mjs';
 
 test('signed MCP call reaches only the addressed phones and one accepted call returns the caller', async () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'wake-incoming-'));
+  const profile=openStore(controlDbPath(dir));
+  profile.uow.profiles.create({id:DEFAULT_PROFILE_ID,agentId:DEFAULT_AGENT_ID,state:'running',activePolicyRevisionId:null,nextWakeAt:null,emergencyStopLocked:false,stateReason:'fixture',updatedAt:new Date().toISOString()});profile.close();
   const phones = openPhoneBook(dir);
   const client = new Client({name:'phone-test',version:'1'});
   const transport = new StdioClientTransport({command:process.execPath,
@@ -19,9 +24,10 @@ test('signed MCP call reaches only the addressed phones and one accepted call re
     env:{...process.env,MIND_WAKE_OWNER_SIGNATURE:'VOX (Room 7)',MIND_WAKE_DATA_DIR:dir}});
   let owner = 'nlr';
   const gateway = createChatServer({phones, phoneOwner:()=>owner, bridge:{snapshot:()=>[],send(){}},
-    privateNetworkConnect:true, call:{resolve: caller=>assert.equal(caller,'vox')}});
+    privateNetworkConnect:true, call:{parseTargets: caller=>assert.equal(caller,'vox')}});
   try {
     await client.connect(transport);
+    assert.ok((await client.listTools()).tools.some(t=>t.name==='call'));
     await new Promise(resolve=>gateway.server.listen(0,'127.0.0.1',resolve));
     const base = 'http://127.0.0.1:'+gateway.server.address().port+'/chat/';
     const post = (route,body,token) => fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',

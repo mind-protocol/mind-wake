@@ -14,7 +14,7 @@ interface LaunchContext {
 }
 type Server = Record<string, unknown>;
 export const HUMAN_CALL_SERVER = "mind_calls";
-export const HUMAN_CALL_TOOLS = ["call_human", "list_active_calls", "hangup_call", "invite_to_call"] as const;
+export const HUMAN_CALL_TOOLS = ["call", "call_human", "list_active_calls", "hangup_call", "invite_to_call"] as const;
 /**
  * Outils dont l'absence signale une restriction explicite. invite_to_call (18 nov. 2026) s'ajoute aux
  * autorisations sans rendre « restreinte » une configuration qui liste les trois outils d'avant.
@@ -26,7 +26,7 @@ function callToolsRestricted(server: Server): boolean {
   const tools = server["tools"];
   if (tools === undefined) return false;
   if (!tools || typeof tools !== "object" || Array.isArray(tools)) return true;
-  return HUMAN_CALL_CORE_TOOLS.some(name => {
+  return HUMAN_CALL_TOOLS.some(name => {
     const tool = (tools as Record<string, unknown>)[name];
     if (tool === undefined) return false;
     if (!tool || typeof tool !== "object" || Array.isArray(tool)) return true;
@@ -94,7 +94,7 @@ export function callContract(server: Server, identity: HumanCallIdentity, repo =
   const disabled = server["disabled_tools"];
   if (server["enabled"] === false
       || Array.isArray(enabled) && !HUMAN_CALL_CORE_TOOLS.every(tool => enabled.includes(tool))
-      || Array.isArray(disabled) && HUMAN_CALL_CORE_TOOLS.some(tool => disabled.includes(tool))
+      || Array.isArray(disabled) && HUMAN_CALL_TOOLS.some(tool => disabled.includes(tool))
       || callToolsRestricted(server)) return "restricted";
   return "provided";
 }
@@ -161,7 +161,7 @@ function inheritedCodexServers(home: string): Record<string, Server> {
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/);
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index]!;
-    const header = /^\s*\[mcp_servers\.(?:([A-Za-z0-9_-]+)|"([A-Za-z0-9_-]+)"|'([A-Za-z0-9_-]+)')(?:\.(env|tools(?:\.(?:call_human|list_active_calls|hangup_call|invite_to_call))?))?\]\s*(?:#.*)?$/.exec(line);
+    const header = /^\s*\[mcp_servers\.(?:([A-Za-z0-9_-]+)|"([A-Za-z0-9_-]+)"|'([A-Za-z0-9_-]+)')(?:\.(env|tools(?:\.(?:call|call_human|list_active_calls|hangup_call|invite_to_call))?))?\]\s*(?:#.*)?$/.exec(line);
     if (header) { name = header[1] ?? header[2] ?? header[3]; section = header[4] ?? ""; result[name!] ??= {}; continue; }
     if (/^\s*\[/.test(line)) { name = undefined; continue; }
     if (!name) continue;
@@ -228,7 +228,7 @@ function toml(value: unknown): string {
   throw Error("Invalid MCP value");
 }
 
-/** Standard Codex consent settings for the three owner-authorized call tools only. */
+/** Standard Codex consent settings for owner-authorized call tools only. */
 export function codexCallApprovalOverrides(name: string): Record<string, string> {
   if (!/^[A-Za-z0-9_-]+$/.test(name)) throw Error("Non-canonical MCP server name requires host review");
   return Object.fromEntries(HUMAN_CALL_TOOLS.map(tool => [`mcp_servers.${name}.tools.${tool}.approval_mode`, '"approve"']));
@@ -255,8 +255,8 @@ export function callCodexOverrides(
 ): Record<string, string> {
   const effective = inheritedHome ? inheritedCodexServers(inheritedHome) : {};
   for (const [key, value] of Object.entries(overrides)) {
-    if (/^mcp_servers\.[A-Za-z0-9_-]+\.tools(?:\.(?:call_human|list_active_calls|hangup_call|invite_to_call))?$/.test(key)) throw Error("Non-canonical MCP tool policy requires host review");
-    const tool = /^mcp_servers\.([A-Za-z0-9_-]+)\.tools\.(call_human|list_active_calls|hangup_call|invite_to_call)\.(enabled|approval_mode)$/.exec(key);
+    if (/^mcp_servers\.[A-Za-z0-9_-]+\.tools(?:\.(?:call|call_human|list_active_calls|hangup_call|invite_to_call))?$/.test(key)) throw Error("Non-canonical MCP tool policy requires host review");
+    const tool = /^mcp_servers\.([A-Za-z0-9_-]+)\.tools\.(call|call_human|list_active_calls|hangup_call|invite_to_call)\.(enabled|approval_mode)$/.exec(key);
     if (tool) {
       const server = effective[tool[1]!] ??= {}, tools = server["tools"] as Record<string, unknown> | undefined;
       server["tools"] = {...tools, [tool[2]!]: {...tools?.[tool[2]!] as Record<string, unknown> | undefined, [tool[3]!]: JSON.parse(value)}};
@@ -279,7 +279,7 @@ export function callCodexOverrides(
   const disabled = own?.["disabled_tools"];
   if (own && (own["enabled"] === false
       || Array.isArray(enabled) && !HUMAN_CALL_CORE_TOOLS.every(tool => enabled.includes(tool))
-      || Array.isArray(disabled) && HUMAN_CALL_CORE_TOOLS.some(tool => disabled.includes(tool))
+      || Array.isArray(disabled) && HUMAN_CALL_TOOLS.some(tool => disabled.includes(tool))
       || callToolsRestricted(own))) return {};
   if (own && (own["command"] !== undefined || own["args"] !== undefined) && callContract(own, identity) === "absent") {
     throw Error("Call MCP server name already owned by an unknown configuration");

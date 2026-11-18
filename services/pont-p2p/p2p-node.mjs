@@ -334,6 +334,7 @@ export class P2PNode extends EventEmitter {
     const p = this.peers.get(colony);
     if (!p) return;
     for (const m of this.outbox) if (m.colony === colony && (m.status === STATUS.PENDING || m.status === null) && m.detail !== DETAIL.SENT) {
+      m.lastSentAt=this.now();
       this.setStatus(m, STATUS.PENDING, DETAIL.SENT);
       p.send({ t: "msg", envelope: m.envelope });
     }
@@ -357,7 +358,14 @@ export class P2PNode extends EventEmitter {
       if (!waiting.has(colony)) { this.joined.delete(colony); const k = this.carnet[colony]?.publicKey; if (k) this.swarm.leave(colonyTopic(k)).catch(() => {}); }
       else if (!this.peers.has(colony)) d.refresh({ server: false, client: true }).catch(() => {});
     }
-    for (const colony of waiting) this.seek(colony);
+    for (const colony of waiting) {
+      this.seek(colony);
+      if(this.peers.has(colony)) {
+        for(const m of this.outbox)if(m.colony===colony&&m.status===STATUS.PENDING&&m.detail===DETAIL.SENT&&t-(m.lastSentAt??0)>=this.cfg.retryMs)
+          this.setStatus(m,STATUS.PENDING,DETAIL.NOT_FOUND);
+        this.flush(colony);
+      }
+    }
   }
 
   pendingColonies() {
@@ -406,7 +414,7 @@ export class P2PNode extends EventEmitter {
     let wakeFile;
     try {
       this.saveReceived(env, agent);
-      wakeFile = this.writeWakeup(env, agent);
+      wakeFile = this.cfg.receiveMessage ? await this.cfg.receiveMessage(env, agent) : this.writeWakeup(env, agent);
     } catch (e) {
       this.log.push(["erreur_reveil", String(e?.message ?? e)]);
       return nack("réveil impossible chez le destinataire, réessayer plus tard");

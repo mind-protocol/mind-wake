@@ -126,7 +126,7 @@ it("saves an edit made directly in the complete Crypto prompt", async () => {
     vi.stubGlobal("window", { addEventListener() {} });
     vi.stubGlobal("Option", Element);
     mountPromptEditor(async (req) =>
-      editPrompts(dir, req as Parameters<typeof editPrompts>[1]),
+      editPrompts(dir, req as unknown as Parameters<typeof editPrompts>[1]),
     ).open();
     await vi.waitFor(() => expect(get("prompt-reload").disabled).toBe(false));
     const input = get("prompt-fields")

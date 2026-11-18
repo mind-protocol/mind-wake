@@ -71,3 +71,9 @@ it("includes owner-channel answers only after successful local MCP publication",
  const turns=parseWakeTranscript([row("user","wake","Continue"),call("ok","Published"),result("ok","Published"),call("failed","Do not display"),result("failed","Do not display",true),call("pending","Not yet sent")].join("\n"),"s");
  expect(turns[0]!.responses.map(r=>r.text)).toEqual(["Published"]);
 });
+
+it("projects only the human delivery from a multi-recipient message",()=>{
+ const content={schema:"mind.message.v1",results:[{to:"room3",status:"recorded",entryId:1},{to:"@nlr",status:"recorded",result:{schema:"mind.mcp/message",message:{id:"own-multi",text:"Published to human"}}}]};
+ const raw=[row("user","wake","Continue"),row("assistant","call",[{type:"tool_use",id:"send",name:"mcp__mind__message"}]),row("user","result",[{type:"tool_result",tool_use_id:"send",content:JSON.stringify(content)}])].join("\n");
+ expect(parseWakeTranscript(raw,"s")[0]!.responses.map(r=>r.text)).toEqual(["Published to human"]);
+});

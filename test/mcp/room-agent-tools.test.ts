@@ -11,7 +11,7 @@ import path from "node:path";
 import { registerSignedOwnerTools } from "../../services/mcp/fork-owner-main.js";
 import { colonyToolIsReadOnly } from "../../services/mcp/colony-tools.js";
 /** Contrôle d'appel (agent-hangup.ts) enregistré avant call_human. */
-const CALL_TOOLS = ["list_active_calls", "invite_to_call", "hangup_call", "call_human"];
+const CALL_TOOLS = ["list_active_calls", "invite_to_call", "hangup_call", "call", "call_human"];
 
 function recorder() {
   const tools: { name: string; description: string }[] = [];
@@ -49,9 +49,9 @@ it("coach Telegram (tools none) : ni Colony ni Reddit, même avec un compte pré
   try {
     const r = recorder();
     registerSignedOwnerTools(r.server, agentEnv(dir, "Coach Telegram", "none"));
-    expect(r.names()).toEqual(["list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS, "post_to_fork_thread"]);
-    expect(r.tools.find((t) => t.name === "message_owner")?.description).toContain("signed « Coach Telegram »");
-    expect(r.tools.find((t) => t.name === "post_to_fork_thread")?.description).toContain("signed « Coach Telegram »");
+    expect(r.names()).toEqual(["list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS]);
+    expect(r.tools.find((t) => t.name === "message")?.description).toContain("signed « Coach Telegram »");
+    expect(r.tools.find((t) => t.name === "message")?.description).toContain("signed « Coach Telegram »");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -63,10 +63,10 @@ it("coach Colony (publish) : Colony de son compte et Reddit en lecture ; coach e
     const publish = recorder();
     registerSignedOwnerTools(publish.server, agentEnv(dir, "Coach Colony", "publish"));
     expect(publish.names()).toEqual([
-      "list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS, "reddit_me", "reddit_feed", "reddit_search", "reddit_thread",
-      "colony_list_tools", "colony_call_tool", "post_to_fork_thread",
+      "list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS, "reddit_me", "reddit_feed", "reddit_search", "reddit_thread",
+      "colony_list_tools", "colony_call_tool",
     ]);
-    expect(publish.tools.find((t) => t.name === "post_to_fork_thread")?.description).toContain("signed « Coach Colony »");
+    expect(publish.tools.find((t) => t.name === "message")?.description).toContain("signed « Coach Colony »");
     const read = recorder();
     registerSignedOwnerTools(read.server, agentEnv(dir, "Coach Colony 3", "read"));
     expect(read.names()).toEqual(publish.names());

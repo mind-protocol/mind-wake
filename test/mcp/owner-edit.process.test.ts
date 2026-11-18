@@ -45,16 +45,16 @@ it("real MCP publish/edit/delete updates the desktop CLI, preserves human replie
   expect(removed.isError).toBe(false);
   expect(messages(ctx, dataDir).data.agentMessages).toEqual([]);
   expect(messages(ctx, dataDir).data.replies[0]?.text).toBe("Montre-moi !");
-  const sent = await client.call("message_owner", {
+  const sent = await client.call("message", {to:"@nlr",
     text: "Voici une nouvelle piste.",
     idempotency_key: "new-message-001",
   });
   expect(sent.isError).toBe(false);
-  const duplicate = await client.call("message_owner", {
+  const duplicate = await client.call("message", {to:"@nlr",
     text: "Voici une nouvelle piste.",
     idempotency_key: "new-message-001",
   });
-  expect(duplicate.data["message"]).toEqual(sent.data["message"]);
+  expect(duplicate.data["results"]).toEqual(sent.data["results"]);
   expect(messages(ctx, dataDir).data.agentMessages).toHaveLength(1);
 }, 60000);
 

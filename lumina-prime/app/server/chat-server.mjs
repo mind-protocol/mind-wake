@@ -194,10 +194,14 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
           if (typeof id !== 'string' || !['accept','decline'].includes(decision)) throw new ChatError('invalid_request');
           const next = phones.pending(human);
           if (!next || next.id !== id) throw new ChatError('call_expired', 409);
-          if (decision === 'accept') call.resolve(next.caller);
+          if (decision === 'accept') {
+            const targets=call.parseTargets(next.caller);
+            if(next.inviteHumans&&targets.some(t=>t.kind==='remote')&&!localDesktop)throw new ChatError('peer_admin_local_only',403);
+            if(next.callId)call.adoptAgentSession(next.callId,session.key);
+          }
           const result = phones.decide(human, id, decision);
           if (!result) throw new ChatError('call_expired', 409);
-          send(res, 200, result, origin); return;
+          send(res, 200, {...result,...(next.callId?{callId:next.callId}:{})}, origin); return;
         }
       }
       if (req.method === 'POST' && url.pathname === '/chat/reports') {
@@ -333,7 +337,7 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         const scoped=Boolean(call.openSession&&call.stateSession&&call.endSession);
         const membership=Boolean(call.addSession&&call.removeSession);
         const controlLinked=Boolean(controls?.registerCall&&controls?.control&&controls?.markEnded&&controls?.addParticipants&&controls?.replaceParticipants);
-        send(res,200,{schema:'mind.chat.call.capabilities.v1',protocol:scoped&&membership?2:0,scoped,membershipRevision:membership?1:0,removeParticipants:membership,controlLinked},origin);return;
+        send(res,200,{schema:'mind.chat.call.capabilities.v1',protocol:scoped&&membership?2:0,scoped,membershipRevision:membership?1:0,removeParticipants:membership,controlLinked,sharedAgentCalls:typeof call.adoptAgentSession==='function'},origin);return;
       }
       if (url.pathname === '/chat/call/session' && ['GET','POST'].includes(req.method)) {
         const query=callParams(url,req.method==='POST'?['call','epoch','target']:['call','epoch']);

@@ -1,3 +1,4 @@
+import { startAgentCalls } from './agent-calls.mjs';
 import { openCallControls } from '../../../services/mcp/call-control-store.mjs';
 import { startCallInvites } from './chat-call-invites.mjs';
 import { openPhoneBook, humanHandle } from '../../../services/mcp/phone-book.mjs';
@@ -121,10 +122,13 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
   const ringTimer = setInterval(() => { ring.tick().catch(() => {}); }, 15_000); ringTimer.unref();
   const phones = openPhoneBook(dataDir);
   const controls = openCallControls(dataDir);
-  const peers = createCallPeers({ call, controls, file: path.join(dataDir, 'credentials', 'call-peers.json') });
+  let canCall=()=>false;
+  try {const policy=await import(pathToFileURL(path.join(wakeRoot,'dist/communication/external-inbox-policy.js')).href);canCall=()=>policy.externalInboxSyncAllowed(dataDir);}catch{/* Fail closed until the runtime is built. */}
+  const peers = createCallPeers({ call, controls, phones, canRing:canCall, file: path.join(dataDir, 'credentials', 'call-peers.json') });
   await peers.ready();
   // Outil MCP invite_to_call : demandes des agents exécutées ici, avec les droits du serveur.
   const stopInvites = startCallInvites({ controls, call });
+  const stopAgentCalls=startAgentCalls({dataDir,call,controls,peers,phones,canCall});
   const addressMap = JSON.parse(process.env.MIND_WAKE_PHONE_HANDLES ?? '{}');
   const phoneOwner = address => humanHandle(addressMap[String(address).replace(/^::ffff:/, '')] ?? 'nlr');
   let sending = false;
@@ -149,7 +153,7 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
     sessionStore: createChatSessionStore(path.join(dataDir, 'credentials', 'mobile-chat-sessions.json')) });
   try {
     await new Promise((resolve, reject) => { service.server.once('error', reject); service.server.listen(port, host, resolve); });
-  } catch (error) { clearInterval(pushTimer); clearInterval(ringTimer); stopInvites(); phones.close(); await peers.close(); await call.close(); reportStore.close(); controls.close(); throw error; }
+  } catch (error) { clearInterval(pushTimer); clearInterval(ringTimer); stopInvites(); await stopAgentCalls(); phones.close(); await peers.close(); await call.close(); reportStore.close(); controls.close(); throw error; }
   transcribe?.warm();
   const url = `http://${anyHost ? (hostnames[0] ?? '127.0.0.1') : host}:${port}`;
   fs.writeFileSync(path.join(outputDir, 'pairing.private.json'), JSON.stringify({ url, ...service.pairing,
@@ -159,6 +163,6 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
     pairingExpiresAt: service.pairing.expiresAt, localTranscriptionConfigured: Boolean(transcribe), public: false }, null, 2));
   console.log(JSON.stringify({ status: 'listening', url, bind: host, privateNetworkConnect, transport: 'authenticated long-poll' }));
   const close = service.close;
-  service.close = async () => { clearInterval(pushTimer); clearInterval(ringTimer); stopInvites(); try { await close(); } finally { transcribe?.close(); await peers.close(); await call.close(); reportStore.close(); phones.close(); controls.close(); } };
+  service.close = async () => { clearInterval(pushTimer); clearInterval(ringTimer); stopInvites(); await stopAgentCalls(); try { await close(); } finally { transcribe?.close(); await peers.close(); await call.close(); reportStore.close(); phones.close(); controls.close(); } };
   return service;
 }

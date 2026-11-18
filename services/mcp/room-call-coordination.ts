@@ -11,12 +11,14 @@ export function coordinatedRoomCallServer(server:McpServer,env:Readonly<Record<s
   if(!role||!dir||!policy)return server;
   const raw=server.registerTool as unknown as (...args:unknown[])=>unknown;
   const register=((name:string,config:Record<string,unknown>,handler:(args:Record<string,unknown>,extra:unknown)=>unknown)=>{
-    if(name!=="call_human")return raw.call(server,name,config,handler);
+    if(name!=="call_human"&&name!=="call")return raw.call(server,name,config,handler);
     return raw.call(server,name,{...config,description:String(config["description"]??"")+" This room has one canonical coordinator and a five-minute minimum between attempts. If an app call is active, post the useful update there instead of ringing."},(args:Record<string,unknown>,extra:unknown)=>{
+      if(name==="call"&&args["request_id"])return handler(args,extra);
       const current=trustedRoomRole(env,signature),now=Date.now();
       if(!current?.capability.calls)return result("authorization_changed","No invitation was submitted.");
       if(current.agent.id!==current.capability.calls.coordinatorAgent)return result("room_coordinator",`Send this useful update to @${current.capability.calls.coordinatorAgent}; only that role rings for the room.`);
-      const handle=String(args["handle"]??"nlr").trim().toLowerCase().replace(/^@/,"");
+      const recipient=name==="call" ? args["target"] : args["handle"]??"nlr";
+      const handle=(typeof recipient==="string"?recipient:"").trim().toLowerCase().replace(/^@/,"");
       if(!["nlr","nlr-ai"].includes(handle))return result("outside_project_scope","This project calls NLR only.");
       const active=path.join(dir,"mobile-call-control.sqlite");
       if(fs.existsSync(active)){

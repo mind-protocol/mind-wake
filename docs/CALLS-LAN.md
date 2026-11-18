@@ -30,13 +30,29 @@ Le PC appelant coordonne la room temporaire. Chaque réponse d’agent produite 
 
 La transcription humaine emprunte le routage habituel vers chaque destinataire ; elle peut réveiller les agents selon leurs règles existantes. Les agents peuvent raccrocher avec leur contrôle d’appel habituel. Une installation muette pendant 45 secondes perd sa session d’appel. Le redémarrage conserve le carnet, mais ne reprend pas un appel terminé.
 
+## Appeler depuis un agent : MCP `call`
+
+`message` est un envoi ponctuel vers `to`, une adresse ou une liste : `@nlr`, `vox`, `room3`, `⬡atelier/vox`. Il remplace `message_owner` et `post_to_fork_thread`. Chaque destination a son résultat et sa clé de déduplication ; aucun espace durable n'est créé.
+
+`call` crée un espace partagé qui relaie les messages entre tous les participants pendant la session. `target` accepte une adresse ou une liste. Une room inclut tous ses agents. `human` vaut `true` par défaut : l'espace est actif immédiatement entre agents et tous les humains sont invités à rejoindre **le même appel**. Un refus distant ne met pas fin aux échanges des autres. Le décrochage local sur desktop héberge ensuite la liaison vocale des humains distants ; il ne conditionne plus les échanges entre agents.
+
+- `message({"to":["vox","room3"],"text":"Voici le résultat.","idempotency_key":"resultat-001"})` : envoi ponctuel à deux destinataires.
+- `call({"target":["room3","⬡atelier/vox"]})` : espace partagé avec tous les agents de la room, VOX distante et invitation des humains.
+- `call({"target":["vox","⬡atelier/principal"],"human":false})` : espace entre agents sans sonnerie humaine.
+- `call({"target":"@nlr"})` : sonnerie de l'humain local.
+- `call({"target":"⬡atelier/vox","human":false,"call_id":"<UUID actif>"})` : ajout à cet espace existant.
+
+Sans humain, la passerelle tient la session, synchronise les messages et maintient la connexion distante, sans ouvrir de microphone. L’appel se termine au raccrochage d’un participant, à la perte de connexion, à la pause du profil appelant ou après cinq minutes. Les copies restent des messages de contexte, pas des messages humains ni des réveils autonomes supplémentaires. `list_active_calls` et `hangup_call` servent au suivi et au raccrochage.
+
+L’outil retourne `active`, `added`, `already_joined`, `ringing`, `failed` ou `pending`. `ringing` ne signifie pas décroché. Pour une demande `pending`, appeler `call({"request_id":"<request retourné>"})` ; une demande non exécutée expire après une minute, sans relance automatique après interruption. La passerelle réclame chaque demande une seule fois. Les restrictions de rôle existantes, Pause et Force-off restent appliquées. Les anciens outils `call_human` et `invite_to_call` restent compatibles.
+
 ## Un agent invite un autre agent (`invite_to_call`)
 
 Tout agent (principal, room, holder) dispose de l’outil MCP `invite_to_call` à côté de `list_active_calls` et `hangup_call`. Ses arguments sont `target` (slug ou id stable : `viz`, `vox`, `room3`…), `call_id` (facultatif, par défaut l’appel actif) et `reason` (quelques mots).
 L’agent dépose seulement une demande dans `mobile-call-control.sqlite`. Le serveur de l’app, qui tient l’appel, l’exécute avec ses propres droits (`chat-call-invites.mjs`, un passage par seconde) : aucune clé ni aucun jeton ne transite par l’agent.
 Seules deux gardes s’appliquent : la cible doit exister, et une cible déjà participante n’est pas ajoutée une seconde fois (`already_joined`). L’outil n’utilise aucune liste d’accès par room. Les autres réponses possibles sont `added`, `target_unknown` et `no_active_call` ; `pending` signale que le serveur de l’app n’a pas répondu dans les 6 s, et la demande expire après 60 s.
 L’ajout est annoncé en une ligne dans le fil de chaque participant : `[Appel] ➕ Marco a invité 🌳 Viz dans l'appel — raison`. Ensuite, l’invité reçoit les phrases de l’humain.
-Limite actuelle : l’app n’adopte pas encore les participants ajoutés côté serveur (son sondage `GET /chat/call/session` ne reprend que la révision). Les réponses de l’invité arrivent dans les fils des autres agents, mais l’app ne les affiche pas encore.
+Le sondage de session reprend désormais les participants ajoutés côté serveur, sur desktop et mobile : ils apparaissent dans l’appel et leurs réponses sont lues par le moteur de l’app.
 
 ## Réseau et autorisations
 

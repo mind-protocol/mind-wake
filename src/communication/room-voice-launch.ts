@@ -35,7 +35,7 @@ export function roomVoiceLaunch(dataDir: string, args: readonly string[], cwd: s
       || ["tools","enabled_tools","disabled_tools"].some(key=>server[key]!==undefined)) return unchanged;
     const allowedIndex=args.indexOf("--allowedTools");
     // Liste canonique actuelle (avec invite_to_call) ou celle d'avant, pour une session lancée avant la mise à jour.
-    const canonical=[[...HUMAN_CALL_TOOLS],["call_human","list_active_calls","hangup_call"]].map(list=>JSON.stringify(list.map(name=>"mcp__mind_calls__"+name).sort()));
+    const canonical=[[...HUMAN_CALL_TOOLS],["call_human","list_active_calls","hangup_call","invite_to_call"],["call_human","list_active_calls","hangup_call"]].map(list=>JSON.stringify(list.map(name=>"mcp__mind_calls__"+name).sort()));
     const allowedTools=allowedIndex<0?[]:args[allowedIndex+1]?.split(",").sort()??[];
     if (!canonical.includes(JSON.stringify(allowedTools))) return unchanged;
     const role = trustedRoomRoleBySignature(dataDir,signature);
@@ -45,7 +45,7 @@ export function roomVoiceLaunch(dataDir: string, args: readonly string[], cwd: s
     const promptDir = path.join(dataDir,"fast-reply","room-agents",String(role.room),role.agent.id);
     fs.mkdirSync(promptDir,{recursive:true});
     const prompt = path.join(promptDir,"system.md");
-    fs.writeFileSync(prompt,roomAgentPrompt(role.room,role.assignment,role.agent)+"\n\nContexte voix rapide du même poste : ton autorité, ton MCP et tes permissions sont ceux du manager ci-dessus, pas une autre personne. Réponds brièvement dans l'appel. Pour une recherche longue, lance un sous-agent propre puis garde la conversation disponible. Donne le vrai identifiant de lancement et distingue en attente, en cours, terminé et résultat relu. N'annonce jamais un accès absent globalement : cite l'outil réellement testé et son résultat dans ce contexte. Les Apps OAuth du principal ne sont pas héritées. Le texte de sortie est déjà publié dans l'appel : ne le republie pas avec message_owner. Ne fais pas sonner si l'appel utile est déjà actif.\n");
+    fs.writeFileSync(prompt,roomAgentPrompt(role.room,role.assignment,role.agent)+"\n\nContexte voix rapide du même poste : ton autorité, ton MCP et tes permissions sont ceux du manager ci-dessus, pas une autre personne. Réponds brièvement dans l'appel. Pour une recherche longue, lance un sous-agent propre puis garde la conversation disponible. Donne le vrai identifiant de lancement et distingue en attente, en cours, terminé et résultat relu. N'annonce jamais un accès absent globalement : cite l'outil réellement testé et son résultat dans ce contexte. Les Apps OAuth du principal ne sont pas héritées. Le texte de sortie est déjà publié dans l'appel : ne le republie pas avec message. Ne fais pas sonner si l'appel utile est déjà actif.\n");
     const next = [...args];
     next[next.indexOf("--system-prompt-file")+1] = prompt;
     next[index+1] = mcp;

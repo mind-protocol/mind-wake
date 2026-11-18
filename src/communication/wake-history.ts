@@ -47,16 +47,16 @@ export function parseWakeTranscript(raw: string, sessionId: string): WakeTurn[] 
     if (Array.isArray(c)) for (const raw of c) {
       if (!raw || typeof raw!=="object") continue;
       const part=raw as Record<string,unknown>;
-      if(row["type"]==="assistant" && part["type"]==="tool_use" && ["mcp__mind__message_owner","message_owner"].includes(String(part["name"])) && typeof part["id"]==="string") pendingOwnerMessages.add(part["id"]);
+      if(row["type"]==="assistant" && part["type"]==="tool_use" && ["mcp__mind__message_owner","message_owner","mcp__mind__message","message"].includes(String(part["name"])) && typeof part["id"]==="string") pendingOwnerMessages.add(part["id"]);
       if(row["type"]==="user" && part["type"]==="tool_result" && pendingOwnerMessages.has(String(part["tool_use_id"]))) {
         pendingOwnerMessages.delete(String(part["tool_use_id"]));
-        if(part["is_error"]===true)continue;
         const content=part["content"];
         const texts=typeof content==="string"?[content]:Array.isArray(content)?content.flatMap(b=>b && b.type==="text" && typeof b.text==="string"?[b.text]:[]):[];
         for(const text of texts)try {
-          const result=JSON.parse(text) as {schema?:string;message?:{id?:string;text?:string;createdAt?:string}};
-          const published=result.message;
-          if(result.schema!=="mind.mcp/message_owner" || !published || typeof published.id!=="string" || typeof published.text!=="string")continue;
+          const result=JSON.parse(text) as {schema?:string;message?:{id?:string;text?:string;createdAt?:string};results?:{status?:string;result?:{message?:{id?:string;text?:string;createdAt?:string}}}[]};
+          if(part["is_error"]===true&&result.schema!=="mind.message.v1")continue;
+          const published=result.schema==="mind.message.v1"?result.results?.find(r=>r.status==="recorded"&&r.result?.message)?.result?.message:result.message;
+          if(!["mind.mcp/message_owner","mind.message.v1"].includes(result.schema??"") || !published || typeof published.id!=="string" || typeof published.text!=="string")continue;
           const id=`owner:${published.id}`;
           if(!seen.has(id)){seen.add(id);ensureCurrent(at).responses.push({id,at:published.createdAt ?? at,text:published.text});}
         }catch{/* A non-message tool result never becomes a visible answer. */}

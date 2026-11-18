@@ -19,7 +19,6 @@ import { processContext } from "../../src/cli/context.js";
 import { registerHumanCall } from "./human-call.js";
 import { registerOwnerTools } from "./owner-tools.js";
 import { registerBackgroundTools } from "./background-tools.js";
-import { registerForkThreadTools } from "./fork-thread-tools.js";
 import { registerWakeManagerTools } from "./wake-manager-tools.js";
 import { registerWakeReminderTools } from "./wake-reminder-tools.js";
 import { registerRepoTools } from "./repo-tools.js";
@@ -541,7 +540,6 @@ server.registerTool(
 registerOwnerTools(server, process.env);
 registerHumanCall(server, process.env);
 registerBackgroundTools(server, process.env);
-registerForkThreadTools(server, process.env);
 registerWakeManagerTools(server, process.env);
 registerWakeReminderTools(server, process.env);
 registerRepoTools(server, process.env);

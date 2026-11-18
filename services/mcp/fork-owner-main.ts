@@ -2,7 +2,7 @@ import { coordinatedRoomCallServer } from "./room-call-coordination.js";
 import { trustedRoomRole, registerRoomAgentJobTools } from "./room-agent-jobs.js";
 /**
  * Serveur MCP réduit d'un fork affecté (demande NLR du 6 novembre 2026, VOX / Fork 7) :
- * un seul outil, `message_owner`, pour écrire soi-même dans le fil principal de l'humain.
+ * un seul outil, `message`, pour écrire soi-même dans le fil principal de l'humain.
  * Rien n'est recopié automatiquement : seul un appel explicite publie un message, et chaque
  * message est attribué à sa signature (`MIND_WAKE_OWNER_SIGNATURE`, ex. « VOX (Fork 7) »).
  * Les forks de `FORK_JOB_ORIGINS` (VOX, 15 nov. 2026) reçoivent aussi start/list/cancel
@@ -47,7 +47,7 @@ import { controlDbPath } from "../../src/daemon/paths.js";
 import { DEFAULT_PROFILE_ID } from "../../src/cli/context.js";
 
 /** Outils médias (`MEDIA_TOOLS`, déclaration commune) : présents dans chaque profil de room. */
-export const FORK_OWNER_TOOLS: ReadonlySet<string> = new Set(["message_owner", ...MEDIA_TOOLS]);
+export const FORK_OWNER_TOOLS: ReadonlySet<string> = new Set(["message", ...MEDIA_TOOLS]);
 
 /** Préfixe la signature, sans la doubler si l'auteur l'a déjà écrite. */
 export function signOwnerText(signature: string, text: string): string {
@@ -58,7 +58,7 @@ export function signOwnerText(signature: string, text: string): string {
 type Register = McpServer["registerTool"];
 
 /**
- * Enregistre seulement `message_owner`, avec la signature imposée au texte publié. Les autres
+ * Enregistre seulement `message`, avec la signature imposée au texte publié. Les autres
  * outils du module propriétaire sont ignorés.
  */
 export function registerSignedOwnerTools(
@@ -101,7 +101,7 @@ export function registerSignedOwnerTools(
         handler,
       );
     }
-    if (name === "message_owner")
+    if (name === "message")
       return raw.call(
         server,
         name,
@@ -154,7 +154,7 @@ export function registerSignedOwnerTools(
       );
     return undefined;
   }) as unknown as Register;
-  registerOwnerTools(filteredServer(server, register), { ...env, MIND_WAKE_OWNER_MESSAGES: "1" });
+  registerOwnerTools(filteredServer(server, register), { ...env, MIND_WAKE_OWNER_MESSAGES: "1", MIND_WAKE_MESSAGE_SIGNATURE: signature });
   registerForkJobTools(server, env, signature);
   registerRoomAgentJobTools(server, env, signature);
   // `computer_use` (COMPUTER_USE_TOOLS, déclaration commune) : présent dans chaque profil de room.
@@ -166,7 +166,7 @@ export function registerSignedOwnerTools(
 
 /** Profil publish : outils propriétaire gardés (écrire à NLR, relire le fil principal). */
 export const FORK_PUBLISH_OWNER_TOOLS: ReadonlySet<string> = new Set([
-  "message_owner",
+  "message",
   "list_owner_messages",
   ...MEDIA_TOOLS,
 ]);
@@ -215,7 +215,7 @@ function forkPublishProfile(
 }
 
 /**
- * Outils du profil publish, en plus de message_owner et list_owner_messages : Reddit en lecture
+ * Outils du profil publish, en plus de message et list_owner_messages : Reddit en lecture
  * (écriture seulement pour `REDDIT_WRITE_SIGNATURES`), Colony sur le seul fichier de la room
  * (rien si absent, jamais colony.json), et post_to_fork_thread signé. Ni jobs, ni outils
  * agissant sous l'identité du principal.
@@ -236,7 +236,7 @@ function registerForkPublishTools(
         ...(profile.tools === "read" ? { MIND_COLONY_READ_ONLY: "1" } : {}),
       });
   }
-  registerPostToForkThread(server, profile.dataDir, signature, profile.fork);
+
 }
 
 /** Reddit d'une room : lecture ; écriture seulement si la signature est dans la liste. */
@@ -259,7 +259,7 @@ function registerForkRedditTools(server: McpServer, dataDir: string, signature: 
 
 /** Outils propriétaire d'un fork à accès étendu (VOX), tous attribués à sa signature. */
 export const FORK_FULL_OWNER_TOOLS: ReadonlySet<string> = new Set([
-  "message_owner",
+  "message",
   "list_owner_messages",
   "publish_image",
   "edit_owner_message",
@@ -490,45 +490,9 @@ export function registerForkReadAndThreadTools(
     registerColonyTools(only(server, new Set(["colony_list_tools", "colony_call_tool"])), {
       MIND_COLONY_CONFIG_FILE: path.join(dataDir, colony),
     });
-  registerPostToForkThread(server, dataDir, signature, origin.fork);
+
 }
 
-
-/** post_to_fork_thread : un message signé dans le fil d'une autre room. */
-function registerPostToForkThread(
-  server: McpServer,
-  dataDir: string,
-  signature: string,
-  from: number,
-): void {
-  server.registerTool(
-    "post_to_fork_thread",
-    {
-      description: `Post one message into another room's thread, signed « ${signature} ». It appears on screen under your signature and that room reads it as an incoming message on its next turn. Not your own room, not the human's main thread (use message_owner). Use a stable idempotency_key so a retry does not post twice.`,
-      inputSchema: z.strictObject({
-        fork: z.number().int().min(2).max(8),
-        text: z.string().min(1).max(4000),
-        idempotency_key: z.string().regex(/^[A-Za-z0-9_.:-]{8,100}$/),
-      }),
-      annotations: { openWorldHint: false },
-    },
-    (a) => {
-      try {
-        return ok(
-          postSignedToForkThread(dataDir, {
-            from,
-            fork: a.fork,
-            text: a.text,
-            signature,
-            idempotencyKey: a.idempotency_key,
-          }),
-        );
-      } catch (error) {
-        return failure(error);
-      }
-    },
-  );
-}
 
 /**
  * Forks qui peuvent confier un chantier à une sous-session durable (NLR, 15 nov. 2026 :

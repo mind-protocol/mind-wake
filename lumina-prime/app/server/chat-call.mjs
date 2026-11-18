@@ -496,8 +496,15 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const at=now();
     const c={id,epoch,owner,revision:1,explicit:true,startedAt:at,lastActivity:at,targets:new Map(targets.map(target=>[target.handle,{target,joinedAt:at}])),seen:new Set(),sent:[]};
     c.mirror = options.mirror !== false; c.caller = options.caller ?? 'NLR';
-    calls.set(id,c);ring(id,targets,c.caller);return sessionView(c);
+    calls.set(id,c);ring(id,targets.filter(t=>!options.skipRing?.includes(t.handle)),c.caller);return sessionView(c);
   }
+  // Only an owner-side phone invitation may transfer an agent-hosted session to its accepting app.
+  function adoptAgentSession(id,owner) {
+    const c=assertSession(`agent-call:${id}`,id,1);
+    rememberClosed(sessionKey(c.owner,id,1));c.owner=owner;c.lastActivity=now();
+    return sessionView(c);
+  }
+  const agentSessionOwned=id=>calls.get(id)?.owner===`agent-call:${id}`;
   function addSession(owner,id,epoch,handles,revision) {
     const c=assertSession(owner,id,epoch);
     if(revision!==c.revision)throw new ChatError('call_revision_conflict',409);
@@ -536,7 +543,6 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const c = calls.get(id);
     if (!c || !c.explicit || c.epoch !== epoch) throw new ChatError('call_session_unknown', 404);
     const target = resolve(handle);
-    if (target.kind === 'remote') throw new ChatError('call_target_invalid');
     const joined = [...c.targets.values()].map(v => v.target);
     if (c.targets.has(target.handle) || joined.some(t => t.agentId && t.agentId === target.agentId && t.kind === target.kind))
       return { ...sessionView(c), status: 'already_joined', label: target.label };
@@ -719,7 +725,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   const syncRemote = scope => remote?.sync(assertSession(scope.owner,scope.id,scope.epoch));
   /** Après une invitation par un agent : pairs distants resynchronisés sans la session de l'app. */
   const syncInvited = id => { const c = calls.get(id); return c?.explicit ? remote?.sync(c) : undefined; };
-  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, addSession, inviteSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop,
+  return { targets, resolve, parseTargets, deliver, replies, speech, setTranscribing, openSession, adoptAgentSession, agentSessionOwned, addSession, inviteSession, removeSession, stateSession, endSession, assertSession, identityKeys, end, active, mirrorTick, stop,
     attachRemote: value => { remote=value; }, syncRemote, syncInvited, sessionItems, sessionNotice, channelOf };
 }
 

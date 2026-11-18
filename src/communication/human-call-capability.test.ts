@@ -12,7 +12,7 @@ const servers=(text:string)=>JSON.parse(text).mcpServers as Record<string,Record
 describe('same minimal call contract on real launcher builders',()=>{
  it('registers exactly the call contract, with host identity and no owner publishing tools',()=>{
   const names:string[]=[];registerCallOnly({registerTool:(name:string)=>names.push(name)} as unknown as McpServer,{MIND_WAKE_DATA_DIR:dataDir,MIND_WAKE_OWNER_MESSAGES:'1',MIND_WAKE_OWNER_SIGNATURE:'Agent test'});
-  expect(names.sort()).toEqual(['call_human','hangup_call','invite_to_call','list_active_calls']);
+  expect(names.sort()).toEqual(['call','call_human','hangup_call','invite_to_call','list_active_calls']);
   const server=humanCallServer(identity);expect(server['env']).toMatchObject({MIND_WAKE_OWNER_SIGNATURE:'Agent test'});expect(JSON.stringify(server)).not.toContain('colony');
  });
  it('adds calls to a formerly tool-less role without creating an owner channel',()=>{
@@ -47,7 +47,7 @@ describe('installed path and inherited contract',()=>{
  });
  it('reuses the installed principal wrapper and gives a different role one correctly attributed call route',()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'owned-call-'));try{const data=path.join(tmp,'data'),home=path.join(tmp,'home'),install=path.join(data,'installation');fs.mkdirSync(install,{recursive:true});fs.mkdirSync(home);const wrapper=path.join(install,'mcp.mjs');fs.writeFileSync(wrapper,"await startLocal(manifestFile,'agent');");fs.writeFileSync(path.join(install,'manifest.json'),JSON.stringify({repoDir:path.resolve('.'),dataDir:data}));fs.writeFileSync(path.join(home,'config.toml'),'[mcp_servers.owned]\ncommand="node"\nargs='+JSON.stringify([wrapper])+'\n');
- const main=callCodexOverrides({dataDir:data,signature:'Marco'},home);expect(main).toMatchObject({'mcp_servers.owned.required':'true','mcp_servers.owned.startup_timeout_sec':'30'});expect(Object.keys(main).filter(key=>key.endsWith('.approval_mode')).sort()).toEqual(['call_human','hangup_call','invite_to_call','list_active_calls'].map(tool=>'mcp_servers.owned.tools.'+tool+'.approval_mode'));
+ const main=callCodexOverrides({dataDir:data,signature:'Marco'},home);expect(main).toMatchObject({'mcp_servers.owned.required':'true','mcp_servers.owned.startup_timeout_sec':'30'});expect(Object.keys(main).filter(key=>key.endsWith('.approval_mode')).sort()).toEqual(['call','call_human','hangup_call','invite_to_call','list_active_calls'].map(tool=>'mcp_servers.owned.tools.'+tool+'.approval_mode'));
  const role=callCodexOverrides({dataDir:data,signature:'Coach'},home);expect(role['mcp_servers.mind_calls.required']).toBe('true');expect(role['mcp_servers.owned.disabled_tools']).toContain('call_human');
  fs.appendFileSync(path.join(home,'config.toml'),'disabled_tools=["call_human"]\n');expect(callCodexOverrides({dataDir:data,signature:'Coach'},home)).toEqual({});
  }finally{fs.rmSync(tmp,{recursive:true,force:true});}
@@ -66,8 +66,8 @@ it('keeps a native role to its explicit MCP list without changing built-in permi
  expect(args.filter(x=>x==='--strict-mcp-config')).toHaveLength(1);expect(args).toContain('--mcp-config');expect(args).toContain('--dangerously-skip-permissions');
 });
 
-it('preauthorizes only the four MCP call tools for fast replies and holder invocations',()=>{
- const args=fastReplyArgs('test','prompt.md',identity);const allowed=args[args.indexOf('--allowedTools')+1];expect(allowed?.split(',').sort()).toEqual(['mcp__mind_calls__call_human','mcp__mind_calls__hangup_call','mcp__mind_calls__invite_to_call','mcp__mind_calls__list_active_calls']);expect(args).not.toContain('--dangerously-skip-permissions');expect(fastReplyArgs('test','router.md')).not.toContain('--allowedTools');
+it('preauthorizes only the five MCP call tools for fast replies and holder invocations',()=>{
+ const args=fastReplyArgs('test','prompt.md',identity);const allowed=args[args.indexOf('--allowedTools')+1];expect(allowed?.split(',').sort()).toEqual(['mcp__mind_calls__call','mcp__mind_calls__call_human','mcp__mind_calls__hangup_call','mcp__mind_calls__invite_to_call','mcp__mind_calls__list_active_calls']);expect(args).not.toContain('--dangerously-skip-permissions');expect(fastReplyArgs('test','router.md')).not.toContain('--allowedTools');
 });
 it.each([{state:'paused',locked:false},{state:'stopped',locked:false},{state:'running',locked:true}])('refuses ringing before opening the call database when Wake is %s',async({state,locked})=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'call-stop-'));try{const store=openStore(controlDbPath(tmp));store.uow.profiles.create({id:DEFAULT_PROFILE_ID,agentId:DEFAULT_AGENT_ID,state:state as never,activePolicyRevisionId:null,nextWakeAt:null,emergencyStopLocked:locked,stateReason:'test stop control',updatedAt:new Date().toISOString() as never});store.close();const handlers=new Map<string,(args:object)=>unknown>();registerCallOnly({registerTool:(name:string,_config:unknown,handler:(args:object)=>unknown)=>handlers.set(name,handler)} as unknown as McpServer,{MIND_WAKE_DATA_DIR:tmp,MIND_WAKE_OWNER_MESSAGES:'1',MIND_WAKE_OWNER_SIGNATURE:'Test role'});const result=await handlers.get('call_human')!({}) as {isError?:boolean};expect(result.isError).toBe(true);expect(fs.existsSync(path.join(tmp,'mobile-calls.sqlite'))).toBe(false);}finally{fs.rmSync(tmp,{recursive:true,force:true});}
@@ -159,12 +159,12 @@ describe('call provider host identity boundary',()=>{
 it('preauthorizes exactly the four call tools on effective Codex role configs, preserving unrelated tools and filters',()=>{
  const server={...humanCallServer(identity),tools:{unrelated:{approval_mode:'prompt'}}};
  const prepared=roleMcpServers({mind_calls:server},dataDir)['mind_calls'] as Record<string,unknown>;
- expect(prepared['tools']).toEqual({unrelated:{approval_mode:'prompt'},call_human:{approval_mode:'approve'},list_active_calls:{approval_mode:'approve'},hangup_call:{approval_mode:'approve'},invite_to_call:{approval_mode:'approve'}});
+ expect(prepared['tools']).toEqual({unrelated:{approval_mode:'prompt'},call:{approval_mode:'approve'},call_human:{approval_mode:'approve'},list_active_calls:{approval_mode:'approve'},hangup_call:{approval_mode:'approve'},invite_to_call:{approval_mode:'approve'}});
  expect(prepared).not.toHaveProperty('default_tools_approval_mode');
  const restricted={...server,disabled_tools:['call_human']};expect((roleMcpServers({mind_calls:restricted},dataDir)['mind_calls'] as Record<string,unknown>)['tools']).toBe(server.tools);
  expect(()=>roleMcpServers({mind_calls:server},path.join(dataDir,'another-profile'))).toThrow('another host profile');
  const command=buildAppServerCommand({executable:{path:'codex'},codexHome:path.join(os.tmpdir(),'empty-call-host'),workspaceDir:dataDir,channel:null,humanCall:identity});
- expect(command.args.filter(arg=>arg.includes('.approval_mode=')).sort()).toEqual(['call_human','hangup_call','invite_to_call','list_active_calls'].map(tool=>'mcp_servers.mind_calls.tools.'+tool+'.approval_mode="approve"'));
+ expect(command.args.filter(arg=>arg.includes('.approval_mode=')).sort()).toEqual(['call','call_human','hangup_call','invite_to_call','list_active_calls'].map(tool=>'mcp_servers.mind_calls.tools.'+tool+'.approval_mode="approve"'));
  expect(command.args.some(arg=>arg.includes('default_tools_approval_mode'))).toBe(false);
 });
 it('keeps web search disabled by default and permits only an explicit typed role mode',()=>{

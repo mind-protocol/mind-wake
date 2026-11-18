@@ -42,13 +42,13 @@ export interface ForkAssignment {
   /**
    * Ce que le fork reçoit des autres sessions. `all` (défaut) : aussi les copies FYI et les
    * mentions des réponses rapides des autres fils. `explicit` : seulement ses propres messages
-   * humains, sa voix rapide, son pattern holder et les envois explicites (`post_to_fork_thread`,
+   * humains, sa voix rapide, son pattern holder et les envois explicites (`message`,
    * interfil) ; rien du fil principal par diffusion.
    */
   readonly inbox: ForkInbox;
   /**
    * Canal propriétaire réutilisable d'une room (rooms de fixeurs du mesh, 16 nov. 2026) :
-   * `message_owner` signé, son propre compte Colony et le profil d'outils MCP. `null` : aucun.
+   * `message` signé, son propre compte Colony et le profil d'outils MCP. `null` : aucun.
    * Sans effet pour les rooms de `OWNER_CHANNEL_FORKS` (Room 7), qui gardent leur canal.
    */
   readonly owner: ForkOwner | null;
@@ -132,7 +132,7 @@ export type RoomAgentTools = "none" | "read" | "publish";
 export interface RoomAgent {
   /** Slug de l'agent (ex. `coach-colony`) : adressage `@id`, clé de sa session. */
   readonly id: string;
-  /** Signature de ses messages dans la room, de message_owner et de post_to_fork_thread. */
+  /** Signature de ses messages dans la room, de message et de message. */
   readonly name: string;
   /** Prompt de l'agent : fichier `.md`, ou dossier de holder (`_holder.md` puis ses sections). */
   readonly instructions: string;
@@ -674,7 +674,7 @@ export function clearForkAssignment(dir: string): boolean {
 
 /**
  * Forks qui peuvent écrire eux-mêmes dans le fil principal de NLR, par l'outil explicite
- * `message_owner` (serveur MCP réduit `services/mcp/fork-owner-main.ts`), sous leur signature.
+ * `message` (serveur MCP réduit `services/mcp/fork-owner-main.ts`), sous leur signature.
  * Aucune recopie automatique de leur fil. NLR, 6 nov. 2026 : VOX (Fork 7) seulement.
  */
 export const OWNER_CHANNEL_FORKS: ReadonlyMap<number, string> = new Map([[7, "VOX (Room 7)"]]);
@@ -735,7 +735,7 @@ export function assignedForkPrompt(id: number, assignment: ForkAssignment): stri
   const owner =
     channel === undefined
       ? ""
-      : ` Tu peux écrire à NLR dans le fil principal avec message_owner (outil mcp__mind__message_owner, idempotency_key unique) : seul ce que tu choisis de lui adresser y part, signé « ${channel.signature} » ; rien de ton fil n'y est recopié.`;
+      : ` Tu peux écrire à NLR dans le fil principal avec message (outil mcp__mind__message, idempotency_key unique) : seul ce que tu choisis de lui adresser y part, signé « ${channel.signature} » ; rien de ton fil n'y est recopié.`;
   const external =
     channel?.profile === "publish"
       ? "Envoi externe : seulement sur Colony, par colony_call_tool, avec ton propre compte ; Reddit en lecture seule ; rien d'autre."
@@ -761,7 +761,7 @@ function mindRepoDir(): string | null {
 
 /**
  * Configuration MCP du canal propriétaire d'un fork : un seul serveur `mind`, réduit au profil
- * de la room (`message_owner` signé, plus les outils du profil). `undefined` pour les rooms
+ * de la room (`message` signé, plus les outils du profil). `undefined` pour les rooms
  * sans canal ou si le dépôt est introuvable. Room 7 : environnement historique, inchangé.
  */
 export function forkOwnerMcpConfig(

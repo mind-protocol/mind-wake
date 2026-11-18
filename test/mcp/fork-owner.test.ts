@@ -12,7 +12,7 @@ import {
   signOwnerText,
 } from "../../services/mcp/fork-owner-main.js";
 /** Contrôle d'appel (agent-hangup.ts) enregistré avant call_human. */
-const CALL_TOOLS = ["list_active_calls", "invite_to_call", "hangup_call", "call_human"];
+const CALL_TOOLS = ["list_active_calls", "invite_to_call", "hangup_call", "call", "call_human"];
 
 // NLR 6 nov. 2026 : VOX (Fork 7) écrit à NLR par un outil explicite, message signé.
 it("signs each owner message once", () => {
@@ -40,7 +40,7 @@ it("gives VOX her own job tools and the MIND tools attributable to her", () => {
   });
   expect(names).toEqual([
     "list_owner_messages",
-    "message_owner",
+    "message",
     "publish_image",
     "generate_image",
     "edit_owner_message",
@@ -59,7 +59,6 @@ it("gives VOX her own job tools and the MIND tools attributable to her", () => {
     "read_repo_thread",
     "society_1f916_list_tools",
     "society_1f916_call_tool",
-    "post_to_fork_thread",
   ]);
   expect(names.filter((n) => FORK_EXCLUDED_TOOLS.has(n))).toEqual([]);
   // Sans colony-vox.json, aucun repli sur le compte Colony du principal.
@@ -87,7 +86,7 @@ it("refuses a fork thread post into the fork's own room", () => {
   ).toThrow("propre Room");
 });
 
-it("exposes message_owner only, and requires a signature", () => {
+it("exposes message only, and requires a signature", () => {
   const names: string[] = [];
   const server = {
     registerTool: (name: string) => {
@@ -99,7 +98,7 @@ it("exposes message_owner only, and requires a signature", () => {
     MIND_WAKE_DATA_DIR: "D:/data",
     MIND_WAKE_OWNER_SIGNATURE: "Room 9",
   });
-  expect(names).toEqual(["message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS]);
+  expect(names).toEqual(["message", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS]);
   expect(() => registerSignedOwnerTools(server, { MIND_WAKE_DATA_DIR: "D:/data" })).toThrow(
     "SIGNATURE",
   );
@@ -151,7 +150,7 @@ it("gives the Room 2 publish profile exactly its tools", () => {
   registerSignedOwnerTools(server, room2(dir));
   expect(names).toEqual([
     "list_owner_messages",
-    "message_owner",
+    "message",
     "generate_image",
     "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS,
     "reddit_me",
@@ -160,7 +159,6 @@ it("gives the Room 2 publish profile exactly its tools", () => {
     "reddit_thread",
     "colony_list_tools",
     "colony_call_tool",
-    "post_to_fork_thread",
   ]);
   expect(names.filter((n) => FORK_EXCLUDED_TOOLS.has(n))).toEqual([]);
 });
@@ -180,7 +178,7 @@ it("gives Room 2 no Colony tools when its own file is missing", () => {
   const dir = dataDirWith({ reddit: false });
   const { names, server } = recorder();
   registerSignedOwnerTools(server, room2(dir));
-  expect(names).toEqual(["list_owner_messages", "message_owner", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS, "post_to_fork_thread"]);
+  expect(names).toEqual(["list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, ...CALL_TOOLS]);
   // Un nom qui viserait le compte du principal est refusé : toujours aucun outil Colony.
   const other = recorder();
   registerSignedOwnerTools(other.server, { ...room2(dir), MIND_WAKE_OWNER_COLONY: "colony.json" });
@@ -200,7 +198,7 @@ it("keeps Room 7 unchanged, with Reddit writes for VOX only", () => {
   });
   expect(names).toEqual([
     "list_owner_messages",
-    "message_owner",
+    "message",
     "publish_image",
     "generate_image",
     "edit_owner_message",
@@ -225,7 +223,6 @@ it("keeps Room 7 unchanged, with Reddit writes for VOX only", () => {
     "reddit_thread",
     "reddit_submit",
     "reddit_comment",
-    "post_to_fork_thread",
   ]);
 });
 

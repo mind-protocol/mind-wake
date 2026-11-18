@@ -52,7 +52,17 @@ export function writeJson(f, v, mode) {
   fs.mkdirSync(path.dirname(f), { recursive: true });
   const tmp = `${f}.${process.pid}.${nodeCrypto.randomBytes(3).toString("hex")}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(v, null, 2), mode ? { mode } : undefined);
-  fs.renameSync(tmp, f);
+  try {
+    // Windows may briefly deny replacing a JSON file while a status reader has it open.
+    // Keep the old complete file visible and retry the atomic rename, never truncate it.
+    for(let attempt=0;;attempt++) {
+      try{fs.renameSync(tmp,f);break;}
+      catch(error){
+        if(process.platform!=='win32'||!['EPERM','EACCES','EBUSY'].includes(error.code)||attempt>=19)throw error;
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,5);
+      }
+    }
+  } catch(error){fs.rmSync(tmp,{force:true});throw error;}
 }
 
 // ------------------------------------------------------------------ réglages

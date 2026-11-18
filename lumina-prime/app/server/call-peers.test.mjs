@@ -1,3 +1,6 @@
+import { createAgentCalls } from './agent-calls.mjs';
+import { openCallRequests } from '../../../services/mcp/call-requests.mjs';
+import { openPhoneBook } from '../../../services/mcp/phone-book.mjs';
 import { createCallColonies } from './call-colonies.mjs';
 import { generateKeypair, signFiche } from '../../../services/pont-p2p/crypto.mjs';
 import test from 'node:test';
@@ -109,12 +112,12 @@ async function fixture(t) {
     fs.writeFileSync(path.join(data,'credentials','pont-p2p-colonie.json'),JSON.stringify(keys));
     fs.writeFileSync(path.join(data,'pont-p2p.json'),JSON.stringify({enabled:true,name:colony}));
     const colonies=createCallColonies(data);
-    const controls=openCallControls(data);
-    const file=path.join(dir,`${label}.json`), peers=createCallPeers({call,controls,file,dataDir:data,colonies,port:0,host:'127.0.0.1'});
-    return {call,peers,controls,main,room,notices,sent,file,handles,data,keys,colony,colonies};
+    const controls=openCallControls(data),phones=openPhoneBook(data);
+    const file=path.join(dir,`${label}.json`), peers=createCallPeers({call,controls,phones,file,dataDir:data,colonies,port:0,host:'127.0.0.1'});
+    return {call,peers,controls,phones,main,room,notices,sent,file,handles,data,keys,colony,colonies};
   }
   const a=await install('Alpha'),b=await install('Beta');
-  t.after(async()=>{await a.peers.close();await b.peers.close();a.call.stop();b.call.stop();a.controls.close();b.controls.close();fs.rmSync(dir,{recursive:true,force:true});});
+  t.after(async()=>{await a.peers.close();await b.peers.close();a.call.stop();b.call.stop();a.controls.close();b.controls.close();a.phones.close();b.phones.close();fs.rmSync(dir,{recursive:true,force:true});});
   await a.peers.admin('profile',{label:'PC A',caller:'NLR'});
   await b.peers.admin('profile',{label:'PC B',caller:'Aurore'});
   async function exchange() {
@@ -280,3 +283,74 @@ test('colony discovery survives gateway restart and exchange-key rotation; ended
   fs.writeFileSync(file,JSON.stringify(book));await a.peers.refresh();
   assert.equal(a.call.targets().filter(t=>t.kind==='remote').length,0);
  });
+
+async function withDial(a,fn,options={}) {
+  const service=createAgentCalls({dataDir:a.data,call:a.call,controls:a.controls,peers:a.peers,phones:a.phones,canCall:()=>true,...options});
+  const book=openCallRequests(a.data);
+  const dial=async input=>{const r=book.enqueue({caller:'mind',label:'Agent Alpha',...input});await service.tick();return book.get(r.request,input.caller??'mind');};
+  try {await fn({dial,service,book});}finally{await service.close();book.close();}
+}
+test('unified agent call resolves a colony, shares replies and honors remote hangup without any browser',async t=>{
+  const {a,b}=await fixture(t);
+  await withDial(a,async({dial,service})=>{
+    const r=await dial({caller:'marco',target:'⬡beta/marco',human:false});assert.equal(r.status,'active');
+    assert.equal(a.controls.listForCaller('mind')[0].id,r.call_id);
+    assert.equal(b.call.active().length,1);
+    const again=await dial({target:'⬡beta',human:false});assert.equal(again.call_id,r.call_id);
+    b.main.push({id:'unified',role:'agent',at:new Date(Date.now()+5).toISOString(),text:'Réponse à Alpha'});
+    await a.call.mirrorTick();assert.ok(a.notices.some(n=>n.text.includes('Réponse à Alpha')));
+    const remote=b.controls.listForCaller('mind')[0];b.controls.requestHangup({...remote,caller:'mind'});
+    await service.tick();assert.equal(a.call.active().length,0);
+  });
+});
+test('unified local calls are bounded, do not ring humans and can add a remote agent',async t=>{
+  const {a,b}=await fixture(t);let time=Date.now();
+  await withDial(a,async({dial,service})=>{
+    const r=await dial({target:'room3',human:false});assert.equal(r.status,'active');assert.equal(a.phones.pending('nlr'),null);
+    const added=await dial({target:'⬡beta/room3',call_id:r.call_id,human:false,reason:'avis'});assert.equal(added.status,'added');
+    assert.equal(b.call.active().length,1);
+    time+=5*60_000+1;await service.tick();assert.equal(a.call.active().length,0);
+  },{now:()=>time});
+});
+test('default human call opens one shared space and invites the human of every participating colony',async t=>{
+  const {a,b}=await fixture(t);
+  b.handles.set('critic',{room:3,agent:{id:'critic',name:'Critic'},label:'Critic'});
+  await withDial(a,async({dial,service})=>{
+    const r=await dial({target:['room3','⬡beta/room3']});assert.equal(r.status,'active');
+    assert.equal(a.call.active().length,1);assert.equal(b.call.active().length,1);
+    assert.equal(b.peers.humanPending().kind,'peer-human');
+    const invite=a.phones.pending('nlr');assert.equal(invite.inviteHumans,1);assert.equal(invite.callId,r.call_id);
+    const handles=invite.caller.split(',');assert.ok(handles.includes('room3'));assert.equal(handles.length,4);
+    assert.ok(handles.some(h=>a.call.resolve(h).remoteHandle==='critic'));
+    const gateway=createChatServer({bridge:{snapshot:()=>[],send:async()=>({})},call:a.call,controls:a.controls,phones:a.phones,peers:a.peers,privateNetworkConnect:true});
+    await new Promise(r=>gateway.server.listen(0,'127.0.0.1',r));
+    try {
+      const base=`http://127.0.0.1:${gateway.server.address().port}`;
+      const pair=await(await fetch(base+'/chat/connect-local',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).json();
+      const headers={Authorization:`Bearer ${pair.token}`,'Content-Type':'application/json'};
+      const accepted=await fetch(base+'/chat/phone/answer',{method:'POST',headers,body:JSON.stringify({id:invite.id,decision:'accept'})});assert.equal(accepted.status,200);
+      const id=r.call_id;const opened=await fetch(`${base}/chat/call/session?call=${id}&epoch=1&target=${encodeURIComponent(handles.join(','))}`,{method:'POST',headers});
+      assert.equal(opened.status,200);assert.equal(b.call.active().length,1);
+      await service.tick();assert.equal(a.call.active().length,1);assert.equal(a.call.active()[0].id,r.call_id);
+      const invited=await fetch(`${base}/chat/call/humans?call=${id}&epoch=1`,{method:'POST',headers,body:JSON.stringify({action:'invite',call:id,epoch:1})});
+      assert.equal(invited.status,200);assert.equal(b.peers.humanPending().kind,'peer-human');
+    }finally{await gateway.close();}
+  });
+});
+
+test('paused agents and unknown colonies never create a call or a human invitation',async t=>{
+  const {a,b}=await fixture(t);
+  await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡beta',human:true})).error,'calls_paused');assert.equal(b.phones.pending('nlr'),null);},{canCall:()=>false});
+  await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡absent'})).error,'colony_unknown');assert.equal(a.call.active().length,0);});
+});
+
+test('declining the local human invitation leaves the shared agent call active',async t=>{
+ const {a,b}=await fixture(t);
+ await withDial(a,async({dial,service})=>{
+  const r=await dial({target:'⬡beta'});assert.equal(r.status,'active');
+  const invite=a.phones.pending('nlr');a.phones.decide('nlr',invite.id,'decline');
+  await service.tick();assert.equal(a.call.active()[0].id,r.call_id);assert.equal(b.call.active().length,1);
+  b.main.push({id:'after-refusal',role:'agent',at:new Date(Date.now()+5).toISOString(),text:'Toujours ensemble'});
+  await a.call.mirrorTick();assert.ok(a.notices.some(n=>n.text.includes('Toujours ensemble')));
+ });
+});

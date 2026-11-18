@@ -15,12 +15,12 @@ const preset = RecordingPresets.HIGH_QUALITY;
 const options = { ...preset, isMeteringEnabled: true, numberOfChannels: 1, bitRate: 64000,
   android: { ...preset.android, audioSource: 'voice_communication' as const } };
 
-export const createCallEngine: typeof webEngine = ({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onPhase, onLevel, onLine, onTopicInvite }) => {
+export const createCallEngine: typeof webEngine = ({ session, targets, announce, voice = () => false, silenceMs, bargeMode, floorDb, onPhase, onLevel, onLine, onTopicInvite, onParticipants, existingCallId }) => {
   targets = [...new Set(targets)];
   let joining = false;
   let membershipRevision = 1;
   let playerTarget: string | null = null;
-  const scope:CallSession={id:randomUUID(),epoch:1};
+  const scope:CallSession={id:existingCallId??randomUUID(),epoch:1};
   const abort = new AbortController();
   const { signal } = abort;
   const vad = createCallVad({ silenceMs, floorDb });
@@ -65,7 +65,7 @@ export const createCallEngine: typeof webEngine = ({ session, targets, announce,
   }
   async function poll() {
     while (!signal.aborted) {
-      try {const state=await callSessionState(session,scope,signal);if(state.status==='ended'){stop();return;}if(state.revision)membershipRevision=state.revision;}
+      try {const state=await callSessionState(session,scope,signal);if(state.status==='ended'){stop();return;}if(state.revision&&state.revision>=membershipRevision){membershipRevision=state.revision;if(JSON.stringify(targets)!==JSON.stringify(state.handles)){targets=state.handles;onParticipants?.([...targets]);}}}
       catch(error){if(signal.aborted)return;report('call-state',error);stop();return;}
       const batches = await Promise.allSettled(targets.map(async target =>
         (await callReplies(session, target, since, signal,scope)).map(reply => ({ ...reply, target }))));

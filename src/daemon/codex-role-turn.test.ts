@@ -9,7 +9,7 @@ describe('role MCP catalog readiness',()=>{
   });
   it('preserves configured timeouts and leaves unrelated servers unchanged',()=>{
     const mind={args:['C:\\repo\\services\\mcp\\fork-owner-main.ts'],startup_timeout_sec:60};
-    expect((roleMcpServers({mind}).mind as Record<string,unknown>).startup_timeout_sec).toBe(60);
+    expect((roleMcpServers({mind})["mind"] as Record<string,unknown>)["startup_timeout_sec"]).toBe(60);
     const unrelated={mind:{args:['unrelated.ts']},other:{required:false}};expect(roleMcpServers(unrelated)).toBe(unrelated);expect(roleMcpServers({})).toEqual({});
   });
 });

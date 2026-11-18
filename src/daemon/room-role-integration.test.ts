@@ -1,3 +1,4 @@
+import * as z from "zod";
 import {DatabaseSync} from "node:sqlite";
 import {coordinatedRoomCallServer} from "../../services/mcp/room-call-coordination.js";
 import fs from "node:fs";
@@ -41,11 +42,11 @@ describe("room role full capability binding",()=>{
   it("preauthorizes own role mutators without overriding explicit exclusions or another MCP",()=>{
     const server={args:[path.resolve("services/mcp/fork-owner-main.ts")],env,disabled_tools:["desktop_act"],tools:{cancel_background_job:{enabled:false},call_human:{approval_mode:"ask"}}};
     const result=withRoomRoleMcpApprovals(server,dir) as {tools:Record<string,Record<string,unknown>>};
-    expect(result.tools.start_background_job?.approval_mode).toBe("approve");
-    expect(result.tools.desktop_open_url?.approval_mode).toBe("approve");
-    expect(result.tools.desktop_act).toBeUndefined();
-    expect(result.tools.cancel_background_job?.enabled).toBe(false);
-    expect(result.tools.call_human?.approval_mode).toBe("ask");
+    expect(result.tools["start_background_job"]?.["approval_mode"]).toBe("approve");
+    expect(result.tools["desktop_open_url"]?.["approval_mode"]).toBe("approve");
+    expect(result.tools["desktop_act"]).toBeUndefined();
+    expect(result.tools["cancel_background_job"]?.["enabled"]).toBe(false);
+    expect(result.tools["call_human"]?.["approval_mode"]).toBe("ask");
     expect(withRoomRoleMcpApprovals({...server,args:["other-server.ts"]},dir)).toEqual({...server,args:["other-server.ts"]});
   });
   it("registers only own supervised jobs and rejects a mandate outside own scope",async()=>{
@@ -89,7 +90,7 @@ it("reserves one room attempt and suppresses concurrent or uncertain repeats",()
  let attempts=0;let tool:((a:Record<string,unknown>)=>unknown)|undefined;
  const server={registerTool:(_n:string,_c:unknown,h:(a:Record<string,unknown>)=>unknown)=>{tool=h;}} as unknown as McpServer;
  const guarded=coordinatedRoomCallServer(server,env,"Manager");
- guarded.registerTool("call_human",{inputSchema:{}},()=>{attempts++;return {content:[{type:"text",text:"queued fixture"}]};});
+ guarded.registerTool("call_human",{inputSchema:z.strictObject({})},()=>{attempts++;return {content:[{type:"text" as const,text:"queued fixture"}]};});
  const first=tool!({});expect(first).toMatchObject({content:[{text:"queued fixture"}]});
  const repeat=tool!({}) as {content:{text:string}[]};expect(JSON.parse(repeat.content[0]!.text).status).toBe("room_cooldown");expect(attempts).toBe(1);
 });
@@ -97,13 +98,24 @@ it("does not ring while an app call is already active",()=>{
  const db=new DatabaseSync(path.join(dir,"mobile-call-control.sqlite"));db.exec("CREATE TABLE call_control_sessions(state TEXT,last_seen INTEGER)");db.prepare("INSERT INTO call_control_sessions VALUES('active',?)").run(Date.now());db.close();
  let attempts=0,tool:((a:Record<string,unknown>)=>unknown)|undefined;
  const server={registerTool:(_n:string,_c:unknown,h:(a:Record<string,unknown>)=>unknown)=>{tool=h;}} as unknown as McpServer;
- coordinatedRoomCallServer(server,env,"Manager").registerTool("call_human",{inputSchema:{}},()=>{attempts++;return {content:[]};});
+ coordinatedRoomCallServer(server,env,"Manager").registerTool("call_human",{inputSchema:z.strictObject({})},()=>{attempts++;return {content:[]};});
  const response=tool!({}) as {content:{text:string}[]};expect(JSON.parse(response.content[0]!.text).status).toBe("existing_call");expect(attempts).toBe(0);
 });
 it("does not duplicate a pending NLR invitation from another caller",()=>{
  const db=new DatabaseSync(path.join(dir,"mobile-calls.sqlite"));db.exec("CREATE TABLE invitations(human TEXT,decision TEXT,until INTEGER)");db.prepare("INSERT INTO invitations VALUES('nlr',NULL,?)").run(Date.now()+45000);db.close();
  let attempts=0,tool:((a:Record<string,unknown>)=>unknown)|undefined;
  const server={registerTool:(_n:string,_c:unknown,h:(a:Record<string,unknown>)=>unknown)=>{tool=h;}} as unknown as McpServer;
- coordinatedRoomCallServer(server,env,"Manager").registerTool("call_human",{inputSchema:{}},()=>{attempts++;return {content:[]};});
+ coordinatedRoomCallServer(server,env,"Manager").registerTool("call_human",{inputSchema:z.strictObject({})},()=>{attempts++;return {content:[]};});
  const response=tool!({}) as {content:{text:string}[]};expect(JSON.parse(response.content[0]!.text).status).toBe("pending_invitation");expect(attempts).toBe(0);
+});
+
+it("applies the existing room coordinator and cooldown to unified calls too",()=>{
+ let attempts=0;let tool:((a:Record<string,unknown>)=>unknown)|undefined;
+ const server={registerTool:(_n:string,_c:unknown,h:(a:Record<string,unknown>)=>unknown)=>{tool=h;}} as unknown as McpServer;
+ coordinatedRoomCallServer(server,env,"Manager").registerTool("call",{description:"fixture"},()=>{attempts++;return {content:[{type:"text" as const,text:"queued fixture"}]};});
+ const outside=tool!({target:"⬡other/vox",human:true}) as {content:{text:string}[]};
+ expect(JSON.parse(outside.content[0]!.text).status).toBe("outside_project_scope");expect(attempts).toBe(0);
+ expect(tool!({target:"@nlr"})).toMatchObject({content:[{text:"queued fixture"}]});
+ const repeat=tool!({target:"@nlr"}) as {content:{text:string}[]};
+ expect(JSON.parse(repeat.content[0]!.text).status).toBe("room_cooldown");expect(attempts).toBe(1);
 });

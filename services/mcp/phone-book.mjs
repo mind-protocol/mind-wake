@@ -17,6 +17,8 @@ export function openPhoneBook(dir) {
       label TEXT NOT NULL, until INTEGER NOT NULL, decision TEXT);
     CREATE TABLE IF NOT EXISTS phone_push_leases(invite TEXT, token TEXT, until INTEGER, PRIMARY KEY(invite,token));
     CREATE TABLE IF NOT EXISTS phone_deliveries(invite TEXT, token TEXT, PRIMARY KEY(invite,token));`);
+  if(!db.prepare('PRAGMA table_info(invitations)').all().some(c=>c.name==='invite_humans'))db.exec('ALTER TABLE invitations ADD COLUMN invite_humans INTEGER NOT NULL DEFAULT 0');
+  if(!db.prepare('PRAGMA table_info(invitations)').all().some(c=>c.name==='call_id'))db.exec('ALTER TABLE invitations ADD COLUMN call_id TEXT');
   const now = Date.now();
   db.prepare('DELETE FROM phones WHERE until <= ?').run(now);
   db.prepare('DELETE FROM invitations WHERE until <= ?').run(now - 60000);
@@ -43,16 +45,16 @@ export function openPhoneBook(dir) {
       if(!hasCaps){db.exec('CREATE TABLE IF NOT EXISTS phone_ringtone_caps(session TEXT PRIMARY KEY, keys TEXT NOT NULL)');hasCaps=true;}
       db.prepare('INSERT OR REPLACE INTO phone_ringtone_caps VALUES(?,?)').run(session,JSON.stringify(caps));
     },
-    invite(to, caller, label) {
+    invite(to, caller, label, {inviteHumans=false,callId=null}={}) {
       const human = humanHandle(to);
       if (human !== 'nlr' && !db.prepare('SELECT 1 FROM phones WHERE human=? AND until>?').get(human, Date.now()))
         throw Error('Aucun appareil enregistré pour @' + human);
       const id = randomUUID(), until = Date.now() + 45000;
-      db.prepare('INSERT INTO invitations(id,human,caller,label,until) VALUES(?,?,?,?,?)').run(id,human,caller,label,until);
+      db.prepare('INSERT INTO invitations(id,human,caller,label,until,invite_humans,call_id) VALUES(?,?,?,?,?,?,?)').run(id,human,caller,label,until,inviteHumans?1:0,callId);
       return { id, human, caller, expiresAt: new Date(until).toISOString(), status: 'queued' };
     },
     pending(human, session) {
-      const invite=db.prepare('SELECT id, caller, label, until FROM invitations WHERE human=? AND decision IS NULL AND until>? ORDER BY rowid LIMIT 1').get(human, Date.now());
+      const invite=db.prepare('SELECT id, caller, label, until, invite_humans AS inviteHumans, call_id AS callId FROM invitations WHERE human=? AND decision IS NULL AND until>? ORDER BY rowid LIMIT 1').get(human, Date.now());
       return invite ? {...invite,ringtone:phoneRingtone(invite.caller,capabilities(session,human)).key} : null;
     },
     decide(human, id, decision) {
