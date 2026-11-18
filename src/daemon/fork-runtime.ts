@@ -141,7 +141,7 @@ async function claudeForkTurn(input: ForkTurnInput): Promise<ForkTurnResult> {
   return {...result,accepted:result.sessionConfirmed || result.outcome === "completed",roleThreadId:"claude:"+session};
 }
 
-async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProcess):Promise<ForkTurnResult> {
+export async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProcess):Promise<ForkTurnResult> {
   if (input.control() !== "run")
     return {
       outcome: "interrupted",
@@ -180,8 +180,9 @@ async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProcess):Prom
     })();
   let finish!: () => void;
   const done = new Promise<void>((resolve) => {
-    finish = resolve;
+    finish = () => { finished = true; resolve(); };
   });
+  let finished = false;
   const result: ForkTurnResult = {
     outcome: "error",
     text: "",
@@ -349,12 +350,12 @@ async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProcess):Prom
       result.accepted = true;
       const turnId = asRecord(started["turn"])?.["id"];
       if (typeof turnId === "string") {
-        const isActive = () => input.control() === "run" && !terminating;
+        const isActive = () => input.control() === "run" && !terminating && !finished;
         const steer = async (text: string, screen: readonly string[] = []): Promise<boolean> => {
           if (!isActive()) return false;
           const accepted = await rpc.request("turn/steer", { threadId, expectedTurnId: turnId,
             input: [{ type: "text", text }, ...screen.map(base64 => voiceScreenBlock(base64, "codex"))] });
-          return accepted["turnId"] === turnId;
+          return isActive() && accepted["turnId"] === turnId;
         };
         if (input.coachSession) duoSteering = new DuoSteering(input.dataDir, isActive, steer);
         const flush = input.flushInbox;

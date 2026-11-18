@@ -1,5 +1,11 @@
 # Forks Codex
 
+## Messages pendant un tour de room
+
+Les rooms affectées et leurs agents utilisent aussi `codex app-server` lorsque le fournisseur global est Codex. Leur fil persistant et leur catalogue MCP sont conservés. Toutes les 250 ms, les messages arrivés après le début du tour sont filtrés avec le même routage que le hook Claude, puis envoyés par `turn/steer` au tour actif. Cela inclut les transcriptions d'appel et les notices ciblées vers un agent. La livraison n'est enregistrée qu'après un accusé correspondant au tour encore actif ; refus, pause ou fin de tour laissent les messages en attente. Une pièce écran reste au tour suivant sur ce chemin, comme avec le hook Claude.
+
+Claude conserve `PostToolUse`, `PostToolUseFailure` et `Stop` pour les rooms. Les deux fournisseurs partagent la sélection des destinataires et le suivi des messages injectés, sans marquer un message reçu par les autres agents avant leur propre livraison.
+
 La vue d’ensemble propose sept interrupteurs indépendants, Off par défaut :
 le fil principal et les forks 2 à 8 font au maximum huit agents Codex.
 Chaque fork possède un onglet, une boîte de réception, une transcription et un

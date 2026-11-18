@@ -62,6 +62,16 @@ export function roomInboxHook(args: RoomInboxHookArgs, input: unknown): object |
   if (event["session_id"] !== args.sessionId || event["agent_id"] !== undefined) return null;
   const name = event["hook_event_name"];
   if (name !== "PostToolUse" && name !== "PostToolUseFailure" && name !== "Stop") return null;
+  const batch = prepareRoomInbox(args);
+  if (batch === null) return null;
+  batch.confirm();
+  return name === "Stop"
+    ? { decision: "block", reason: batch.context }
+    : { hookSpecificOutput: { hookEventName: name, additionalContext: batch.context } };
+}
+
+/** Read without consuming: Codex confirms only after turn/steer acknowledges the active turn. */
+export function prepareRoomInbox(args: RoomInboxHookArgs): { context: string; confirm: () => void } | null {
   const dir = path.join(args.dataDir, "forks", String(args.forkId));
   if (!SecondThreadStore.exists(dir)) return null;
   const store = new SecondThreadStore(dir);
@@ -71,13 +81,19 @@ export function roomInboxHook(args: RoomInboxHookArgs, input: unknown): object |
     const pending = store.pendingHuman().filter((e) => injectable(store, args.forkId, e, args.floor));
     if (pending.length === 0) return null;
     let items: { at: string; text: string; label?: string }[];
+    let confirm: () => void;
     if (args.agentId === undefined) {
       items = pending.map((e) => {
         const label = authorLabel(e);
         return { at: e.at, text: e.text, ...(label === undefined ? {} : { label }) };
       });
-      recordRoomInjected(store, pending.map((e) => e.id));
-      store.markDelivered(pending.map((e) => e.id));
+      confirm = () => {
+        const current = new SecondThreadStore(dir);
+        try {
+          recordRoomInjected(current, pending.map((e) => e.id));
+          current.markDelivered(pending.map((e) => e.id));
+        } finally { current.close(); }
+      };
     } else {
       const agentId = args.agentId;
       const assignment = readForkAssignment(dir);
@@ -105,17 +121,20 @@ export function roomInboxHook(args: RoomInboxHookArgs, input: unknown): object |
           ...(label === undefined ? {} : { label }),
         };
       });
-      recordRoomAgentInjected(store, agentId, routed.map(({ e }) => e.id));
-      // Livrée quand chaque destinataire l'a reçue (fin de tour ou injection).
-      const done = routed
-        .filter(({ e, route }) => route.recipients.every((a) => roomAgentHas(store, a, e.id)))
-        .map(({ e }) => e.id);
-      if (done.length > 0) store.markDelivered(done);
+      confirm = () => {
+        const current = new SecondThreadStore(dir);
+        try {
+          recordRoomAgentInjected(current, agentId, routed.map(({ e }) => e.id));
+          // Livrée quand chaque destinataire l'a reçue (fin de tour ou injection).
+          const done = routed
+            .filter(({ e, route }) => route.recipients.every((a) => roomAgentHas(current, a, e.id)))
+            .map(({ e }) => e.id);
+          if (done.length > 0) current.markDelivered(done);
+        } finally { current.close(); }
+      };
     }
     const context = `${ROOM_INBOX_HEADER}\n\n${assignedForkMessage(items)}`;
-    return name === "Stop"
-      ? { decision: "block", reason: context }
-      : { hookSpecificOutput: { hookEventName: name, additionalContext: context } };
+    return { context, confirm };
   } finally {
     store.close();
   }

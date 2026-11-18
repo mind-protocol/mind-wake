@@ -9,6 +9,9 @@ import type { ProfileId, SessionId } from "../contracts/index.js";
 import { ProcessTreeSupervisor } from "../runner/process-tree.js";
 import type { SecondThreadTurnResult } from "./second-thread.js";
 import {withCodexCallApprovals} from "../communication/human-call-capability.js";
+import { nativeForkTurn } from "./fork-runtime.js";
+import { prepareRoomInbox, type RoomInboxHookArgs } from "../communication/room-inbox-hook.js";
+import type { CodexProcess } from "../adapters/codex/launch.js";
 
 export type RoleWebSearch = "live" | "cached" | "disabled";
 export function roleWebSearchConfig(mode: RoleWebSearch = "disabled"): string {
@@ -32,6 +35,7 @@ type Options = {
   allowed: () => boolean;
   /** null means no local session cap; host cancellation and provider limits still apply. */
   timeoutMs: number | null;
+  roomInbox?: RoomInboxHookArgs;
 };
 export function roleTurnStopReason(allowed:boolean,deadline:number|null,now=Date.now()):"interrupted"|"timed_out"|null {
   if(!allowed)return "interrupted";
@@ -64,7 +68,7 @@ function toml(value: unknown): string {
 }
 
 /** Isolated role and session; the owner's personal MCP servers are not inherited. */
-export async function codexRoleTurn(input: Options): Promise<SecondThreadTurnResult> {
+export async function codexRoleTurn(input: Options, launch?: () => CodexProcess): Promise<SecondThreadTurnResult> {
   const result: SecondThreadTurnResult = {
     outcome: "error",
     text: "",
@@ -74,6 +78,7 @@ export async function codexRoleTurn(input: Options): Promise<SecondThreadTurnRes
     detail: null,
   };
   if (!input.allowed()) return { ...result, outcome: "interrupted" };
+  if (input.roomInbox) return codexRoomTurn(input, launch);
   const executable = discoverCodex();
   if (!executable) return { ...result, detail: "Exécutable Codex introuvable" };
   const dir = path.join(input.dataDir, "runtimes", "codex-roles");
@@ -210,5 +215,50 @@ export async function codexRoleTurn(input: Options): Promise<SecondThreadTurnRes
   } finally {
     for (const file of attachments) fs.rmSync(file, { force: true });
   }
+}
+
+/** Room roles keep their existing persistent thread and explicit MCP catalog, using live steering. */
+async function codexRoomTurn(input: Options, launch?: () => CodexProcess): Promise<SecondThreadTurnResult> {
+  const inbox = input.roomInbox!;
+  const dir = path.join(input.dataDir, "runtimes", "codex-roles");
+  fs.mkdirSync(dir, { recursive: true });
+  const key = createHash("sha256").update(JSON.stringify([input.key, input.cwd, input.instructions])).digest("hex");
+  const saved = path.join(dir, key + ".thread");
+  const threadId = input.key && fs.existsSync(saved) ? fs.readFileSync(saved, "utf8").trim() : null;
+  const deadline = input.timeoutMs === null ? null : Date.now() + input.timeoutMs;
+  const control = () => roleTurnStopReason(input.allowed(), deadline) === null ? "run" as const : "stop" as const;
+  const outcome = await nativeForkTurn({
+    dataDir: input.dataDir, workspace: input.cwd, id: inbox.forkId,
+    threadId, inheritPrincipal: false, instructions: input.instructions, message: input.message,
+    control, onThread: id => { if (input.key) fs.writeFileSync(saved, id); },
+    flushInbox: async steer => {
+      if (control() !== "run") return false;
+      const batch = prepareRoomInbox(inbox);
+      if (!batch) return true;
+      if (!await steer(batch.context)) return false;
+      batch.confirm();
+      return true;
+    },
+  }, launch ?? (() => {
+    const executable = discoverCodex();
+    if (!executable) throw Error("Exécutable Codex introuvable");
+    const raw = input.mcpConfig
+      ? input.mcpConfig.trimStart().startsWith("{") ? input.mcpConfig : fs.readFileSync(input.mcpConfig, "utf8")
+      : '{"mcpServers":{}}';
+    const args = [
+      ...(executable.prefixArgs ?? []),
+      "-c", 'approval_policy="never"',
+      "-c", roleWebSearchConfig(input.webSearch),
+      "-c", "mcp_servers=" + toml(roleMcpServers(JSON.parse(raw).mcpServers, input.dataDir)),
+      "--disable", "apps", "--disable", "plugins", "--disable", "hooks",
+      input.nativeDelegation ? "--enable" : "--disable", "multi_agent",
+      "app-server", "--listen", "stdio://",
+    ];
+    return new ProcessTreeSupervisor(path.join(input.dataDir, "runtime")).spawn(
+      "default" as ProfileId, ("role-" + randomUUID()) as SessionId,
+      { executable: executable.path, args, cwd: input.cwd,
+        env: { ...hostPassthroughEnv(), CODEX_HOME: process.env["CODEX_HOME"] ?? path.join(os.homedir(), ".codex") } });
+  }));
+  return { ...outcome, sessionConfirmed: outcome.accepted, engine: "codex" };
 }
 

@@ -3,6 +3,7 @@ import {spawnAgentProcess} from "./agent-process.js";
 import {voiceScreenBlock} from "../communication/voice-screen-images.js";
 import { launchAgentSession, providerFailure } from "./agent-engine.js";
 import { codexRoleTurn } from "./codex-role-turn.js";
+import { roomInboxHookArgv } from "../communication/room-inbox-hook.js";
 import { readAgentRole } from "../adapters/agent-role.js";
 import { fastReplyHolds, fastReplyPending, type FastReplyThread } from "../communication/fast-reply-store.js";
 import { tryProjectLease } from "./project-lease.js";
@@ -572,6 +573,7 @@ export async function runClaudeTurn(input: RoleTurnInput): Promise<SecondThreadT
       ...(input.mcpConfig ? {mcpConfig:input.mcpConfig} : {}), ...(input.addDirs ? {addDirs:input.addDirs} : {}),
       ...(input.webSearch === undefined ? {} : {webSearch:input.webSearch}),
       ...(input.nativeDelegation === undefined ? {} : {nativeDelegation:input.nativeDelegation}),
+      ...(input.roomInboxHook === undefined ? {} : {roomInbox:roomInboxHookArgv(input.roomInboxHook.args.slice(1))}),
       allowed:()=>input.control()==="run", timeoutMs:input.maxMs ?? 3_600_000});
     return {...result, engine: "codex" as const};
   }, result => result.outcome === "rate_limited" || (result.outcome === "error" && providerFailure(result.detail ?? ""))
