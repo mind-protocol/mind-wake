@@ -52,6 +52,17 @@ Le service attendu retourne le type `Snapshot` de `src/data/types.ts` avec `sche
 
 La V1 est pilotée par l’utilisateur : radar, préparation de posts, suivi et décisions explicites dans l’app ou un canal qu’il autorise. Un connecteur agent/MCP pourra être étudié ensuite ; il ne fait pas partie du paiement V1.
 
+## Fichiers .md et .pdf dans le Chat
+
+- Dans une bulle (Chat et Appel), `parseRich` (`src/chat/client.ts`) transforme en carte touchable : `[fichier: X]`, `[titre](X.md)`, un chemin entre backticks (espaces permis), `file:///C:/…`, `C:\…\x.md` et un chemin relatif à un dossier (`artifacts/x.md`, `docs\y.pdf`).
+- Toucher la carte ouvre `/file` (`src/chat/FileViewer.tsx`) : le markdown est rendu dans l’app (titres, listes, gras, liens, code, tableaux en grille ; un lien vers un autre .md/.pdf ouvre ce lecteur).
+- Le PDF est téléchargé avec la session puis remis à la visionneuse du téléphone (`File.preview`, sinon feuille de partage) : pages, zoom et recherche viennent d’elle. Expo Go n’inclut pas de WebView capable d’afficher un PDF sur Android.
+- La passerelle sert `GET /chat/file?path=…` (`server/chat-files.mjs`) en lecture seule, avec la session du téléphone : uniquement .md/.pdf de 10 Mo au plus, sous le workspace actif (`workspace-settings.json`, sinon `<dataDir>/workspace`) ou le dépôt Wake ; un chemin relatif est cherché dans cet ordre.
+- Sont refusés : tout segment `..`, les liens/jonctions qui sortent des racines, les dossiers `secrets`, `credentials`, `.ssh`, `.git`, les `.env*`, `*.session*`, `*.key|pem|p12|pfx`, `keys.json` et les noms en secret/token/password/private.
+- Tests : `node --test server/chat-files.test.mjs src/chat/rich.test.mjs`.
+- Sur le téléphone : recharger l’app dans Expo Go (secouer → Reload) suffit pour l’app. Le code passerelle (racines, chemins relatifs) n’est pris en compte qu’au prochain redémarrage de la passerelle du Chat.
+- Essai : demander à un agent d’écrire dans le fil `artifacts/projets/emploi-remote/commun/candidature-soda.md`, toucher la carte, vérifier le rendu ; puis un .pdf → visionneuse du téléphone.
+
 ## Vérifier
 
 ```powershell

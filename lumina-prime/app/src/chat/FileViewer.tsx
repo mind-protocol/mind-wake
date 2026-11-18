@@ -6,34 +6,55 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useWakeChat } from './WakeChatProvider';
-import { ChatClientError, fileBlock, fileErrorMessage, fileUrl, parseInline, parseMarkdownDoc, readChatFile, type ChatSession, type DocBlock, type Inline } from './client.ts';
+import { ChatClientError, fileBlock, fileDownloadError, fileErrorMessage, fileUrl, parseInline, parseMarkdownDoc, readChatFile, resolveDocLink, type ChatSession, type DocBlock, type Inline } from './client.ts';
 import { colors, styles as s } from '../ui/theme';
 import { useReportedError } from './app-error-report.ts';
 
 const mono = Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' });
 
-function Inlines({ text, style }: { text: string; style?: object }) {
+/** Lien d'un document : autre .md/.pdf (relatif au fichier ouvert) → ce lecteur ; lien web → navigateur. */
+function openLink(base: string, url: string) {
+  const local = resolveDocLink(base, url);
+  if (local) { router.push({ pathname: '/file', params: { path: local } }); return; }
+  if (/^https?:\/\//i.test(url)) void Linking.openURL(url).catch(() => {});
+}
+
+function Inlines({ text, style, base = '' }: { text: string; style?: object; base?: string }) {
   const items = useMemo(() => parseInline(text), [text]);
   return <Text selectable style={[s.body, style]}>{items.map((item: Inline, i) => item.kind === 'bold' ? <Text key={i} style={{ fontWeight: '700' }}>{item.text}</Text>
     : item.kind === 'italic' ? <Text key={i} style={{ fontStyle: 'italic' }}>{item.text}</Text>
     : item.kind === 'code' ? <Text key={i} style={{ fontFamily: mono, backgroundColor: 'rgba(0,0,0,0.07)', fontSize: 13 }}>{item.text}</Text>
-    : item.kind === 'link' ? <Text key={i} accessibilityRole="link" onPress={() => { void Linking.openURL(item.url!).catch(() => {}); }} style={{ color: '#1F5FA8', textDecorationLine: 'underline' }}>{item.text}</Text>
+    : item.kind === 'link' ? <Text key={i} accessibilityRole="link" onPress={() => openLink(base, item.url!)} style={{ color: '#1F5FA8', textDecorationLine: 'underline' }}>{item.text}</Text>
     : <React.Fragment key={i}>{item.text}</React.Fragment>)}</Text>;
 }
 
-function Markdown({ source }: { source: string }) {
+/** Tableau markdown : grille à défilement horizontal, en-tête en gras, cellules avec markdown léger. */
+function Table({ header, rows, base }: { header: string[]; rows: string[][]; base: string }) {
+  const columns = Math.max(header.length, ...rows.map(row => row.length));
+  const line = (cells: string[], head: boolean, key: number) => <View key={key} style={{ flexDirection: 'row', borderTopWidth: key ? 1 : 0, borderTopColor: colors.line,
+    backgroundColor: head ? colors.soft : 'transparent' }}>
+    {Array.from({ length: columns }, (_, c) => <View key={c} style={{ width: 150, padding: 8, borderLeftWidth: c ? 1 : 0, borderLeftColor: colors.line }}>
+      <Inlines text={cells[c] ?? ''} base={base} style={{ fontSize: 13, lineHeight: 18, ...(head ? { fontWeight: '700' } : {}) }} /></View>)}
+  </View>;
+  return <ScrollView horizontal style={{ borderWidth: 1, borderColor: colors.line, borderRadius: 10 }}>
+    <View>{header.length ? line(header, true, 0) : null}{rows.map((row, r) => line(row, false, r + (header.length ? 1 : 0)))}</View>
+  </ScrollView>;
+}
+
+function Markdown({ source, base }: { source: string; base: string }) {
   const blocks = useMemo(() => parseMarkdownDoc(source), [source]);
   return <View style={{ gap: 10 }}>{blocks.map((block: DocBlock, i) => {
-    if (block.kind === 'heading') return <Inlines key={i} text={block.text} style={{ fontWeight: '800', marginTop: i ? 8 : 0,
+    if (block.kind === 'table') return <Table key={i} header={block.header} rows={block.rows} base={base} />;
+    if (block.kind === 'heading') return <Inlines key={i} base={base} text={block.text} style={{ fontWeight: '800', marginTop: i ? 8 : 0,
       fontSize: [24, 20, 17, 15, 14, 14][block.level - 1], lineHeight: [30, 26, 23, 21, 20, 20][block.level - 1] }} />;
     if (block.kind === 'bullet') return <View key={i} style={{ flexDirection: 'row', gap: 8, paddingLeft: 4 + block.depth * 16 }}>
-      <Text style={[s.body, { minWidth: 14 }]}>{block.marker}</Text><View style={{ flex: 1 }}><Inlines text={block.text} /></View></View>;
+      <Text style={[s.body, { minWidth: 14 }]}>{block.marker}</Text><View style={{ flex: 1 }}><Inlines base={base} text={block.text} /></View></View>;
     if (block.kind === 'quote') return <View key={i} style={{ borderLeftWidth: 3, borderLeftColor: colors.line, paddingLeft: 10 }}>
-      <Inlines text={block.text} style={{ color: colors.muted }} /></View>;
+      <Inlines base={base} text={block.text} style={{ color: colors.muted }} /></View>;
     if (block.kind === 'code') return <ScrollView key={i} horizontal style={{ backgroundColor: colors.soft, borderRadius: 10 }} contentContainerStyle={{ padding: 10 }}>
       <Text selectable style={{ fontFamily: mono, fontSize: 12, lineHeight: 18, color: colors.ink }}>{block.text}</Text></ScrollView>;
     if (block.kind === 'rule') return <View key={i} style={s.divider} />;
-    return <Inlines key={i} text={block.text} />;
+    return <Inlines key={i} base={base} text={block.text} />;
   })}</View>;
 }
 
@@ -48,14 +69,14 @@ async function openPdf(session: ChatSession, path: string, name: string) {
   const target = new File(Paths.cache, `wake-${Date.now()}-${name.replace(/[^\w.-]+/g, '_')}`);
   let file: File;
   try { file = await File.downloadFileAsync(url, target, { headers: { Authorization: `Bearer ${session.token}` }, idempotent: true }); }
-  catch { throw new ChatClientError('connection_lost'); }
+  catch (reason) { throw await fileDownloadError(session, path, reason); }
   const head = await file.slice(0, 5).text();
   if (head !== '%PDF-') {
     let code = 'connection_lost'; try { code = JSON.parse(await file.text()).error ?? code; } catch { /* */ }
     try { file.delete(); } catch { /* */ } throw new ChatClientError(code);
   }
-  const preview = (file as unknown as { preview?: () => Promise<void>; canPreview?: () => Promise<boolean> });
-  try { if (preview.preview && (!preview.canPreview || await preview.canPreview())) { await preview.preview(); return; } } catch { /* aperçu absent de ce build : partage */ }
+  const preview = (file as unknown as { preview?: (options?: { mimeType?: string; title?: string }) => Promise<void>; canPreview?: (options?: { mimeType?: string }) => Promise<boolean> });
+  try { if (preview.preview && (!preview.canPreview || await preview.canPreview({ mimeType: 'application/pdf' }))) { await preview.preview({ mimeType: 'application/pdf', title: name }); return; } } catch { /* aperçu absent de ce build : partage */ }
   if (!(await Sharing.isAvailableAsync())) throw new ChatClientError('share_unavailable');
   await Sharing.shareAsync(file.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: name });
 }
@@ -95,7 +116,7 @@ export default function FileViewer() {
       {busy ? <ActivityIndicator color={colors.ink} /> : null}
       {error ? <View style={{ gap: 10 }}><Text style={[s.body, { color: colors.danger }]}>{error}</Text>
         <Pressable accessibilityRole="button" onPress={() => void load()} style={s.secondary}><Text style={s.secondaryText}>Réessayer</Text></Pressable></View> : null}
-      {type === 'md' && text !== null ? <Markdown source={text} /> : null}
+      {type === 'md' && text !== null ? <Markdown source={text} base={path} /> : null}
       {type === 'pdf' && !busy && !error ? <View style={{ gap: 10 }}><Text style={s.body}>Le PDF s’est ouvert dans la visionneuse du téléphone.</Text>
         <Pressable accessibilityRole="button" onPress={() => void load()} style={s.secondary}><Text style={s.secondaryText}>Rouvrir le PDF</Text></Pressable></View> : null}
       <Text selectable style={[s.small, { fontSize: 10 }]}>{path}</Text>

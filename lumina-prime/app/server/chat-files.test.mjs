@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createChatServer } from './chat-server.mjs';
-import { createFileReader, looksSecret, resolveSharedFile } from './chat-files.mjs';
+import { createFileReader, looksSecret, resolveSharedFile, sharedFileRoots } from './chat-files.mjs';
 
 function workspace(t) {
   const base = mkdtempSync(path.join(tmpdir(), 'chat-files-'));
@@ -31,7 +31,16 @@ test('path guard: only .md/.pdf under the workspace, no traversal, no secrets', 
   assert.equal(await code(resolveSharedFile(root, path.join(root, 'artifacts', 'secrets', 'x.md'))), 'file_forbidden');
   assert.equal(await code(resolveSharedFile(root, path.join(root, '.env.md'))), 'file_forbidden');
   assert.equal(await code(resolveSharedFile(root, path.join(root, 'artifacts', 'notes.txt'))), 'file_type_unsupported');
-  assert.equal(await code(resolveSharedFile(root, 'artifacts/CV.md')), 'file_invalid');
+  // Relatif : cherché sous la racine ; « .. », lecteur sans barre et schémas d'URL refusés.
+  assert.equal((await resolveSharedFile(root, 'artifacts/CV.md')).name, 'CV.md');
+  assert.equal((await resolveSharedFile(root, './artifacts\\doc.pdf')).mime, 'application/pdf');
+  assert.equal(await code(resolveSharedFile(root, 'artifacts/absent.md')), 'file_not_found');
+  assert.equal(await code(resolveSharedFile(root, '../outside.md')), 'file_forbidden');
+  assert.equal(await code(resolveSharedFile(root, 'artifacts/../../outside.md')), 'file_forbidden');
+  assert.equal(await code(resolveSharedFile(root, 'artifacts/secrets/x.md')), 'file_forbidden');
+  assert.equal(await code(resolveSharedFile(root, 'C:outside.md')), 'file_invalid');
+  assert.equal(await code(resolveSharedFile(root, 'file:///C:/x.md')), 'file_invalid');
+  assert.equal(await code(resolveSharedFile(root, 'artifacts/CV.md\0.md')), 'file_invalid');
   assert.equal(await code(resolveSharedFile(root, path.join(root, 'absent.md'))), 'file_not_found');
   assert.equal(await code(resolveSharedFile(root, path.join(root + '-evil', 'x.md'))), 'file_forbidden');
   // Un lien (jonction) sous la racine qui pointe dehors est refusé d'après son chemin réel.
@@ -39,8 +48,25 @@ test('path guard: only .md/.pdf under the workspace, no traversal, no secrets', 
   assert.equal(await code(resolveSharedFile(root, path.join(root, 'lien', 'outside.md'))), 'file_forbidden');
 });
 
+test('several roots: relative paths tried in order, absolute paths must sit under one root', async t => {
+  const { base, root } = workspace(t);
+  const repo = path.join(base, 'repo');
+  mkdirSync(path.join(repo, 'docs'), { recursive: true });
+  writeFileSync(path.join(repo, 'docs', 'NOTE.md'), '# Note');
+  writeFileSync(path.join(repo, 'docs', 'telegram.session.md'), 'x');
+  const roots = [root, repo];
+  assert.equal((await resolveSharedFile(roots, 'artifacts/CV.md')).name, 'CV.md');
+  assert.equal((await resolveSharedFile(roots, 'docs/NOTE.md')).name, 'NOTE.md');
+  assert.equal((await resolveSharedFile(roots, path.join(repo, 'docs', 'NOTE.md'))).name, 'NOTE.md');
+  assert.equal(await code(resolveSharedFile(roots, path.join(base, 'outside.md'))), 'file_forbidden');
+  assert.equal(await code(resolveSharedFile(roots, 'docs/absent.md')), 'file_not_found');
+  assert.equal(await code(resolveSharedFile(roots, 'docs/telegram.session.md')), 'file_forbidden');
+  const read = createFileReader({ roots });
+  assert.equal((await read('docs/NOTE.md')).bytes.toString(), '# Note');
+});
+
 test('secret-looking names are refused', () => {
-  for (const name of ['.env', '.env.local', 'id.key', 'keys.json', 'telegram-session.json', 'reddit.json', 'colony-auth.json', 'a/secrets/b.md'])
+  for (const name of ['.env', '.env.local', 'id.key', 'keys.json', 'telegram-session.json', 'reddit.json', 'colony-auth.json', 'a/secrets/b.md', 'x.session', 'compte.session.md', '.env.production'])
     assert.equal(looksSecret(name), true, name);
   for (const name of ['CV-BASE-VERIFIEE-TRAVAIL.md', 'README.md', 'rapport.pdf']) assert.equal(looksSecret(name), false, name);
 });
@@ -65,4 +91,16 @@ test('GET /chat/file requires a session and serves the bytes with the right type
   const outside = await fetch(route(path.join(root, '..', 'outside.md')), { headers });
   assert.equal(outside.status, 403); assert.deepEqual(await outside.json(), { error: 'file_forbidden' });
   assert.equal((await fetch(`${url}/chat/file?path=x&other=1`, { headers })).status, 400);
+});
+
+test('served roots: active workspace from workspace-settings.json, then the Wake repo', t => {
+  const base = mkdtempSync(path.join(tmpdir(), 'chat-roots-'));
+  t.after(() => rmSync(base, { recursive: true, force: true }));
+  const repo = path.join(base, 'repo');
+  assert.deepEqual(sharedFileRoots({ dataDir: base, wakeRoot: repo }), [path.join(base, 'workspace'), repo]);
+  const active = path.join(base, 'ailleurs');
+  writeFileSync(path.join(base, 'workspace-settings.json'), JSON.stringify({ workspaceDir: active, activeWorkspace: active, githubUrl: '', enabled: false }));
+  assert.deepEqual(sharedFileRoots({ dataDir: base, wakeRoot: repo }), [active, repo]);
+  writeFileSync(path.join(base, 'workspace-settings.json'), '{abîmé');
+  assert.deepEqual(sharedFileRoots({ dataDir: base }), [path.join(base, 'workspace')]);
 });

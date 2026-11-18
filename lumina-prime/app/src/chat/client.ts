@@ -133,7 +133,7 @@ export type Block = { kind: 'text'; inlines: Inline[] } | { kind: 'image'; url: 
   | { kind: 'file'; path: string; name: string; type: 'md' | 'pdf' | 'other' };
 
 const IMAGE = /!\[([^\]\n]*)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+?\.(?:png|jpe?g|webp|gif)(?:\?[^\s<>()]*)?)(?=$|[\s)\].,;!?])/gi;
-const INLINE = /\*\*([^*\n]+?)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?'"])|(?<![*\w])\*([^*\s][^*\n]*?)\*(?![*\w])|(?<![\w_])_([^_\s][^_\n]*?)_(?![\w_])/g;
+const INLINE = /\*\*([^*\n]+?)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\((https?:\/\/[^\s)]+|[^\s()]+?\.(?:md|pdf)(?:#[^\s)]*)?)\)|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?'"])|(?<![*\w])\*([^*\s][^*\n]*?)\*(?![*\w])|(?<![\w_])_([^_\s][^_\n]*?)_(?![\w_])/g;
 
 export function parseInline(text: string): Inline[] {
   const out: Inline[] = []; let last = 0;
@@ -151,13 +151,48 @@ export function parseInline(text: string): Inline[] {
   return out;
 }
 
-/** Fichiers partagés par les agents : « [fichier: C:\…\X.md] » (tout chemin absolu) ou chemin Windows nu en .md/.pdf (éventuellement entre `…`). */
-const FILE = /\[fichier\s*:\s*([^\]\n]+?)\s*\]|`?(?<![\w/\\])([A-Za-z]:[\\/][^\s<>"'`|*?()[\]]*?\.(?:md|pdf))`?(?=$|[\s)\].,;:!?'"])/gi;
+/** Fichiers partagés par les agents, reconnus dans les bulles :
+ *  « [fichier: X] », lien markdown « [titre](X.md) », chemin entre `…` (espaces permis), URL file:///C:/…,
+ *  chemin Windows nu (C:\… ou C:/…) et chemin relatif à au moins un dossier (« artifacts/x.md », « docs\y.pdf »).
+ *  Les chemins relatifs sont résolus par la passerelle sous ses racines (workspace actif, puis dépôt Wake). */
+const FILE_END = String.raw`(?=$|[\s)\].,;:!?'"\x60])`;
+const FILE = new RegExp([
+  String.raw`\[fichier\s*:\s*([^\]\n]+?)\s*\]`,
+  String.raw`\[([^\]\n]+)\]\(\s*<?([^\s<>()]+?\.(?:md|pdf))>?\s*\)`,
+  String.raw`\x60((?:file:\/\/\/?)?(?:[A-Za-z]:[\\/]|\.{1,2}[\\/]|[\w-][\w .-]*[\\/])[^\x60\n]*?\.(?:md|pdf))\x60`,
+  String.raw`(?<![\w/\\])((?:file:\/\/\/?)?[A-Za-z]:[\\/][^\s<>"'\x60|*?()[\]]*?\.(?:md|pdf))` + FILE_END,
+  String.raw`(?<![\w/\\.:@#%=~-])((?:\.{1,2}[\\/])?[\w][\w.-]*(?:[\\/][\w.-]+)+\.(?:md|pdf))` + FILE_END,
+].join('|'), 'gi');
+/** URL file:// → chemin ; %20 décodé ; les autres schémas (http…) ne sont pas des fichiers locaux. */
+export function localPath(raw: string): string | null {
+  let value = raw.trim();
+  if (/^file:\/\//i.test(value)) {
+    value = value.replace(/^file:\/\/(?:localhost)?\/?/i, '');
+    try { value = decodeURIComponent(value); } catch { /* laissé tel quel */ }
+    if (!/^[A-Za-z]:[\\/]/.test(value)) value = `/${value}`;
+  } else if (/^[a-z][\w+.-]*:\/\//i.test(value) || /^(mailto|tel):/i.test(value)) return null;
+  return value || null;
+}
+const looksLocal = (value: string) => /^(?:[A-Za-z]:[\\/]|\/)/.test(value) || /^(?:\.{1,2}[\\/])?[^\\/:]+[\\/].*\.(?:md|pdf)$/i.test(value);
 export function fileBlock(path: string): Block {
   const clean = path.trim();
   const name = clean.split(/[\\/]/).filter(Boolean).at(-1) ?? clean;
   const extension = /\.([a-z0-9]+)$/i.exec(name)?.[1]?.toLowerCase();
   return { kind: 'file', path: clean, name, type: extension === 'md' ? 'md' : extension === 'pdf' ? 'pdf' : 'other' };
+}
+/** Lien d'un document ouvert (« [suite](../b.md) ») → chemin du fichier visé, ou null pour un lien web. */
+export function resolveDocLink(base: string, href: string): string | null {
+  const target = localPath(href.replace(/#.*$/, ''));
+  if (!target || !/\.(?:md|pdf)$/i.test(target)) return null;
+  if (/^(?:[A-Za-z]:[\\/]|\/)/.test(target)) return target;
+  const separator = base.includes('\\') ? '\\' : '/';
+  const parts = base.split(/[\\/]/); parts.pop();
+  for (const part of target.split(/[\\/]/)) {
+    if (part === '' || part === '.') continue;
+    if (part === '..') { if (parts.length > 1 && parts.at(-1) !== '..') parts.pop(); else return null; }
+    else parts.push(part);
+  }
+  return parts.filter((part, i) => part || i === 0).join(separator);
 }
 export function parseRich(text: string): Block[] {
   const out: Block[] = [];
@@ -174,8 +209,8 @@ export function parseRich(text: string): Block[] {
   };
   let last = 0;
   for (const m of text.matchAll(FILE)) {
-    const path = m[1] ?? m[2];
-    if (m[1] !== undefined && !/^(?:[A-Za-z]:[\\/]|\/)/.test(path.trim())) continue;
+    const path = localPath(m[1] ?? m[3] ?? m[4] ?? m[5] ?? m[6] ?? '');
+    if (!path || (m[1] !== undefined && !looksLocal(path))) continue;
     const at = m.index ?? 0;
     pushImages(text.slice(last, at));
     out.push(fileBlock(path));
@@ -200,18 +235,34 @@ export async function readChatFile(session: ChatSession, path: string, signal?: 
   }
   return response.text();
 }
+/** Échec d'un téléchargement natif (Android : « response has status: 403 », sans corps) → vraie cause.
+ *  On redemande l'URL pour lire le code JSON de la passerelle ; si elle ne répond pas, c'est bien `connection_lost`. */
+export async function fileDownloadError(session: ChatSession, path: string, reason: unknown, fetchImpl = fetch): Promise<ChatClientError> {
+  const status = Number(/(?:status:?|HTTP)\s*(\d{3})\b/i.exec(String((reason as { message?: unknown })?.message ?? reason))?.[1] ?? 0);
+  const fallback = ({ 401: 'unauthorized', 403: 'file_forbidden', 404: 'file_not_found', 413: 'file_too_large' } as Record<number, string>)[status];
+  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 6_000);
+  try {
+    const response = await fetchImpl(fileUrl(session, path), { headers: { Authorization: `Bearer ${session.token}` }, signal: controller.signal, redirect: 'error' });
+    if (response.ok) { void response.body?.cancel().catch(() => {}); return new ChatClientError(fallback ?? 'connection_lost', status); }
+    let code = fallback ?? (response.status === 404 ? 'file_not_found' : 'connection_lost');
+    try { const value = await response.json() as { error?: unknown }; if (typeof value?.error === 'string') code = value.error; } catch { /* corps non JSON */ }
+    return new ChatClientError(code, response.status);
+  } catch { return new ChatClientError(fallback ?? 'connection_lost', status); }
+  finally { clearTimeout(timer); }
+}
 export function fileErrorMessage(error: unknown): string {
   const code = error instanceof ChatClientError ? error.code : 'connection_lost';
   return ({ file_forbidden: 'Ce fichier n’est pas partageable (hors du workspace ou confidentiel).', file_not_found: 'Fichier introuvable sur le PC.',
     file_too_large: 'Fichier trop lourd (plus de 10 Mo).', file_type_unsupported: 'Seuls les fichiers .md et .pdf s’ouvrent dans l’app.',
     file_invalid: 'Chemin de fichier invalide.', not_found: 'La passerelle Wake doit être relancée pour ouvrir les fichiers.',
-    files_unavailable: 'La passerelle Wake doit être relancée pour ouvrir les fichiers.' } as Record<string, string>)[code] ?? chatErrorMessage(error);
+    files_unavailable: 'La passerelle Wake doit être relancée pour ouvrir les fichiers.',
+    file_unavailable: 'Aucun workspace partagé n’est configuré sur le PC.' } as Record<string, string>)[code] ?? chatErrorMessage(error);
 }
 
 /** Markdown d'un document (.md ouvert dans l'app) : titres, listes, citations, blocs de code, séparateurs, paragraphes. */
 export type DocBlock = { kind: 'heading'; level: number; text: string } | { kind: 'paragraph'; text: string }
   | { kind: 'bullet'; text: string; marker: string; depth: number } | { kind: 'quote'; text: string }
-  | { kind: 'code'; text: string } | { kind: 'rule' };
+  | { kind: 'code'; text: string } | { kind: 'rule' } | { kind: 'table'; header: string[]; rows: string[][] };
 export function parseMarkdownDoc(source: string): DocBlock[] {
   const out: DocBlock[] = []; const lines = source.replace(/\r\n?/g, '\n').split('\n');
   let paragraph: string[] = [];
@@ -226,10 +277,15 @@ export function parseMarkdownDoc(source: string): DocBlock[] {
     }
     let m: RegExpExecArray | null;
     if (!line.trim()) { flush(); continue; }
-    if (/^\s*\|.*\|\s*$/.test(line)) { // Tableau : lignes conservées en bloc à chasse fixe, sans la ligne de séparation.
-      flush(); const rows: string[] = [];
-      for (; i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i]); i++) if (!/^\s*\|[\s|:-]+\|\s*$/.test(lines[i])) rows.push(lines[i].trim());
-      i--; out.push({ kind: 'code', text: rows.join('\n') }); continue;
+    if (/^\s*\|.*\|\s*$/.test(line)) { // Tableau : en-tête (si ligne de séparation) puis lignes de cellules.
+      flush(); const tableLines: string[] = [];
+      for (; i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i]); i++) tableLines.push(lines[i].trim());
+      i--;
+      const cells = (row: string) => row.replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(cell => cell.trim().replace(/\\\|/g, '|'));
+      const separator = (row: string) => /^\|[\s|:-]+\|$/.test(row) && row.includes('-');
+      const hasHeader = tableLines.length > 1 && separator(tableLines[1]);
+      const rows = tableLines.filter(row => !separator(row)).map(cells);
+      out.push({ kind: 'table', header: hasHeader ? rows[0] : [], rows: hasHeader ? rows.slice(1) : rows }); continue;
     }
     if ((m = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/.exec(line))) { flush(); out.push({ kind: 'heading', level: m[1].length, text: m[2] }); continue; }
     if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push({ kind: 'rule' }); continue; }
