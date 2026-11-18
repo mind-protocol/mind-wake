@@ -494,7 +494,7 @@ export function patternHolderPrompt(
   const freshIds = new Set(fresh.map((m) => m.id));
   const show = (m: FilMessage) =>
     JSON.stringify({
-      at: m.at,
+      at: localClock(m.at),
       auteur:
         m.holder === undefined
           ? m.author
@@ -518,6 +518,8 @@ export function patternHolderPrompt(
         ? "Ton humain répond à ton dernier message : réponds."
         : "Nouveaux messages dans le fil. Interviens seulement si un de tes patterns est en jeu et que tu apportes quelque chose maintenant ; sinon SILENCE.";
   return [
+    `Heure actuelle : ${localClock(new Date().toISOString())} (heure de Paris, celle de NLR). Toutes les heures ci-dessous et dans tes blocs \`\`\`reveil\`\`\` sont en heure de Paris.`,
+    "",
     `${threadLabel} récent (le plus récent en dernier) :`,
     ...earlier.map(show),
     "",
@@ -530,6 +532,14 @@ export function patternHolderPrompt(
       : [handleWakeNote(wake.handles)]),
     ...(wake.phaseNote === undefined ? [] : [wake.phaseNote]),
   ].join("\n");
+}
+
+/** Date ISO → « 18/11 17:50 » en heure locale de la machine (Paris), pour que les holders ne lisent pas l'UTC. */
+function localClock(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 /** Textes vus par le holder : messages frais et derniers messages de contexte (images récentes seulement). */
