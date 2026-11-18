@@ -73,6 +73,7 @@
          data-i18n="Vue d’ensemble">
           Vue d’ensemble
         </button>
+        <button id="tab-chat" role="tab" type="button" aria-selected="false" aria-controls="view-chat" data-i18n="Conversation">Conversation</button>
 
         <button
           id="tab-threads"
@@ -96,6 +97,19 @@
         </div>
       </nav>
 
+      <section id="view-chat" role="tabpanel" aria-labelledby="tab-chat" hidden>
+        <h2>Marco</h2>
+        <button id="chat-older" class="link" type="button" hidden>Afficher les messages précédents</button>
+        <ol id="chat" class="messages" aria-live="polite"></ol>
+        <p id="chat-note" class="hint" role="status"></p>
+        <form id="chat-form">
+          <div class="chat-compose">
+            <textarea id="chat-text" rows="3" maxlength="4000" required aria-label="Message à ton agent" placeholder="Écris à ton agent…"></textarea>
+            <div class="chat-actions"><button type="submit">Envoyer</button></div>
+          </div>
+          <p id="chat-status" class="hint" role="status"></p>
+        </form>
+      </section>
       <section id="view-call" role="tabpanel" aria-labelledby="tab-call" hidden>
         <p id="call-status" role="status"></p>
         <button id="call-retry" type="button" hidden>Réessayer</button>

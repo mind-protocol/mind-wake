@@ -15,6 +15,7 @@ import { activityModel, type ActivityModel } from "./activity.js";
 import { mountPromptEditor } from "./prompt-editor.js";
 import { callVisionFeed } from "./call-vision.js";
 import { plainText } from "./conversation.js";
+import { mountConversation } from "./conversation-panel.js";
 import { copyButton } from "./copy-button.js";
 import { authorMarker } from "./author-tint.js";
 import { appendMessageImages } from "./message-images.js";
@@ -628,7 +629,16 @@ if (tauri?.event) {
 }
 byId("call-retry").addEventListener("click", openCall);
 byId("tab-call").addEventListener("click", () => selectTab("call"));
-const tabs = ["call", "panel", "threads", "settings", "projects", "prompts", "documents"] as const;
+const conversationPanel = tauri ? mountConversation({
+  invoke: (command, args) => invoke(command, args),
+  decorate: (body, text) => {
+    messageLinks(body);
+    appendMessageImages(body, text, (command, args) => tauri.core.invoke(command, args));
+  },
+}) : null;
+void tauri?.event?.listen("owner-messages-changed", () => void conversationPanel?.refresh());
+byId("tab-chat").addEventListener("click", () => selectTab("chat"));
+const tabs = ["call", "chat", "panel", "threads", "settings", "projects", "prompts", "documents"] as const;
 type Tab = typeof tabs[number];
 function selectTab(tab: Tab): void {
   if (tab === "call") {
@@ -660,6 +670,7 @@ function selectTab(tab: Tab): void {
     callView.setAttribute("aria-hidden", String(tab !== "call"));
   }
   if (tab === "prompts") void prompts.open();
+  if (tab === "chat") void conversationPanel?.refresh();
   if (tab === "threads") void refreshThreads();
   try { localStorage.setItem("mind-wake-active-tab", tab); } catch { /* Display preference only. */ }
 }
