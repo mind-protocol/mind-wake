@@ -65,3 +65,85 @@ test('hangup before or during generation prevents publication', async t => {
   assert.equal(generated, 1);
   assert.equal(published, 0);
 });
+
+// --- Lot 2 (NLR, 18 nov. 2026 14:47) : un décroché, un préfixe ---------------------------------
+test('the name already written at the head is not prefixed twice', () => {
+  assert.equal(openingResponseText({ kind: 'main', label: 'Marco' }, 'Marco : Marco : Salut NLR, je décroche.'), 'Marco : Salut NLR, je décroche.');
+  assert.equal(openingResponseText({ kind: 'main', label: 'Marco' }, 'Marco est là.'), 'Marco : Marco est là.');
+  assert.equal(openingResponseText({ prefix: '🕸️ Coach des coachs · ' }, '🕸️ Coach des coachs · Je décroche.'), '🕸️ Coach des coachs · Je décroche.');
+  assert.equal(openingResponseText({ agent: { name: 'VOX' } }, 'vox: Bonjour'), 'VOX : Bonjour');
+});
+
+test('an agent that already answered gets no automatic pick-up, before or during generation', async t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'call-opening-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  let spoke = true, generated = 0, published = 0;
+  const answer = createOpeningResponder({ directory, prepare: async () => ({}),
+    generate: async () => { generated++; spoke = true; return { text: 'Salut' }; }, publish: async () => { published++; } });
+  const base = { target: { kind: 'main', agentId: 'marco' }, active: () => true, answered: async () => spoke };
+  await answer({ ...base, id: 'before' });
+  assert.equal(generated, 0);
+  spoke = false;
+  await answer({ ...base, id: 'during' });
+  assert.equal(generated, 1);
+  assert.equal(published, 0);
+  const states = fs.readdirSync(directory).filter(f => f.endsWith('.json')).map(f => JSON.parse(fs.readFileSync(path.join(directory, f))).state);
+  assert.deepEqual(states.sort(), ['answered', 'answered']);
+});
+
+/** Rejeu de 14:47 : NLR appelle, Marco décroche lui-même, NLR raccroche et rappelle 29 s plus tard. */
+function replay(t, { marcoAnswers }) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'call-opening-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  let clock = Date.parse('2026-11-18T14:47:15.524Z');
+  const iso = () => new Date(clock).toISOString();
+  const main = []; const notices = []; const pending = []; const generated = [];
+  const responder = createOpeningResponder({ directory, prepare: async () => ({}),
+    generate: async request => {
+      generated.push(request.id);
+      clock += 4000;
+      if (marcoAnswers) main.push({ id: 'own_8c3e2c36', role: 'agent', at: iso(), text: 'Marco : Salut, je décroche. Le point : le pair-à-pair et la transcription sont finis.' });
+      clock += 12_000;
+      return { text: 'Marco : Salut NLR, je décroche. Le pair-à-pair est terminé et ses tests passent.' };
+    },
+    publish: async (request, text) => { main.push({ id: `own_${main.length}`, role: 'agent', at: iso(), text: openingResponseText(request.target, text) }); } });
+  const call = createCallService({ mainLabel: 'Marco', mainAgentId: 'marco', now: () => clock, mirrorIntervalMs: 0,
+    sendMain: async () => ({ at: iso() }), mainReplies: async () => main, speak: async () => Buffer.alloc(0),
+    noticeMain: async (key, text) => { notices.push(text); }, answerCall: request => { pending.push(responder(request)); } });
+  t.after(() => call.stop());
+  const settle = async () => { await new Promise(resolve => setImmediate(resolve)); await Promise.all(pending); };
+  return { call, main, notices, generated, settle, tick: ms => { clock += ms; } };
+}
+
+test('replay 14:47: Marco picked up himself, so neither the call nor its redial publishes another pick-up', async t => {
+  const r = replay(t, { marcoAnswers: true });
+  r.call.openSession('owner', '25bd94df-8a0f-4748-a306-1e24ac2a39ec', 1, ['mind']);
+  await r.settle();
+  r.call.endSession('owner', '25bd94df-8a0f-4748-a306-1e24ac2a39ec', 1);
+  r.tick(13_000);
+  r.call.openSession('owner', '6f0efe48-3de4-4d1b-aec1-d61350a73472', 1, ['mind']);
+  await r.settle();
+  assert.deepEqual(r.main.map(m => m.text), ['Marco : Salut, je décroche. Le point : le pair-à-pair et la transcription sont finis.']);
+  assert.equal(r.generated.length, 1, 'the redial does not even generate');
+  assert.equal(r.notices.length, 1, 'one « NLR t’appelle » for the exchange');
+});
+
+test('replay with Marco asleep: one pick-up, prefixed once; a redial reuses it; a later call rings again', async t => {
+  const r = replay(t, { marcoAnswers: false });
+  r.call.openSession('owner', '25bd94df-8a0f-4748-a306-1e24ac2a39ec', 1, ['mind']);
+  await r.settle();
+  r.call.endSession('owner', '25bd94df-8a0f-4748-a306-1e24ac2a39ec', 1);
+  r.tick(13_000);
+  r.call.openSession('owner', '6f0efe48-3de4-4d1b-aec1-d61350a73472', 1, ['mind']);
+  await r.settle();
+  assert.deepEqual(r.main.map(m => m.text), ['Marco : Salut NLR, je décroche. Le pair-à-pair est terminé et ses tests passent.']);
+  assert.deepEqual((await r.call.replies('mind', new Date(0).toISOString())).map(i => [i.speaker, i.text]).slice(0, 1),
+    [['Marco', 'Salut NLR, je décroche.']]);
+  assert.equal(r.notices.length, 1);
+  r.call.endSession('owner', '6f0efe48-3de4-4d1b-aec1-d61350a73472', 1);
+  r.tick(10 * 60_000);
+  r.call.openSession('owner', '7a1c2b3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d', 1, ['mind']);
+  await r.settle();
+  assert.equal(r.notices.length, 2);
+  assert.equal(r.main.length, 2);
+});

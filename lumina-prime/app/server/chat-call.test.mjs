@@ -422,3 +422,14 @@ test('pending pieces are dropped on hang-up; an oversized reply is cut with an e
   assert.equal(mirrorText('VOX', huge), `[Appel] VOX : ${'x'.repeat(MIRROR_MAX_CHARS)}… [copie d'appel coupée : 50 caractères non recopiés]`);
   assert.equal(mirrorText('VOX', ['Un.', ' ', 'Deux.']), '[Appel] VOX : Un.\n\nDeux.');
 });
+
+test('lot 2: a main-thread reply that already carries « Marco : » is mirrored and voiced with one name only', async () => {
+  const f = shared();
+  await f.call.deliver('mind,medicis', id, 'go');
+  f.tick(1000);
+  f.main.push({ id: 'own_15ba0533', role: 'agent', at: f.at(), text: 'Marco : Marco : Salut NLR, je décroche.' });
+  await f.call.mirrorTick();
+  assert.deepEqual(f.roomNotices.map(n => n.text), ['[Appel] Marco : Salut NLR, je décroche.']);
+  assert.deepEqual((await f.call.replies('mind', new Date(0).toISOString())).map(i => [i.speaker, i.text]), [['Marco', 'Salut NLR, je décroche.']]);
+  assert.equal(mirrorText('Marco', 'Marco : x'), '[Appel] Marco : Marco : x', 'mirrorText itself stays literal; the strip happens upstream');
+});

@@ -2,13 +2,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import { stripSpeakerPrefix } from './chat-call.mjs';
 
+/**
+ * Un seul préfixe (NLR, 18 nov. 2026, lot 2) : le modèle imite souvent le fil (« Marco : … ») ;
+ * le nom déjà écrit en tête est retiré avant de poser le préfixe, jamais « Marco : Marco : ».
+ */
 export function openingResponseText(target, text) {
   const prefix = target.prefix ?? `${target.agent?.name ?? target.label.replace(/ \(Room \d+\)$/, '')} : `;
-  return `${prefix}${text}`.slice(0, 4000);
+  return `${prefix}${stripSpeakerPrefix(prefix.replace(/\s*[:·]\s*$/u, ''), text)}`.slice(0, 4000);
 }
 
-/** One owner-requested conversational turn. Never changes the autonomous Wake controls. */
+/**
+ * One owner-requested conversational turn. Never changes the autonomous Wake controls.
+ * It is only a fallback: when `request.answered()` says the called agent already spoke in its
+ * thread since the call (or its redial) began, nothing is generated or published (lot 2, 18 nov.).
+ */
 export function createOpeningResponder({ directory, prepare, generate, publish }) {
   fs.mkdirSync(directory, { recursive: true });
   return async request => {
@@ -18,12 +27,18 @@ export function createOpeningResponder({ directory, prepare, generate, publish }
     const record = path.join(directory, `${key}.json`);
     try { fs.writeFileSync(record, JSON.stringify({ state: 'claimed' }), { flag: 'wx' }); }
     catch (error) { if (error.code === 'EEXIST') return; throw error; }
+    const answered = async () => { try { return (await request.answered?.()) === true; } catch { return false; } };
     try {
+      if (await answered()) { fs.writeFileSync(record, JSON.stringify({ state: 'answered' })); return; }
       const context = await prepare(request);
       if (!request.active()) return;
       const result = await generate({ ...request, ...context, key });
       if ('error' in result) throw Error(result.error);
       const text = result.text.trim();
+      // Dernier contrôle juste avant de publier : l'agent a pu décrocher lui-même pendant la génération.
+      if (request.active() && text && text !== 'SILENCE' && await answered()) {
+        fs.writeFileSync(record, JSON.stringify({ state: 'answered' })); return;
+      }
       if (request.active() && text && text !== 'SILENCE') await publish(request, text, key);
       fs.writeFileSync(record, JSON.stringify({ state: request.active() ? 'completed' : 'cancelled' }));
     } catch (error) {
@@ -66,7 +81,7 @@ export async function openingResponder({ wakeRoot, dataDir, bridge }) {
     },
     generate: async ({ instructions, history, caller, active, key }) => {
       const file = path.join(directory, `${key}.md`);
-      fs.writeFileSync(file, instructions + '\n\nCe tour répond à un appel explicite. Une seule réponse brève, sans outil ni action autonome. Le texte de sortie sera publié dans ton fil et lu dans l’appel.');
+      fs.writeFileSync(file, instructions + '\n\nCe tour répond à un appel explicite. Une seule réponse brève, sans outil ni action autonome. Le texte de sortie sera publié dans ton fil et lu dans l’appel. N’écris pas ton nom en tête : il est ajouté.');
       const claude = voice.fastReplyClaude();
       // No MCP identity: this turn cannot upgrade into the role's autonomous tools while stopped.
       return voice.agentTextCall(dataDir, undefined, active)(claude, voice.fastReplyArgs(claude.model, file),

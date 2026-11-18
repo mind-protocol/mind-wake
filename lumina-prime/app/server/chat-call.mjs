@@ -34,6 +34,22 @@ export function speechChunks(text, max = 240) {
 }
 export const PREFIX = /^(?:(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s+)?([^\s:·][^:·\n]{0,48}?)\s*([:·])\s+/u;
 export const shortLabel = label => String(label).replace(/^\p{Extended_Pictographic}[\uFE0F\u200D]*\s*/u, '').replace(/\s*\((?:Room \d+|fil principal)\)\s*$/, '').replace(/^Room \d+ \((.+)\)$/, '$1').trim();
+/**
+ * Préfixe unique (NLR, 18 nov. 2026, lot 2) : « Marco : Marco : … » venait d'un texte qui portait
+ * déjà « Marco : » et qu'une autre voie préfixait encore. Retire en tête le nom de l'orateur
+ * (« Nom : » ou « 🕸️ Nom · »), répété ou non, pour qu'un seul préfixe soit posé ensuite.
+ */
+export function stripSpeakerPrefix(name, text) {
+  const bare = shortLabel(name ?? '');
+  let out = String(text ?? '').trim();
+  if (!bare) return out;
+  const escaped = bare.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const head = new RegExp(String.raw`^(?:\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*\s*)?` + escaped + String.raw`\s*[:·]\s*`, 'iu');
+  while (head.test(out)) out = out.replace(head, '').trim();
+  return out;
+}
+/** Rappel du même interlocuteur peu après (raccroché puis rappelé) : même échange, pas de nouveau préavis ni de nouveau décroché. */
+export const RING_REPEAT_MS = 120_000;
 /** Morceau `~k` d'une réponse découpée. */
 const chunkId = (id, index, count) => (count > 1 ? `${id}~${index}` : id);
 
@@ -67,6 +83,8 @@ export const mirrorText = (speaker, text) => {
     : body;
   return `${MIRROR_TAG} ${speaker} : ${clipped}`;
 };
+/** Copie d'un orateur : son nom déjà en tête d'un morceau n'est pas recopié une seconde fois. */
+const mirrorOf = (speaker, parts) => mirrorText(speaker, parts.map(part => stripSpeakerPrefix(speaker, part)));
 /** Convention « pas de réponse » : texte SILENCE, ou dernière ligne SILENCE une fois la règle d'appel retirée. */
 export function isSilence(text) {
   const lines = String(text).split(MIRROR_RULE).join('').split('\n').map(line => line.trim()).filter(Boolean);
@@ -241,6 +259,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
   /** Noms des participants connus → voix (id d'agent ou slug de holder). */
   function speakers() {
     const names = new Map();
+    // L'agent principal signe « Marco : » : son nom est reconnu comme les autres, donc retiré du texte.
+    names.set(shortLabel(mainLabel).toLowerCase(), mainAgentId);
     for (const target of table().values()) {
       if (target.agent) names.set(target.agent.name.toLowerCase(), target.agent.id);
       else if (target.holder !== undefined) names.set(shortLabel(target.label).toLowerCase(), target.holder);
@@ -254,9 +274,10 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       const name = match[2].trim(); const known = names.get(name.toLowerCase());
       if (known || (match[3] === '·' && match[1]))
         // NLR, 16 nov. 2026 : l'emoji du holder reste à côté de son nom (« 🪙 Crypto »).
-        return { speaker: match[1] ? `${match[1].trim()} ${name}` : name, voice: known ?? name, text: text.slice(match[0].length) };
+        return { speaker: match[1] ? `${match[1].trim()} ${name}` : name, voice: known ?? name, named: true,
+          text: stripSpeakerPrefix(name, text.slice(match[0].length)) };
     }
-    return { speaker: shortLabel(target.label), voice: target.agentId, text };
+    return { speaker: shortLabel(target.label), voice: target.agentId, text: stripSpeakerPrefix(target.label, text) };
   }
 
   /** Réponses d'agent d'un interlocuteur déjà résolu, non découpées (toutes dates). */
@@ -277,7 +298,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       && (!prefix || e.text.trim().toLowerCase().startsWith(prefix.toLowerCase()))
       && (!target.prefix || e.text.startsWith(target.prefix)))
       .map(e => ({ id: `r${target.room}:${e.id}`, at: e.at, ...(prefix
-        ? { speaker: target.agent.name, voice: target.agent.id, text: e.text.trim().slice(prefix.length).trim() }
+        ? { speaker: target.agent.name, voice: target.agent.id, named: true, text: stripSpeakerPrefix(target.agent.name, e.text.trim().slice(prefix.length)) }
         : speakerOf(e.text, target, names)) }))
       // SILENCE n'est ni lu à voix haute, ni affiché dans l'app, ni recopié aux autres participants.
       .filter(item => !isSilence(item.text));
@@ -352,7 +373,36 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
    */
   const rung = new Set();
   const answered = new Set();
+  /**
+   * Un échange, un décroché (NLR, 18 nov. 2026 14:47, lot 2). Début de l'échange par interlocuteur :
+   * un rappel moins de RING_REPEAT_MS après le précédent continue le même échange.
+   */
+  const exchanges = new Map();
+  const noticedAt = new Map();
+  function exchangeSince(handle, at) {
+    const prev = exchanges.get(handle);
+    const since = prev && at - prev.last <= RING_REPEAT_MS ? prev.since : at;
+    exchanges.set(handle, { since, last: at });
+    while (exchanges.size > 512) exchanges.delete(exchanges.keys().next().value);
+    return since;
+  }
+  /**
+   * L'interlocuteur a-t-il déjà parlé dans son fil depuis `since` ? Le décroché automatique n'est
+   * qu'un repli : si Marco (ou l'agent appelé) a déjà décroché lui-même, il ne republie rien.
+   * Fil principal : seuls les messages signés « Marco : » comptent (pas les holders ni la Simulation).
+   */
+  async function spokeSince(target, since) {
+    if (target.kind === 'remote') return false;
+    const items = await rawItems(target, speakers());
+    const own = target.kind === 'main' ? shortLabel(mainLabel)
+      : target.kind === 'holder' && !target.room ? target.label
+        : target.kind === 'room' && !target.prefix ? shortLabel(target.label) : null;
+    return items.some(i => Date.parse(i.at) >= since && !i.text.startsWith(MIRROR_TAG)
+      && (!own || (i.speaker === own && (target.kind === 'room' || i.named))));
+  }
   function ring(id, targets, caller = 'NLR') {
+    const at = now();
+    const since = new Map(targets.map(t => [t.handle, exchangeSince(t.handle, at)]));
     for (const target of targets) {
       if (target.kind === 'remote' || !answerCall) continue;
       const key = `${id}:${target.handle}`;
@@ -362,7 +412,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       const current = calls.get(id);
       const active = () => calls.get(id) === current && current?.targets.has(target.handle)
         && now() - current.lastActivity <= idleMs;
-      Promise.resolve().then(() => active() && answerCall({ id, target, caller, active }))
+      const spoke = () => spokeSince(target, since.get(target.handle));
+      Promise.resolve().then(() => active() && answerCall({ id, target, caller, active, answered: spoke }))
         .catch(error => console.error('Call opening response failed:', error.message));
     }
     const notices = new Map();
@@ -370,6 +421,11 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
       if (t.kind === 'remote') continue;
       const key = t.room ? `call-ring:${keySafe(id)}:room${t.room}` : `call-ring:${keySafe(id)}:${keySafe(t.handle)}`;
       if (rung.has(key) || notices.has(key)) continue;
+      // Raccroché puis rappelé : le préavis de l'échange en cours suffit (plus de « 📞 » en double).
+      const fil = t.room ? `room${t.room}` : t.handle;
+      if (at - (noticedAt.get(fil) ?? -Infinity) <= RING_REPEAT_MS) continue;
+      noticedAt.set(fil, at);
+      while (noticedAt.size > 512) noticedAt.delete(noticedAt.keys().next().value);
       const mention = t.room ? '' : (t.mention ?? '');
       notices.set(key, { channel: t.room ? `room:${t.room}` : 'main', text: mention ? `${mention} ${ringText(id, caller)}` : ringText(id, caller), main: !t.room });
     }
@@ -475,7 +531,7 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
         const freeze = (groupKey, group) => {
           c.groups.delete(groupKey);
           c.outbox.push({ ...group, dests: new Set(channels.filter(ch => ch !== group.channel)),
-            text: mirrorText(group.speaker, group.items.map(i => i.text)) });
+            text: mirrorOf(group.speaker, group.items.map(i => i.text)) });
         };
         for (const item of [...fresh.values()].sort((x, y) => Date.parse(x.at) - Date.parse(y.at))) {
           c.seen.add(item.id);
