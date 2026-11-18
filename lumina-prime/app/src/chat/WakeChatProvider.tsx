@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import * as Crypto from 'expo-crypto';
-import { ChatClientError, chatCandidates, chatErrorMessage, connectChat, logoutChat, readChat, sendChat, type ChatMessage, type ChatSession } from './client.ts';
+import { ChatClientError, chatCandidates, chatErrorMessage, needsNewChatSession, connectChat, logoutChat, readChat, sendChat, type ChatMessage, type ChatSession } from './client.ts';
 import { clearChatSession, loadChatSession, saveChatSession } from './storage.ts';
 import DeviceVoice from './DeviceVoice';
 import { Pressable, Text, View } from 'react-native';
@@ -52,7 +52,7 @@ export function WakeChatProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!session) return;
     const controller = new AbortController(); let timer: ReturnType<typeof setTimeout> | undefined;
-    let active = true; let cursor = ''; let backoff = 1000; let failures = 0;
+    let active = true; let cursor = ''; let backoff = 1000;
     // Same token, other address of the same PC: rotate between LAN and Tailscale when one is unreachable.
     const urls = chatCandidates(session.url, ...defaultCandidates); let index = 0;
     const listen = async () => {
@@ -61,16 +61,15 @@ export function WakeChatProvider({ children }: { children: React.ReactNode }) {
         const snapshot = await readChat(current, cursor, controller.signal);
         if (!active) return;
         if (current.url !== session.url) { await saveChatSession(current); if (active) setSession(current); return; }
-        cursor = snapshot.cursor; backoff = 1000; failures = 0; setOnline(true); setError(null); setMessages(snapshot.messages);
+        cursor = snapshot.cursor; backoff = 1000; setOnline(true); setError(null); setMessages(snapshot.messages);
         setOutgoing(previous => previous.filter(item => !snapshot.messages.some(message => message.id === item.id)));
         timer = setTimeout(() => { void listen(); }, 0);
       } catch (reason) {
         if (!active) return;
-        failures += 1;
         setOnline(false); setError(`${chatErrorMessage(reason)} (${current.url})`);
         const unreachable = reason instanceof ChatClientError && ['connection_lost', 'connection_timeout'].includes(reason.code);
-        // Expired/unknown token, or every address failed twice: drop the saved session and connect afresh (no pairing).
-        if ((reason instanceof ChatClientError && reason.status === 401) || (unreachable && failures >= urls.length * 2)) {
+        // Only the server can invalidate the saved token. Keep it across network outages and restarts.
+        if (needsNewChatSession(reason)) {
           void clearChatSession(); setSession(null); void connect(session.url); return;
         }
         if (unreachable && urls.length > 1) index = (index + 1) % urls.length;

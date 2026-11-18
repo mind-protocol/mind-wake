@@ -33,10 +33,22 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
   let pairUsed = false;
   const pairExpiresAt = now() + pairTtlMs;
   const sessions = new Map(sessionStore?.load() ?? []);
-  const persist = () => sessionStore?.save([...sessions]);
+  let lastSessionPersist=now();
+  const persist = () => { sessionStore?.save([...sessions]); lastSessionPersist=now(); };
+  function makeSessionRoom() {
+    let changed=false;
+    for(const [key,session] of sessions)if(session.expiresAt<=now()) {sessions.delete(key);changed=true;}
+    if(sessions.size>=100) {
+      const idle=[...sessions].filter(([key,s])=>!(pending.get(key)>0)&&now()-(s.lastSeenAt??s.expiresAt-sessionTtlMs)>5*60_000)
+        .sort((a,b)=>(a[1].lastSeenAt??a[1].expiresAt-sessionTtlMs)-(b[1].lastSeenAt??b[1].expiresAt-sessionTtlMs));
+      if(idle[0]) {sessions.delete(idle[0][0]);changed=true;}
+    }
+    if(changed)persist();
+    if(sessions.size>=100)throw new ChatError('too_many_connections',429);
+  }
   function issueSession(origin, res, address) {
     const token = randomBytes(32).toString('hex');
-    const session = { expiresAt: now() + sessionTtlMs, human: phoneOwner(address) };
+    const session = { expiresAt: now() + sessionTtlMs, lastSeenAt:now(), human: phoneOwner(address) };
     sessions.set(digest(token).toString('hex'), session); persist();
     send(res, 200, { schema: 'mind.chat.session.v1', token, expiresAt: session.expiresAt }, origin);
   }
@@ -53,6 +65,8 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
     const token = typeof value === 'string' && /^Bearer [a-f0-9]{64}$/.test(value) ? value.slice(7) : '';
     const session = sessions.get(digest(token).toString('hex'));
     if (!session || session.expiresAt <= now()) throw new ChatError('unauthorized', 401);
+    session.lastSeenAt=now();
+    if(now()-lastSessionPersist>=60_000)persist();
     return { ...session, key: digest(token).toString('hex') };
   };
   function send(res, status, body, origin) {
@@ -135,7 +149,7 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         const privatePeer = privateNetworkConnect && isPrivateAddress(req.socket.remoteAddress);
         if (!usbLocal && !privatePeer) throw new ChatError('local_connection_forbidden', 403);
         if (url.search || !keys(await body(req), [])) throw new ChatError('invalid_request');
-        if (sessions.size >= 100) throw new ChatError('too_many_connections', 429);
+        makeSessionRoom();
         issueSession(origin, res, req.socket.remoteAddress); return;
       }
       if (req.method === 'POST' && url.pathname === '/chat/pair') {

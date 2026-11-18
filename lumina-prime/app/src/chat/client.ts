@@ -7,6 +7,10 @@ export class ChatClientError extends Error {
   status: number;
   constructor(code: string, status = 0) { super(code); this.code = code; this.status = status; }
 }
+/** A temporary outage does not invalidate an otherwise valid saved session. */
+export function needsNewChatSession(error:unknown):boolean {
+  return error instanceof ChatClientError && error.status===401;
+}
 export function chatUrl(value: string): string {
   const url = new URL(value.trim());
   const ip = url.hostname.split('.').map(Number);
@@ -109,6 +113,7 @@ export async function transcribeChatVoice(session: ChatSession, audio: Blob | Ar
 export function chatErrorMessage(error: unknown): string {
   const code = error instanceof ChatClientError ? error.code : 'connection_lost';
   return ({ pairing_invalid: 'Code incorrect.', pairing_expired: 'Le code a expiré ou a déjà été utilisé. Demande un nouvel appairage dans Wake.',
+    too_many_connections: 'La passerelle a trop de connexions actives. Nouvelle tentative dans quelques secondes.',
     pairing_rate_limited: 'Trop de tentatives. Demande un nouvel appairage dans Wake.', unauthorized: 'La session a expiré. Reconnexion…',
     local_connection_forbidden: 'La passerelle refuse la connexion automatique depuis ce réseau. Vérifie que le téléphone est sur le Wi-Fi du PC ou sur Tailscale.',
     connection_timeout: 'La passerelle Wake ne répond pas (délai dépassé).', connection_lost: 'Passerelle Wake injoignable.',
