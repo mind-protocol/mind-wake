@@ -128,8 +128,21 @@ export function chatErrorMessage(error: unknown): string {
     invalid_response: 'La passerelle a renvoyé une réponse invalide.', wake_unavailable: 'Wake est momentanément indisponible.',
     transcription_unavailable: 'La transcription locale n’est pas configurée sur ce Wake.', transcription_busy: 'Une transcription est déjà en cours.',
     transcription_failed: 'L’audio est illisible ou dépasse la durée autorisée.', transcription_timeout: 'La transcription a pris trop de temps. Tu peux réessayer.',
-    audio_too_large: 'L’enregistrement doit rester inférieur à 4 Mo.', audio_type_unsupported: 'Ce format audio n’est pas pris en charge.' } as Record<string, string>)[code]
-    ?? 'Connexion interrompue. Les messages enregistrés seront retrouvés à la reconnexion.';
+    audio_too_large: 'L’enregistrement doit rester inférieur à 4 Mo.', audio_type_unsupported: 'Ce format audio n’est pas pris en charge.',
+    // Codes d'appel renvoyés par la passerelle (server/chat-call*.mjs) : auparavant confondus avec une coupure réseau.
+    call_expired: 'Cet appel a expiré.', call_unavailable: 'Les appels ne sont pas disponibles sur ce Wake.',
+    call_session_unknown: 'La passerelle ne connaît plus cet appel (redémarrée ?). Raccroche puis rappelle.',
+    call_session_invalid: 'Identifiant d’appel invalide. Raccroche puis rappelle.', call_session_required: 'Identifiant d’appel manquant. Raccroche puis rappelle.',
+    call_session_forbidden: 'Cet appel appartient à une autre session. Raccroche puis rappelle.',
+    call_revision_conflict: 'Les participants ont changé entre-temps. Réessaie.', call_revision_invalid: 'Les participants ont changé entre-temps. Réessaie.',
+    call_target_unknown: 'Cet agent n’est plus proposé à l’appel.', call_target_invalid: 'Participant invalide.',
+    call_target_unavailable: 'Cet agent ne peut pas recevoir le message pour l’instant.', call_target_not_joined: 'Cet agent ne fait pas partie de l’appel.',
+    call_reply_unknown: 'Cette réponse n’est plus disponible.', nothing_to_speak: 'Rien à lire à voix haute.',
+    audio_empty: 'L’enregistrement est vide.', transcription_cancelled: 'La transcription a été annulée.', transcription_invalid: 'La transcription a échoué.',
+    wake_timeout: 'Wake n’a pas répondu à temps.', send_limit_reached: 'Trop de messages envoyés sur cette session. Reconnecte-toi.',
+    invalid_request: 'La passerelle a refusé la requête (version de l’app ?).' } as Record<string, string>)[code]
+    // Code inconnu : le montrer pour que le signalement reste diagnostiquable.
+    ?? `Connexion interrompue (${code}). Les messages enregistrés seront retrouvés à la reconnexion.`;
 }
 
 /** Markdown léger des transcriptions (bulles du Chat et de l'Appel) (NLR : « le gras en gras et les images en image ») et teinte des bulles par expéditeur. */

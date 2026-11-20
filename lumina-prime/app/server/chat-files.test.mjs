@@ -65,6 +65,20 @@ test('several roots: relative paths tried in order, absolute paths must sit unde
   assert.equal((await read('docs/NOTE.md')).bytes.toString(), '# Note');
 });
 
+test('relative paths written from a room project folder resolve when unique', async t => {
+  const { root } = workspace(t);
+  const project = path.join(root, 'artifacts', 'projets', 'emploi-remote', 'agents', 'se-vendre');
+  mkdirSync(path.join(project, 'pdf'), { recursive: true });
+  writeFileSync(path.join(project, 'pdf', 'CV.pdf'), '%PDF-1.4 cv');
+  writeFileSync(path.join(project, 'token.md'), 'x');
+  assert.equal((await resolveSharedFile(root, 'agents/se-vendre/pdf/CV.pdf')).path.endsWith('CV.pdf'), true);
+  assert.equal(await code(resolveSharedFile(root, 'agents/se-vendre/token.md')), 'file_forbidden');
+  assert.equal(await code(resolveSharedFile(root, 'agents/../../x.md')), 'file_forbidden');
+  const other = path.join(root, 'artifacts', 'projets', 'autre', 'agents', 'se-vendre', 'pdf');
+  mkdirSync(other, { recursive: true }); writeFileSync(path.join(other, 'CV.pdf'), '%PDF-1.4 autre');
+  assert.equal(await code(resolveSharedFile(root, 'agents/se-vendre/pdf/CV.pdf')), 'file_not_found');
+});
+
 test('secret-looking names are refused', () => {
   for (const name of ['.env', '.env.local', 'id.key', 'keys.json', 'telegram-session.json', 'reddit.json', 'colony-auth.json', 'a/secrets/b.md', 'x.session', 'compte.session.md', '.env.production'])
     assert.equal(looksSecret(name), true, name);

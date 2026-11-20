@@ -51,6 +51,22 @@ export async function resolveSharedFile(roots, requested) {
       throw error;
     }
   }
+  // Relatif introuvable : les agents de room écrivent leurs chemins depuis le dossier de leur projet
+  // (artifacts/projets/<projet>/, base des [fichier:] côté Telegram). On n'accepte qu'une correspondance unique.
+  if (!absolute && lastError.code === 'file_not_found') {
+    const found = [];
+    for (const root of list) {
+      let projects = [];
+      try { projects = await fs.readdir(path.join(root, 'artifacts', 'projets'), { withFileTypes: true }); } catch { continue; }
+      for (const entry of projects) {
+        if (!entry.isDirectory()) continue;
+        try { const file = await resolveUnder(root, path.join(root, 'artifacts', 'projets', entry.name, value)); if (!found.some(f => f.path === file.path)) found.push(file); }
+        catch (error) { if (!(error instanceof FileAccessError)) throw error; if (error.code !== 'file_not_found') lastError = error; }
+      }
+    }
+    if (found.length === 1) return found[0];
+    if (found.length > 1) throw new FileAccessError('file_not_found', 404);
+  }
   throw lastError;
 }
 
