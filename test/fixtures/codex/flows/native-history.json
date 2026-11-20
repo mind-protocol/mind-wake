@@ -1,0 +1,1 @@
+{"extends":"success.json","on":{"thread/inject_items":{"result":{}}}}

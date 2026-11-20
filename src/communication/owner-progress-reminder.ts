@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
 import { latestOwnerPublication } from "./owner-messages.js";
+import { workspaceDirFor } from "../daemon/paths.js";
 
 const FILE = "owner-progress-reminder.sqlite";
 export const PROGRESS_REMINDER = "MIND runtime reminder (not a message from your human): your human is potentially following the MIND app and has received no news for at least 60 seconds. Send a brief message through the authorized owner channel: what you are exploring, a finding, or what is taking time. Do not invent progress. Publishing a real message resets this reminder; terminal output and tool activity do not.";
@@ -105,7 +106,9 @@ export function claimProgressReminder(dataDir: string, session: string, claim: s
       // A publication may have arrived since the monitor's last tick.
       if (!row || latestOwnerPublication(dataDir) !== row.publication_at) return null;
       db.prepare("UPDATE reminder SET state='claimed',session=?,claim=? WHERE id=1").run(session, claim);
-      return PROGRESS_REMINDER;
+      return fs.existsSync(path.join(workspaceDirFor(dataDir), "artifacts/principal/_imports.json"))
+        ? "MIND runtime (pas un message humain) : NLR peut suivre le fil affiché depuis artifacts/principal/. Si tu as une réponse ou une avancée utile, écris-la directement dans cette conversation sous ton nom ou utilise un canal de message autorisé disponible. N'invente pas de progrès."
+        : PROGRESS_REMINDER;
     }).immediate();
   } finally { db.close(); }
 }

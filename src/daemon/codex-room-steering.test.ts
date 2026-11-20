@@ -9,6 +9,8 @@ import { roomAgentInjected, roomInjected } from "./room-agents.js";
 import { runClaudeTurn, SecondThreadStore } from "./second-thread.js";
 import { setEngineChoice } from "./agent-engine.js";
 import type { CodexProcess } from "../adapters/codex/launch.js";
+import { createHolderLiveInbox, prepareHolderLiveInbox } from "../communication/holder-live-inbox.js";
+import { enqueueOwnerMessage, takeOwnerMessages } from "../communication/owner-inbox.js";
 
 let dir: string, workspace: string, prompt: string;
 beforeEach(() => {
@@ -72,6 +74,22 @@ function options(agentId?: string) {
     key: "stable-session", allowed: () => true, timeoutMs: 5000,
     roomInbox: { dataDir: dir, forkId: 3, sessionId: "stable-session", floor: 0, ...(agentId ? { agentId } : {}) } };
 }
+
+it.each(["turn-1", "wrong-turn", "rpc-error", "completed-before-ack"])("steers each holder's human inbox with acknowledgement %s", async acknowledgement => {
+  const liveInbox = createHolderLiveInbox(dir, path.join(dir, "alpha"), []);
+  const other = createHolderLiveInbox(dir, path.join(dir, "beta"), []);
+  const fake = fakeServer(() => {
+    enqueueOwnerMessage(dir, { id: "human-live", at: "2026-11-20T10:00:00Z", text: "Correction pendant le passage" });
+  }, acknowledgement);
+  await roles.codexRoleTurn({ dataDir: dir, cwd: workspace, instructions: "Holder editor", message: "Commence",
+    allowed: () => true, timeoutMs: 5000, liveInbox, workspaceWrite: true }, () => fake.child);
+  const steers = fake.requests.filter(request => request.method === "turn/steer");
+  expect(steers).toHaveLength(1);
+  expect(JSON.stringify(steers[0])).toContain("Correction pendant le passage");
+  expect(prepareHolderLiveInbox(liveInbox) === null).toBe(acknowledgement === "turn-1");
+  expect(prepareHolderLiveInbox(other)?.context).toContain("Correction pendant le passage");
+  expect(takeOwnerMessages(dir, "principal").some(message => message.id === "human-live")).toBe(true);
+});
 
 it("steers a human message and targeted call into the active agent exactly once, preserving other recipients", async () => {
   let human = 0, call = 0;

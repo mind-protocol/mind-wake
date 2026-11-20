@@ -75,8 +75,9 @@ const roomAgentTexts = (id: number) => {
 };
 const replying =
   (text: string, seen: string[] = []): typeof CallClaude =>
-  (_claude, _args, prompt) => {
-    seen.push(prompt);
+  (_claude, args, prompt) => {
+    const resume = args.indexOf("--resume");
+    seen.push(prompt + (resume < 0 ? "" : fs.readFileSync(args[resume + 1]!, "utf8")));
     return Promise.resolve({ text });
   };
 const tick = (call: typeof CallClaude) => tickPatternHolders({ dataDir, claude, call, now });
@@ -86,6 +87,7 @@ it("parses cadence and room, treats 0 as disabled and rejects malformed values",
   expect(parseCadence({ everyMinutes: 30 }, undefined)).toEqual({ cadence: { everyWakes: 0, everyMinutes: 30 } });
   expect(parseCadence({ everyWakes: 0, everyMinutes: 0 }, undefined)).toEqual({});
   expect(parseCadence(undefined, undefined)).toEqual({});
+  expect(parseCadence(undefined, 1)).toEqual({ room: 1 });
   expect(parseCadence({ everyWakes: -1 }, undefined)).toHaveProperty("error");
   expect(parseCadence({ every: 5 }, undefined)).toHaveProperty("error");
   expect(parseCadence({ everyWakes: 5 }, 42)).toHaveProperty("error");

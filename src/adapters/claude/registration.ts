@@ -11,7 +11,7 @@ import { observeClaudeTools } from "../../communication/runtime-activity.js";
  * `runtime.hostUnsandboxedAcknowledged` (ADR-006) ; sinon refus du mode autonome.
  */
 
-import { withFilResume } from "../../communication/fil-continuity.js";
+import { withPrincipalReconstruction, principalNativeHistory } from "../../communication/fil-continuity.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
 import os from "node:os";
 import path from "node:path";
@@ -171,9 +171,10 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
         agentPilot: () => readAgentPilot(path.join(context.workspaceDir, "artifacts")),
         promptDir: path.join(dir, "prompts"),
         ownerInboxDir: context.dataDir,
+        publishPrincipalOutput: false,
         ...(context.log === undefined ? {} : { principalOutputLog: context.log }),
         systemPrompt: () =>
-          withFilResume(
+          withPrincipalReconstruction(
             context.dataDir,
             context.workspaceDir,
             withWakePersonality(
@@ -197,8 +198,8 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
           ? {}
           : { debugDir: (fs.mkdirSync(config.debugDir, { recursive: true }), config.debugDir) }),
         workspaceFor: () => context.workspaceDir,
-        conversationKeyFor: (sessionId) =>
-          wakeConversationKey(dir, context.experimentFor(sessionId)),
+        conversationKeyFor: (sessionId) => `principal-reconstructed:${sessionId}`,
+        nativeHistory: request => principalNativeHistory(context.dataDir, context.workspaceDir, request.policy.groups?.identity?.agentId ?? "principal"),
         conversations: new FileConversationStore(path.join(dir, "conversations.json")),
         model: config.model,
       });

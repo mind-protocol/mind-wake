@@ -3,7 +3,9 @@ import { tryProjectLease, activeClaudeProject, uncertainProjectLease } from "./p
 import { RepairAgent } from "./repair-agent.js";
 import { WakeCoach } from "./coach.js";
 import { FastReplyService } from "../communication/fast-reply-server.js";
-import { PatternHolderService } from "../communication/pattern-holders.js";
+import { runPrincipalHolders } from "../communication/principal-holder-loop.js";
+import { createHolderPassTrigger, watchPrincipalActivity, type HolderPassTrigger } from "../communication/holder-pass-trigger.js";
+import { preparePrincipalCorpus } from "../communication/fil-continuity.js";
 import { AutoCallService } from "../communication/auto-call.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { withWakeManager } from "./wake-manager.js";
@@ -283,7 +285,9 @@ export class WakeDaemon implements SessionLauncher {
   #duo: DuoMonitor | null = null;
   #coach: WakeCoach | null = null;
   #fastReply: FastReplyService | null = null;
-  #patternHolders: PatternHolderService | null = null;
+  #holderPasses: HolderPassTrigger | null = null;
+  #stopHolderWatch: (() => void) | null = null;
+  #principalTurn = false;
   #autoCall: AutoCallService | null = null;
   #telegram: TelegramSupervisor | null = null;
   #pontP2P: PontP2PSupervisor | null = null;
@@ -728,13 +732,7 @@ export class WakeDaemon implements SessionLauncher {
           log: message => this.#log(message),
         });
         this.#fastReply.start();
-        // Pattern holders : accords qui se réveillent quand le fil touche leur domaine.
-        this.#patternHolders = new PatternHolderService({
-          dataDir: this.#o.dataDir,
-          allowed: () => !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists(),
-          log: message => this.#log(message),
-        });
-        this.#patternHolders.start();
+        // Holders run after the principal, within the scheduler's in-flight cycle.
         // Appel automatique de NLR (interrupteur de la page Appel, auto-call.json) : pause et Force-off vérifiés à chaque échéance.
         this.#autoCall = new AutoCallService({ dataDir: this.#o.dataDir, log: message => this.#log(message) });
         this.#autoCall.start();
@@ -777,11 +775,14 @@ export class WakeDaemon implements SessionLauncher {
         { log: message => this.#log(message), memory: new MemoryGate({ maxWaitMs: 15 * 60_000 }) });
         this.#backgroundJobs.start();
       }
+      // Any change of the principal's fil, during a turn or between turns, wakes the holders.
+      this.#holderPassTrigger();
       await scheduler.run(this.#abort.signal);
     } finally {
+      this.#stopHolderWatch?.();
+      await this.#holderPasses?.stop();
       await this.#coach?.close();
       await this.#fastReply?.close();
-      await this.#patternHolders?.close();
       this.#autoCall?.close();
       this.#telegram?.close();
       this.#pontP2P?.close();
@@ -792,6 +793,31 @@ export class WakeDaemon implements SessionLauncher {
       this.#close();
     }
     return { runId: this.runId, sessions: [...this.#results], reason: this.#stopReason };
+  }
+
+  /**
+   * Holder passes over the principal's fil (holder-pass-trigger.ts): one trigger and one watcher
+   * for the daemon's life, so NLR's edits between two turns wake the holders without a principal
+   * session. Real mode only.
+   */
+  #holderPassTrigger(): HolderPassTrigger | null {
+    if (this.#real === null) return null;
+    if (this.#holderPasses !== null) return this.#holderPasses;
+    const { uow } = this.#store;
+    const allowed = () => {
+      const profile = uow.profiles.get(this.#o.profileId);
+      return !this.#abort.signal.aborted && !new StopFlag(this.#o.dataDir).exists() &&
+        profile !== null && !profile.emergencyStopLocked &&
+        !["paused", "stopped", "disabled", "blocked"].includes(profile.state);
+    };
+    const log = (message: string) => this.#log(message);
+    const trigger = createHolderPassTrigger(() => runPrincipalHolders({
+      dataDir: this.#o.dataDir, allowed, log,
+      ...(this.#principalTurn ? { midTurn: true } : this.#sessions.size === 0 ? { betweenTurns: true } : {}),
+    }), { log });
+    this.#holderPasses = trigger;
+    this.#stopHolderWatch = watchPrincipalActivity(this.#o.dataDir, trigger, 5_000, log);
+    return trigger;
   }
 
   #close(): void {
@@ -986,6 +1012,8 @@ export class WakeDaemon implements SessionLauncher {
         }
       }
       this.#coach?.review(ticket.sessionId);
+      if (this.#real !== null) preparePrincipalCorpus(this.#o.dataDir, workspaceDirFor(this.#o.dataDir),
+        uow.policies.getRevision(ticket.policyRevisionId)?.groups.identity.agentId ?? "principal");
       const running = await this.#runner.launch({
         profileId: ticket.profileId,
         sessionId: ticket.sessionId,
@@ -1004,7 +1032,17 @@ export class WakeDaemon implements SessionLauncher {
         onSubscription: billing.kind === "subscription_quota",
         ...(humanRequested ? { humanRequested: true } : {}),
       });
-      result = await running.done;
+      // Holders pass as soon as the fil changes (45 s grouping window, one pass at a time; the
+      // watcher runs for the daemon's whole life), then once more at the end of this turn.
+      const holderPasses = this.#holderPassTrigger();
+      this.#principalTurn = true;
+      try {
+        result = await running.done;
+      } finally {
+        this.#principalTurn = false;
+      }
+      sharedInbox?.stop();
+      if (holderPasses !== null && result.outcome === "completed") await holderPasses.flush();
       if(reservedProject && result.outcome==="orphaned")uncertainProjectLease(this.#o.dataDir,reservedProject,"Terminaison de la session principale non confirmée");
     } catch (error) {
       // Lancement impossible (arrêt survenu entre-temps…) : la session préparée devient

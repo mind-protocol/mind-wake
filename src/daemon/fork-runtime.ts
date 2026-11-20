@@ -1,4 +1,5 @@
 import {callMcpConfig,roomCallIdentity} from '../communication/human-call-capability.js';
+import { codexHistoryItems, type NativeHistoryMessage } from "../communication/native-history.js";
 import fs from "node:fs";
 import {launchAgentSession, providerFailure} from "./agent-engine.js";
 import {claudeSessionUuid, promptDigest, writePromptFile} from "../adapters/claude/conversation.js";
@@ -31,6 +32,9 @@ export interface ForkTurnInput {
   threadId: string | null;
   instructions: string;
   message: string;
+  nativeHistory?: readonly NativeHistoryMessage[];
+  sandbox?: "read-only" | "workspace-write" | "danger-full-access";
+  ephemeral?: boolean;
   screen?: readonly string[];
   model?: string;
   control: () => SecondThreadControl;
@@ -40,6 +44,7 @@ export interface ForkTurnInput {
   interfilAllowed?: (to: number) => boolean;
   flushInbox?: (steer: (text: string, screen?: readonly string[]) => Promise<boolean>) => Promise<boolean>;
   onStatus?: (text: string) => void;
+  onCompletedItem?: (item: Record<string, unknown> | null) => void;
   /** Coaching reads public messages from the last completed principal turn. */
   sourceThreadId?: string;
   onSourceTurn?: (turnId: string) => boolean;
@@ -206,6 +211,7 @@ export async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProces
       interfil?.event(method, params);
       if (method === "item/completed") {
         const item = asRecord(params["item"]);
+        input.onCompletedItem?.(item);
         const status = params["threadId"] === threadId && input.onStatus ? clusterStatus(item) : undefined;
         if (status && input.control() === "run") input.onStatus?.(status);
         if (item?.["type"] === "agentMessage" && typeof item["text"] === "string")
@@ -265,7 +271,7 @@ export async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProces
     const common = {
       cwd: input.workspace,
       approvalPolicy: "never",
-      sandbox: "danger-full-access",
+      sandbox: input.sandbox ?? "danger-full-access",
       developerInstructions: input.instructions,
       ...(input.model === undefined ? {} : { model: input.model }),
     };
@@ -319,12 +325,13 @@ export async function nativeForkTurn(input:ForkTurnInput,launch?:()=>CodexProces
           ? { threadId, excludeTurns: true }
           : parent
             ? { threadId: parent.threadId }
-            : {}),
+            : { ephemeral: input.ephemeral === true }),
       },
     );
     const id = asRecord(opened["thread"])?.["id"];
     if (typeof id !== "string") throw Error("Codex n'a pas retourné l'identifiant du fork.");
     threadId = id;
+    if (input.nativeHistory?.length) await rpc.request("thread/inject_items", { threadId: id, items: codexHistoryItems(input.nativeHistory) });
     input.onThread(id);
     if (draft) live = replyDraft(id, draft.update);
     if (interfilDraft && input.interfilAllowed)

@@ -6,7 +6,23 @@ try {
   const dataDir =
     process.env["MIND_WAKE_DATA_DIR"] ?? path.join(process.env["LOCALAPPDATA"] ?? "", "mind-wake");
   const request = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  if (request.action === "agentEngine") {
+  if (["principalRead", "principalSave", "principalDeleted", "principalDismiss"].includes(request.action)) {
+    const { editPrincipalFile } = await import("../../src/communication/principal-file-editor.js");
+    const { workspaceDirFor } = await import("../../src/daemon/paths.js");
+    console.log(JSON.stringify(editPrincipalFile(workspaceDirFor(dataDir), request)));
+  } else if (request.action === "principalMessageSave") {
+    const { editPrincipalMessage } = await import("../../src/communication/principal-file-editor.js");
+    const { workspaceDirFor } = await import("../../src/daemon/paths.js");
+    console.log(JSON.stringify(editPrincipalMessage(workspaceDirFor(dataDir), request)));
+  } else if (request.action === "principalMessageDelete") {
+    const { deletePrincipalMessage } = await import("../../src/communication/principal-file-editor.js");
+    const { workspaceDirFor } = await import("../../src/daemon/paths.js");
+    console.log(JSON.stringify(deletePrincipalMessage(workspaceDirFor(dataDir), request)));
+  } else if (request.action === "principalMessageAppend") {
+    const { appendToPrincipalElement } = await import("../../src/communication/principal-file-editor.js");
+    const { workspaceDirFor } = await import("../../src/daemon/paths.js");
+    console.log(JSON.stringify(appendToPrincipalElement(workspaceDirFor(dataDir), request)));
+  } else if (request.action === "agentEngine") {
     const choice = request.preferred === undefined ? engineChoice(dataDir) : setEngineChoice(dataDir, request.preferred);
     console.log(JSON.stringify({preferred: choice?.preferred ?? null}));
   } else if (request.action === "callVision") {

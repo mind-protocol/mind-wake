@@ -6,7 +6,8 @@
   "wakeOnPrincipalOutput": true,
   "emoji": "🎛️",
   "quietMinutes": 0,
-  "wakeHint": "Salle 1 : connaître les outils, ressources et processus autonomes aux trois échelles (appel d'outil, entre les wakes, processus de fond) et les voisins à solliciter ; renvoyer vers Mindset pour les qualités et leur traduction en pratiques."
+  "wakeHint": "Salle 1 : connaître les outils, ressources et processus autonomes aux trois échelles (appel d'outil, entre les wakes, processus de fond) et les voisins à solliciter ; renvoyer vers Mindset pour les qualités et leur traduction en pratiques.",
+  "room": 1
 }
 ```
 

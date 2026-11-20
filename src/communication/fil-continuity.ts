@@ -1,4 +1,12 @@
 import { workspaceDirFor } from "../daemon/paths.js";
+import { workspaceCommonPatterns } from "../daemon/common-patterns.js";
+import { NATIVE_HISTORY_NOTICE, type NativeHistoryMessage } from "./native-history.js";
+import { principalSeedHistory, principalSpeakerNames, PRINCIPAL_CONVERSATIONS_DIR } from "./markdown-conversation.js";
+import { readPrincipalOutputs } from "./principal-outputs.js";
+import { sourceMarker } from "./principal-thread-view.js";
+import { PRINCIPAL_FILE_WORK } from "./file-work-prompt.js";
+import { deletedPrincipalMessages } from "./principal-file-editor.js";
+import { wakeGaugeLine } from "./wake-gauges.js";
 /** Rebuildable continuity of submitted owner-channel text; no provider/auth capture. */
 import fs from "node:fs";
 import path from "node:path";
@@ -9,6 +17,11 @@ import { redactString } from "../journal/redact.js";
 export const FIL_ARCHIVE = "fil-continuity.sqlite";
 export const FIL_DOCUMENT = "artifacts/conversation/continuity.json";
 const RECENT_CHARS = 16_000;
+export const PRINCIPAL_HISTORY_WINDOW = { maxMessages: 200, maxChars: 120_000 } as const;
+export interface FilWindow {
+  readonly maxMessages: number;
+  readonly maxChars: number;
+}
 interface Event {
   key: string;
   source: string;
@@ -19,6 +32,7 @@ interface Event {
   version: number;
   deleted: boolean;
   text: string;
+  requestKey?: string;
   origin?: {
     kind: string;
     channel: string;
@@ -80,6 +94,10 @@ function compareDates(a: string, b: string): number {
 }
 function sources(dataDir: string): Event[] {
   const events: Event[] = [];
+  for (const output of readPrincipalOutputs(dataDir, Number.MAX_SAFE_INTEGER)) events.push({
+    key: `principal-output:${output.id}`, source: "principal-outputs", sourceId: `principal-output:${output.id}`,
+    author: "agent:principal", at: output.at, version: 1, deleted: false, text: redactString(output.text),
+  });
   const inbox = readDb<{ id: string; at: string; text: string; origin_json: string | null }>(
     path.join(dataDir, "owner-inbox.sqlite"),
     "SELECT id,at,text,origin_json FROM inbox ORDER BY rowid",
@@ -170,9 +188,10 @@ function sources(dataDir: string): Event[] {
     deleted: number;
     agent_id: string;
     created_at: string;
+    request_key: string;
   }>(
     path.join(dataDir, "owner-messages.sqlite"),
-    "SELECT e.*,m.agent_id,m.created_at FROM edits e JOIN messages m ON m.id=e.message_id ORDER BY e.at,e.message_id,e.version",
+    "SELECT e.*,m.agent_id,m.created_at,m.request_key FROM edits e JOIN messages m ON m.id=e.message_id ORDER BY e.at,e.message_id,e.version",
   );
   for (const r of edits)
     events.push({
@@ -180,6 +199,7 @@ function sources(dataDir: string): Event[] {
       source: "owner-messages/edits",
       sourceId: r.message_id,
       author: `agent:${r.agent_id}`,
+      requestKey: r.request_key,
       at: r.at,
       submittedAt: r.created_at,
       version: r.version,
@@ -237,7 +257,10 @@ function checkpointPaths(workspace: string): string[] {
 export function reconcileFil(
   dataDir: string,
   workspace = workspaceDirFor(dataDir),
+  window: FilWindow = { maxMessages: Number.MAX_SAFE_INTEGER, maxChars: RECENT_CHARS },
 ): FilDocument {
+  if (!Number.isSafeInteger(window.maxMessages) || window.maxMessages < 1 ||
+      !Number.isSafeInteger(window.maxChars) || window.maxChars < 1) throw Error("Invalid conversation window");
   const dir = outputDir(workspace);
   const file = path.join(dataDir, FIL_ARCHIVE);
   ordinary(file);
@@ -271,7 +294,8 @@ export function reconcileFil(
               throw new Error("Conflicting archived message identity");
             if (
               (prior.source === "human-messages.jsonl" && event.source === "owner-inbox") ||
-              (prior.submittedAt === undefined && event.submittedAt !== undefined)
+              (prior.submittedAt === undefined && event.submittedAt !== undefined) ||
+              (prior.requestKey === undefined && event.requestKey !== undefined)
             )
               db.prepare("UPDATE events SET payload=? WHERE event_key=?").run(
                 JSON.stringify(event),
@@ -297,9 +321,9 @@ export function reconcileFil(
               compareDates(a.submittedAt ?? a.at, b.submittedAt ?? b.at) || a.sequence - b.sequence,
           );
         const recent: Archived[] = [];
-        let remaining = RECENT_CHARS;
+        let remaining = window.maxChars;
         for (const e of visible.slice().reverse()) {
-          if (remaining <= 0) break;
+          if (remaining <= 0 || recent.length >= window.maxMessages) break;
           const text = e.text.slice(-remaining);
           recent.unshift({ ...e, text });
           remaining -= text.length + 200;
@@ -337,6 +361,87 @@ export function saveFilAfterSubmit(dataDir: string): void {
 /** Loaded automatically by both runtime registrations, including a brand new thread. */
 export function withFilResume(dataDir: string, workspace: string, base: string): string {
   return appendFilDocument(base, reconcileFil(dataDir, workspace));
+}
+
+/** The principal starts afresh at each wake; its recorded conversation supplies continuity. */
+export function withPrincipalReconstruction(dataDir: string, workspace: string, base: string): string {
+  return [
+    wakeGaugeLine(dataDir, workspace),
+    base,
+    "Session principale reconstituée : tu repars d'une session neuve à chaque réveil. Ton rôle et ta personnalité sont relus depuis leurs fichiers. Le fil est fourni directement comme tours natifs user/assistant depuis le corpus Markdown éditable. L'import des nouveaux apports est borné à 200 messages et 120 000 caractères ; le corpus complet à 240 000 caractères. Les événements nouveaux figurent dans le déclencheur de réveil et dans ta boîte. Conserve les résultats du travail dans les fichiers du projet : les sorties d'outils non sauvegardées ne sont pas reprises automatiquement.",
+    workspaceCommonPatterns(workspace),
+    NATIVE_HISTORY_NOTICE,
+    `Tes conversations Markdown sont relues à chaque réveil dans ${PRINCIPAL_CONVERSATIONS_DIR}, puis injectées en tours natifs. Les passages sans locuteur sont du contexte éditorial.`,
+    PRINCIPAL_FILE_WORK,
+    `Archive consultable si nécessaire : ${path.join(workspace, FIL_DOCUMENT)}.`,
+    `Fichiers de reprise existants : ${JSON.stringify(checkpointPaths(workspace))}.`,
+  ].join("\n\n");
+}
+
+export function principalNativeHistory(dataDir: string, workspace: string, agentId: string): NativeHistoryMessage[] {
+  if (fs.existsSync(path.join(workspace, PRINCIPAL_CONVERSATIONS_DIR, "_imports.json"))) {
+    preparePrincipalCorpus(dataDir, workspace, agentId);
+    return principalSeedHistory(workspace, "partial");
+  }
+  return [...principalSeedHistory(workspace, "partial"), ...recentPrincipalHistory(dataDir, workspace, agentId)];
+}
+
+/**
+ * Not part of the conversation file: the principal's end-of-turn output (it writes itself in the
+ * fil what deserves to stay; its published messages remain) and the call-ring notices.
+ */
+function outsideFil(e: Archived): boolean {
+  return e.source === "principal-outputs" || e.sourceId.startsWith("principal-output:") ||
+    (e.sourceId.startsWith("fast-reply-fyi:") && e.sourceId.includes("call-ring")) ||
+    /^\s*\[Appel\] 📞/u.test(e.text);
+}
+/** The voice-call instructions stay in the live injection; the fil keeps only what NLR said. */
+export function filText(text: string): string {
+  if (!/^\s*\[Appel vocal en cours\]/.test(text)) return text;
+  const blank = /\r?\n[ \t]*\r?\n/.exec(text);
+  const rest = blank ? text.slice(blank.index + blank[0].length).trim() : "";
+  return rest || text;
+}
+
+function recentPrincipalHistory(dataDir: string, workspace: string, agentId: string, doc = reconcileFil(dataDir, workspace, PRINCIPAL_HISTORY_WINDOW)): NativeHistoryMessage[] {
+  const published = new Set(doc.recent.filter(e => e.source.startsWith("owner-messages")).map(e => e.sourceId));
+  const recent: NativeHistoryMessage[] = doc.recent
+    .filter(e => !(e.origin?.channel === "pattern-holder" && published.has(e.origin.messageId)) && !outsideFil(e)).map(e => {
+    const holder = e.requestKey?.startsWith("pattern-holder:") ? e.requestKey.split(":")[1] : undefined;
+    const own = !holder && [agentId, "claude-wake", "principal", "marco"].some(id => e.author === `agent:${id}`);
+    return { id: e.sourceId, at: e.submittedAt ?? e.at, text: filText(e.text),
+      role: own ? "assistant" : "user",
+      author: holder ? `Agent tiers @${holder}` : own ? "Principal (toi)" : e.author === "human" ? "Humain" : `Tiers : ${e.origin?.author ?? e.author}` };
+  });
+  return recent;
+}
+
+/** Import new source turns once. Curated/deleted passages are never restored by a wake. */
+export function preparePrincipalCorpus(dataDir: string, workspace: string, agentId: string): string[] {
+  const directory = path.join(workspace, PRINCIPAL_CONVERSATIONS_DIR);
+  fs.mkdirSync(directory, { recursive: true });
+  if (fs.lstatSync(directory).isSymbolicLink()) throw Error("Invalid principal conversation directory");
+  const stateFile = path.join(directory, "_imports.json");
+  const initialized = fs.existsSync(stateFile);
+  const imported = new Set<string>(initialized ? JSON.parse(fs.readFileSync(stateFile, "utf8")) as string[] : []);
+  const snapshot = reconcileFil(dataDir, workspace, PRINCIPAL_HISTORY_WINDOW);
+  const deleted = new Set(deletedPrincipalMessages(workspace));
+  const fresh = recentPrincipalHistory(dataDir, workspace, agentId, snapshot)
+    .filter(turn => !deleted.has(turn.id) && !imported.has(turn.id) && (!initialized || turn.author === "Humain"));
+  if (fresh.length) {
+    const file = path.join(directory, "90-fil.md");
+    const turns = fresh.map(turn => {
+      imported.add(turn.id);
+      const speaker = (turn.role === "assistant" ? principalSpeakerNames(workspace)[0] ?? "Principal" : turn.author).replace(/[\r\n*]/g, " ").slice(0, 75);
+      // Interior Markdown must not forge a new speaker or terminate this source turn.
+      const [first, ...rest] = turn.text.split(/\r?\n/);
+      const body = [first ?? "", ...rest.map(line => `> ${line}`)].join("\n");
+      return `\n\n---\n\n${sourceMarker(turn.at, turn.id)}\n\n**${speaker} —** ${body}\n`;
+    });
+    fs.appendFileSync(file, turns.join(""));
+  }
+  fs.writeFileSync(stateFile, JSON.stringify([...imported]) + "\n");
+  return snapshot.archive.map(event => event.sourceId);
 }
 
 export function appendFilDocument(base:string, doc:FilDocument):string {

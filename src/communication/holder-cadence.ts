@@ -47,8 +47,8 @@ export function parseCadence(
 ): { cadence?: HolderCadence; room?: number } | { error: string } {
   let parsedRoom: number | undefined;
   if (room !== undefined && room !== null) {
-    if (typeof room !== "number" || !FORK_IDS.includes(room as (typeof FORK_IDS)[number]))
-      return { error: `\`room\` invalide : ${JSON.stringify(room)} (salle ${FORK_IDS.join(", ")})` };
+    if (typeof room !== "number" || (room !== 1 && !FORK_IDS.includes(room as (typeof FORK_IDS)[number])))
+      return { error: `\`room\` invalide : ${JSON.stringify(room)} (salle 1, ${FORK_IDS.join(", ")})` };
     parsedRoom = room;
   }
   if (cadence === undefined || cadence === null) return parsedRoom === undefined ? {} : { room: parsedRoom };
@@ -77,12 +77,12 @@ export function parseCadence(
 
 /** Fil d'un holder cadencé : sa salle, ou le principal. */
 export function cadenceThread(room: number | undefined): "principal" | `fork:${number}` {
-  return room === undefined ? "principal" : (`fork:${String(room)}` as `fork:${number}`);
+  return room === undefined || room === 1 ? "principal" : (`fork:${String(room)}` as `fork:${number}`);
 }
 
 /** La salle est-elle active ? (Sans salle : toujours.) */
 export function cadenceRoomActive(dataDir: string, room: number | undefined): boolean {
-  return room === undefined || forkEnabled(dataDir, room);
+  return room === undefined || room === 1 || forkEnabled(dataDir, room);
 }
 
 /**
@@ -91,7 +91,7 @@ export function cadenceRoomActive(dataDir: string, room: number | undefined): bo
  */
 export function wakeCounter(dataDir: string, room: number | undefined): number | null {
   try {
-    if (room !== undefined) {
+    if (room !== undefined && room !== 1) {
       const dir = forkDir(dataDir, room);
       if (!fs.existsSync(path.join(dir, SECOND_THREAD_DB))) return 0;
       const store = new SecondThreadStore(dir, { readOnly: true });

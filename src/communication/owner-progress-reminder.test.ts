@@ -29,6 +29,16 @@ afterEach(() => {
 });
 const claim = (id = "claim") => claimProgressReminder(dir, "session", id, now);
 
+it("directs a file-loop reminder to the visible corpus without a separate publication", () => {
+  const corpus = path.join(dir, "workspace", "artifacts", "principal");
+  fs.mkdirSync(corpus, { recursive: true });
+  fs.writeFileSync(path.join(corpus, "_imports.json"), "[]");
+  now += 60_000; monitor.tick();
+  expect(claim()).toContain("écris-la directement dans cette conversation");
+  expect(messages.list()).toHaveLength(1);
+  expect(readOwnerInboxHistory(dir)).toEqual([]);
+});
+
 it("waits 60 seconds, sends once and rearms only after a real publication", () => {
   now += 59_999; monitor.tick(); expect(claim()).toBeNull();
   now++; monitor.tick();

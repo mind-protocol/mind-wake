@@ -8,7 +8,7 @@ import { readAgentRole } from "../agent-role.js";
  * accordé qu'avec `runtime.hostUnsandboxedAcknowledged` (ADR-006), constaté par le runner.
  */
 
-import { withFilResume } from "../../communication/fil-continuity.js";
+import { withPrincipalReconstruction, principalNativeHistory } from "../../communication/fil-continuity.js";
 import { CLUSTER_STATUS_PROMPT } from "../../communication/cluster-status.js";
 import { clusterStatusPublisher } from "../../daemon/forks.js";
 import { WAKE_HOME_SYSTEM_PROMPT, withWakePersonality } from "../wake-system-prompt.js";
@@ -87,6 +87,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,
         ownerInboxDir: context.dataDir,
+        publishPrincipalOutput: false,
         ...(context.log === undefined ? {} : { principalOutputLog: context.log }),
         ...(context.nativeCapabilities === true
           ? { onClusterStatus: clusterStatusPublisher(context.dataDir, 1, "Fil principal") }
@@ -103,10 +104,12 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         threads: new FileThreadStore(
           config.threadsDir ?? path.join(context.dataDir, "codex-threads"),
         ),
+        continuityKey: (request) => `principal-reconstructed:${request.sessionId}`,
+        nativeHistory: request => principalNativeHistory(context.dataDir, context.workspaceDir, request.policy.groups?.identity?.agentId ?? "principal"),
         model: config.model,
         ...(config.effort === undefined ? {} : { effort: config.effort }),
         systemPrompt: (request) =>
-          withFilResume(
+          withPrincipalReconstruction(
             context.dataDir,
             context.workspaceDir,
             withWakePersonality(

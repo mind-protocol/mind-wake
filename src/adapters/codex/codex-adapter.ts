@@ -1,4 +1,5 @@
 import { recordPrincipalOutput } from "../../communication/principal-outputs.js";
+import { MAIN_EDITOR, recordCodexPrincipalEdit } from "../../communication/principal-file-editor.js";
 import path from "node:path";
 import { DELEGATION_REMINDER, DelegationEvidence } from "../../daemon/delegation-reminder.js";
 import { checkCodexCompatibility, type CodexCompatibility } from "./compatibility.js";
@@ -59,6 +60,7 @@ import {
   type ThreadPermissions,
 } from "./command.js";
 import { promptFingerprint, type ThreadStore } from "./continuity.js";
+import { codexHistoryItems, type NativeHistoryMessage } from "../../communication/native-history.js";
 import type {
   CodexLauncher,
   CodexProcess,
@@ -99,6 +101,7 @@ export interface CodexAdapterOptions {
   readonly ownerInboxDir?: string;
   /** Journal du daemon : fins de tour non relayées (`principal-output-filter.ts`). */
   readonly principalOutputLog?: (line: string) => void;
+  readonly publishPrincipalOutput?: boolean;
   readonly onClusterStatus?: (text: string) => void;
   readonly executable: CodexExecutable;
   /** Dossier Codex propre à Wake (configuration, connexion officielle). */
@@ -116,6 +119,7 @@ export interface CodexAdapterOptions {
   readonly systemPrompt?: string | ((request: StartRequest) => string);
   /** Clé de continuité du fil ; par défaut le profil de la policy. */
   readonly continuityKey?: (request: StartRequest) => string;
+  readonly nativeHistory?: (request: StartRequest) => readonly NativeHistoryMessage[];
   readonly model?: string;
   /** Effort de raisonnement (`turn/start.effort`), valeur annoncée par le modèle. */
   readonly effort?: string;
@@ -931,6 +935,8 @@ export class CodexAdapter implements RuntimeAdapter {
       return;
     }
     session.threadId = id;
+    const history = this.#options.nativeHistory?.(request);
+    if (history?.length) await rpc.request("thread/inject_items", { threadId: id, items: codexHistoryItems(history) });
     this.#options.threads.save(key, {
       threadId: id,
       promptFingerprint: fingerprint,
@@ -1050,7 +1056,7 @@ export class CodexAdapter implements RuntimeAdapter {
         if (typeof item["text"] === "string") {
           session.stepsResult = item["text"].slice(0, 65_537);
           if (session.planning || isStepsDecision(item["text"])) break;
-          if (this.#options.ownerInboxDir && ["final", "final_answer"].includes(String(item["phase"]))) {
+          if (this.#options.ownerInboxDir && this.#options.publishPrincipalOutput !== false && ["final", "final_answer"].includes(String(item["phase"]))) {
             recordPrincipalOutput(this.#options.ownerInboxDir, {
               id: `codex:${session.threadId ?? sessionId}:${String(turnId)}:${String(item["id"])}`,
               at, text: item["text"],
@@ -1065,6 +1071,7 @@ export class CodexAdapter implements RuntimeAdapter {
         }
         break;
       case "fileChange": {
+        recordCodexPrincipalEdit(this.#options.workspaceDir, item, MAIN_EDITOR);
         const changes = Array.isArray(item["changes"]) ? item["changes"].length : 0;
         this.#emit(session, {
           type: "activity",

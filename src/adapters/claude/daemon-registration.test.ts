@@ -9,7 +9,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as holderLoop from "../../communication/principal-holder-loop.js";
 import {
   PROFILE,
   demoDir,
@@ -92,6 +93,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     dir.remove();
     fs.rmSync(state, { recursive: true, force: true });
   });
@@ -182,7 +184,26 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
         path.join(personalDir, "PERSONALITY.md"),
         "My evolving voice: warm, playful and candid.",
       );
-      const summary = await daemon.run();
+      let releaseHolders!: () => void;
+      let holdersStarted!: () => void;
+      const started = new Promise<void>(resolve => { holdersStarted = resolve; });
+      const gate = new Promise<void>(resolve => { releaseHolders = resolve; });
+      const pass = vi.spyOn(holderLoop, "runPrincipalHolders").mockImplementation(async options => {
+        const control = openStoreReadOnly(controlDbPath(dir.path));
+        try { expect(control.uow.journal.list(PROFILE).some(event => event.type === "session_ended")).toBe(true); }
+        finally { control.close(); }
+        expect(options.allowed()).toBe(true);
+        holdersStarted();
+        await gate;
+      });
+      let cycleFinished = false;
+      const running = daemon.run().then(summary => { cycleFinished = true; return summary; });
+      await started;
+      expect(cycleFinished).toBe(false);
+      releaseHolders();
+      const summary = await running;
+      expect(pass).toHaveBeenCalledTimes(1);
+      expect(fs.existsSync(path.join(dir.path, "principal-outputs.sqlite"))).toBe(false);
       expect(summary.sessions).toHaveLength(1);
       expect(summary.sessions[0]).toMatchObject({
         outcome: "completed",
@@ -207,20 +228,21 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
       expect(hookSettings.hooks.SessionStart).toBeDefined();
       const promptIndex = sessions[0]!.argv.indexOf("--append-system-prompt-file");
       const runtimePrompt = fs.readFileSync(sessions[0]!.argv[promptIndex + 1]!, "utf8");
-      expect(runtimePrompt).toContain("You are an agent of MIND.");
+      expect(runtimePrompt).toContain("You are a MIND agent.");
       expect(runtimePrompt).toContain("When you receive an actual new human message");
       expect(runtimePrompt).toContain("before starting long execution or delegation");
       expect(runtimePrompt).toContain("terminal output is not publication in the Wake conversation");
       expect(runtimePrompt).toContain(
-        "Stay actively engaged throughout the time and compute allocated to this wake.",
+        "Choose a worthwhile direction and keep going",
       );
       expect(runtimePrompt).toContain("Wake environment — runtime configuration");
       expect(runtimePrompt).toContain("Your space:");
       expect(runtimePrompt).toContain("NOT ISOLATED");
       expect(runtimePrompt).toContain("A human theme is optional");
       expect(runtimePrompt).toContain("My evolving voice: warm, playful and candid.");
+      expect(runtimePrompt).toContain("session neuve à chaque réveil");
       expect(runtimePrompt).toContain("artifacts/questions-for-human.md");
-      expect(runtimePrompt).toContain("old self-imposed rules");
+      expect(runtimePrompt).toContain("Ne rejoue pas les anciennes demandes");
       expect(sessions[0]?.argv).toContain("--session-id");
 
       const store = openStoreReadOnly(controlDbPath(dir.path));
@@ -240,6 +262,7 @@ describe.runIf(WINDOWS)("enregistrement Claude : daemon en mode réel, faux CLI"
       }
       const conversations = path.join(dir.path, "runtimes", "claude", "conversations.json");
       expect(fs.existsSync(conversations)).toBe(true);
+      expect(fs.readFileSync(conversations, "utf8")).toContain("principal-reconstructed:");
     },
     TIMEOUT,
   );

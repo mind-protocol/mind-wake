@@ -6,7 +6,8 @@
   "wakeOnPrincipalOutput": true,
   "emoji": "🌱",
   "quietMinutes": 0,
-  "wakeHint": "Salle 1 : traduire curiosité, exigence, validation extérieure, initiative et persévérance en pratiques observables dans un tour et entre les wakes ; renvoyer vers Cockpit pour les outils, ressources et processus autonomes."
+  "wakeHint": "Salle 1 : traduire curiosité, exigence, validation extérieure, initiative et persévérance en pratiques observables dans un tour et entre les wakes ; renvoyer vers Cockpit pour les outils, ressources et processus autonomes.",
+  "room": 1
 }
 ```
 

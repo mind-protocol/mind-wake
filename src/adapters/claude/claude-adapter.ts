@@ -1,4 +1,5 @@
 import { recordPrincipalOutput } from "../../communication/principal-outputs.js";
+import { claudeHistoryArgs, writeClaudeHistory, type NativeHistoryMessage } from "../../communication/native-history.js";
 /**
  * Adapter Claude Code (ADR-005) : `claude -p` en `stream-json`, conforme à `RuntimeAdapter`.
  *
@@ -144,6 +145,7 @@ export interface ClaudeAdapterOptions {
   readonly workspaceFor: (sessionId: SessionId) => string;
   /** Clé de conversation reprise d'un réveil à l'autre ; défaut : la session Wake. */
   readonly conversationKeyFor?: (sessionId: SessionId) => string;
+  readonly nativeHistory?: (request: StartRequest) => readonly NativeHistoryMessage[];
   readonly conversations?: ClaudeConversationStore;
   /** Alias ou nom complet ; défaut `opus`. */
   readonly model?: string;
@@ -157,6 +159,7 @@ export interface ClaudeAdapterOptions {
   readonly ownerInboxDir?: string;
   /** Journal du daemon : fins de tour non relayées (`principal-output-filter.ts`). */
   readonly principalOutputLog?: (line: string) => void;
+  readonly publishPrincipalOutput?: boolean;
   readonly maxTurns?: number;
   /**
    * Auto-compaction : si le réveil précédent de la conversation a dépassé ce nombre de
@@ -502,7 +505,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
     const digest = promptDigest(prompt);
     const promptFile = writePromptFile(o.promptDir, prompt, digest);
     const claudeSessionId = claudeSessionUuid(key, record.generation);
-    const args = claudeRunArgs({
+    let args = claudeRunArgs({
       model: o.model ?? DEFAULT_CLAUDE_MODEL,
       systemPromptFile: promptFile,
       systemPromptMode: o.systemPromptMode ?? "replace",
@@ -520,6 +523,11 @@ export class ClaudeAdapter implements RuntimeAdapter {
       session: { mode: record.started ? "resume" : "new", id: claudeSessionId },
       ...(o.maxTurns === undefined ? {} : { maxTurns: o.maxTurns }),
     });
+
+    if (!record.started && o.nativeHistory) {
+      const history = o.nativeHistory(request);
+      if (history.length) args = claudeHistoryArgs(args, writeClaudeHistory(o.promptDir, history, o.workspaceFor(sessionId)));
+    }
 
     // Auto-compaction : une conversation trop lourde est compactée dans un processus à part,
     // avant le réveil (avec `--strict-mcp-config`, que le mode capacités natives retire).
@@ -931,7 +939,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
           const previousTotals = session.result?.tokens;
           const isStepsResult = session.stepsStopSent && !session.stepsStopComplete;
           if (isStepsResult) session.stepsStopComplete = true;
-          if (!isStepsResult && !item.isError && this.#options.ownerInboxDir) {
+          if (!isStepsResult && !item.isError && this.#options.ownerInboxDir && this.#options.publishPrincipalOutput !== false) {
             const frame = JSON.parse(line) as { result?: unknown; uuid?: string };
             if (typeof frame.result === "string" && !isStepsDecision(frame.result)) {
               recordPrincipalOutput(this.#options.ownerInboxDir, {

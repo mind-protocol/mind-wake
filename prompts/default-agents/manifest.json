@@ -384,7 +384,7 @@
       "file": "artifacts/pattern-holders/pattern-holder/_holder.md",
       "origin": "workspace/artifacts/pattern-holders/pattern-holder/_holder.md",
       "target": "artifacts/pattern-holders/pattern-holder/_holder.md",
-      "sha256": "2b39ade8bf90dcb93fda27af962db81ba601fc0247d0b9f6db719b09ea1e0994"
+      "sha256": "e5c237b20510a94337d6be6ea1565399b26baec866e5f879b5cb13f7652de2ec"
     },
     {
       "file": "artifacts/pattern-holders/pattern-holder/_objectifs.md",
@@ -526,15 +526,15 @@
     },
     {
       "file": "artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
-      "origin": "workspace/artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
+      "origin": "repository update: NLR 2026-11-20 principal-holder loop",
       "target": "artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
-      "sha256": "09408cd4c3426c8fde8aa06aa94db2353e92caeb2bedab5b1be9dcb9712cd9e2"
+      "sha256": "8506bc857d3b4ab44e4e1d50a3e0147216b476ffc040f9e34877c8112eb3b143"
     },
     {
       "file": "artifacts/pattern-holders/critique/_holder.md",
       "origin": "workspace/artifacts/pattern-holders/critique/_holder.md",
       "target": "artifacts/pattern-holders/critique/_holder.md",
-      "sha256": "ea27dec4ef8ecae37a0c6ccd4355e55874255f5f9766feb23121fbb754593d56"
+      "sha256": "382c943a9e55705a7d0c1b22983ea20d24a0375c9d4c62a31bb66c8d8327113d"
     },
     {
       "file": "artifacts/pattern-holders/critique/ambition-et-incertitude.md",
@@ -696,7 +696,7 @@
       "file": "artifacts/pattern-holders/mindset/_holder.md",
       "origin": "workspace/artifacts/pattern-holders/mindset/_holder.md",
       "target": "artifacts/pattern-holders/mindset/_holder.md",
-      "sha256": "0ec7eabc04d66215dfe2d918d01b4782e309cc27a9ceca147e83319660540486"
+      "sha256": "ed513b1994281c23397effb4c0f16fbde3fba7f75394ee7dbe06b547fc52bf3c"
     },
     {
       "file": "artifacts/pattern-holders/mindset/ambition-et-ferveur.md",
@@ -732,7 +732,7 @@
       "file": "artifacts/pattern-holders/cockpit/_holder.md",
       "origin": "workspace/artifacts/pattern-holders/cockpit/_holder.md",
       "target": "artifacts/pattern-holders/cockpit/_holder.md",
-      "sha256": "42e86c6130e3ab809c2d2a4591cd067d6d21088f3bcb830f24db2b6f1b9f1bd4"
+      "sha256": "400c3b1f7092438cb84acb60e22ed380c8a594d51779940c49a34ce9b0f3f2d6"
     },
     {
       "file": "artifacts/pattern-holders/cockpit/cockpit-et-voisins.md",
@@ -769,6 +769,12 @@
       "origin": "workspace/artifacts/pattern-holders/reveilleur/_holder.md",
       "target": "artifacts/pattern-holders/reveilleur/_holder.md",
       "sha256": "83631610134f4f3afbcafed1491f80bdeff2a9e0a08126995c4ac6a58a5e58af"
+    },
+    {
+      "file": "artifacts/pattern-holders/_commun/boucle-principal-holders.md",
+      "target": "artifacts/pattern-holders/_commun/boucle-principal-holders.md",
+      "origin": "repository update: NLR 2026-11-20 principal-holder loop",
+      "sha256": "bce1eb4af92dd2d864aa7670b2418f0b837a9673147aaba2979d1765ada296d1"
     }
   ]
 }

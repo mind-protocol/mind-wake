@@ -3,6 +3,8 @@ import { claimDuoReminder, finishDuoReminder } from "./duo-reminder.js";
 import { heldForFastReply, takeOwnerMessagesForHook } from "./owner-inbox.js";
 import { ownerMessageText } from "./owner-content.js";
 import { randomUUID } from "node:crypto";
+import { MAIN_EDITOR, recordClaudePrincipalEdit } from "./principal-file-editor.js";
+import { workspaceDirFor } from "../daemon/paths.js";
 import { claimProgressReminder, finishProgressReminder } from "./owner-progress-reminder.js";
 import { claimSessionReminders, finishSessionReminders } from "../daemon/wake-reminders.js";
 
@@ -14,6 +16,7 @@ export function ownerInboxHook(
   if (input === null || typeof input !== "object") return null;
   const event = input as Record<string, unknown>;
   if (event["session_id"] !== expectedSession || event["agent_id"] !== undefined) return null;
+  recordClaudePrincipalEdit(workspaceDirFor(dataDir), event, MAIN_EDITOR);
   const name = event["hook_event_name"];
   if (
     name !== "SessionStart" &&

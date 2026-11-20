@@ -1,4 +1,6 @@
 import { roomVoiceLaunch, roleVoiceMayAct } from "./room-voice-launch.js";
+import { holderLiveClaudeArgs, type HolderLiveInbox } from "./holder-live-inbox.js";
+import { claudeHistoryArgs, writeClaudeHistory, type NativeHistoryMessage } from "./native-history.js";
 import {callMcpConfig,roomCallIdentity,type HumanCallIdentity} from './human-call-capability.js';
 import {spawnAgentProcess} from "../daemon/agent-process.js";
 import { launchAgentSession, providerFailure } from "../daemon/agent-engine.js";
@@ -463,15 +465,19 @@ export function callClaude(
   return startClaude(claude, args, cwd, timeoutMs).answer(prompt);
 }
 
-export function agentTextCall(dataDir: string, native?: typeof callClaude, canRespond: () => boolean = () => true): typeof callClaude {
+export function agentTextCall(dataDir: string, native?: typeof callClaude, canRespond: () => boolean = () => true, history: readonly NativeHistoryMessage[] = [], fileEditing = false, liveInbox?: HolderLiveInbox): typeof callClaude {
   return (claude, originalArgs, prompt, originalCwd, timeoutMs = 90000) => {
-    const role = roomVoiceLaunch(dataDir,originalArgs,originalCwd), args=role.args,cwd=role.cwd;
-    const allowed=()=>canRespond() && (role.textOnly || roleVoiceMayAct(dataDir));
+    const role = fileEditing
+      ? { args: originalArgs, cwd: originalCwd, textOnly: false, nativeDelegation: false, webSearch: "disabled" as const }
+      : roomVoiceLaunch(dataDir,originalArgs,originalCwd), args=role.args,cwd=role.cwd;
+    const allowed=()=>canRespond() && (fileEditing || role.textOnly || roleVoiceMayAct(dataDir));
     return launchAgentSession<ClaudeAnswer>(dataDir, "claude", async engine => {
     if (!allowed()) return {error:"Wake is paused or stopped; role actions are not allowed"};
     if (engine === "claude") {
-      if(native)return native(claude,args,prompt,cwd,timeoutMs);
-      const process=startClaude(claude,args,cwd,timeoutMs,dataDir);
+      const liveArgs = liveInbox ? holderLiveClaudeArgs(args, liveInbox) : args;
+      const nativeArgs = history.length ? claudeHistoryArgs(liveArgs, writeClaudeHistory(path.join(dataDir, "native-history"), history, cwd)) : liveArgs;
+      if(native)return native(claude,nativeArgs,prompt,cwd,timeoutMs);
+      const process=startClaude(claude,nativeArgs,cwd,timeoutMs,dataDir);
       const guard=setInterval(()=>{if(!allowed())process.dispose();},300);
       try{return await process.answer(prompt);}finally{clearInterval(guard);}
     }
@@ -489,7 +495,9 @@ export function agentTextCall(dataDir: string, native?: typeof callClaude, canRe
       message = lines.join("\n");
     }
     const result = await codexRoleTurn({dataDir,cwd,instructions:fs.readFileSync(file,"utf8"),message,
-      images,textOnly:role.textOnly,nativeDelegation:role.nativeDelegation,webSearch:role.webSearch,
+      images,nativeHistory:history,textOnly:role.textOnly,nativeDelegation:role.nativeDelegation,webSearch:role.webSearch,
+      ...(fileEditing ? {workspaceWrite:true} : {}),
+      ...(liveInbox ? {liveInbox} : {}),
       ...(args.includes("--mcp-config") ? {mcpConfig:args[args.indexOf("--mcp-config")+1]} : {}),allowed,timeoutMs});
     return result.outcome === "completed" ? {text:result.text} : {error:result.detail ?? result.outcome};
   }, r => "error" in r && providerFailure(r.error) ? {replay:true} : null, allowed);

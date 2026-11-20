@@ -6,7 +6,8 @@
   "wakeOnPrincipalOutput": true,
   "emoji": "🔎",
   "quietMinutes": 0,
-  "wakeHint": "Salle 1 : garder les échecs et leurs causes ; aider l'agent à mieux raisonner, travailler et décider quand un même mécanisme réapparaît, avec un repère de méthode et son pourquoi."
+  "wakeHint": "Salle 1 : garder les échecs et leurs causes ; aider l'agent à mieux raisonner, travailler et décider quand un même mécanisme réapparaît, avec un repère de méthode et son pourquoi.",
+  "room": 1
 }
 ```
 

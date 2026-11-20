@@ -1,0 +1,1 @@
+{"extends":"success.json","on":{"thread/inject_items":{"error":{"code":-32601,"message":"Native history unavailable"}}}}

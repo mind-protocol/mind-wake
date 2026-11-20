@@ -77,10 +77,18 @@ function agent(text: string, key: string, at: string) {
     messages.close();
   }
 }
+function nativeInput(args: readonly string[]): string {
+  const index = args.indexOf("--resume");
+  if (index < 0) return "";
+  return fs.readFileSync(args[index + 1]!, "utf8").trim().split("\n").map(line => {
+    const row = JSON.parse(line);
+    return `[role=${row.message.role}]\n` + (typeof row.message.content === "string" ? row.message.content : row.message.content.map((p: { text: string }) => p.text).join("\n"));
+  }).join("\n");
+}
 const replying =
   (text: string, seen: string[] = []): typeof CallClaude =>
   (_claude, args, prompt) => {
-    seen.push(prompt, args.join(" "));
+    seen.push(prompt + "\n" + nativeInput(args), args.join(" "));
     return Promise.resolve({ text });
   };
 const tick = (call: typeof CallClaude) =>
@@ -473,16 +481,17 @@ it("routes one live batch after a section moves and records privately in the cho
     const slug = path.basename(dir);
     calls.push(slug);
     const prompt = fs.readFileSync(args[args.indexOf("--system-prompt-file") + 1]!, "utf8");
+    const history = nativeInput(args);
     if (slug === "reveilleur") {
-      expect(prompt).toContain("Souvenir du routage.");
-      expect(input).toContain("Qui soutient encore la ville ?");
+      expect(history).toContain("Souvenir du routage.");
+      expect(history).toContain("Qui soutient encore la ville ?");
       expect(input).toContain("financement du collectif");
-      expect(prompt + input).not.toContain("Mémoire du spécialiste uniquement.");
+      expect(prompt + input + history).not.toContain("Mémoire du spécialiste uniquement.");
       return { text: '["crypto"]' };
     }
     expect(slug).toBe("crypto");
-    expect(prompt).toContain("Mémoire du spécialiste uniquement.");
-    expect(input).toContain("Qui soutient encore la ville ?");
+    expect(history).toContain("Mémoire du spécialiste uniquement.");
+    expect(history).toContain("Qui soutient encore la ville ?");
     return { text: "SILENCE\n```section suite.md\nQuestion à reprendre.\n```" };
   };
   savePatternHoldersEnabled(dataDir, true);
@@ -722,7 +731,8 @@ it("wakes all three opted-in holders for principal replies without routing or qu
   const calls: string[] = [];
   const call: typeof CallClaude = async (_, _args, prompt, dir) => {
     calls.push(path.basename(dir));
-    expect(prompt).toContain("REPONSE COMPLETE");
+    expect(nativeInput(_args)).toContain("REPONSE COMPLETE");
+    expect(prompt).not.toContain("REPONSE COMPLETE");
     return { text: "Un retour utile." };
   };
   await tick(replying("SILENCE"));
@@ -749,8 +759,8 @@ it("delivers the complete principal reply once as an agent message to its holder
   const seen: string[] = [];
   const outcomes = await tick(replying("SILENCE", seen));
   expect(outcomes).toContainEqual(expect.objectContaining({ slug: "orga-agents", state: "silent" }));
-  expect(seen[0]).toContain(JSON.stringify(text));
-  expect(seen[0]).toContain('"auteur":"agent"');
+  expect(seen[0]).toContain(text);
+  expect(seen[0]).toContain("Agent tiers (principal ou room)");
   expect(seen[0]?.split("FIN DE RÉPONSE")).toHaveLength(2);
   expect(await tick(replying("SILENCE"))).toEqual([]);
 });

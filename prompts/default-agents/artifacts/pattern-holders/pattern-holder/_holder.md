@@ -3,7 +3,8 @@
 ```json pattern-holder
 {
   "name": "Pattern holder",
-  "emoji": "🧭"
+  "emoji": "🧭",
+  "room": 1
 }
 ```
 

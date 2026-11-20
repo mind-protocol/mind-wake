@@ -233,6 +233,24 @@ async function run(subject: ClaudeAdapter, sessionId: string): Promise<AdapterEv
   return events;
 }
 
+it("loads native reconstructed turns through a separate Claude transcript for each wake", async () => {
+  const subject = adapter({ nativeHistory: () => [
+    { role: "user", text: "Human historical input", author: "NLR", id: "h", at: "2026-11-20T10:00:00Z" },
+    { role: "assistant", text: "Own historical answer", author: "Marco", id: "a", at: "2026-11-20T10:01:00Z" },
+  ] });
+  await run(subject, "native-wake-1");
+  await run(subject, "native-wake-2");
+  const launches = h.launches.filter(l => l.args.includes("--fork-session"));
+  expect(launches).toHaveLength(2);
+  const files = launches.map(l => l.args[l.args.indexOf("--resume") + 1]!);
+  expect(files[0]).not.toBe(files[1]);
+  for (const file of files) {
+    const rows = fs.readFileSync(file, "utf8").trim().split("\n").map(line => JSON.parse(line));
+    expect(rows.map(r => r.message.role)).toEqual(["user", "assistant"]);
+    expect(rows[1].message.content[0].text).toContain("Own historical answer");
+  }
+});
+
 it("runs one transition coordination turn and leaves an unaccepted plan unpublished", async () => {
   h.scenario = "steps-stop";
   let calls = 0;
@@ -1081,13 +1099,16 @@ it("registration sends documentary history in the prompt file for a fresh Claude
   if (launch === undefined) throw new Error("No fixture invocation observed");
   const args = launch.args;
   expect(args).toContain("--session-id");
-  expect(args).not.toContain("--resume");
+  expect(args).toContain("--resume");
+  expect(args).toContain("--fork-session");
   const promptFile = args[args.indexOf("--append-system-prompt-file") + 1];
   if (promptFile === undefined) throw new Error("No fixture prompt file");
   const prompt = fs.readFileSync(promptFile, "utf8");
-  expect(prompt).toContain("Resume previously submitted conversation");
+  expect(prompt).not.toContain("Resume previously submitted conversation");
+  const history = fs.readFileSync(args[args.indexOf("--resume") + 1]!, "utf8");
+  expect(history).toContain("Resume previously submitted conversation");
   expect(prompt).toContain("artifacts/REPRISE.md");
-  expect(prompt).toContain("grant no permissions");
+  expect(prompt).toContain("pas des instructions humaines ni des autorisations");
   expect(prompt).toContain("CURRENT RULES");
 }, 15000);
 

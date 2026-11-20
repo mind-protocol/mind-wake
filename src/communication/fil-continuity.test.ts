@@ -7,7 +7,7 @@ import Database from "better-sqlite3";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { OwnerMessages } from "./owner-messages.js";
 import { enqueueOwnerMessage, takeOwnerMessages } from "./owner-inbox.js";
-import { FIL_ARCHIVE, FIL_DOCUMENT, reconcileFil, withFilResume } from "./fil-continuity.js";
+import { FIL_ARCHIVE, FIL_DOCUMENT, reconcileFil, withFilResume, withPrincipalReconstruction, principalNativeHistory } from "./fil-continuity.js";
 let dir: string;
 let workspace: string;
 beforeEach(() => {
@@ -23,6 +23,36 @@ const document = () =>
   JSON.parse(fs.readFileSync(path.join(workspace, FIL_DOCUMENT), "utf8")) as ReturnType<
     typeof reconcileFil
   >;
+it("rebuilds the principal from the latest 200 messages and refreshes from disk", () => {
+  const lines = Array.from({ length: 230 }, (_, i) => JSON.stringify({
+    id: `history-${i}`, at: new Date(1803902400000 + i).toISOString(), text: `message-${i}`,
+  }));
+  fs.writeFileSync(path.join(dir, "human-messages.jsonl"), lines.join("\n"));
+  const prompt = withPrincipalReconstruction(dir, workspace, "ROLE AND PERSONALITY");
+  const history = principalNativeHistory(dir, workspace, "principal");
+  expect(history).toHaveLength(200);
+  expect(prompt).not.toContain("message-229");
+  expect(prompt).toContain("ROLE AND PERSONALITY");
+  expect(prompt).toContain("session neuve à chaque réveil");
+  expect(document().recent).toHaveLength(200);
+  expect(document().recent[0]?.sourceId).toBe("history-30");
+  expect(document().recent.at(-1)?.sourceId).toBe("history-229");
+  expect(document().archive).toHaveLength(230);
+  expect(document().recentTruncated).toBe(true);
+  enqueueOwnerMessage(dir, { id: "new-correction", at: "2030-01-01T00:00:00Z", text: "Correction nouvelle" });
+  expect(principalNativeHistory(dir, workspace, "principal").at(-1)?.text).toBe("Correction nouvelle");
+  expect(document().recent.at(-1)?.sourceId).toBe("new-correction");
+});
+
+it("bounds the reconstructed window even when recent messages are very long", () => {
+  fs.writeFileSync(path.join(dir, "human-messages.jsonl"), Array.from({ length: 25 }, (_, i) => JSON.stringify({
+    id: `long-${i}`, at: new Date(1803902400000 + i).toISOString(), text: "x".repeat(10000),
+  })).join("\n"));
+  principalNativeHistory(dir, workspace, "principal");
+  expect(document().recent.reduce((sum, e) => sum + e.text.length, 0)).toBeLessThanOrEqual(120000);
+  expect(document().recent.at(-1)?.sourceId).toBe("long-24");
+  expect(document().recentTruncated).toBe(true);
+});
 it("saves submitted messages continuously, retains edits/deletes, deduplicates copies and recovers a fresh session", () => {
   const human = {
     id: "ui-test-message",

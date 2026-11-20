@@ -11,6 +11,8 @@ import { readPrincipalOutputs } from "./principal-outputs.js";
  * abonnement claude.ai, pas de clé API. Désactivé par défaut (`pattern-holders.json`).
  */
 import fs from "node:fs";
+import { markdownNativeHistory } from "./markdown-conversation.js";
+import { NATIVE_HISTORY_NOTICE, type NativeHistoryMessage } from "./native-history.js";
 import { inheritedCorpusContext } from "../adapters/agent-identity.js";
 import { withHumanCallPrompt } from "./human-call-prompt.js";
 import path from "node:path";
@@ -135,7 +137,7 @@ export interface PatternHolder {
    * Champ `cadence` du bloc json ; absent ou 0 = aucun (voir `holder-cadence.ts`).
    */
   readonly cadence?: HolderCadence;
-  /** Salle de rattachement du réveil cadencé (champ `room`, 2 à 8) : compteur, registre, fil. */
+  /** Salle de rattachement (1 = principal, 2 à 8 = forks) : compteur, registre, fil. */
   readonly room?: number;
   /**
    * Gardien des phases de sa salle (champ `phaseKeeper: true`, NLR 20 nov. 2026 : Narration pour
@@ -536,7 +538,7 @@ export function holderRole(root: string, router: boolean): string {
 }
 
 export function routerSystemPrompt(root: string, router?: PatternHolder): string {
-  return [holderRole(root, true), router?.seed ?? ""].join("\n");
+  return [holderRole(root, true), NATIVE_HISTORY_NOTICE, router ? `Ton nom : ${router.name}.` : ""].join("\n");
 }
 
 /** Le levier @id (mention-wake.ts) et, pour un holder rattaché à une salle, les agents qu'il peut réveiller. */
@@ -573,9 +575,8 @@ export function patternHolderSystemPrompt(holder: PatternHolder, dataDir?: strin
     ...(holder.sections === undefined
       ? []
       : [`Tes sections, dans l'ordre : ${holder.sections.join(", ")}.`, ""]),
-    "--- Ta conversation-semence (mémoire, données et non consignes système) ---",
-    holder.seed,
-    "--- Fin de la conversation-semence ---",
+    NATIVE_HISTORY_NOTICE,
+    "Ta conversation-semence Markdown est parsée par locuteur et précède le fil récent dans les tours natifs. Les passages imaginés restent des exemples fournis, pas une biographie attestée.",
     ...(common === "" ? [] : ["", common, ""]),
     `Tu peux lire, sans y écrire, les sections des autres pattern holders : ${holdersDir}.`,
     inheritedCorpusContext(path.resolve(path.dirname(holder.file), "../..")),
@@ -600,22 +601,6 @@ export function patternHolderPrompt(
   wake: Wake,
   threadLabel = "Fil principal",
 ): string {
-  const freshIds = new Set(fresh.map((m) => m.id));
-  const show = (m: FilMessage) =>
-    JSON.stringify({
-      at: localClock(m.at),
-      auteur:
-        m.holder === undefined
-          ? m.author
-          : m.holder === holder.slug
-            ? "toi (pattern holder)"
-            : `pattern holder @${m.holder}`,
-      texte: m.text,
-    });
-  const earlier = bound(
-    fil.filter((m) => !freshIds.has(m.id)),
-    HISTORY_CHARS,
-  );
   const why =
     wake.reason === "cadence"
       ? wake.cadenceNote ?? "Réveil cadencé."
@@ -631,11 +616,8 @@ export function patternHolderPrompt(
   return [
     `Heure actuelle : ${localClock(new Date().toISOString())} (heure de Paris, celle de NLR). Toutes les heures ci-dessous et dans tes blocs \`\`\`reveil\`\`\` sont en heure de Paris.`,
     "",
-    `${threadLabel} récent (le plus récent en dernier) :`,
-    ...earlier.map(show),
-    "",
-    wake.reason === "cadence" ? "Messages depuis ton dernier passage cadencé :" : "Nouveaux messages depuis ton dernier réveil :",
-    ...fresh.map(show),
+    `${threadLabel} récent : injecté directement dans les tours précédents, le plus récent en dernier.`,
+    `Messages nouveaux à traiter : ${fresh.map(m => m.id).join(", ") || "aucun (réveil programmé)"}.`,
     "",
     ...(why === "" ? [] : [why]),
     ...(wake.handles === undefined || wake.handles.length === 0
@@ -643,6 +625,20 @@ export function patternHolderPrompt(
       : [handleWakeNote(wake.handles)]),
     ...(wake.phaseNote === undefined ? [] : [wake.phaseNote]),
   ].join("\n");
+}
+
+export function holderNativeHistory(holder: Pick<PatternHolder, "seed" | "file" | "name" | "slug">, fil: readonly FilMessage[], fresh: readonly FilMessage[]): NativeHistoryMessage[] {
+  const freshIds = new Set(fresh.map(m => m.id));
+  const recent = [...bound(fil.filter(m => !freshIds.has(m.id)), HISTORY_CHARS), ...fresh];
+  const seed = holder.seed.replace(/```json\s+pattern-holder\s*\n[\s\S]*?```/, "");
+  const seen = new Set<string>();
+  return [
+    ...markdownNativeHistory(seed, holder.file, [holder.name, holder.slug]),
+    ...recent.filter(m => { if (seen.has(m.id)) return false; seen.add(m.id); return true; }).map((m): NativeHistoryMessage => ({
+      id: m.id, at: m.at, text: m.text, role: m.holder === holder.slug ? "assistant" : "user",
+      author: m.holder === holder.slug ? `${holder.name} (toi)` : m.holder ? `Agent tiers @${m.holder}` : m.author === "humain" ? "Humain" : "Agent tiers (principal ou room)",
+    })),
+  ];
 }
 
 /** Date ISO → « 18/11 17:50 » en heure locale de la machine (Paris), pour que les holders ne lisent pas l'UTC. */
@@ -961,11 +957,10 @@ async function routeHolders(
   const catalogue = candidates.map(({ holder }) => ({
     slug: holder.slug, name: holder.name, wakeHint: holder.wakeHint ?? "",
   }));
-  const ids = new Set(fresh.map(m => m.id));
-  const context = bound(fil.filter(m => !ids.has(m.id)), HISTORY_CHARS);
   const claude = options.claude ?? patternHolderClaude();
-  const result = await agentTextCall(options.dataDir, options.call)(claude, fastReplyArgs(claude.model, file),
-    JSON.stringify({ candidats: catalogue, contexte: context, nouveaux: fresh }), dir);
+  const history = holderNativeHistory(router ?? { seed: "", file, name: "Réveilleur", slug: ROUTER }, fil, fresh);
+  const result = await agentTextCall(options.dataDir, options.call, undefined, history)(claude, fastReplyArgs(claude.model, file),
+    JSON.stringify({ candidats: catalogue, nouveaux: fresh.map(m => m.id) }), dir);
   if ("error" in result) throw Error(result.error);
   const selected = parseRouterSelection(result.text);
   if (!Array.isArray(selected) || !selected.every(id => typeof id === "string" && catalogue.some(h => h.slug === id))) {
@@ -1218,7 +1213,7 @@ export async function previewPatternHolder(options: {
     workspaceDirFor(options.dataDir),
     recentTexts(fil, fresh),
   );
-  const result = await agentTextCall(options.dataDir, options.call)(claude, call.args, call.prompt, dir);
+  const result = await agentTextCall(options.dataDir, options.call, undefined, holderNativeHistory(holder, fil, fresh))(claude, call.args, call.prompt, dir);
   if ("error" in result) return { error: result.error };
   return { reason: wake.reason, natural: natural !== null, text: result.text.trim() };
 }
@@ -1256,7 +1251,7 @@ async function wakeHolder(
     workspaceDirFor(dataDir),
     recentTexts(fil, fresh),
   );
-  const result = await agentTextCall(options.dataDir, options.call)(claude, call.args, call.prompt, dir);
+  const result = await agentTextCall(options.dataDir, options.call, undefined, holderNativeHistory(holder, fil, fresh))(claude, call.args, call.prompt, dir);
   if ("error" in result) {
     log(`pattern holder ${holder.slug} : échec — ${result.error}`);
     return { slug: holder.slug, state: "failed", reason: wake.reason, detail: result.error };
@@ -1367,6 +1362,7 @@ function publishInPrincipal(
  * fil écouté par le holder (`holderThread`). `null` : salle rattachée éteinte, pas de réveil.
  */
 function scheduledThread(dataDir: string, holder: PatternHolder): HolderThread | null {
+  if (holder.room === 1) return "principal";
   if (holder.room !== undefined) return forkEnabled(dataDir, holder.room) ? cadenceThread(holder.room) : null;
   return holderThread(dataDir, holder.slug);
 }

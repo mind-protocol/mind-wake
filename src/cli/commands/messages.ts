@@ -1,3 +1,4 @@
+import { readPrincipalThread, type PrincipalThreadView } from "../../communication/principal-thread-view.js";
 /**
  * Fil entre l'humain et son agent Wake, sans hub ni réseau (onglet « Messages » du
  * desktop, ADR-007).
@@ -61,6 +62,7 @@ interface LogEntry extends HumanReply {
 }
 
 export interface MessagesData {
+  readonly principalThread?: PrincipalThreadView | null;
   readonly upcomingWakes?: WakePreview;
   readonly currentWakeObjective?: CurrentWakeObjective | null;
   readonly projectWakes?: ReturnType<typeof readProjectWakeObjectives>;
@@ -233,7 +235,7 @@ export function messages(ctx: CliContext, dataDir: DataDir, limit: number | null
     }
     return profile ? {state:profile.state,reason:profile.stateReason,nextWakeAt:profile.nextWakeAt} : null;
   });
-  const data: MessagesData = { projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id), publishedIds).filter(message=>managed===null||message.source.originKind!=="context_copy"), publicActivity: managed===null ? readPublicActivity(dataDir.path) : [], agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) };
+  const data: MessagesData = { principalThread: readPrincipalThread(workspaceDirFor(dataDir.path)), projectWakes: currentWakeObjective ? readProjectWakeObjectives(workspaceDirFor(dataDir.path),currentWakeObjective.projectId,currentWakeObjective.inBlock,currentWakeObjective.passageId) : null, profileId: DEFAULT_PROFILE_ID, hint: null, upcomingWakes: readWakePreview(workspaceDirFor(dataDir.path), 11), recipientSentMessages:recipientEntries(dataDir.path).filter(m=>m.direction==="out").map(m=>({id:m.id,at:m.at,text:m.text,state:m.state,threadId:m.threadId,messageId:m.messageId,senderRef:m.senderRef,recipientRef:m.recipientRef})), sentMessages: readSentMessages(dataDir.path), receivedMessages: readReceivedMessages(dataDir.path, readLog(dataDir).map(r => r.id), publishedIds).filter(message=>managed===null||message.source.originKind!=="context_copy"), publicActivity: managed===null ? readPublicActivity(dataDir.path) : [], agentNote: managed === null ? agentNote : null, replies: readReplies(dataDir), deliveryReceipts: readOwnerReceipts(dataDir.path), messageWait, agentStatus, currentWakeObjective, repoThreads: readRepoConversations(dataDir.path), ...(managed === null ? {} : { agentMessages: managed }) };
   return { exitCode: EXIT_OK, data: limit === null ? data : latestMessages(data, limit), human: formatMessages };
 }
 

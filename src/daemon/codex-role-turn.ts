@@ -1,4 +1,7 @@
 import { withRoomRoleMcpApprovals } from "./room-role-mcp-approvals.js";
+import { recordCodexPrincipalEdit } from "../communication/principal-file-editor.js";
+import { prepareHolderLiveInbox, type HolderLiveInbox } from "../communication/holder-live-inbox.js";
+import type { NativeHistoryMessage } from "../communication/native-history.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -24,6 +27,8 @@ type Options = {
   cwd: string;
   instructions: string;
   message: string;
+  nativeHistory?: readonly NativeHistoryMessage[];
+  liveInbox?: HolderLiveInbox;
   key?: string;
   mcpConfig?: string;
   addDirs?: readonly string[];
@@ -78,7 +83,7 @@ export async function codexRoleTurn(input: Options, launch?: () => CodexProcess)
     detail: null,
   };
   if (!input.allowed()) return { ...result, outcome: "interrupted" };
-  if (input.roomInbox) return codexRoomTurn(input, launch);
+  if (input.roomInbox || input.liveInbox || input.nativeHistory?.length) return codexRoomTurn(input, launch);
   const executable = discoverCodex();
   if (!executable) return { ...result, detail: "Exécutable Codex introuvable" };
   const dir = path.join(input.dataDir, "runtimes", "codex-roles");
@@ -219,7 +224,7 @@ export async function codexRoleTurn(input: Options, launch?: () => CodexProcess)
 
 /** Room roles keep their existing persistent thread and explicit MCP catalog, using live steering. */
 async function codexRoomTurn(input: Options, launch?: () => CodexProcess): Promise<SecondThreadTurnResult> {
-  const inbox = input.roomInbox!;
+  const inbox = input.roomInbox;
   const dir = path.join(input.dataDir, "runtimes", "codex-roles");
   fs.mkdirSync(dir, { recursive: true });
   const key = createHash("sha256").update(JSON.stringify([input.key, input.cwd, input.instructions])).digest("hex");
@@ -228,12 +233,18 @@ async function codexRoomTurn(input: Options, launch?: () => CodexProcess): Promi
   const deadline = input.timeoutMs === null ? null : Date.now() + input.timeoutMs;
   const control = () => roleTurnStopReason(input.allowed(), deadline) === null ? "run" as const : "stop" as const;
   const outcome = await nativeForkTurn({
-    dataDir: input.dataDir, workspace: input.cwd, id: inbox.forkId,
+    dataDir: input.dataDir, workspace: input.cwd, id: inbox?.forkId ?? 0,
+    ...(input.nativeHistory ? { nativeHistory: input.nativeHistory } : {}),
+    sandbox: input.textOnly ? "read-only" : input.workspaceWrite ? "workspace-write" : "danger-full-access",
+    ephemeral: !input.key,
+    screen: (input.images ?? []).map(image => image.data),
     threadId, inheritPrincipal: false, instructions: input.instructions, message: input.message,
     control, onThread: id => { if (input.key) fs.writeFileSync(saved, id); },
+    onCompletedItem: item => { if (input.liveInbox?.editor) recordCodexPrincipalEdit(input.cwd, item, input.liveInbox.editor); },
     flushInbox: async steer => {
       if (control() !== "run") return false;
-      const batch = prepareRoomInbox(inbox);
+      if (!inbox && !input.liveInbox) return false;
+      const batch = input.liveInbox ? prepareHolderLiveInbox(input.liveInbox) : inbox ? prepareRoomInbox(inbox) : null;
       if (!batch) return true;
       if (!await steer(batch.context)) return false;
       batch.confirm();
@@ -245,13 +256,16 @@ async function codexRoomTurn(input: Options, launch?: () => CodexProcess): Promi
     const raw = input.mcpConfig
       ? input.mcpConfig.trimStart().startsWith("{") ? input.mcpConfig : fs.readFileSync(input.mcpConfig, "utf8")
       : '{"mcpServers":{}}';
+    const parsed = JSON.parse(raw) as { mcpServers: Record<string, unknown> };
+    const servers = roleMcpServers(parsed.mcpServers, input.dataDir);
     const args = [
       ...(executable.prefixArgs ?? []),
       "-c", 'approval_policy="never"',
       "-c", roleWebSearchConfig(input.webSearch),
-      "-c", "mcp_servers=" + toml(roleMcpServers(JSON.parse(raw).mcpServers, input.dataDir)),
+      "-c", "mcp_servers=" + toml(servers),
       "--disable", "apps", "--disable", "plugins", "--disable", "hooks",
-      input.nativeDelegation ? "--enable" : "--disable", "multi_agent",
+      input.nativeDelegation && !input.textOnly ? "--enable" : "--disable", "multi_agent",
+      ...(input.textOnly ? ["--disable", "shell_tool", "--disable", "unified_exec", "--disable", "image_generation"] : []),
       "app-server", "--listen", "stdio://",
     ];
     return new ProcessTreeSupervisor(path.join(input.dataDir, "runtime")).spawn(

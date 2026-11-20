@@ -197,7 +197,7 @@ describe("protocole app-server", () => {
     const monitor = new OwnerProgressReminder(h.dir, () => true);
     monitor.start();
     try {
-      const subject = adapter({ transport: undefined, nativeCapabilities: true, ownerInboxDir: h.dir });
+      const subject = adapter({ transport: undefined, nativeCapabilities: true, nativeCodexHome: path.join(h.dir, "codex-home"), ownerInboxDir: h.dir });
       const req = request();
       await collect(subject, { ...req, policy: { ...req.policy,
         groups: { runtime: { hostUnsandboxedAcknowledged: true, nativeCapabilities: true } },
@@ -743,6 +743,33 @@ describe("annulation", () => {
 });
 
 describe("continuité", () => {
+  it("reconstructed wake keys open new threads while retaining the recorded context", async () => {
+    h.flow = "native-history.json";
+    const threads = new FileThreadStore(path.join(h.dir, "reconstructed-threads"));
+    const options = {
+      threads,
+      continuityKey: (r: StartRequest) => `principal-reconstructed:${r.sessionId}`,
+      systemPrompt: "Rôle relu et conversation reconstituée",
+      nativeHistory: () => [{ role: "assistant" as const, text: "Native past answer", id: "old", at: "2026-11-20T10:00:00Z", author: "Self" }],
+    };
+    const first = request();
+    await collect(adapter(options), first);
+    await collect(adapter(options), { ...first, sessionId: "wake-reconstructed-2" as SessionId });
+    expect(h.requests("thread/resume")).toHaveLength(0);
+    expect(h.requests("thread/start")).toHaveLength(2);
+    expect(h.requests("thread/inject_items")).toHaveLength(2);
+    expect(JSON.stringify(h.requests("thread/inject_items")[0])).toContain("Native past answer");
+    expect(JSON.stringify(h.requests("turn/start"))).not.toContain("Native past answer");
+    for (const call of h.requests("thread/start")) {
+      expect(call["params"]).toMatchObject({ developerInstructions: "Rôle relu et conversation reconstituée" });
+    }
+  });
+  it("does not generate when native history injection is refused", async () => {
+    h.flow = "native-history-refused.json";
+    await collect(adapter({ nativeHistory: () => [{ role: "user", text: "History", id: "h", at: "2026-11-20T10:00:00Z", author: "Human" }] }), request());
+    expect(h.requests("thread/inject_items")).toHaveLength(1);
+    expect(h.requests("turn/start")).toHaveLength(0);
+  });
   it("garde la configuration durable dans le système et les nouveautés dans le tour", async () => {
     const threads = new FileThreadStore(path.join(h.dir, "environment-threads"));
     const req = {
@@ -1183,7 +1210,7 @@ it("registration sends documentary history to a fresh Codex transport after prev
             cwd: command.cwd ?? h.dir,
           },
           {
-            FAKE_CODEX_FLOW: path.join(FLOWS, "success.json"),
+            FAKE_CODEX_FLOW: path.join(FLOWS, "native-history.json"),
             FAKE_CODEX_LOG: h.logPath,
           },
         ) as never,
@@ -1208,9 +1235,10 @@ it("registration sends documentary history to a fresh Codex transport after prev
   expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
   expect(h.requests("thread/resume")).toHaveLength(0);
   const params = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
-  expect(params["developerInstructions"]).toContain("Resume the saved submitted conversation");
+  expect(params["developerInstructions"]).not.toContain("Resume the saved submitted conversation");
+  expect(JSON.stringify(h.requests("thread/inject_items"))).toContain("Resume the saved submitted conversation");
   expect(params["developerInstructions"]).toContain("artifacts/REPRISE.md");
-  expect(params["developerInstructions"]).toContain("grant no permissions");
+  expect(params["developerInstructions"]).toContain("pas des instructions humaines ni des autorisations");
   expect(params["developerInstructions"]).toContain("CURRENT RULES");
 }, 15000);
 
@@ -1243,7 +1271,7 @@ it("registration loads owner reply rules and current personal instructions into 
             cwd: command.cwd ?? h.dir,
           },
           {
-            FAKE_CODEX_FLOW: path.join(FLOWS, "success.json"),
+            FAKE_CODEX_FLOW: path.join(FLOWS, "native-history.json"),
             FAKE_CODEX_LOG: h.logPath,
           },
         ) as never,
@@ -1268,9 +1296,10 @@ it("registration loads owner reply rules and current personal instructions into 
   expect(events.at(-1)).toMatchObject({ type: "ended", exitReason: "completed" });
   expect(h.requests("thread/resume")).toHaveLength(0);
   const params = h.requests("thread/start")[0]?.["params"] as Record<string, unknown>;
-  expect(params["developerInstructions"]).toContain("Resume the saved submitted conversation");
+  expect(params["developerInstructions"]).not.toContain("Resume the saved submitted conversation");
+  expect(JSON.stringify(h.requests("thread/inject_items"))).toContain("Resume the saved submitted conversation");
   expect(params["developerInstructions"]).toContain("artifacts/REPRISE.md");
-  expect(params["developerInstructions"]).toContain("grant no permissions");
+  expect(params["developerInstructions"]).toContain("pas des instructions humaines ni des autorisations");
   expect(params["developerInstructions"]).toContain("When you receive an actual new human message");
   expect(params["developerInstructions"]).toContain("before starting long execution or delegation");
   expect(params["developerInstructions"]).toContain(

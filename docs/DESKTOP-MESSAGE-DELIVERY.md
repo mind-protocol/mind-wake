@@ -1,5 +1,25 @@
 # Messages desktop vers Claude
 
+## Principal reconstitué à chaque réveil
+
+Les registrations Claude et Codex du principal utilisent une clé propre à chaque session Wake (`principal-reconstructed:<sessionId>`), au lieu de reprendre le fil fournisseur des réveils précédents. Au démarrage, elles relisent le rôle, la personnalité et la conversation enregistrée, avec au plus 200 messages récents et 120 000 caractères de contenu, métadonnées en plus. Les corrections et suppressions déterminent les versions visibles ; les anciennes versions restent dans l'archive.
+
+Le principal possède maintenant un dossier `artifacts/principal/` dans son workspace actif. `_principal.md` déclare son nom et ses alias dans un bloc `json principal`. Les autres fichiers `.md` sont des conversations-semences lues par ordre de nom, avec un budget distinct de 120 000 caractères. Le corpus initial reprend la conversation imaginée d'arrivée de `AGENTS.md`, sans en faire un événement vécu.
+
+Le parseur reconnaît les locuteurs explicites : `**Marco** :`, `**Marco —**`, `**Coach :**`, `Marco —`, et `NLR:` pour les noms connus. Les paragraphes suivants restent dans le même tour jusqu'au prochain locuteur ou titre. Les citations, blocs de code et passages éditoriaux ne créent pas de faux locuteurs. Les alias de l'agent identifient ses tours `assistant` ; les autres voix restent attribuées dans des tours `user`, sans être présentées comme des consignes humaines.
+
+Les holders utilisent ce même parseur pour leur conversation-semence, puis reçoivent leur fil récent comme tours natifs. Le principal reçoit ses Markdown puis sa fenêtre plus large. Les contenus ne sont plus recopiés en JSON dans le prompt système : celui-ci contient le rôle, les règles actuelles et les indications de provenance. Le dernier message contient le déclencheur, pas une seconde copie de l'historique. Les réponses ponctuelles par message et les réponses d'ouverture d'appel du principal et des holders suivent aussi ce chemin.
+
+Transport : Codex utilise `thread/inject_items` avant le premier `turn/start` ; Claude utilise un transcript JSONL généré, `--resume <chemin>` et `--fork-session`. Une injection refusée arrête la réponse, sans repli silencieux vers un bloc de texte. Le format interne du transcript Claude étant versionné par son runtime, les changements de CLI doivent être vérifiés. Essais réels réussis le 20 novembre sur Claude Code 2.1.318 et Codex 0.165.0 : chaque moteur a retrouvé deux codes distincts contenus uniquement dans les tours historiques humain et assistant. Références : [injection native Codex](https://learn.chatgpt.com/docs/app-server), [reprise de transcript Claude](https://code.claude.com/docs/en/sessions).
+
+Les outils, permissions et injections de messages pendant un travail en cours sont conservés. La reconstruction se fait à la frontière entre deux réveils, sans interrompre chaque appel d'outil ou chaque message reçu. Les fichiers et checkpoints assurent la continuité du travail ; le raisonnement et les sorties d'outils non conservés dans ces sources ne sont pas automatiquement repris. Les anciennes sessions fournisseur ne sont pas effacées. Un daemon déjà chargé doit être redémarré pour utiliser ces registrations ; cette modification ne lève ni Pause ni Force-off.
+
+## Message MCP pendant la pause
+
+Depuis le 20 novembre 2026, sur demande de NLR, `message` peut obtenir une réponse ponctuelle d'un agent local pendant la pause ou l'arrêt de Wake. Le chemin `respondToLocalMessage` charge son rôle et le contexte récent, lance un seul tour sans outils, publie la réponse dans son fil et la renvoie avec le statut `answered`. Il ne modifie aucun contrôle autonome. Comme pour la conversation d'appel, un profil désactivé ou une politique inactive interdit cette réponse.
+
+Les requêtes sont dédupliquées par auteur, destinataire et clé, avec leur résultat sous `message-responses/`. Un résultat `recorded` désigne le routage habituel lorsque Wake fonctionne ; il ne prouve pas une réponse. Les messages distants et les envois à l'humain conservent leur contrôle de pause. Cette exception ne donne pas d'outils au destinataire et ne transforme pas la parole d'un agent en autorisation humaine.
+
 ## Libérer une attente sans tuer le travail
 
 En mode hôte autorisé, l’adapter observe les événements natifs `task_started`, `task_updated` (champ `patch`), `task_notification` et les snapshots `background_tasks_changed`. Si un message attend et qu’une tâche est au premier plan, il envoie une `control_request` de type `background_tasks` (équivalent natif de Ctrl+B), pour libérer ensemble les tâches de premier plan. Cela évite de rester bloqué sur le deuxième sous-agent après avoir libéré le premier. La réussite exige soit `response.backgrounded === true`, soit un événement natif confirmant la mise en arrière-plan ; un simple accusé `success` sans cette observation ne suffit pas. Le retour d’outil libéré permet au hook PostToolUse de transmettre le message. Aucun appel modèle de routage n’est ajouté.

@@ -102,7 +102,7 @@ function startupError(text: string): never {
 if (newId !== undefined && fs.existsSync(sessionFile)) {
   startupError(`Session ID ${newId} is already in use.`);
 }
-if (resumeId !== undefined && !fs.existsSync(sessionFile)) {
+if (resumeId !== undefined && !fs.existsSync(sessionFile) && !(process.argv.includes("--fork-session") && fs.existsSync(resumeId))) {
   startupError(`No conversation found with session ID: ${resumeId}`);
 }
 

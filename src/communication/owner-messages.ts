@@ -9,6 +9,7 @@ import { withPromptSizeWarning, withoutPromptSizeWarning } from "./prompt-size-w
 
 export const OWNER_MESSAGES_DB = "owner-messages.sqlite";
 export interface OwnerMessage {
+  readonly holder?: true;
   readonly id: string;
   readonly text: string;
   readonly createdAt: string;
@@ -16,6 +17,7 @@ export interface OwnerMessage {
   readonly version: number;
 }
 interface Row {
+  request_key?: string;
   id: string;
   text: string;
   created_at: string;
@@ -33,6 +35,7 @@ export class OwnerMessageError extends Error {
   }
 }
 const project = (r: Row): OwnerMessage => ({
+  ...(r.request_key?.startsWith("pattern-holder:") ? {holder: true as const} : {}),
   id: r.id,
   text: r.text,
   createdAt: r.created_at,
