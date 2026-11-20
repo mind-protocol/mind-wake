@@ -503,6 +503,8 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     const at=now();
     const c={id,epoch,owner,revision:1,explicit:true,startedAt:at,lastActivity:at,targets:new Map(targets.map(target=>[target.handle,{target,joinedAt:at}])),seen:new Set(),sent:[]};
     c.mirror = options.mirror !== false; c.caller = options.caller ?? 'NLR';
+    // Sans appelant explicite, c'est l'humain local : le pont envoie le nom de son profil, jamais ce défaut.
+    c.localHuman = options.caller === undefined;
     calls.set(id,c);ring(id,targets.filter(t=>!options.skipRing?.includes(t.handle)),c.caller);return sessionView(c);
   }
   // Only an owner-side phone invitation may transfer an agent-hosted session to its accepting app.

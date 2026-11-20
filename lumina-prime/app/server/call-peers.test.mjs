@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { createCallService } from './chat-call.mjs';
-import { createCallPeers, peerAddress, sealPeer, openPeer } from './call-peers.mjs';
+import { createCallPeers, peerAddress, sealPeer, openPeer, remoteParticipantName, remoteSpeakerLabel } from './call-peers.mjs';
 import { createChatServer } from './chat-server.mjs';
 import { openCallControls } from '../../../services/mcp/call-control-store.mjs';
 import { humanInvitation, expireHuman, decideHuman, requireHuman, humanDescription } from './call-human-state.mjs';
@@ -96,11 +96,52 @@ test('human invitation HTTP is authenticated, desktop-only, and binds the accept
   assert.equal(b.call.active().length,1);
 });
 
-async function fixture(t) {
+test('a remote name equal to the local owner or agent is never shown for the remote participant',()=>{
+  const local={human:'NLR',agent:'Marco'};
+  assert.equal(remoteParticipantName('Aurore',local),'Aurore');
+  assert.equal(remoteParticipantName('NLR',local),'Humain');
+  assert.equal(remoteParticipantName(' nlr ',local),'Humain');
+  assert.equal(remoteParticipantName('Marco',local,'Agent'),'Agent');
+  assert.equal(remoteParticipantName(undefined,local),'Humain');
+  assert.equal(remoteParticipantName('🪙 Crypto',local,'Agent'),'🪙 Crypto');
+  assert.equal(remoteSpeakerLabel('NLR · SciSense',local),'Humain · SciSense');
+  assert.equal(remoteSpeakerLabel('Aurore · SciSense',local),'Aurore · SciSense');
+  assert.equal(remoteSpeakerLabel('NLR · PC A',{...local,label:'PC A'}),'NLR · PC A');
+});
+
+test('a colony still on the default owner name and agent name shows as Humain and Agent, never as ours',async t=>{
+  // Colonie B installée sans profil : elle annonce « NLR » et son principal porte le même nom que le nôtre.
+  const {a,b,scope,open,remote}=await fixture(t,{bCaller:'NLR',bMain:'Alpha'});
+  assert.equal(remote.find(t=>t.remoteHandle==='mind').label,'Agent · PC B');
+  await open(['mind',...remote.map(t=>t.handle)]);
+  await new Promise(r=>setTimeout(r,5));
+  assert.ok(b.notices.some(n=>n.text.includes("Humain · PC A t'appelle")));
+  assert.ok(!b.notices.some(n=>n.text.includes('NLR · PC A')));
+  const first=await a.peers.humanRequest(scope,{action:'invite'});
+  const peerId=first.humans[0].peerId,invite=b.peers.humanPending();
+  b.peers.humanGuest('guest',{id:invite.id,action:'answer',decision:'accept'});
+  const polled=(await a.peers.humanRequest(scope,{action:'poll'})).humans[0];
+  assert.equal(polled.label,'Humain · PC B');
+  await a.peers.humanRequest(scope,{action:'text',peerId,message:randomUUID(),text:'Bonjour depuis SciSense'});
+  assert.ok(a.sent.some(m=>m.text.includes('[Humain · PC B] Bonjour depuis SciSense')));
+  assert.ok(!a.sent.some(m=>m.text.includes('[NLR · PC B]')));
+  b.main.push({id:'b1',role:'agent',at:new Date(Date.now()+20).toISOString(),text:'Réponse de B.'});
+  const replies=await a.call.replies(remote.find(t=>t.remoteHandle==='mind').handle,'2020-01-01T00:00:00Z',scope);
+  assert.equal(replies[0].speaker,'Agent · PC B');
+});
+
+test('the local human calling a colony is announced with the profile name, not the built-in default',async t=>{
+  const {b,open,remote}=await fixture(t,{aCaller:'Nicolas'});
+  await open([remote.find(t=>t.remoteHandle==='mind').handle]);
+  await new Promise(r=>setTimeout(r,5));
+  assert.ok(b.notices.some(n=>n.text.includes("Nicolas · PC A t'appelle")));
+});
+
+async function fixture(t,{aCaller='NLR',bCaller='Aurore',bMain='Beta'}={}) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mind-call-peers-'));
-  async function install(label) {
+  async function install(label,mainLabel=label) {
     const main=[],room=[],notices=[],sent=[],handles=new Map([['room3',{room:3,agent:null,label:'Room 3'}]]);
-    const call=createCallService({mainLabel:label,mainAgentId:'marco',mirrorIntervalMs:0,mirrorQuietMs:0,
+    const call=createCallService({mainLabel,mainAgentId:'marco',mirrorIntervalMs:0,mirrorQuietMs:0,
       handleTable:()=>handles,
       mainReplies:()=>main,roomEntries:()=>room,sendMain:async(id,text)=>{sent.push({id,text});return {};},
       routeHandle:async(handle,text,id)=>{sent.push({id,text,handle});return {status:'routed'};},
@@ -116,10 +157,10 @@ async function fixture(t) {
     const file=path.join(dir,`${label}.json`), peers=createCallPeers({call,controls,phones,file,dataDir:data,colonies,port:0,host:'127.0.0.1'});
     return {call,peers,controls,phones,main,room,notices,sent,file,handles,data,keys,colony,colonies};
   }
-  const a=await install('Alpha'),b=await install('Beta');
+  const a=await install('Alpha'),b=await install('Beta',bMain);
   t.after(async()=>{await a.peers.close();await b.peers.close();a.call.stop();b.call.stop();a.controls.close();b.controls.close();a.phones.close();b.phones.close();fs.rmSync(dir,{recursive:true,force:true});});
-  await a.peers.admin('profile',{label:'PC A',caller:'NLR'});
-  await b.peers.admin('profile',{label:'PC B',caller:'Aurore'});
+  await a.peers.admin('profile',{label:'PC A',caller:aCaller});
+  await b.peers.admin('profile',{label:'PC B',caller:bCaller});
   async function exchange() {
     await a.peers.ready();await b.peers.ready();
     for(const [owner,other] of [[a,b],[b,a]]) {

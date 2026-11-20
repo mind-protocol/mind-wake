@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { ChatError, isPrivateAddress } from './chat-server.mjs';
-import { speechChunks } from './chat-call.mjs';
+import { speechChunks, shortLabel } from './chat-call.mjs';
 import { humanInvitation, expireHuman, decideHuman, requireHuman, humanDescription } from './call-human-state.mjs';
 
 const fail = (code, status = 400) => { throw new ChatError(code, status); };
@@ -18,6 +18,25 @@ const uuid = value => typeof value === 'string' && /^[a-f0-9-]{36}$/.test(value)
 const inboundId = (peerId, callId) => {
   const h=hash(`${peerId}:${callId}`);return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`;
 };
+// Nom affiché d'un participant distant. Une colonie installée sans profil envoyait le nom par défaut
+// du propriétaire local (« NLR ») : un nom identique au nôtre n'est jamais attribué à un distant.
+export const UNKNOWN_HUMAN = 'Humain', UNKNOWN_AGENT = 'Agent';
+const sameName = (a, b) => typeof b === 'string' && b.trim() !== '' && a.toLowerCase() === b.trim().toLowerCase();
+export function remoteParticipantName(value, local = {}, fallback = UNKNOWN_HUMAN) {
+  if (typeof value !== 'string') return fallback;
+  const v = value.trim();
+  if (!v || v.length > 80 || /[\r\n\x00-\x1f]/.test(v)) return fallback;
+  if (sameName(v, local.human)) return UNKNOWN_HUMAN;
+  if (sameName(v, local.agent)) return UNKNOWN_AGENT;
+  return v;
+}
+/** « Nom · Colonie » reçu d'un pair : seul le nom (avant le premier « · ») est contrôlé,
+ *  sauf quand la colonie nommée est la nôtre (notre propre humain relayé en retour). */
+export function remoteSpeakerLabel(value, local = {}) {
+  const [first, ...rest] = String(value).split(' · ');
+  if (rest.length && sameName(rest.join(' · '), local.label)) return String(value);
+  return [remoteParticipantName(first, local, first.trim() || UNKNOWN_HUMAN), ...rest].join(' · ');
+}
 const list = value => Array.isArray(value) && value.length > 0 && value.length <= 8 && value.every(x => typeof x === 'string') ? [...new Set(value)] : fail('call_target_invalid');
 
 export function peerAddress(value) {
@@ -51,7 +70,7 @@ async function readJson(stream, limit) {
 }
 
 export function createCallPeers({ call, controls = null, phones = null, canRing = () => true, file = null, dataDir = file ? path.dirname(path.dirname(file)) : null, colonies = dataDir ? createCallColonies(dataDir) : null, port = 8790, host = '0.0.0.0', now = Date.now, fetchImpl = fetch } = {}) {
-  let config = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { id: randomUUID(), label: os.hostname(), caller: 'NLR', enabled: false, peers: [] };
+  let config = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { id: randomUUID(), label: os.hostname(), caller: UNKNOWN_HUMAN, enabled: false, peers: [] };
   const ringResults=new Map();
   const incoming = new Map(), outgoing = new Map(), directory = new Map(), replays = new Map();
   let server = null, starting = null, startupError = null, closed = false;
@@ -65,6 +84,8 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
   config.peers=[]; config.blocked ??= []; save();
   const localTargets = () => call.targets().filter(t => t.kind !== 'remote');
   const peer = id => config.peers.find(p => p.id === id) ?? fail('peer_unknown', 404);
+  const localNames = () => ({ human: config.caller, label: config.label, agent: shortLabel(localTargets().find(t => t.kind === 'main')?.label ?? '') });
+  const humanLabel = p => `${p.human ?? UNKNOWN_HUMAN} · ${p.label}`;
   const exported = () => localTargets().map(t => ({ handle: t.handle, label: t.label, kind: t.kind, aliases:call.identityKeys([t.handle]), channel: call.channelOf(call.resolve(t.handle)) }));
   const permitted = handles => {
     for (const h of list(handles)) if (!exported().some(t => t.handle === h)) fail('peer_target_forbidden', 403);
@@ -84,6 +105,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
   async function dispatch(p, input) {
     if (input.op === 'directory') return { label:config.label, caller:config.caller, targets:exported(), at:now() };
     if(input.caller)p.caller=name(input.caller);
+    if(['ring','sync','human','deliver'].includes(input.op))p.human=remoteParticipantName(input.caller,localNames());
     if(input.label)p.label=name(input.label);
     if(input.op==='ring') {
       if(!phones||!canRing())fail('calls_paused',403);
@@ -94,7 +116,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
       if(!caller)fail('call_target_unknown',404);
       const key=`ring:${p.id}:${uuid(input.request)}`;
       if(ringResults.has(key))return ringResults.get(key);
-      const result=phones.invite(undefined,[...new Set([caller.handle,...handles])].join(','),`${p.caller} · ${p.label}`);
+      const result=phones.invite(undefined,[...new Set([caller.handle,...handles])].join(','),humanLabel(p));
       ringResults.set(key,result);while(ringResults.size>256)ringResults.delete(ringResults.keys().next().value);
       return result;
     }
@@ -116,7 +138,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
         if(incoming.size >= 32)fail('too_many_calls',429);
         c={ key, id:inboundId(p.id,input.call), owner:`peer:${p.id}`, handles, lastSeen:now(), revision:0, delivered:new Map() };
         controls?.registerCall({id:c.id,epoch:1,participants:call.identityKeys(handles)});
-        call.openSession(c.owner,c.id,1,handles,{mirror:false,caller:`${p.caller} · ${p.label}`}); incoming.set(key,c);
+        call.openSession(c.owner,c.id,1,handles,{mirror:false,caller:humanLabel(p)}); incoming.set(key,c);
       } else activeIncoming(p,input.call);
       if (input.revision >= c.revision) {
         let state=call.stateSession(c.owner,c.id,1);
@@ -138,7 +160,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     }
     const c=activeIncoming(p,input.call);
     if(input.op==='human') {
-      if(input.action==='invite'&&!c.human)c.human=humanInvitation(c.id,`${p.caller} · ${p.label}`,now());
+      if(input.action==='invite'&&!c.human)c.human=humanInvitation(c.id,humanLabel(p),now());
       const h=c.human;if(!h)fail('call_expired',409);
       expireHuman(h,now());
       if(input.action==='offer') {
@@ -157,7 +179,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
       if(handles.some(h=>!c.handles.includes(h)))fail('call_target_not_joined',403);
       if(typeof input.text!=='string'||input.text.length>4000||typeof input.message!=='string'||input.message.length>100)fail('invalid_request');
       const key=`peer-${hash(`${p.id}:${input.call}:${input.message}`).slice(0,40)}`;
-      const speaker=input.speaker?speakerName(input.speaker):`${p.caller} · ${p.label}`;
+      const speaker=input.speaker?remoteSpeakerLabel(speakerName(input.speaker),localNames()):humanLabel(p);
       const fingerprint=hash(JSON.stringify([handles,input.text,speaker]));
       if(c.delivered.has(key)&&c.delivered.get(key).fingerprint!==fingerprint)fail('message_conflict',409);
       if(!c.delivered.has(key)) {
@@ -262,7 +284,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     for(const t of targets) {
       if(!/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(t.handle)||!['main','room','agent','holder'].includes(t.kind)||!(/^(main|room:[2-9])$/).test(t.channel))fail('invalid_response');
       const handle=`lan-${p.id}-${hash(t.handle).slice(0,16)}`;
-      directory.set(handle,{handle,label:`${name(t.label)} · ${p.label}`,kind:'remote',remoteKind:t.kind,peerId:p.id,remoteHandle:t.handle,remoteAliases:Array.isArray(t.aliases)?t.aliases.filter(x=>typeof x==='string'&&/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(x)).slice(0,64):[],channel:`remote:${p.id}:${t.channel}`});
+      directory.set(handle,{handle,label:`${remoteParticipantName(name(t.label),localNames(),UNKNOWN_AGENT)} · ${p.label}`,kind:'remote',remoteKind:t.kind,peerId:p.id,remoteHandle:t.handle,remoteAliases:Array.isArray(t.aliases)?t.aliases.filter(x=>typeof x==='string'&&/^[a-z0-9][a-z0-9_.-]{0,60}$/.test(x)).slice(0,64):[],channel:`remote:${p.id}:${t.channel}`});
     }
     p.online=true;
   }
@@ -284,7 +306,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     for(const s of [...outgoing.values()])if(!retained.has(s.peerId))call.endSession(s.c.owner,s.c.id,s.c.epoch);
     config.peers=contacts;
     await Promise.all(config.peers.filter(p=>p.direction==='out').map(async p=>{
-      try {const result=await rpc(p,{op:'directory'},1500);if(closed||config.blocked.includes(p.id)||!colonies.identity())return;p.label=result.label;p.caller=result.caller;cacheDirectory(p,result.targets);}
+      try {const result=await rpc(p,{op:'directory'},1500);if(closed||config.blocked.includes(p.id)||!colonies.identity())return;p.label=result.label;p.caller=result.caller;p.human=remoteParticipantName(result.caller,localNames());cacheDirectory(p,result.targets);}
       catch {p.online=false;}
     }));
   }
@@ -303,7 +325,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
       const p=peer(id),key=`${c.id}:${id}`;
       let state=outgoing.get(key);
       if(!state){state={c,peerId:id,offset:0,revision:0};outgoing.set(key,state);}
-      const result=await rpc(p,{op:'sync',caller:c.caller,call:c.id,handles:targets.map(t=>t.remoteHandle),revision:c.revision,create:state.revision===0});
+      const result=await rpc(p,{op:'sync',caller:c.localHuman?config.caller:c.caller,call:c.id,handles:targets.map(t=>t.remoteHandle),revision:c.revision,create:state.revision===0});
       if(!state.revision)state.offset=now()-result.at;
       state.revision=Math.max(state.revision,result.revision);
       try {call.assertSession(c.owner,c.id,c.epoch);}catch(error){await rpc(p,{op:'end',call:c.id}).catch(()=>{});throw error;}
@@ -320,7 +342,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
       const state=outgoingFor(t,c);if(!state)return [];
       const result=await rpc(peer(t.peerId),{op:'read',call:state.c.id,target:t.remoteHandle});
       call.assertSession(state.c.owner,state.c.id,state.c.epoch);
-      return result.items.map(item=>({...item,id:`p${t.peerId}:${item.id}`,at:new Date(Date.parse(item.at)+state.offset).toISOString(),speaker:`${item.speaker} · ${peer(t.peerId).label}`}));
+      return result.items.map(item=>({...item,id:`p${t.peerId}:${item.id}`,at:new Date(Date.parse(item.at)+state.offset).toISOString(),speaker:`${remoteParticipantName(item.speaker,localNames(),UNKNOWN_AGENT)} · ${peer(t.peerId).label}`}));
     },
     async deliver(targets,id,text,c,speaker) {
       await sync(c);
@@ -398,12 +420,12 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
         const existing=state.humanTexts.get(id);
         if(existing&&existing.fingerprint!==fingerprint)fail('message_conflict',409);
         if(!existing) {
-          const pending=call.deliver([...c.targets.keys()],id,input.text,{...scope,speaker:speakerName(value.label)});
+          const pending=call.deliver([...c.targets.keys()],id,input.text,{...scope,speaker:humanLabel(peer(state.peerId))});
           state.humanTexts.set(id,{pending,fingerprint});pending.catch(()=>state.humanTexts.delete(id));
         }
         await state.humanTexts.get(id).pending;
       }
-      humans.push({...value,peerId:state.peerId});
+      humans.push({...value,label:humanLabel(peer(state.peerId)),peerId:state.peerId});
     }
     return {humans};
   }
