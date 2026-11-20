@@ -1,3 +1,4 @@
+import { readPrincipalOutputs } from "../../communication/principal-outputs.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -1110,4 +1111,12 @@ it("sends a single delegation reminder on a stable project without publishing a 
   ).toHaveLength(1);
   expect(events.filter((e) => e.type === "ended")).toHaveLength(1);
   expect(plans).toBe(0);
+});
+
+
+it("records only the final Claude reply for pattern holders", async () => {
+  await run(adapter({ ownerInboxDir: h.dir }), "holder-final");
+  expect(readPrincipalOutputs(h.dir, 10)).toEqual([
+    expect.objectContaining({ text: "Terminé." }),
+  ]);
 });

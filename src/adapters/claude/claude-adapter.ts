@@ -1,3 +1,4 @@
+import { recordPrincipalOutput } from "../../communication/principal-outputs.js";
 /**
  * Adapter Claude Code (ADR-005) : `claude -p` en `stream-json`, conforme à `RuntimeAdapter`.
  *
@@ -928,6 +929,15 @@ export class ClaudeAdapter implements RuntimeAdapter {
           const previousTotals = session.result?.tokens;
           const isStepsResult = session.stepsStopSent && !session.stepsStopComplete;
           if (isStepsResult) session.stepsStopComplete = true;
+          if (!isStepsResult && !item.isError && this.#options.ownerInboxDir) {
+            const frame = JSON.parse(line) as { result?: unknown; uuid?: string };
+            if (typeof frame.result === "string" && !isStepsDecision(frame.result)) {
+              recordPrincipalOutput(this.#options.ownerInboxDir, {
+                id: `claude:${sessionId}:${frame.uuid ?? at}`,
+                at, text: frame.result,
+              });
+            }
+          }
           if (
             isStepsResult &&
             (item.tokens === null ||

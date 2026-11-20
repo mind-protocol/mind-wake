@@ -1,3 +1,4 @@
+import { readPrincipalOutputs } from "../../communication/principal-outputs.js";
 /**
  * Adapter Codex contre un faux exécutable `codex` (test/fixtures/codex/fake-codex.ts) qui
  * rejoue des flux app-server enregistrés. Aucun appel modèle, aucun réseau, aucun
@@ -1309,4 +1310,12 @@ it("does not send a reminder when a child launch was observed", async () => {
   expect(
     events.some((e) => e.type === "activity" && e.summary.includes("Rappel de délégation")),
   ).toBe(false);
+});
+
+
+it("records the final Codex reply for pattern holders", async () => {
+  await collect(adapter({ ownerInboxDir: h.dir }), request());
+  expect(readPrincipalOutputs(h.dir, 10)).toEqual([
+    expect.objectContaining({ text: "J'ai lancé la simulation." }),
+  ]);
 });

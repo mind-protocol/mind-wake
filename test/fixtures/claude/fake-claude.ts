@@ -385,7 +385,7 @@ function play(userContent: string): void {
         session_id: sessionId,
       });
       assistant([{ type: "text", text: "Terminé." }]);
-      successResult({ input: 100, cacheCreation: 20, cacheRead: 30, output: 50 });
+      successResult({ input: 100, cacheCreation: 20, cacheRead: 30, output: 50 }, "Terminé.");
       break;
     case "rate_limited":
       init();

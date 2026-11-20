@@ -1,3 +1,4 @@
+import { recordPrincipalOutput } from "../../communication/principal-outputs.js";
 import path from "node:path";
 import { DELEGATION_REMINDER, DelegationEvidence } from "../../daemon/delegation-reminder.js";
 import { checkCodexCompatibility, type CodexCompatibility } from "./compatibility.js";
@@ -1047,6 +1048,12 @@ export class CodexAdapter implements RuntimeAdapter {
         if (typeof item["text"] === "string") {
           session.stepsResult = item["text"].slice(0, 65_537);
           if (session.planning || isStepsDecision(item["text"])) break;
+          if (this.#options.ownerInboxDir && ["final", "final_answer"].includes(String(item["phase"]))) {
+            recordPrincipalOutput(this.#options.ownerInboxDir, {
+              id: `codex:${session.threadId ?? sessionId}:${String(turnId)}:${String(item["id"])}`,
+              at, text: item["text"],
+            });
+          }
           this.#emit(session, {
             type: "activity",
             sessionId,

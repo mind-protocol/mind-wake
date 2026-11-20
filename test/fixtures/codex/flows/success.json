@@ -122,6 +122,7 @@
             "item": {
               "id": "m1",
               "type": "agentMessage",
+              "phase": "final_answer",
               "text": "J'ai lancé la simulation."
             }
           }
