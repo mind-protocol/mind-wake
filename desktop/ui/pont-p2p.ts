@@ -169,7 +169,7 @@ export function mountPontP2P(invoke: Invoke): { refresh(): Promise<void> } | nul
     try { view = await call("status"); render(); }
     catch (e) {
       const text = e instanceof Error ? e.message : String(e);
-      state.textContent = /pont_p2p.*not found|not found.*pont_p2p|allow-pont-p2p/i.test(text)
+      state.textContent = /pont_p2p.*(not found|not allowed)|not found.*pont_p2p|allow-pont-p2p/i.test(text)
         ? "Cette version de l'app ne connaît pas encore le pont : installer la mise à jour de l'app (commande pont_p2p absente du binaire)."
         : text;
     }

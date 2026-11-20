@@ -25,17 +25,32 @@ export async function callPageReady() {
 }
 
 /** The watcher stays alive even when a legacy agent-owned gateway initially owns the port. */
-export function startDesktopCallHost(manifest, log = () => {}) {
+export function startDesktopCallHost(manifest, log = () => {}, { respawnMs = 5000 } = {}) {
   const output = path.join(manifest.dataDir, "installation", "desktop-call");
   fs.mkdirSync(output, { recursive: true });
-  const fd = fs.openSync(path.join(output, "host.log"), "a");
-  const child = spawn(manifest.node, [path.join(manifest.repoDir, "scripts/desktop-call-host.mjs"),
-    "--run", path.join(manifest.dataDir, "installation/manifest.json"), String(process.pid)], {
-    cwd: manifest.repoDir, windowsHide: true, stdio: ["ignore", fd, fd],
-    env: { ...process.env, MIND_WAKE_DATA_DIR: manifest.dataDir },
-  });
-  fs.closeSync(fd);
-  child.on("error", error => log(`call host: ${error.message}`));
+  let child, stopped = false, timer = null, delay = respawnMs, startedAt = 0;
+  // The host is spawned by the supervisor; if it dies, the gateway must come back
+  // without waiting for a full Wake relaunch (incident 2026-11-20 : 3 h sans passerelle).
+  const launch = () => {
+    timer = null; startedAt = Date.now();
+    const fd = fs.openSync(path.join(output, "host.log"), "a");
+    child = spawn(manifest.node, [path.join(manifest.repoDir, "scripts/desktop-call-host.mjs"),
+      "--run", path.join(manifest.dataDir, "installation/manifest.json"), String(process.pid)], {
+      cwd: manifest.repoDir, windowsHide: true, stdio: ["ignore", fd, fd],
+      env: { ...process.env, MIND_WAKE_DATA_DIR: manifest.dataDir },
+    });
+    fs.closeSync(fd);
+    child.on("error", error => log(`call host: ${error.message}`));
+    child.on("exit", (code, signal) => {
+      if (stopped) return;
+      // Back off up to 1 min while the host keeps crashing; reset after a healthy minute.
+      delay = Date.now() - startedAt > 60_000 ? respawnMs : Math.min(delay * 2, 60_000);
+      log(`call host exited (${code ?? signal}); restarting in ${delay}ms`);
+      timer = setTimeout(launch, delay);
+      timer.unref?.();
+    });
+  };
+  launch();
   return {
     async ready(timeoutMs = 12_000) {
       const deadline = Date.now() + timeoutMs;
@@ -47,14 +62,23 @@ export function startDesktopCallHost(manifest, log = () => {}) {
       log("Call preloading continues in background; see installation/desktop-call/host.log");
       return false;
     },
-    stop() { child.kill(); },
+    stop() { stopped = true; if (timer) clearTimeout(timer); child.kill(); },
   };
 }
 
-export async function watchCallGateway({ alive, occupied, start, wait = sleep, log = () => {} }) {
-  let service;
+/** A started gateway is probed too: after `lostAfter` consecutive refused probes it is closed and restarted. */
+export async function watchCallGateway({ alive, occupied, start, wait = sleep, log = () => {}, lostAfter = 3 }) {
+  let service, misses = 0;
   try {
     while (alive()) {
+      if (service) {
+        misses = (await occupied()) ? 0 : misses + 1;
+        if (misses >= lostAfter) {
+          log("Desktop call gateway stopped listening; restarting");
+          try { await service.close(); } catch (error) { log(`Call gateway close: ${error.message}`); }
+          service = undefined; misses = 0;
+        }
+      }
       if (!service && !(await occupied())) {
         try { service = await start(); log("Desktop call gateway ready"); }
         catch (error) { log(`Call gateway: ${error.message}`); }
