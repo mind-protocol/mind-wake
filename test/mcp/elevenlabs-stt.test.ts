@@ -130,3 +130,27 @@ it("keeps silence empty and honours cancellation before uploading", async () => 
   ).rejects.toThrow("annulé");
   expect(http).toHaveBeenCalledTimes(2);
 });
+it("supports STT alone without a voice or TTS permission, including realtime", async () => {
+  const http = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ token: "batch" }))
+    .mockResolvedValueOnce(Response.json({ text: "Bonjour", language_code: "fra" }))
+    .mockResolvedValueOnce(Response.json({ token: "realtime" }));
+  const f = setup(http);
+  f.service.configure({ enabled: false, voiceId: "", autoplay: false, transcriptionEnabled: true });
+  expect((await f.service.transcribeDesktop(input)).text).toBe("Bonjour");
+  expect((await f.service.realtimeTranscriptionToken()).token).toBe("realtime");
+  await expect(f.service.generate({ text: "Bonjour" })).rejects.toThrow("désactivé");
+  expect(http).toHaveBeenCalledTimes(3);
+  const paused = new ElevenLabs(f.dir, http, () => false);
+  await expect(paused.realtimeTranscriptionToken()).rejects.toThrow("pause");
+  f.service.configureTranscription(false);
+  await expect(f.service.realtimeTranscriptionToken()).rejects.toThrow("non activée");
+  expect(http).toHaveBeenCalledTimes(3);
+});
+
+it("rejects STT-only activation without an API key", () => {
+  const dir = fs.mkdtempSync(path.join(process.cwd(), "test/.stt-"));
+  dirs.push(dir);
+  const service = new ElevenLabs(dir, vi.fn<typeof fetch>(), () => true);
+  expect(() => service.configure({ enabled: false, voiceId: "", autoplay: false, transcriptionEnabled: true })).toThrow("Clé API requise");
+});

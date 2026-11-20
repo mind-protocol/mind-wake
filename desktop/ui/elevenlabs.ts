@@ -4,6 +4,7 @@ import type {VoiceModeState} from "./voice-mode-view.js";
 import {voiceShortcutAction} from "./voice-shortcuts.js";
 type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
 interface Settings {
+  transcriptionEnabled?: boolean;
   enabled: boolean;
   autoplay: boolean;
   voiceId: string;
@@ -29,7 +30,8 @@ export function initElevenLabs(invoke: Invoke, speaking: (active: boolean) => vo
   const form = get<HTMLFormElement>("form"),
     key = get<HTMLInputElement>("key");
   const voice = get<HTMLSelectElement>("voice"),
-    enabled = get<HTMLInputElement>("enabled");
+    enabled = get<HTMLInputElement>("enabled"),
+    transcription = get<HTMLInputElement>("transcription");
   const autoplay = get<HTMLInputElement>("autoplay"),
     feedback = get("feedback");
   const player = get("player"),
@@ -63,6 +65,7 @@ export function initElevenLabs(invoke: Invoke, speaking: (active: boolean) => vo
   }
   function render(settings: Settings): void {
     enabled.checked = settings.enabled;
+    transcription.checked = settings.transcriptionEnabled === true;
     autoplay.checked = settings.autoplay;
     voice.replaceChildren(new Option(settings.voiceId || "Choisir une voix", settings.voiceId));
     get("key-state").textContent = settings.hasKey ? "Clé enregistrée" : "Aucune clé enregistrée";
@@ -71,6 +74,7 @@ export function initElevenLabs(invoke: Invoke, speaking: (active: boolean) => vo
   async function save(): Promise<void> {
     const settings = await call<Settings>("configure", {
       enabled: enabled.checked,
+      transcriptionEnabled: transcription.checked,
       autoplay: autoplay.checked,
       voiceId: voice.value,
       apiKey: key.value,

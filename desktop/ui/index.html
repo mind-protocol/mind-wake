@@ -210,11 +210,13 @@
           <p id="stt-vocabulary-status" role="status"></p>
         </section>
         <section aria-labelledby="h-elevenlabs">
-          <h2 id="h-elevenlabs">Voix · ElevenLabs</h2>
+          <h2 id="h-elevenlabs">Voix et transcription · ElevenLabs</h2>
           <form id="elevenlabs-form" class="workspace-sync-form">
             <label for="elevenlabs-key">Clé API ElevenLabs</label>
             <input id="elevenlabs-key" type="password" autocomplete="new-password" placeholder="Nouvelle clé (vide pour conserver la clé enregistrée)" />
             <p id="elevenlabs-key-state" class="hint"></p>
+            <label><input id="elevenlabs-transcription" type="checkbox" /> Activer la transcription ElevenLabs (STT)</label>
+            <p class="hint">Pour utiliser uniquement le STT, cochez cette case et laissez la génération vocale décochée. Aucune voix à choisir. Les enregistrements à transcrire sont envoyés à ElevenLabs et utilisent les crédits du compte.</p>
             <button id="elevenlabs-load" type="button">Charger les voix du compte</button>
             <label for="elevenlabs-voice">Voix par défaut</label>
             <select id="elevenlabs-voice"><option value="">Choisir une voix</option></select>

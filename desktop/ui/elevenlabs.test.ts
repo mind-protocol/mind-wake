@@ -75,6 +75,9 @@ function desktop(blockAutoplay = false, holdStarted = false, initial?: {id:strin
       case "status":
         data = { enabled: true, autoplay: true, voiceId: "fr", hasKey: true };
         break;
+      case "configure":
+        data = { ...(args["payload"] as object), hasKey: true };
+        break;
       case "pending":
         data = { allowed, clips: pending };
         break;
@@ -353,4 +356,21 @@ it("a clip still loading when the human interrupts is not played", async () => {
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(ui.get("audio").play).toHaveBeenCalledOnce();
   expect(ui.get("player").hidden).toBe(true);
+});
+
+it("saves STT consent independently of voice generation", async () => {
+  const ui = desktop(false, false, []);
+  await ui.tick();
+  expect(ui.get("transcription").checked).toBe(false);
+  ui.get("enabled").checked = false;
+  ui.get("transcription").checked = true;
+  ui.get("voice").value = "";
+  const submit = ui.get("form").listeners.get("submit");
+  if (!submit) throw Error("Missing settings handler");
+  Reflect.apply(submit, null, [{ preventDefault: vi.fn() }]);
+  await vi.waitFor(() => expect(ui.get("feedback").textContent).toBe("Réglages enregistrés."));
+  expect(ui.invoke).toHaveBeenCalledWith("elevenlabs", {
+    action: "configure",
+    payload: { enabled: false, transcriptionEnabled: true, autoplay: true, voiceId: "", apiKey: "" },
+  });
 });

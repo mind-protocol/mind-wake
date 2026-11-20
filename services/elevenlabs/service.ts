@@ -128,6 +128,8 @@ export class ElevenLabs {
     };
     if (config.enabled && (!config.apiKey || !config.voiceId))
       throw Error("Clé API et voix requises pour activer ElevenLabs.");
+    if (config.transcriptionEnabled && !config.apiKey)
+      throw Error("Clé API requise pour activer la transcription ElevenLabs.");
     // Seul geste humain qui rouvre la voix depuis Réglages : recocher l'autorisation.
     if (config.enabled && !previous.enabled) closeElevenLabsCircuit(this.dir, "settings");
     fs.mkdirSync(this.dir, { recursive: true });
@@ -471,9 +473,16 @@ export class ElevenLabs {
       ...(args.expected_voice_revision?{expected_voice_revision:args.expected_voice_revision}:{}),
     };
   }
+  private transcriptionAllowed() {
+    const config = this.config();
+    if (!config.transcriptionEnabled)
+      throw Error("ElevenLabs STT : transcription non activée pour ce profil.");
+    if (!config.apiKey) throw Error("Clé API requise pour la transcription ElevenLabs.");
+    if (!this.active()) throw Error("Wake est en pause, arrêté ou indisponible.");
+  }
   /** Provider key remains local. Only the one-use realtime token can leave this service. */
   private async scribeToken(signal?: AbortSignal, kind: "batch_scribe" | "realtime_scribe" = "batch_scribe"): Promise<string> {
-    this.allowed();
+    this.transcriptionAllowed();
     const response = await this.http(
       `https://api.elevenlabs.io/v1/single-use-token/${kind}`,
       {
@@ -519,14 +528,9 @@ export class ElevenLabs {
     };
   }
   async realtimeTranscriptionToken() {
-    const check = () => {
-      this.allowed();
-      if (!this.config().transcriptionEnabled)
-        throw Error("ElevenLabs STT : transcription non activée pour ce profil.");
-    };
-    check();
+    this.transcriptionAllowed();
     const token = await this.scribeToken(undefined, "realtime_scribe");
-    check();
+    this.transcriptionAllowed();
     // Vide tant que l'option payante n'est pas cochée (≤ 50 termes de ≤ 20 caractères en temps réel).
     return { token, keyterms: elevenLabsKeyterms(readSttVocabulary(this.dir), { realtime: true }) };
   }
@@ -552,11 +556,7 @@ export class ElevenLabs {
         request_id: z.string().min(1).max(200),
       })
       .parse(input);
-    this.allowed();
-    if (!this.config().transcriptionEnabled)
-      throw Error(
-        "ElevenLabs STT : transcription non activée pour ce profil ; utiliser la saisie manuelle.",
-      );
+    this.transcriptionAllowed();
     const bytes = Buffer.from(args.audio, "base64");
     if (bytes.length > 4_125_000 || bytes.toString("base64") !== args.audio)
       throw Error("ElevenLabs STT : audio invalide.");
@@ -588,7 +588,7 @@ export class ElevenLabs {
     );
     const guard = setInterval(() => {
       try {
-        this.allowed();
+        this.transcriptionAllowed();
         if (fs.existsSync(cancelMarker)) controller.abort();
       } catch {
         controller.abort();
@@ -599,7 +599,7 @@ export class ElevenLabs {
       if (fs.existsSync(cancelMarker))
         throw Error("ElevenLabs STT : extrait annulé.");
       const token = await this.scribeToken(controller.signal); // No audio before server authorizes batch Scribe.
-      this.allowed();
+      this.transcriptionAllowed();
       if (fs.existsSync(cancelMarker))
         throw Error("ElevenLabs STT : extrait annulé.");
       controller.signal.throwIfAborted();
@@ -657,7 +657,7 @@ export class ElevenLabs {
           words: z.array(z.object({ type: z.string() })).optional(),
         })
         .parse(await response.json());
-      this.allowed();
+      this.transcriptionAllowed();
       // The hint is not a licence to translate or repair unexpected words.
       if (!["fr", "fra"].includes(result.language_code) && result.text.trim())
         throw Error(
