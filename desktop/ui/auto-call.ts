@@ -13,12 +13,21 @@ export interface AutoCallView {
 
 const hhmm = (iso: string) => new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
+/**
+ * Un refus de la sonnerie est une issue normale, pas une panne. « refusé » fait partie des mots
+ * d'erreur du relais (app-error-report.ts) : #auto-call-status (role=status) remontait chaque refus
+ * comme incident (20 nov. 2026, 17:37Z). Les vrais échecs (« sauté (échec : …) ») restent signalés.
+ */
+function outcomeLabel(outcome: string): string {
+  return outcome.replace("(refusé)", "(décliné)");
+}
+
 /** Texte affiché à côté de l'interrupteur (heure locale). */
 export function autoCallSummary(view: AutoCallView): string {
   const parts: string[] = [];
   if (view.enabled && view.nextAt !== null) parts.push(`prochain appel à ${hhmm(view.nextAt)}`);
   else if (!view.enabled) parts.push("désactivé");
-  if (view.lastOutcome !== null && view.lastAt !== null) parts.push(`dernier : ${view.lastOutcome} à ${hhmm(view.lastAt)}`);
+  if (view.lastOutcome !== null && view.lastAt !== null) parts.push(`dernier : ${outcomeLabel(view.lastOutcome)} à ${hhmm(view.lastAt)}`);
   return parts.join(" · ");
 }
 
