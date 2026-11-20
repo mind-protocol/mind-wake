@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod";
-import { deliverLocalMessage } from "../../src/communication/local-message.js";
+import { respondToLocalMessage } from "../../src/communication/message-response.js";
 import { externalInboxSyncAllowed } from "../../src/communication/external-inbox-policy.js";
 import {
   readSettings,
@@ -34,7 +34,7 @@ export function registerUnifiedMessage(
     "message",
     {
       description:
-        "Send one punctual message to one or several recipients: @nlr (local human), an agent handle, room3, or ⬡colony/agent. Use to as a string or array. Each destination receives a separate delivery; this does not create a lasting conversation space. Use call for that. Author comes from your runtime. Reuse idempotency_key for retries. Remote pending is not delivered; follow colony_status using its id.",
+        "Send one punctual message to one or several recipients: @nlr (local human), an agent handle, room3, or ⬡colony/agent. Use to as a string or array. Each destination receives a separate delivery; this does not create a lasting conversation space. Use call for that. While autonomous Wake is paused or stopped, local agents can give one tool-free reply without resuming Wake; answered includes that reply. Author comes from your runtime. Reuse idempotency_key for retries. Remote pending is not delivered; follow colony_status using its id.",
       inputSchema: z.strictObject({
         to: z.union([recipient, z.array(recipient).min(1).max(32)]),
         text: z.string().trim().min(1).max(4000),
@@ -48,11 +48,11 @@ export function registerUnifiedMessage(
         ...new Set((Array.isArray(a.to) ? a.to : [a.to]).map((t) => t.toLowerCase())),
       ]) {
         try {
-          if (!externalInboxSyncAllowed(dir)) throw Error("Wake est en pause ou arrêté.");
           const key = createHash("sha256")
             .update(JSON.stringify([author, to, a.idempotency_key]))
             .digest("hex");
           if (["@nlr", "nlr", "user:nlr", "human", "user"].includes(to)) {
+            if (!externalInboxSyncAllowed(dir)) throw Error("Wake est en pause ou arrêté.");
             const response = (await owner({
               text: a.text,
               idempotency_key: key,
@@ -73,6 +73,7 @@ export function registerUnifiedMessage(
               result: JSON.parse(response.content[0]?.text ?? "{}") as unknown,
             });
           } else if (to.startsWith("⬡")) {
+            if (!externalInboxSyncAllowed(dir)) throw Error("Wake est en pause ou arrêté.");
             if (!readSettings(dir).enabled) throw Error("Pont pair-à-pair désactivé.");
             const resolved = resolveFromDisk(dir, to);
             if (!resolved.ok) throw Error(String(resolved["reason"]));
@@ -113,7 +114,7 @@ export function registerUnifiedMessage(
               result: r,
             });
           } else {
-            results.push({ to, ...deliverLocalMessage(dir, { to, text: a.text, author, key }) });
+            results.push({ to, ...await respondToLocalMessage(dir, { to, text: a.text, author, key }) });
           }
         } catch (error) {
           results.push({
