@@ -38,6 +38,16 @@ export function cleanupKilledGitIndexLock(
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
 }
+/** Git subcommand after leading `-c key=value` options: `-c x=y push` is a push. */
+export function gitOperation(args: readonly string[]): string {
+  let i = 0;
+  while (args[i] === "-c") i += 2;
+  return args[i] ?? "operation";
+}
+/** Large workspace transfers outlast 30 s; local reads stay short. */
+export function gitTimeoutMs(operation: string): number {
+  return operation === "add" || operation === "commit" || operation === "push" ? 5 * 60_000 : 30_000;
+}
 /** No shell. Errors deliberately omit raw Git output, URLs and credentials. */
 export async function git(
   cwd: string,
@@ -92,22 +102,22 @@ export async function git(
     void child.terminateTree();
   };
   signal?.addEventListener("abort", stop, { once: true });
-  const operation = args[0] ?? "operation";
-  const timeoutMs = operation === "add" || operation === "commit" ? 5 * 60_000 : 30_000;
+  const operation = gitOperation(args);
+  const timeoutMs = gitTimeoutMs(operation);
   const timer = setTimeout(stop, timeoutMs);
   try {
     await child.started();
     const line = await child.readLine();
     const exit = await child.exited;
-    if (cancellation.signal.aborted) throw new GitCommandError(args[0] ?? "operation", true);
+    if (cancellation.signal.aborted) throw new GitCommandError(operation, true);
     if (exit.mainExitCode !== 0 || line === null)
-      throw new GitCommandError(args[0] ?? "operation", false);
+      throw new GitCommandError(operation, false);
     const result = JSON.parse(line) as { failed: boolean; stdout: string; stderr: string };
     if (result.failed && FILE_CHANGED_WHILE_INDEXING.test(result.stderr))
-      throw new GitCommandError(args[0] ?? "operation", true, "file-changed");
+      throw new GitCommandError(operation, true, "file-changed");
     if (result.failed)
       throw new GitCommandError(
-        args[0] ?? "operation",
+        operation,
         /could not resolve host|could not resolve hostname|failed to connect|connection timed out|connection reset|network is unreachable|unable to access.*(timeout|couldn.t connect)/i.test(
           result.stderr,
         ),
