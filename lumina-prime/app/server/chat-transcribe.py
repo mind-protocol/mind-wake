@@ -112,7 +112,10 @@ def main():
                     text = recognize()
             if len(text) > 4000:
                 raise ValueError("transcript_too_long")
+            # Énergie des passages retenus par la VAD : un silence transcrit (hallucination) y est très bas.
+            rms = float(np.sqrt(np.mean(np.square(audio)))) if len(audio) else 0.0
             result = {"text": text, "durationSeconds": duration, "speechSeconds": len(audio) / RATE,
+                      "speechRms": round(rms, 5),
                       "device": device, "processingMs": round(1000 * (time.monotonic() - started))}
         except Exception:
             result = {"error": "transcription_failed"}

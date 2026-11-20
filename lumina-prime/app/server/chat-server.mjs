@@ -440,7 +440,10 @@ export function createChatServer({ bridge, transcribe = null, pairingCode = rand
         if(scope)ensureActive(scope);
         if (!text) { send(res, 200, { schema: 'mind.chat.call.utterance.v1', id, status: 'empty', text: '',
           durationSeconds: result.durationSeconds, transcribeMs }, origin); return; }
-        const receipt = await call.deliver(target, id, text.slice(0, 3900),scope);
+        const receipt = await call.deliver(target, id, text.slice(0, 3900),scope,{speechRms:result.speechRms});
+        // Hallucination de Whisper sur un silence (« …Amara.org ») : rien n'est remis, la bulle reste vide.
+        if (receipt?.status === 'dropped') { send(res, 200, { schema: 'mind.chat.call.utterance.v1', id, status: 'empty', text: '',
+          dropped: receipt.reason, durationSeconds: result.durationSeconds, transcribeMs }, origin); return; }
         send(res, 200, { schema: 'mind.chat.call.utterance.v1', id, status: 'queued', text, label: receipt.label,
           at: receipt.at, durationSeconds: result.durationSeconds, transcribeMs }, origin); return;
       }

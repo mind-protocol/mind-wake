@@ -1,5 +1,6 @@
 import { ChatError } from './chat-server.mjs';
 import { createHash } from 'node:crypto';
+import { cleanTranscript } from './stt-hallucinations.mjs';
 
 /**
  * Mode « Appel » de l'app mobile (NLR, 16 nov. 2026 17:53 et 17:55) : chaque prise de parole
@@ -244,8 +245,14 @@ export function createCallService({ mainLabel = 'Marco', mainAgentId = MAIN_HAND
     return invites;
   }
   /** Une seule transcription, une remise par fil ; la consigne « réponds vite » précède le texte. */
-  async function deliver(handles, id, text, context = null) {
+  async function deliver(handles, id, text, context = null, audio = null) {
     let targets = parseTargets(handles); let invites = [];
+    // Parole d'appel seulement (orateur ou mesure audio) : hallucinations de Whisper sur le silence écartées.
+    if (audio || context?.speaker) {
+      const cleaned = cleanTranscript(text, audio ?? {});
+      if (cleaned.text === null) return { status: 'dropped', reason: cleaned.reason, at: new Date(now()).toISOString(), label: '' };
+      text = cleaned.text;
+    }
     if (context) {
       const current = assertSession(context.owner, context.id, context.epoch);
       targets = targets.filter(t => current.targets.has(t.handle));
