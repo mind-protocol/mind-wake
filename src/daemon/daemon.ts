@@ -367,6 +367,7 @@ export class WakeDaemon implements SessionLauncher {
             this.#onProposal(sessionId, proposal);
           },
           fakeScenario: (sessionId) => this.#sessions.get(sessionId)?.scenario,
+          log: (line) => this.#log(line),
         }),
       liveChecks: () => this.#liveChecks(),
       onCheckpointCandidate: (candidate) => {

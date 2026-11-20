@@ -87,6 +87,7 @@ export function codexRegistration(config: CodexRegistrationConfig): AdapterRegis
         codexHome: config.codexHome ?? path.join(context.dataDir, "codex-home"),
         workspaceDir: context.workspaceDir,
         ownerInboxDir: context.dataDir,
+        ...(context.log === undefined ? {} : { principalOutputLog: context.log }),
         ...(context.nativeCapabilities === true
           ? { onClusterStatus: clusterStatusPublisher(context.dataDir, 1, "Fil principal") }
           : {}),

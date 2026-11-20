@@ -155,6 +155,8 @@ export interface ClaudeAdapterOptions {
   /** Dossier des journaux de débogage du CLI, un fichier par session ; absent : désactivé. */
   readonly debugDir?: string;
   readonly ownerInboxDir?: string;
+  /** Journal du daemon : fins de tour non relayées (`principal-output-filter.ts`). */
+  readonly principalOutputLog?: (line: string) => void;
   readonly maxTurns?: number;
   /**
    * Auto-compaction : si le réveil précédent de la conversation a dépassé ce nombre de
@@ -935,7 +937,7 @@ export class ClaudeAdapter implements RuntimeAdapter {
               recordPrincipalOutput(this.#options.ownerInboxDir, {
                 id: `claude:${sessionId}:${frame.uuid ?? at}`,
                 at, text: frame.result,
-              });
+              }, this.#options.principalOutputLog ? { log: this.#options.principalOutputLog } : {});
             }
           }
           if (

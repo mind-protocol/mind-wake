@@ -42,6 +42,8 @@ export interface AdapterFactoryContext {
   onProposal(sessionId: SessionId, proposal: unknown): void;
   /** Scénario de l'agent factice pour la session (adapter factice seulement). */
   fakeScenario(sessionId: SessionId): FakeScenario | undefined;
+  /** Journal du daemon (fins de tour non relayées, etc.). */
+  readonly log?: (line: string) => void;
 }
 
 export interface AdapterRegistration {

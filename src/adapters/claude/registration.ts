@@ -171,6 +171,7 @@ export function claudeRegistration(config: ClaudeRegistrationConfig): AdapterReg
         agentPilot: () => readAgentPilot(path.join(context.workspaceDir, "artifacts")),
         promptDir: path.join(dir, "prompts"),
         ownerInboxDir: context.dataDir,
+        ...(context.log === undefined ? {} : { principalOutputLog: context.log }),
         systemPrompt: () =>
           withFilResume(
             context.dataDir,

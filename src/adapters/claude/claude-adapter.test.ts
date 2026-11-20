@@ -1,4 +1,5 @@
 import { readPrincipalOutputs } from "../../communication/principal-outputs.js";
+import { readFilterStatus } from "../../communication/principal-output-filter.js";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -1114,9 +1115,9 @@ it("sends a single delegation reminder on a stable project without publishing a 
 });
 
 
-it("records only the final Claude reply for pattern holders", async () => {
+it("passes the final Claude reply through the relay filter (« Terminé. » is too short to relay)", async () => {
   await run(adapter({ ownerInboxDir: h.dir }), "holder-final");
-  expect(readPrincipalOutputs(h.dir, 10)).toEqual([
-    expect.objectContaining({ text: "Terminé." }),
-  ]);
+  expect(readPrincipalOutputs(h.dir, 10)).toEqual([]);
+  expect(readFilterStatus(h.dir)).toMatchObject({ skipped: 1, byReason: { vide: 1 } });
+  expect(readFilterStatus(h.dir).recent[0]).toMatchObject({ excerpt: "Terminé." });
 });

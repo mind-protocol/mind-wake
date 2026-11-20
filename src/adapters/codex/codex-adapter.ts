@@ -97,6 +97,8 @@ export interface CodexAdapterOptions {
   readonly delegationReminder?: boolean;
   readonly onStepsResult?: (request: StartRequest, raw: string) => boolean;
   readonly ownerInboxDir?: string;
+  /** Journal du daemon : fins de tour non relayées (`principal-output-filter.ts`). */
+  readonly principalOutputLog?: (line: string) => void;
   readonly onClusterStatus?: (text: string) => void;
   readonly executable: CodexExecutable;
   /** Dossier Codex propre à Wake (configuration, connexion officielle). */
@@ -1052,7 +1054,7 @@ export class CodexAdapter implements RuntimeAdapter {
             recordPrincipalOutput(this.#options.ownerInboxDir, {
               id: `codex:${session.threadId ?? sessionId}:${String(turnId)}:${String(item["id"])}`,
               at, text: item["text"],
-            });
+            }, this.#options.principalOutputLog ? { log: this.#options.principalOutputLog } : {});
           }
           this.#emit(session, {
             type: "activity",

@@ -2,12 +2,33 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { noteSkip, principalOutputSkip, recentOwnPosts, type PrincipalOutputSkip } from "./principal-output-filter.js";
 
 const FILE = "principal-outputs.sqlite";
 export interface PrincipalOutput { id: string; at: string; text: string }
 
-export function recordPrincipalOutput(dataDir: string, output: PrincipalOutput): void {
+/**
+ * Enregistre une fin de tour pour le fil des holders, sauf si le filtre la juge vide, de
+ * remplissage ou redite d'un message que l'agent vient de poster (`principal-output-filter.ts`) :
+ * elle n'est alors ni lue par les holders ni réveilleuse, et le saut est journalisé et compté.
+ */
+export function recordPrincipalOutput(
+  dataDir: string,
+  output: PrincipalOutput,
+  options: { log?: (line: string) => void } = {},
+): void {
   if (!output.text.trim()) return;
+  let skip: PrincipalOutputSkip | null = null;
+  try {
+    skip = principalOutputSkip(output.text, output.at, recentOwnPosts(dataDir, output.at));
+  } catch (error) {
+    // Filtre en panne : la fin de tour est relayée comme avant, jamais perdue en silence.
+    options.log?.(`filtre des fins de tour indisponible — ${String(error)}`);
+  }
+  if (skip !== null) {
+    noteSkip(dataDir, output, skip, options.log);
+    return;
+  }
   const db = new Database(path.join(dataDir, FILE));
   try {
     db.pragma("busy_timeout = 5000");
