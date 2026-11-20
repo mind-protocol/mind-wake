@@ -553,7 +553,7 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
                 });
           if (result.accepted) store.markDelivered(human.map((h) => h.id));
           if (result.text) {
-            const entryId = store.add("agent", result.text.slice(0, 20_000), n, null);
+            const entryId = store.add("agent", result.text, n, null);
             // Tour déclenché par NLR sur Telegram : la réponse repart vers son téléphone.
             if (
               result.accepted &&
@@ -561,7 +561,7 @@ export async function runForks(options: ForkWorkerOptions): Promise<void> {
                 [...roomInjected(store)].some((i) => !injectedBefore.has(i) && store.isTelegramRouted(i)))
             )
               await forwardRoomReply({
-                store, room: id, entryId, text: result.text.slice(0, 20_000), send: telegramReply, log: options.log,
+                store, room: id, entryId, text: result.text, send: telegramReply, log: options.log,
                 name: roomLabelIn(options.dataDir, id),
                 workspaces: roomFileRoots(options.dataDir, assignment.workspace),
               });

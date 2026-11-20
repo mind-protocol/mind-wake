@@ -833,7 +833,7 @@ export async function runSecondThread(
       if (result.sessionConfirmed || result.outcome === "completed")
         store.markDelivered(human.map((h) => h.id));
       if (result.text !== "")
-        store.add("agent", result.text.slice(0, 20_000), n, position.projectId);
+        store.add("agent", result.text, n, position.projectId);
       if (result.outcome !== "completed")
         store.add(
           "event",

@@ -40,6 +40,25 @@ export async function forks(
     catch { return "codex" as const; }
   };
   const profileFor = (id: number) => (engineOf(id) === "claude" ? claudeProfile() : profile());
+  /** Causes lisibles d'un refus « stop », dans l'ordre des contrôles de `profile`. */
+  const stopReasons = (engine: string): string[] =>
+    withReadStore(ctx, dataDir, ({ uow }) => {
+      if (uow === null) return ["profil Wake introuvable"];
+      const reasons: string[] = [];
+      const state = uow.profiles.get(DEFAULT_PROFILE_ID) ?? null;
+      if (state === null) reasons.push("profil Wake introuvable");
+      else if (state.emergencyStopLocked) reasons.push("arrêt d'urgence (Force-off) verrouillé, à lever par l'humain");
+      else if (["stopped", "disabled"].includes(state.state)) reasons.push(`profil ${state.state}`);
+      const policy = resolvePolicy(uow.policies, DEFAULT_PROFILE_ID);
+      if (policy.status !== "active") reasons.push("aucune policy active");
+      else {
+        const runtime = policy.revision.groups.runtime;
+        if (runtime.hostUnsandboxedAcknowledged !== true) reasons.push("consentement au mode hôte absent");
+        if (engine !== "claude" && runtime.nativeCapabilities !== true)
+          reasons.push("room Codex : la policy n'active pas les capacités natives");
+      }
+      return reasons.length ? reasons : ["profil indisponible"];
+    });
   /** Le worker démarre si au moins un fork activé peut tourner avec son moteur. */
   const workerProfile = () => {
     const states = FORK_IDS.filter((id) => forkEnabled(dataDir.path, id)).map(profileFor);
@@ -90,9 +109,7 @@ export async function forks(
       };
     }
     if (action === "on" && profileFor(raw.id) === "stop")
-      throw Error(
-        "Room indisponible : Wake nécessite un profil Codex natif actif et le consentement hôte.",
-      );
+      throw Error(`Room indisponible : ${stopReasons(engineOf(raw.id)).join(" ; ")}.`);
     if (action === "send") {
       if (typeof raw.text !== "string") throw Error("Message manquant.");
       // Queue only: Off, Pause and Force-off remain untouched. No policy gate on send.

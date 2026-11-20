@@ -614,7 +614,7 @@ ${assignedForkMessage(items)}`;
       const silent = reply === "" || reply === ROOM_AGENT_SILENCE;
       // Provider diagnostics belong to events, never to the agent voice stream.
       if (!silent && result.outcome !== "rate_limited") {
-        const signed = signRoomReply(agent.name, result.text).slice(0, 20_000);
+        const signed = signRoomReply(agent.name, result.text);
         const entryId = store.add("agent", signed, input.n, null);
         if (
           input.telegramReply !== undefined &&
