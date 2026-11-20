@@ -181,6 +181,12 @@ async fn pont_p2p(action: String, payload: Option<serde_json::Value>) -> Result<
     blocking(move || cli::pont_p2p(action, payload)).await
 }
 
+/// Interrupteur « Actif — appel toutes les 10 min » de la page Appel.
+#[tauri::command]
+async fn auto_call(action: String) -> Result<CliRun, String> {
+    blocking(move || cli::auto_call(action)).await
+}
+
 #[tauri::command]
 async fn app_error_report(screen: String, text: String, at: Option<String>) -> Result<CliRun, String> {
     blocking(move || cli::app_error(screen, text, at)).await
@@ -433,6 +439,7 @@ fn main() {
             elevenlabs,
             telegram_user,
             pont_p2p,
+            auto_call,
             fast_reply_status,
             fast_reply_set,
             workspace_sync_now,

@@ -1,5 +1,6 @@
 import { tr, formatLocale } from "./i18n.js";
 import { initDuo } from "./duo.js";
+import { initAutoCall } from "./auto-call.js";
 import { initProjects } from "./projects.js";
 import { mountWakePreview } from "./wake-preview.js";
 import { initWorkspaceSync } from "./workspace-sync.js";
@@ -804,6 +805,7 @@ async function updateAgentEngine(preferred?: string) {
 engineSelect.addEventListener("change", () => void updateAgentEngine(engineSelect.value));
 byId("tab-settings").addEventListener("click", () => { selectTab("settings"); void updateAgentEngine(); });
 if (tauri) initDuo((command, args) => tauri.core.invoke(command, args));
+if (tauri) initAutoCall((command, args) => tauri.core.invoke(command, args));
 if (tauri) initWorkspaceSync((command, args) => tauri.core.invoke(command, args));
 if (tauri) mountFastReply((command,args)=>tauri.core.invoke(command,args));
 if (tauri) mountTelegramAccount((command,args)=>tauri.core.invoke(command,args));

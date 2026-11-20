@@ -134,6 +134,19 @@ pub fn pont_p2p(action: String, payload: Option<serde_json::Value>) -> Result<Cl
     run_with_timeout(args, Some(input), Duration::from_secs(30))
 }
 
+/// Appel automatique (page Appel) : `services/auto-call/desktop-main.ts`, actions fixes.
+/// N'écrit que `auto-call.json` ; le minuteur et la sonnerie restent dans le moteur.
+pub fn auto_call(action: String) -> Result<CliRun, String> {
+    if !matches!(action.as_str(), "status" | "on" | "off") {
+        return Err("Action d'appel automatique inconnue".into());
+    }
+    let mut args = owner_command();
+    args.pop();
+    args.push(repo().join("services/auto-call/desktop-main.ts").into());
+    let input = serde_json::json!({"action": action}).to_string();
+    run_with_timeout(args, Some(input), Duration::from_secs(30))
+}
+
 pub fn fast_reply(action: &str) -> Result<CliRun, String> {
     let verb = match action { "status" => "status", "on" => "on", "off" => "off", _ => return Err("Action réponse rapide inconnue".into()) };
     run(wake_args(&["fast-reply", verb])?, None)

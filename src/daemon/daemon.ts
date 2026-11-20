@@ -4,6 +4,7 @@ import { RepairAgent } from "./repair-agent.js";
 import { WakeCoach } from "./coach.js";
 import { FastReplyService } from "../communication/fast-reply-server.js";
 import { PatternHolderService } from "../communication/pattern-holders.js";
+import { AutoCallService } from "../communication/auto-call.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { withWakeManager } from "./wake-manager.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
@@ -283,6 +284,7 @@ export class WakeDaemon implements SessionLauncher {
   #coach: WakeCoach | null = null;
   #fastReply: FastReplyService | null = null;
   #patternHolders: PatternHolderService | null = null;
+  #autoCall: AutoCallService | null = null;
   #telegram: TelegramSupervisor | null = null;
   #pontP2P: PontP2PSupervisor | null = null;
   readonly #templates: WakeTemplates;
@@ -732,6 +734,9 @@ export class WakeDaemon implements SessionLauncher {
           log: message => this.#log(message),
         });
         this.#patternHolders.start();
+        // Appel automatique de NLR (interrupteur de la page Appel, auto-call.json) : pause et Force-off vérifiés à chaque échéance.
+        this.#autoCall = new AutoCallService({ dataDir: this.#o.dataDir, log: message => this.#log(message) });
+        this.#autoCall.start();
         // Pont Telegram : relancé s'il meurt ou se fige, alerte dans le fil si le relevé ne progresse plus.
         this.#telegram = new TelegramSupervisor({
           dataDir: this.#o.dataDir,
@@ -776,6 +781,7 @@ export class WakeDaemon implements SessionLauncher {
       await this.#coach?.close();
       await this.#fastReply?.close();
       await this.#patternHolders?.close();
+      this.#autoCall?.close();
       this.#telegram?.close();
       this.#pontP2P?.close();
       await this.#auroreSync?.close();

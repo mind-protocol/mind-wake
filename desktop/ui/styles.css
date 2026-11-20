@@ -1089,6 +1089,9 @@ main > #view-chat { min-width:0; grid-template-columns:minmax(0,1fr); }
   #call-vision-feed { overflow:visible; }
 }
 #call-status:empty { display:none; }
+#auto-call-bar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:8px 12px 0; grid-column:1 / -1; font-size:0.9em; }
+#auto-call-bar label { display:flex; align-items:center; gap:6px; }
+#auto-call-status { opacity:0.75; }
 #call-status, #call-retry { margin:12px; align-self:flex-start; }
 /* ASCII captures (desktop_observe / desktop_ascii) and fenced blocks in conversation threads (NLR 17 Nov 2026):
    readable monospace at body scale, never wrapped or shrunk to fit; wide grids scroll horizontally. */

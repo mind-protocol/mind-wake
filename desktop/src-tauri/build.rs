@@ -43,6 +43,7 @@ fn main() {
             "elevenlabs",
             "telegram_user",
             "pont_p2p",
+            "auto_call",
             "app_error_report",
             "fast_reply_status",
             "fast_reply_set",

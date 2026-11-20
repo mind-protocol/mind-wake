@@ -111,6 +111,10 @@
         </form>
       </section>
       <section id="view-call" role="tabpanel" aria-labelledby="tab-call" hidden>
+        <div id="auto-call-bar">
+          <label><input id="auto-call-enabled" type="checkbox"> Actif — appel toutes les 10 min</label>
+          <span id="auto-call-status" role="status"></span>
+        </div>
         <p id="call-status" role="status"></p>
         <button id="call-retry" type="button" hidden>Réessayer</button>
         <iframe id="call-frame" title="Appel vocal" allow="microphone; autoplay; screen-wake-lock; local-network-access; loopback-network" sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer" hidden></iframe>

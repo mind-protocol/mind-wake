@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-auto-call"
+description = "Enables the auto_call command without any pre-configured scope."
+commands.allow = ["auto_call"]
+
+[[permission]]
+identifier = "deny-auto-call"
+description = "Denies the auto_call command without any pre-configured scope."
+commands.deny = ["auto_call"]

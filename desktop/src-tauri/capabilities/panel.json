@@ -27,6 +27,7 @@
     "allow-elevenlabs",
     "allow-telegram-user",
     "allow-pont-p2p",
+    "allow-auto-call",
     "allow-app-error-report",
     "allow-fast-reply-status",
     "allow-fast-reply-set",
