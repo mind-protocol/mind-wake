@@ -1,3 +1,4 @@
+import { recordPrincipalOutput } from "./principal-outputs.js";
 /** Pattern holders : appels Claude simulés, aucun appel fournisseur. */
 import fs from "node:fs";
 import os from "node:os";
@@ -709,4 +710,47 @@ it("prompt système d'un holder : patterns communs de _commun et lecture des aut
   fs.writeFileSync(path.join(holdersDir(), "_commun", "prendre-le-temps.md"), "PATTERN-COMMUN-1");
   expect(loadPatternHolders(dataDir).holders.map((h) => h.slug)).not.toContain("_commun");
   expect(patternHolderSystemPrompt(holder())).toContain("Patterns communs à tous les agents (NLR) :\n\nPATTERN-COMMUN-1");
+});
+
+
+it("wakes all three opted-in holders for principal replies without routing or quiet suppression", async () => {
+  fs.rmSync(path.join(holdersDir(), "orga-agents.md"));
+  for (const slug of ["pattern-holder", "critique", "mindset-cockpit"]) {
+    fs.writeFileSync(path.join(holdersDir(), `${slug}.md`),
+      '```json pattern-holder\n' + JSON.stringify({ name: slug, wakeOnPrincipalOutput: true, quietMinutes: 60 }) + '\n```\nSeed');
+  }
+  const calls: string[] = [];
+  const call: typeof CallClaude = async (_, _args, prompt, dir) => {
+    calls.push(path.basename(dir));
+    expect(prompt).toContain("REPONSE COMPLETE");
+    return { text: "Un retour utile." };
+  };
+  await tick(replying("SILENCE"));
+  for (const n of [1, 2]) {
+    recordPrincipalOutput(dataDir, { id: `turn-${n}`, at: iso(1000), text: `REPONSE COMPLETE ${n}` });
+    clock += 20_000;
+    const outcomes = await tick(call);
+    expect(outcomes.filter(o => o.reason === "principal-output").map(o => o.slug).sort())
+      .toEqual(["critique", "mindset-cockpit", "pattern-holder"]);
+  }
+  expect(calls).toHaveLength(6);
+  expect(calls).not.toContain("reveilleur");
+  await tick(replying("[]")); // holder replies must not trigger another principal-output wake
+  expect(await tick(replying("SILENCE"))).toEqual([]);
+});
+
+it("delivers the complete principal reply once as an agent message to its holder", async () => {
+  await tick(replying("SILENCE"));
+  const text = "Réponse principale " + "texte complet ".repeat(2500) + " FIN DE RÉPONSE";
+  const output = { id: "codex:thread:turn:answer", at: iso(1000), text };
+  recordPrincipalOutput(dataDir, output);
+  recordPrincipalOutput(dataDir, output);
+  clock += 20_000;
+  const seen: string[] = [];
+  const outcomes = await tick(replying("SILENCE", seen));
+  expect(outcomes).toContainEqual(expect.objectContaining({ slug: "orga-agents", state: "silent" }));
+  expect(seen[0]).toContain(JSON.stringify(text));
+  expect(seen[0]).toContain('"auteur":"agent"');
+  expect(seen[0]?.split("FIN DE RÉPONSE")).toHaveLength(2);
+  expect(await tick(replying("SILENCE"))).toEqual([]);
 });

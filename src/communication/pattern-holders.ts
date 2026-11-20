@@ -1,3 +1,4 @@
+import { readPrincipalOutputs } from "./principal-outputs.js";
 /**
  * Pattern holders : des patterns et leur pourquoi vivent dans une conversation-semence portée
  * par un agent. Le réveilleur sélectionne les spécialistes pour le fil concerné. Les
@@ -115,6 +116,8 @@ export interface PatternHolder {
   readonly name: string;
   readonly emoji: string;
   readonly wakeHint?: string;
+  /** Read every final principal reply without specialist routing or quiet delay. */
+  readonly wakeOnPrincipalOutput?: boolean;
   /**
    * Sujets déclarés (NLR, 18 nov. 2026 14:55 : « tout ce qui parle de la visualisation, c'est
    * l'agent Viz ») : un message humain qui contient l'un d'eux, mot ou expression entière sans
@@ -182,6 +185,7 @@ export function parsePatternHolder(file: string, text: string): HolderParse {
   return {
     holder: {
       slug,
+      ...(header["wakeOnPrincipalOutput"] === true ? { wakeOnPrincipalOutput: true } : {}),
       ...cadence,
       ...(topics.length > 0 ? { topics } : {}),
       ...(typeof header["wakeHint"] === "string" ? { wakeHint: header["wakeHint"].trim() } : {}),
@@ -354,7 +358,7 @@ export function humanText(raw: string): string {
 
 /** Messages du fil principal des deux côtés, du plus ancien au plus récent. */
 export function readFil(dataDir: string, limit = 200): FilMessage[] {
-  const out: FilMessage[] = [];
+  const out: FilMessage[] = readPrincipalOutputs(dataDir, limit).map(m => ({ ...m, id: `principal-output:${m.id}`, author: "agent" }));
   try {
     for (const raw of fs
       .readFileSync(path.join(dataDir, "human-messages.jsonl"), "utf8")
@@ -430,7 +434,7 @@ export function isVoiceCallMessage(text: string): boolean {
   return text.trimStart().startsWith("[Appel vocal en cours]");
 }
 
-export type WakeReason = "mention" | "reply" | "fil" | "handle" | "topic" | "cadence";
+export type WakeReason = "mention" | "reply" | "fil" | "handle" | "topic" | "cadence" | "principal-output";
 
 /** Raison du réveil, et les personnes mentionnées par @handle dont ce holder est le coach. */
 export interface Wake {
@@ -458,6 +462,10 @@ export function wakeReason(
   explicitMentionOnly = false,
   handleHit?: (m: FilMessage) => boolean,
 ): { reason: WakeReason; topic?: string } | null {
+  if (holder.wakeOnPrincipalOutput && fresh.some(m =>
+    m.author === "agent" && m.holder === undefined && m.id.startsWith("principal-output:"))) {
+    return { reason: "principal-output" };
+  }
   let reason: WakeReason | null = null;
   let topic: string | undefined;
   for (const m of fresh) {

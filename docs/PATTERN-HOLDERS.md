@@ -38,6 +38,16 @@ un nouveau spécialiste hérite du dernier curseur connu du fil.
 
 Le champ optionnel `"wake": "mention"` de l’en-tête `pattern-holder` limite le réveil d’un holder à la mention (`@slug` ou nom), au `@handle` d’une personne qu’il coache et à la réponse humaine qui suit son message ; jamais à un simple message du fil (autre valeur : holder invalide).
 
+## Réponses finales du principal
+
+`"wakeOnPrincipalOutput": true` dans l'en-tête réveille le holder pour les réponses
+finales enregistrées par les adaptateurs Claude et Codex. Il reçoit le texte complet
+comme message d'agent, sans sélection du réveilleur ni délai `quietMinutes`, y compris
+en mode mention. L'affectation de fil et les contrôles globaux restent applicables.
+Chaque holder conserve son curseur ; plusieurs réponses arrivées avant un passage
+sont lues ensemble. Les réponses des holders ne déclenchent pas cette voie.
+Le premier passage initialise le curseur suivant les règles ordinaires.
+
 ## Holder cadencé (gestionnaire du budget)
 
 Un holder peut aussi être réveillé **à cadence**, sans message déclencheur (NLR, 18 nov. 2026 :
@@ -196,3 +206,15 @@ s'arrête avec Force-off et avec le moteur ; comme ⚡, il ne suit pas la Pause.
 - Un holder écoute le fil principal ou le fork actif auquel il est affecté.
 - L'app mobile Lumina ne montre que les messages publiés sous `claude-wake` : c'est le cas du
   holder.
+
+
+## Réponses finales des agents
+
+Les réponses finales du principal Claude et Codex sont conservées intégralement dans
+`principal-outputs.sqlite` et ajoutées comme messages d’auteur `agent` au fil lu par les
+holders. Les identifiants de résultat empêchent de remettre deux fois le même événement.
+Les commentaires intermédiaires, traces d’outils et bilans internes ÉTAPES sont exclus.
+Les réponses des agents de room restent dans leur fil et ne sont plus coupées à 20 000
+caractères avant leur lecture par les holders. Les affectations, le réveilleur, les modes
+mention, les pauses et l’activation du service continuent à déterminer qui intervient.
+La modification prend effet pour les nouveaux tours après chargement du runtime compilé.
