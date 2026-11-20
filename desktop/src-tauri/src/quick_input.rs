@@ -31,6 +31,14 @@ pub fn show_without_focus(window: &tauri::WebviewWindow) {
     #[cfg(not(windows))] { let _ = window.show(); }
 }
 
+/// Masque une fenêtre montrée par `show_without_focus`. Ce ShowWindow natif échappe à l'état de
+/// visibilité de tao : `window.hide()` seul croit la fenêtre déjà cachée et ne fait rien
+/// (toast « Appel entrant » resté à l'écran après le décroché, 20 nov. 2026).
+pub fn hide(window: &tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(windows)] { native::hide(window); }
+    window.hide().map_err(|e| e.to_string())
+}
+
 pub fn dismiss(window: &tauri::WebviewWindow) -> Result<(), String> {
     DISMISSED.store(true, Ordering::SeqCst);
     window.hide().map_err(|e| e.to_string())
@@ -145,6 +153,10 @@ mod native {
             if search.process != 0 { EnumWindows(collect_menu, &mut search as *mut MenuSearch as isize); }
         }
         search.rects
+    }
+    pub fn hide(window: &tauri::WebviewWindow) {
+        // SW_HIDE, symétrique de SW_SHOWNOACTIVATE ci-dessous.
+        if let Ok(hwnd) = window.hwnd() { unsafe { ShowWindow(hwnd.0 as Handle, 0); } }
     }
     pub fn show_without_focus(window: &tauri::WebviewWindow) {
         if let Ok(hwnd) = window.hwnd() {

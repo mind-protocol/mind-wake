@@ -130,7 +130,7 @@ fn update(app: &AppHandle, toast: Option<PhoneToast>, expire_only: bool) -> Resu
     // NLR, 17 nov. 2026 : pas de toast permanent pendant l'appel ; on raccroche dans la fenêtre
     // principale (onglet Appel). Le toast ne sert plus qu'à la sonnerie d'un appel entrant.
     if next.as_ref().is_some_and(|t| t.stage == Stage::Active) {
-        window.hide().map_err(|e| e.to_string())?;
+        super::quick_input::hide(&window)?;
         super::show_panel(app);
         return Ok(());
     }
@@ -154,7 +154,7 @@ fn update(app: &AppHandle, toast: Option<PhoneToast>, expire_only: bool) -> Resu
             ring(true, &t.ringtone);
         }
     } else {
-        window.hide().map_err(|e| e.to_string())?;
+        super::quick_input::hide(&window)?;
     }
     Ok(())
 }
