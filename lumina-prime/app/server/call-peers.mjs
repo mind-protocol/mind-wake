@@ -212,6 +212,25 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
       server=next;startupError=null;
     })().finally(()=>{starting=null;});return starting;
   }
+  // Route that last answered each colony: a remote LAN address that is a black hole from here
+  // must not delay every request once the pont-p2p route is known to work.
+  const routes=new Map();
+  async function viaHttp(current,packet,timeout) {
+    const own=new Set(status().addresses);
+    for(const address of current.addresses) {
+      // The same private address on another network is not this colony (and may be ourselves).
+      if(own.has(address))continue;
+      let response;
+      try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});}
+      catch { continue; /* Try another interface advertised by this colony. */ }
+      return {status:response.status,body:response.ok?await readJson(response.body,12*1024*1024):null};
+    }
+    return null;
+  }
+  async function viaP2P(current,packet,timeout) {
+    if(!current.p2p||!colonies.relay)return null;
+    try {return await colonies.relay(current.colony,packet,timeout);} catch {return null;}
+  }
   async function rpc(p, data, timeout = 10_000) {
     if(!colonies?.identity() || config.blocked.includes(p.id))fail('peer_unauthorized',401);
     // Re-read the book before every request: removed/replaced identities lose access immediately.
@@ -219,14 +238,20 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     if(!current)fail('peer_unauthorized',401);
     const secret=colonies.secret(current.exchangeKey), nonce=hex(16);
     const packet=await colonies.wrap(sealPeer(secret,colonies.ownId(),{...data,caller:data.caller??config.caller,label:config.label,nonce,at:now()}),current);
-    let response;
-    for(const address of current.addresses) {
-      try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});break;}
-      catch { /* Try another interface advertised by this colony. */ }
+    // Direct LAN HTTP first while it works; the pont-p2p channel (Hyperswarm) otherwise.
+    const order=routes.get(p.id)==='p2p'?['p2p','http']:['http','p2p'];
+    let response=null;
+    for(const route of order) {
+      const answer=await (route==='http'?viaHttp:viaP2P)(current,packet,timeout);
+      if(!answer)continue;
+      response=answer;
+      // A non-sealed refusal on one route (e.g. an unrelated host at the same private address) tries the other.
+      if(answer.status===200){routes.set(p.id,route);break;}
     }
     if(!response)fail('peer_unavailable',503);
-    if(!response.ok)fail(response.status===401?'peer_unauthorized':'peer_unavailable',response.status===401?401:503);
-    const value=openPeer(secret,await readJson(response.body,12*1024*1024));
+    if(response.status!==200)fail(response.status===401?'peer_unauthorized':'peer_unavailable',response.status===401?401:503);
+    if(!response.body||typeof response.body!=='object')fail('peer_unavailable',503);
+    const value=openPeer(secret,response.body);
     if(value.nonce!==nonce)fail('peer_unauthorized',401);
     if(value.error)fail(value.error,value.status);
     return value.result;
@@ -248,7 +273,7 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
   }
   async function refreshNow() {
     if(closed)return;
-    if(colonies?.identity()) { await start(); colonies.publish(status().addresses); }
+    if(colonies?.identity()) { await start(); const s=status(); colonies.publish(s.addresses,s.port); }
     const all=await colonies?.contacts() ?? [];
     if(closed)return;
     blockedContacts=all.filter(p=>config.blocked.includes(p.id));

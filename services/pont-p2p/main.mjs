@@ -40,9 +40,24 @@ const retryMs = Number(process.env.MW_P2P_RETRY_MS) || undefined;
 const tickMs = Number(process.env.MW_P2P_TICK_MS) || 1000;
 
 const {localMessageTargets,deliverLocalMessage}=await import('../../dist/communication/local-message.js');
+const CALL_RPC_MAX_MS = 150_000;
+const callEndpointFile = () => readJson(path.join(P.state,'call-endpoint.json'),null);
+/**
+ * Appel reçu d'un pair par le pont : remis tel quel au serveur d'appels local (même route que le LAN,
+ * /mind-call/v2), qui vérifie signature, scellement et rejeu. Le pont ne voit que l'enveloppe chiffrée.
+ */
+async function forwardCall(packet) {
+  const e = callEndpointFile();
+  const port = Number(e?.port ?? (()=>{ try { return new URL(e?.addresses?.[0]).port; } catch { return 0; } })());
+  if (!e || Date.now()-e.at>30_000 || !Number.isInteger(port) || port<=0 || port>65535) return { status:503, body:{ error:'peer_unavailable' } };
+  const res = await fetch(`http://127.0.0.1:${port}/mind-call/v2`, { method:'POST', redirect:'error', headers:{'Content-Type':'application/json'}, body:JSON.stringify(packet), signal:AbortSignal.timeout(CALL_RPC_MAX_MS) });
+  let body = null; try { body = await res.json(); } catch {}
+  return { status:res.status, body };
+}
 const node = new P2PNode({
   name: settings.name, keyFile: P.key, stateDir: P.state, wakeupsDir,
-  callEndpoint: () => { const e=readJson(path.join(P.state,'call-endpoint.json'),null); return e && Date.now()-e.at<30_000 ? {addresses:e.addresses,key:e.key} : null; },
+  callEndpoint: () => { const e=callEndpointFile(); return e && Date.now()-e.at<30_000 ? {addresses:e.addresses,key:e.key} : null; },
+  callRpc: forwardCall,
   agents: {...DEFAULT_AGENTS,...localMessageTargets(dataDir)}, receiveMessage: (env,agent) => env.kind==="message" ? deliverLocalMessage(dataDir,{to:agent??DEFAULT_AGENT,text:env.body,author:env.from,key:env.id}) : node.writeWakeup(env,agent), defaultAgent: DEFAULT_AGENT, annuaire: settings.annuaire,
   ...(bootstrap ? { bootstrap } : {}), ...(retryMs ? { retryMs, detailMs: Math.min(3000, retryMs) } : {}),
 });
@@ -69,10 +84,26 @@ function writeStatus(stopped = false) {
   });
 }
 
+// Appels sortants relayés : un seul état par colonie dans le journal (pas une ligne par requête).
+const relayState = new Map();
+async function relayCall(req) {
+  let result;
+  try {
+    const timeoutMs = Math.min(CALL_RPC_MAX_MS, Math.max(500, Number(req.timeoutMs) || 10_000));
+    if (!req.packet || typeof req.packet !== "object") throw new Error("invalid_request");
+    result = { ok: true, ...(await node.callRpc(String(req.to ?? ""), req.packet, { timeoutMs })) };
+  } catch (e) { result = { ok: false, reason: String(e?.message ?? e).slice(0, 120) }; }
+  const state = result.ok ? "ok" : result.reason;
+  if (relayState.get(req.to) !== state) { relayState.set(req.to, state); log(`appel relayé → ${String(req.to).slice(0, 40)} : ${state}`); }
+  writeJson(path.join(P.results, `${req.rid}.json`), result);
+}
+
 async function handleRequest(file) {
   const req = readJson(file, null);
   try { fs.rmSync(file, { force: true }); } catch {}
   if (!req?.rid || !/^r[0-9a-f]{16}$/.test(req.rid)) return;
+  // Un appel attend la réponse du pair : jamais dans la boucle, qui doit rester disponible.
+  if (req.op === "callRpc") return void relayCall(req);
   let result;
   try {
     if (req.op === "send") {
@@ -97,10 +128,11 @@ async function handleRequest(file) {
   writeJson(path.join(P.results, `${req.rid}.json`), result);
 }
 
-let busy = false;
+let busy = false, again = false;
 async function tick() {
-  if (busy || stopping) return;
-  busy = true;
+  if (stopping) return;
+  if (busy) { again = true; return; }
+  busy = true; again = false;
   try {
     const s = readSettings(dataDir);
     if (!s.enabled) return void shutdown("interrupteur désactivé");
@@ -122,7 +154,7 @@ async function tick() {
     writeStatus();
   } catch (e) {
     log(`erreur de tick : ${String(e?.message ?? e).slice(0, 300)}`);
-  } finally { busy = false; }
+  } finally { busy = false; if (again) setImmediate(() => void tick()); }
 }
 
 node.on("status", (v) => process.send?.({ event: "status", data: v }));
@@ -147,3 +179,5 @@ log(`démarré : ${node.name} (empreinte ${fingerprint(node.keys.publicKey)}), a
 writeStatus();
 process.send?.({ event: "ready", data: { name: node.name, publicKey: node.keys.publicKey } });
 setInterval(() => void tick(), tickMs);
+// Une demande déposée est prise tout de suite (les appels sont quasi temps réel) ; le tick reste le filet.
+try { fs.mkdirSync(P.requests, { recursive: true }); fs.watch(P.requests, () => void tick()).on("error", () => {}); } catch {}

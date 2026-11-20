@@ -38,6 +38,10 @@ export const DETAIL = {
 };
 
 const MAX_FRAME = 64_000;
+// Call RPC answers (audio included) only cross an authenticated stream; bounded per line.
+const MAX_RPC_FRAME = 16 * 1024 * 1024;
+const RPC_CONCURRENCY = 16;
+const RPC_ID = /^[0-9a-f]{24}$/;
 const WAKE_MAX_BYTES = 4000;
 const EXCERPT = 500;
 
@@ -78,6 +82,7 @@ export class P2PNode extends EventEmitter {
     this.conflicts = readJson(this.files.conflicts, []);
     this.peers = new Map();   // nom de colonie -> { conn, send, remoteHex }
     this.joined = new Map();  // nom de colonie -> discovery (client) tant que des messages attendent
+    this.rpcPending = new Map(); // id -> { peer, resolve, reject, timer } : appels sortants en vol
     this.log = [];
   }
 
@@ -244,6 +249,7 @@ export class P2PNode extends EventEmitter {
     peer.send = (frame) => { try { conn.write(JSON.stringify(frame) + "\n"); } catch {} };
     conn.on("error", () => {});
     conn.on("close", () => {
+      for (const [id, r] of this.rpcPending) if (r.peer === peer) { this.rpcPending.delete(id); clearTimeout(r.timer); r.reject(new Error("peer_unavailable")); }
       if (peer.colony && this.peers.get(peer.colony) === peer) {
         this.peers.delete(peer.colony);
         // Un message envoyé sans accusé redevient « en attente ».
@@ -252,11 +258,13 @@ export class P2PNode extends EventEmitter {
       }
     });
     conn.on("data", (chunk) => {
+      // Only the new chunk is scanned for a line end: large RPC answers stay linear.
+      let from = peer.buf.length;
       peer.buf += chunk.toString("utf8");
-      if (peer.buf.length > MAX_FRAME * 4) return conn.destroy();
+      if (peer.buf.length > (peer.colony ? MAX_RPC_FRAME : MAX_FRAME * 4)) return conn.destroy();
       let i;
-      while ((i = peer.buf.indexOf("\n")) >= 0) {
-        const line = peer.buf.slice(0, i); peer.buf = peer.buf.slice(i + 1);
+      while ((i = peer.buf.indexOf("\n", from)) >= 0) {
+        const line = peer.buf.slice(0, i); peer.buf = peer.buf.slice(i + 1); from = 0;
         let frame; try { frame = JSON.parse(line); } catch { continue; }
         peer.chain = (peer.chain ?? Promise.resolve()).then(() => this.onFrame(peer, frame)).catch((e) => this.log.push(["erreur", String(e)]));
       }
@@ -295,6 +303,60 @@ export class P2PNode extends EventEmitter {
     if (!peer.colony) return; // rien d'autre avant la présentation
     if (f.t === "msg") return this.receive(peer, f.envelope);
     if (f.t === "ack") return this.onAck(peer, f);
+    // Not awaited: a slow call (speech synthesis) must not hold this peer's frame chain.
+    if (f.t === "rpc") return void this.onRpc(peer, f);
+    if (f.t === "rpc-res") return this.onRpcResult(peer, f);
+  }
+
+  // ------------------------------------------------------------------ appels (requête/réponse)
+  /**
+   * Transmet un paquet d'appel déjà signé et scellé (mind-call-colony-v2) à une colonie et attend
+   * sa réponse { status, body }, comme une réponse HTTP. Le pont ne lit ni ne modifie le contenu.
+   */
+  async callRpc(colony, packet, { timeoutMs = 10_000 } = {}) {
+    if (!this.carnet[colony]) throw new Error("colony_unknown");
+    const deadline = Date.now() + timeoutMs;
+    let peer = this.peers.get(colony);
+    if (!peer) { this.seek(colony); peer = await this.waitPeer(colony, Math.min(timeoutMs, 5000)); }
+    if (!peer) throw new Error("peer_unavailable");
+    const id = nodeCrypto.randomBytes(12).toString("hex");
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { this.rpcPending.delete(id); reject(new Error("peer_timeout")); }, Math.max(1, deadline - Date.now()));
+      timer.unref?.();
+      this.rpcPending.set(id, { peer, resolve, reject, timer });
+      peer.send({ t: "rpc", id, packet });
+    });
+  }
+
+  waitPeer(colony, ms) {
+    if (this.peers.has(colony)) return Promise.resolve(this.peers.get(colony));
+    return new Promise((resolve) => {
+      const done = (c) => { if (c !== colony) return; clearTimeout(timer); this.off("peer-online", done); resolve(this.peers.get(colony) ?? null); };
+      const timer = setTimeout(() => { this.off("peer-online", done); resolve(null); }, ms);
+      this.on("peer-online", done);
+    });
+  }
+
+  onRpcResult(peer, f) {
+    const r = typeof f.id === "string" ? this.rpcPending.get(f.id) : null;
+    if (!r || r.peer !== peer) return;
+    this.rpcPending.delete(f.id); clearTimeout(r.timer);
+    r.resolve({ status: Number.isInteger(f.status) ? f.status : 503, body: f.body ?? null });
+  }
+
+  /** Côté destinataire : le paquet doit venir de la colonie authentifiée par ce flux, puis va au serveur d'appels local. */
+  async onRpc(peer, f) {
+    if (typeof f.id !== "string" || !RPC_ID.test(f.id)) return;
+    const reply = (status, body) => peer.send({ t: "rpc-res", id: f.id, status, body });
+    const p = f.packet;
+    if (!p || typeof p !== "object" || p.from !== peer.colony || p.to !== this.name) return reply(401, { error: "peer_unauthorized" });
+    if (JSON.stringify(p).length > MAX_FRAME) return reply(413, { error: "body_too_large" });
+    if (!this.cfg.callRpc) return reply(503, { error: "peer_unavailable" });
+    if ((peer.rpcActive ?? 0) >= RPC_CONCURRENCY) return reply(429, { error: "peer_rate_limited" });
+    peer.rpcActive = (peer.rpcActive ?? 0) + 1;
+    try { const r = await this.cfg.callRpc(p, peer.colony); reply(r?.status ?? 503, r?.body ?? { error: "peer_unavailable" }); }
+    catch { reply(503, { error: "peer_unavailable" }); }
+    finally { peer.rpcActive--; }
   }
 
   // ------------------------------------------------------------------ envoi et file
