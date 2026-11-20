@@ -47,7 +47,9 @@ export function createCallColonies(dataDir) {
     const signed = { ...packet, id:id(me.name, me.publicKey), from:me.name, to:remote.colony, key:publicKey };
     return { ...signed, signature:await sign(me.privateKey, 'mind-call-colony-v2|' + canonical(signed)) };
   }
-  return { identity, contacts, authorize, secret, wrap,
+  // Entry present in the address book, with or without a call endpoint (contacts() skips the latter).
+  const known = name => Object.hasOwn(readJson(paths.carnet, {}) ?? {}, name);
+  return { identity, contacts, known, authorize, secret, wrap,
     ownId:() => { const me=identity(); return me ? id(me.name,me.publicKey) : null; },
     publish(addresses) { writeJson(publication, { addresses, key:publicKey, at:Date.now() }); },
     unpublish() { writeJson(publication, null); },

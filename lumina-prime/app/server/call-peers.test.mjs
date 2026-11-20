@@ -344,6 +344,18 @@ test('disallowed calls and unknown colonies never create a call or a human invit
   await withDial(a,async({dial})=>{assert.equal((await dial({target:'⬡absent'})).error,'colony_unknown');assert.equal(a.call.active().length,0);});
 });
 
+test('a carnet colony whose fiche only publishes reach.p2p fails with colony_no_call_endpoint, not colony_unknown',async t=>{
+  const {a}=await fixture(t);
+  const keys=await generateKeypair(), colony='⬡gamma';
+  const fiche=await signFiche(keys.privateKey,{colony,publicKey:keys.publicKey,reach:{p2p:{addresses:['/ip4/127.0.0.1/tcp/1']}}});
+  const carnet=path.join(a.data,'pont-p2p','carnet.json');
+  fs.writeFileSync(carnet,JSON.stringify({...JSON.parse(fs.readFileSync(carnet,'utf8')),[colony]:{publicKey:keys.publicKey,fiche}}));
+  assert.equal(a.colonies.known(colony),true);assert.equal(a.colonies.known('⬡absent'),false);
+  await assert.rejects(a.peers.resolveAddress(colony),{code:'colony_no_call_endpoint',status:409});
+  await assert.rejects(a.peers.resolveAddress('⬡absent'),{code:'colony_unknown',status:404});
+  await withDial(a,async({dial})=>{assert.equal((await dial({target:colony})).error,'colony_no_call_endpoint');assert.equal(a.call.active().length,0);});
+});
+
 test('declining the local human invitation leaves the shared agent call active',async t=>{
  const {a,b}=await fixture(t);
  await withDial(a,async({dial,service})=>{

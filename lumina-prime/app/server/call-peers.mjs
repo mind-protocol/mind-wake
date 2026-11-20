@@ -415,7 +415,12 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     if(!match)fail('call_target_invalid');
     await refresh();
     const p=config.peers.find(p=>p.colony===match[1]);
-    if(!p)fail('colony_unknown',404);
+    if(!p){
+      if(blockedContacts.some(b=>b.colony===match[1]))fail('peer_unauthorized',401);
+      // In the address book but its signed fiche publishes no reach.call (e.g. reach.p2p only).
+      if(colonies?.known?.(match[1]))fail('colony_no_call_endpoint',409);
+      fail('colony_unknown',404);
+    }
     if(!p.online)fail('peer_unavailable',503);
     const wanted=match[2]??'principal';
     const candidates=[...directory.values()].filter(t=>t.peerId===p.id);
