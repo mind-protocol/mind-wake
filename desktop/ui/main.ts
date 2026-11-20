@@ -61,13 +61,14 @@ interface Message {
 }
 
 const tauri = (window as unknown as { __TAURI__?: TauriGlobal }).__TAURI__;
-const prompts = mountPromptEditor(async request => {
+async function editPromptRequest(request: Record<string, unknown>) {
   if (!tauri) throw Error("Ouvre cet onglet dans MIND Wake.");
   const run = await tauri.core.invoke("agent_prompts", {request}) as CliRun;
   const result = JSON.parse(run.stdout);
   if (run.exitCode || result.error) throw Error(result.error ?? "Prompts indisponibles");
   return result;
-});
+}
+const prompts = mountPromptEditor(editPromptRequest);
 const POLL_MS = 2000;
 const CHART_EVERY = 5;
 const DAY_MS = 86_400_000;
@@ -631,6 +632,7 @@ if (tauri?.event) {
 byId("call-retry").addEventListener("click", openCall);
 byId("tab-call").addEventListener("click", () => selectTab("call"));
 const conversationPanel = tauri ? mountConversation({
+  editFile: editPromptRequest,
   invoke: (command, args) => invoke(command, args),
   decorate: (body, text) => {
     messageLinks(body);

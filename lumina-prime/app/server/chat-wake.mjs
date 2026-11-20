@@ -12,6 +12,8 @@ export async function createWakeChatBridge({ wakeRoot, dataDir }) {
   const Database = require('better-sqlite3');
   const { openStoreReadOnly } = await import(pathToFileURL(path.join(wakeRoot, 'dist/store/index.js')).href);
   const { resolvePolicy } = await import(pathToFileURL(path.join(wakeRoot, 'dist/policy/index.js')).href);
+  const { readPrincipalThread } = await import(pathToFileURL(path.join(wakeRoot, 'dist/communication/principal-thread-view.js')).href);
+  const { workspaceDirFor } = await import(pathToFileURL(path.join(wakeRoot, 'dist/daemon/paths.js')).href);
   const control = openStoreReadOnly(path.join(dataDir, 'control.sqlite'));
   let agentId;
   try {
@@ -49,13 +51,23 @@ export async function createWakeChatBridge({ wakeRoot, dataDir }) {
     agentId,
     async snapshot() {
       assertOwnerPolicy();
-      const next = currentFingerprint();
+      const corpus = readPrincipalThread(workspaceDirFor(dataDir));
+      const next = currentFingerprint() + JSON.stringify(corpus);
       if (next === fingerprint) return cached;
-      const owner = read(ownerFile, db => db.prepare('SELECT id,text,created_at AS at,version FROM messages WHERE agent_id=? AND deleted=0 AND id<>\'legacy-note\' ORDER BY created_at DESC,rowid DESC LIMIT 60').all(agentId))
-        .map(message => ({ ...message, role: 'agent', status: 'published' }));
+      const owner = read(ownerFile, db => db.prepare('SELECT id,text,created_at AS at,version,request_key FROM messages WHERE agent_id=? AND deleted=0 AND id<>\'legacy-note\' ORDER BY created_at DESC,rowid DESC LIMIT 60').all(agentId))
+        .map(({ request_key, ...message }) => ({ ...message, holder: request_key?.startsWith('pattern-holder:') ?? false, role: 'agent', status: 'published' }));
       const incoming = read(inboxFile, db => db.prepare("SELECT id,text,at,emitted_at FROM inbox WHERE id LIKE 'chat-%' AND origin_json IS NULL ORDER BY rowid DESC LIMIT 60").all())
         .map(({ emitted_at, ...message }) => ({ ...message, role: 'human', version: 1, status: emitted_at ? 'delivered' : 'queued' }));
       cached = [...owner, ...incoming].sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)).slice(-100);
+      if (corpus) {
+        const imported = new Set(corpus.importedIds);
+        const pending = cached.filter(message => message.role === 'human' && !imported.has(message.id) && (!corpus.importedAt || message.at > corpus.importedAt));
+        cached = [...corpus.items.map(item => ({
+          id: item.id, text: item.text, at: item.at ?? '1970-01-01T00:00:00.000Z',
+          role: 'agent', status: 'published', version: parseInt(item.revision.slice(0, 12), 16) + 1,
+          speaker: item.speaker, corpus: true, source: item.source, dated: item.at !== null,
+        })), ...pending].slice(-100);
+      }
       fingerprint = next; return cached;
     },
     async send(id, text) {

@@ -105,9 +105,15 @@
         <form id="chat-form">
           <div class="chat-compose">
             <textarea id="chat-text" rows="3" maxlength="4000" required aria-label="Message à ton agent" placeholder="Écris à ton agent…"></textarea>
-            <div class="chat-actions"><button type="submit">Envoyer</button></div>
+            <div class="chat-actions">
+              <button id="chat-microphone" type="button" aria-pressed="false" title="Envoi automatique aux pauses, par extraits de 30 secondes maximum">🎙 Micro</button>
+              <button id="chat-microphone-cancel" type="button" disabled>Annuler la dictée</button>
+              <select id="chat-transcription-provider" aria-label="Service de transcription"><option value="current">Dictée actuelle</option><option value="elevenlabs">ElevenLabs</option></select>
+              <button type="submit">Envoyer</button>
+            </div>
           </div>
           <p id="chat-status" class="hint" role="status"></p>
+          <p id="chat-microphone-status" class="hint" role="status"></p>
         </form>
       </section>
       <section id="view-call" role="tabpanel" aria-labelledby="tab-call" hidden>

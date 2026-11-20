@@ -1125,3 +1125,42 @@ main > [hidden] { display:none !important; }
   main > #view-chat { grid-column:1; grid-row:3; }
   main[data-active-tab] > #view-documents, main[data-active-tab] > :is(#view-panel, #view-call, #view-settings, #view-projects, #view-prompts, #view-threads) { grid-column:1; grid-row:4; }
 }
+
+#chat > li.principal-file-bubble { background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--muted); }
+#chat > li.principal-file-bubble[data-editor-known="true"] { background:color-mix(in srgb,hsl(var(--editor-hue) 55% 65%) 14%,var(--surface)); border-left-color:hsl(var(--editor-hue) 55% 48%); }
+.principal-file-edit { margin-top:10px; font-size:12px; }
+.principal-file-editor { width:min(860px,90vw); max-height:90vh; border:1px solid var(--line); border-radius:12px; padding:24px; color:var(--text); background:var(--surface); }
+.principal-file-editor::backdrop { background:#0008; }
+.principal-file-editor textarea { display:block; width:100%; box-sizing:border-box; height:55vh; resize:vertical; padding:14px; font:14px/1.6 monospace; }
+.principal-file-editor > div { display:flex; justify-content:flex-end; gap:10px; }
+.principal-file-editor p { white-space:pre-wrap; }
+#chat mark.recent-word-edit { color:inherit; border-radius:0; padding:0; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.principal-inline-editor { cursor:text; outline:none; }
+.principal-inline-editor:focus { outline:1px solid var(--line); outline-offset:6px; }
+.principal-inline-editor.editing-markdown { white-space:pre-wrap; min-height:2em; }
+.principal-inline-controls:not([hidden]) { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+.principal-inline-controls span { font-size:12px; }
+#chat > li { position:relative; }
+
+.conversation-item-microphone { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
+.conversation-item-microphone button { font-size:12px; padding:4px 8px; }
+.conversation-item-microphone [role=status] { font-size:12px; color:var(--muted); white-space:pre-wrap; }
+.conversation-item-microphone textarea { width:100%; min-height:70px; }
+
+.conversation-source-file { margin-top:8px; font-size:12px; color:var(--muted); overflow-wrap:anywhere; user-select:text; }
+
+button.conversation-source-file { display:block; max-width:100%; padding:4px 0; border:0; background:transparent; text-align:left; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+button.conversation-source-file:hover { color:var(--text); }
+
+/* × du fil principal : à gauche du bouton copier ; premier clic « Supprimer ? », second clic supprime. */
+.principal-delete { position:absolute; top:6px; right:34px; border:0; background:transparent; color:var(--muted); padding:2px 6px; font-size:15px; line-height:1; border-radius:5px; opacity:0; cursor:pointer; transition:opacity .15s; }
+.messages > li:hover > .principal-delete, .principal-delete:focus-visible, .principal-delete[data-armed="true"] { opacity:1; }
+.principal-delete:hover, .principal-delete[data-armed="true"] { background:color-mix(in srgb,var(--fg) 8%,transparent); color:var(--fg); }
+.principal-delete[data-armed="true"] { font-size:12px; }
+.principal-delete-status { display:block; margin-top:8px; font-size:12px; }
+@media(hover:none) { .principal-delete { opacity:.55; } }
+/* 🎤 du fil principal : dicte un ajout « Humain : … » à la fin de l'élément. */
+.principal-dictate { position:absolute; top:6px; right:64px; border:0; background:transparent; color:var(--muted); padding:2px 5px; font-size:13px; line-height:1; border-radius:5px; opacity:0; cursor:pointer; transition:opacity .15s; }
+.messages > li:hover > .principal-dictate, .principal-dictate:focus-visible, .principal-dictate[data-active="true"] { opacity:1; }
+.principal-dictate:hover, .principal-dictate[data-active="true"] { background:color-mix(in srgb,var(--fg) 8%,transparent); color:var(--fg); }
+@media(hover:none) { .principal-dictate { opacity:.55; } }

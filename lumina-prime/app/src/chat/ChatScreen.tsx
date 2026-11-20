@@ -57,8 +57,8 @@ export default function WakeChatScreen() {
           onScrollEndDrag={scrollFollow.onScrollEndDrag}
           onMomentumScrollEnd={scrollFollow.onMomentumScrollEnd}
           onScrollToTop={scrollFollow.suspend}
-          renderItem={({ item }) => <MessageRow name={item.role === 'agent' ? 'Marco' : 'Toi'} mine={item.role === 'human'}>
-            <Text style={[s.small, s.strong, { alignSelf: item.role === 'human' ? 'flex-end' : 'flex-start', paddingHorizontal: 4 }]}>{item.role === 'agent' ? 'Marco' : 'Toi'}</Text>
+          renderItem={({ item }) => <MessageRow name={item.speaker ?? (item.role === 'agent' ? 'Marco' : 'Toi')} mine={item.role === 'human'}>
+            <Text style={[s.small, s.strong, { alignSelf: item.role === 'human' ? 'flex-end' : 'flex-start', paddingHorizontal: 4 }]}>{item.speaker ?? (item.role === 'agent' ? 'Marco' : 'Toi')}</Text>
             <View style={{ padding: 12, borderRadius: 16, gap: 3, backgroundColor: item.role === 'human' ? colors.green : tintOf('Marco') }}>
             <RichText text={item.text} />
             {item.role === 'agent' ? <>
@@ -71,7 +71,7 @@ export default function WakeChatScreen() {
                   setReportVisible(true);
                 }} />
             </> : null}
-            <Text style={[s.small, { fontSize: 10 }]}>{new Date(item.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+            <Text style={[s.small, { fontSize: 10 }]}>{item.corpus ? 'Conversation éditable' : new Date(item.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               {item.role === 'human' ? item.status === 'delivered' ? ' · reçu' : ' · envoyé' : ''}</Text>
             </View>
           </MessageRow>}

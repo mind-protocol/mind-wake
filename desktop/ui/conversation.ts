@@ -1,4 +1,9 @@
 import {parseVoicePart,voicePartDisplay,parseVoiceResponse} from "./voice-conversations.js";
+
+/** Call traffic stays in the call view; ordinary microphone dictation stays in chat. */
+function isCallTraffic(text: string): boolean {
+  return /^\s*\[Appel(?: vocal en cours| automatique)?\]/i.test(text) || Boolean(parseVoiceResponse(text));
+}
 import { tr, formatLocale } from "./i18n.js";
 /**
  * Fil humain ↔ agent de l'onglet « Messages » : modèle pur tiré de
@@ -17,6 +22,15 @@ export interface ConversationItem {
   readonly text: string;
   readonly id?: string;
   readonly edited?: boolean;
+  readonly corpusSpeaker?: string;
+  readonly corpusSource?: string;
+  readonly corpusEditor?: { id: string; name: string; icon: string; at: string };
+  /** Last modification of this corpus message (any editor); absent while never modified. */
+  readonly corpusEditedAt?: string;
+  /** Revision of the message text, sent back by the inline editor to detect concurrent changes. */
+  readonly corpusRevision?: string;
+  /** Display order (creation or last modification, whichever is later). */
+  readonly orderAt?: string;
   readonly delivery?: "sent" | "delivered";
   readonly deliveredAt?: string;
   /** Host-projected storage evidence; never taken from the message body. */
@@ -97,6 +111,15 @@ export function plainText(markdown: string, preserveInline = false): string {
 
 /** Actual metadata renderer used by the desktop; source labels are always text. */
 export function renderConversationMeta(element: Pick<HTMLElement, "textContent"> & Partial<Pick<HTMLElement, "ownerDocument" | "append">>, item: ConversationItem): void {
+  if (item.corpusSpeaker) {
+    const date = item.at && Number.isFinite(Date.parse(item.at)) ? ` · reprise du ${new Date(item.at).toLocaleString()}` : "";
+    const filename = item.corpusSource?.split("/").at(-1) ?? "Conversation";
+    const editor = item.corpusEditor;
+    const editedAt = item.corpusEditedAt && Number.isFinite(Date.parse(item.corpusEditedAt)) ? ` le ${new Date(item.corpusEditedAt).toLocaleString()}` : "";
+    const edited = item.corpusEditedAt ? ` · modifié${editor ? ` par ${editor.name}` : ""}${editedAt}` : "";
+    element.textContent = `${editor?.icon ?? "✎"} ${filename} · ${item.corpusSpeaker}${edited}${date}`;
+    return;
+  }
   if (item.from === "plan") { element.textContent = tr("Les 10 prochains wakes"); return; }
   const subagent = item.from === "sent" && item.sentToSubagent === true;
   const sentLabel = subagent ? tr("Vers un sous-agent") : tr("Vers un pair");
@@ -159,6 +182,13 @@ export function renderConversationMeta(element: Pick<HTMLElement, "textContent">
 
 type Rec = Readonly<Record<string, unknown>>;
 
+/** Per-message modification: date always, editor when it was observed (inline save or tool hook). */
+function corpusEditorMetadata(value: unknown): Pick<ConversationItem, "corpusEditor" | "corpusEditedAt"> {
+  const row = rec(value), at = str(row?.["at"]);
+  if (!row || !at) return {};
+  if (!["id", "name", "icon"].every(key => typeof row[key] === "string")) return {corpusEditedAt: at};
+  return {corpusEditedAt: at, corpusEditor: {id: String(row["id"]), name: String(row["name"]), icon: String(row["icon"]), at}};
+}
 function rec(value: unknown): Rec | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
     ? (value as Rec)
@@ -367,6 +397,25 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
       if(final && !source && (agentAt===null || at>agentAt))agentAt=at;
     }
   }
+  const corpus = rec(data["principalThread"]);
+  if (corpus && Array.isArray(corpus["items"])) {
+    const imported = new Set(Array.isArray(corpus["importedIds"]) ? corpus["importedIds"] : []);
+    const replyIds = new Set((Array.isArray(data["replies"]) ? data["replies"] : []).map(raw => str(rec(raw)?.["id"])));
+    const importedAt = str(corpus["importedAt"]);
+    const pending = items.filter(item => (!importedAt || item.at > importedAt) && item.id && !imported.has(item.id) && replyIds.has(item.id) && item.from === "human").sort((a, b) => a.at.localeCompare(b.at));
+    const projected: ConversationItem[] = [];
+    for (const raw of corpus["items"]) {
+      const row = rec(raw), id = str(row?.["id"]), text = str(row?.["text"]), speaker = str(row?.["speaker"]);
+      if (!id || text === null || !speaker) continue;
+      projected.push({ id, text, from: "received", at: str(row?.["at"]) ?? "",
+        corpusSpeaker: speaker, corpusSource: str(row?.["source"]) ?? "", source: speaker,
+        ...corpusEditorMetadata(row?.["edited"]),
+        ...(str(row?.["revision"]) ? {corpusRevision: str(row?.["revision"])!} : {}),
+        ...(str(row?.["orderAt"]) ? {orderAt: str(row?.["orderAt"])!} : {}) });
+    }
+    return {items: [...projected, ...pending].filter(item => !isCallTraffic(item.text)), agentUpdatedAt: null,
+      note: "Conversation vivante · les modifications des fichiers apparaissent ici automatiquement."};
+  }
   // La note est réécrite par l'agent : on l'ordonne à sa dernière modification.
   items.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
   const preview = wakePreviewModel(data["upcomingWakes"]);
@@ -379,7 +428,7 @@ export function conversation(envelope: unknown, helpers: unknown = null, now = D
   return {
     projectWakes: data["projectWakes"],
     ...(data["truncated"] === true ? { truncated: true } : {}),
-    items,
+    items: items.filter(item => !isCallTraffic(item.text)),
     agentUpdatedAt: agentAt,
     note:
       items.length === 0

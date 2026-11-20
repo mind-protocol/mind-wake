@@ -1,4 +1,4 @@
-export type ChatMessage = { id: string; at: string; text: string; version: number;
+export type ChatMessage = { speaker?: string; corpus?: boolean; source?: string; dated?: boolean; id: string; at: string; text: string; version: number;
   role: 'agent' | 'human'; status: 'published' | 'queued' | 'delivered' };
 export type ChatSnapshot = { schema: 'mind.chat.v1'; messages: ChatMessage[]; cursor: string; observedAt: string };
 export type ChatSession = { url: string; token: string; expiresAt: number };
@@ -33,6 +33,7 @@ export function parseChatSnapshot(value: unknown): ChatSnapshot {
       || typeof m.text !== 'string' || !Number.isInteger(m.version) || m.version < 1
       || !['agent', 'human'].includes(m.role) || (m.role === 'agent' ? m.status !== 'published' : !['queued', 'delivered'].includes(m.status)))
       throw new ChatClientError('invalid_response');
+    if ((m.speaker !== undefined && typeof m.speaker !== 'string') || (m.corpus !== undefined && typeof m.corpus !== 'boolean') || (m.dated !== undefined && typeof m.dated !== 'boolean')) throw new ChatClientError('invalid_response');
     seen.add(m.id);
   }
   return input as ChatSnapshot;

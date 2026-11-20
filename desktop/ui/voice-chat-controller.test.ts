@@ -152,7 +152,7 @@ it("both real surface adapters import one controller; principal/Fork lease confl
   await f.principal.start();
   expect(f.microphone).toHaveBeenCalledTimes(2);
   expect(f.notes.some((n) => n.includes("Microphone utilisé par Room 2"))).toBe(true);
-  for (const file of ["main.ts", "fork-voice.ts"]) {
+  for (const file of ["conversation-microphone.ts", "fork-voice.ts"]) {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");
     expect(source).toContain("voiceChatController({");
     expect(source).not.toContain("new MediaRecorder");

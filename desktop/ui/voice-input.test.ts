@@ -7,6 +7,7 @@ function setup(
   transcripts = ["bonjour voici les premiers mots", "les premiers mots puis la suite"],
   transcribe?: () => Promise<string>,
   visual?: { snapshot: () => Promise<string>; screenshots?: ReturnType<typeof voiceScreenshotsPreference> },
+  capture: { overlapMs?: number; watchSilence?: (finalize: () => void) => {hasSpeech(): boolean; reset(): void; stop(): void} } = {},
 ) {
   vi.useFakeTimers();
   const snapshots = vi.fn(async () => `screen-${snapshots.mock.calls.length}`);
@@ -14,7 +15,8 @@ function setup(
   const stopped = vi.fn();
   const transcribing = vi.fn();
   const controller = voiceInput({
-    microphone: async () => ({ stop: stopped }),
+    ...(capture.overlapMs === undefined ? {} : {overlapMs: capture.overlapMs}),
+    microphone: async () => ({ stop: stopped, ...(capture.watchSilence ? {watchSilence: capture.watchSilence} : {}) }),
     recorder: () => {
       const recorder: VoiceRecorder = {
         start: () => {},
@@ -42,6 +44,27 @@ function setup(
   });
   return { controller, sent, snapshots, stopped, transcribing };
 }
+it.each([false, true])("sends continuous non-overlapping slices within 30 seconds (silence detection: %s)", async silence => {
+  let pause = () => {};
+  const fixture = setup(["bonjour", "bonjour", "suite"], undefined, undefined, {
+    overlapMs: 0,
+    ...(silence ? {watchSilence: (finalize: () => void) => {
+      pause = finalize;
+      return {hasSpeech: () => true, reset() {}, stop() {}};
+    }} : {}),
+  });
+  await fixture.controller.start();
+  await vi.advanceTimersByTimeAsync(29_999);
+  expect(fixture.sent).toHaveLength(0);
+  await vi.advanceTimersByTimeAsync(1);
+  await fixture.controller.settled();
+  expect(fixture.sent.map(item => item.text)).toEqual(["bonjour"]);
+  expect(fixture.controller.active()).toBe(true);
+  if (silence) { pause(); await fixture.controller.settled(); }
+  else await vi.advanceTimersByTimeAsync(30_000);
+  expect(fixture.sent.map(item => item.text)).toEqual(["bonjour", "bonjour"]);
+  fixture.controller.stop(true);
+});
 it("collects an intermediate menu in the 30s visual window and keeps audio overlap separate", async () => {
   let start = 0;
   const captures = vi.fn(async () => {

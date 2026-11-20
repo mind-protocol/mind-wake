@@ -36,6 +36,7 @@ export interface VoiceMetadata {capturedAt:string;requestId:string;voiceSelectio
 interface SilenceWatch { hasSpeech(): boolean; reset(): void; stop(): void }
 interface Microphone {stop(discard?:boolean):void;activate?():void;recorder?():VoiceRecorder;watchSilence?(finalize:()=>void):SilenceWatch|undefined;transcriptionProvider?:'current'|'elevenlabs'}
 interface Options {
+  overlapMs?: number;
   screenshots?:VoiceScreenshots;
   captureContext?(capturedAt:string):VoiceSelection;
   microphone(): Promise<Microphone>;
@@ -55,6 +56,8 @@ interface Options {
 }
 /** Independent complete audio files per slice; capture belongs to the slice's start. */
 export function voiceInput(options: Options) {
+  const overlapMs = options.overlapMs ?? VOICE_OVERLAP_MS;
+  const segmentDuration = VOICE_INTERVAL_MS + overlapMs;
   let running = false,
     starting = false,
     discarded = false;
@@ -242,7 +245,7 @@ export function voiceInput(options: Options) {
       const startedMonotonicMs=started;
       const elapsedMs=Math.max(0,monotonicNow()-started);
       started=undefined;
-      options.captureSegment?.({kind:'stop',requestId,capturedAt,durationMs:elapsedMs,elapsedMs,startedMonotonicMs,plannedDurationMs:VOICE_INTERVAL_MS+VOICE_OVERLAP_MS});
+      options.captureSegment?.({kind:'stop',requestId,capturedAt,durationMs:elapsedMs,elapsedMs,startedMonotonicMs,plannedDurationMs:segmentDuration});
     };
     recorders.add(current);
     const parts: Blob[] = [];
@@ -284,7 +287,7 @@ export function voiceInput(options: Options) {
             throw Error("Capture indisponible : extrait non envoyé.");
           if (cancelled()) return;
           const raw = await (current.transcript ?? transcribe(audio,metadata));
-          const text = watch ? raw.trim() : removeVoiceOverlap(context.previous, raw);
+          const text = watch || !overlapMs ? raw.trim() : removeVoiceOverlap(context.previous, raw);
           context.previous = raw;
           if (cancelled()) return;
           if (text.trim()){
@@ -295,7 +298,7 @@ export function voiceInput(options: Options) {
           if(context===session)options.state(
             running,
             running
-              ? watch ? "Micro actif · envoi après 2 s de silence" : "Micro actif · 30 s + 5 s de chevauchement"
+              ? watch ? "Micro actif · envoi après 2 s de silence" : `Micro actif · extraits de ${segmentDuration / 1000} s`
               : "Dictée envoyée ; micro arrêté.",
           );
         })
@@ -314,7 +317,7 @@ export function voiceInput(options: Options) {
     };
     current.start();
     started=monotonicNow();
-    options.captureSegment?.({kind:'start',requestId,capturedAt,durationMs:VOICE_INTERVAL_MS+VOICE_OVERLAP_MS,plannedDurationMs:VOICE_INTERVAL_MS+VOICE_OVERLAP_MS,elapsedMs:0,startedMonotonicMs:started});
+    options.captureSegment?.({kind:'start',requestId,capturedAt,durationMs:segmentDuration,plannedDurationMs:segmentDuration,elapsedMs:0,startedMonotonicMs:started});
     if (watch) {
       const rotate = (silence = false) => {
         if (!running || !recorders.has(current) || stoppingRecorders.has(current)) return;
@@ -326,7 +329,7 @@ export function voiceInput(options: Options) {
         segment();
       };
       rotateOnSilence = () => rotate(true);
-      schedule(rotate, VOICE_INTERVAL_MS + VOICE_OVERLAP_MS);
+      schedule(rotate, segmentDuration);
       if (!options.visualSnapshot) {
         const sample = () => { frame(); schedule(sample, SCREEN_INTERVAL_MS); };
         schedule(sample, SCREEN_INTERVAL_MS);
@@ -335,7 +338,7 @@ export function voiceInput(options: Options) {
     }
     schedule(() => {
       if (recorders.has(current)) stopRecorder(current);
-    }, VOICE_INTERVAL_MS + VOICE_OVERLAP_MS);
+    }, segmentDuration);
     schedule(() => segment(), VOICE_INTERVAL_MS);
   };
   return {
@@ -365,7 +368,7 @@ export function voiceInput(options: Options) {
         silenceWatch = acquired.watchSilence?.(() => rotateOnSilence?.());
         options.state(true, silenceWatch ? "Micro actif · envoi après 2 s de silence" : options.visualSnapshot
           ? screenshots.enabled() ? "Micro actif · écran par fenêtres de 30 s" : "Micro actif · partage écran désactivé"
-          : "Micro actif · capture au début · 30 s + 5 s de chevauchement");
+          : `Micro actif · extraits de ${segmentDuration / 1000} s`);
         segment();
         const sample = (): void => {
           if (!running) return;

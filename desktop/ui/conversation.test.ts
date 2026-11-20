@@ -456,3 +456,29 @@ it('attribue les activités et résultats des sous-sessions sans les confondre a
   expect(c?.items.map(i=>[i.from,i.source])).toEqual([['agent',undefined],['activity','render'],['session','render']]);
   expect(c?.agentUpdatedAt).toBe('2026-11-03T12:00:00Z');
 });
+
+it("renders the edited corpus in file order and does not resurrect imported messages", () => {
+ const result=conversation({schema:"mind-wake.cli",schemaVersion:1,data:{profileId:"default",replies:[
+  {id:"old",at:"2026-11-20T10:00:00Z",text:"Ancien"},
+  {id:"older-outside-import-window",at:"2026-11-19T10:00:00Z",text:"Ne pas remonter"},
+  {id:"new",at:"2026-11-20T11:00:00Z",text:"En attente"}],agentMessages:[
+ {id:"principal-new",text:"Réponse fraîche",createdAt:"2026-11-20T11:01:00Z",updatedAt:"2026-11-20T11:01:00Z",version:1},
+ {id:"holder-new",text:"Ancien canal holder",createdAt:"2026-11-20T11:02:00Z",updatedAt:"2026-11-20T11:02:00Z",version:1,holder:true}],principalThread:{importedAt:"2026-11-20T10:30:00Z",importedIds:["old"],items:[
+  {id:"principal:1",speaker:"Critique",text:"Resserré",at:null,source:"artifacts/principal/90-fil.md"}]}}});
+ expect(result?.items.map(i=>i.text)).toEqual(["Resserré","En attente"]);
+ expect(result?.items[0]?.corpusSpeaker).toBe("Critique");
+});
+
+it("hides call traffic in both archived corpus and pending messages while retaining normal dictation", () => {
+ const result=conversation(envelope({profileId:'default',replies:[
+  {id:'pending-call',at:'2026-11-20T19:00:00Z',text:'[Appel vocal en cours] Réponds vite.'},
+  {id:'dictation',at:'2026-11-20T19:00:01Z',text:'[Dictée vocale]\nMon texte'}],principalThread:{importedIds:[],items:[
+  {id:'archived-call',speaker:'Humain',text:'[Appel vocal en cours] Ancien appel',source:'artifacts/principal/90-fil.md'},
+  {id:'notice',speaker:'Appel',text:'[Appel automatique] Sonnerie',source:'artifacts/principal/90-fil.md'},
+  {id:'ordinary',speaker:'Marco',text:"Je vérifierai après l’appel.",source:'artifacts/principal/90-fil.md'}]}}));
+ expect(result?.items.map(i=>i.id)).toEqual(['ordinary','dictation']);
+});
+it("hides call traffic before a principal corpus exists",()=>{
+ const result=conversation(envelope({profileId:'default',agentMessages:[],replies:[{id:'call',at:'2026-11-20T19:00:00Z',text:'[Appel vocal en cours] Bonjour'}]}));
+ expect(result?.items).toEqual([]);
+});
