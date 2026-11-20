@@ -238,12 +238,14 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
   // must not delay every request once the pont-p2p route is known to work.
   const routes=new Map();
   async function viaHttp(current,packet,timeout) {
-    const own=new Set(status().addresses);
+    const own=new Set(status().addresses), deadline=Date.now()+timeout;
     for(const address of current.addresses) {
       // The same private address on another network is not this colony (and may be ourselves).
       if(own.has(address))continue;
+      // One budget for all advertised addresses, not a full timeout each.
+      const left=deadline-Date.now();if(left<=0)break;
       let response;
-      try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(timeout)});}
+      try {response=await fetchImpl(`${peerAddress(address)}/mind-call/v2`,{method:'POST',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(packet),signal:AbortSignal.timeout(left)});}
       catch { continue; /* Try another interface advertised by this colony. */ }
       return {status:response.status,body:response.ok?await readJson(response.body,12*1024*1024):null};
     }
@@ -251,9 +253,10 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
   }
   async function viaP2P(current,packet,timeout) {
     if(!current.p2p||!colonies.relay)return null;
-    try {return await colonies.relay(current.colony,packet,timeout);} catch {return null;}
+    // relay() waits timeoutMs + 2.5 s for the service result: keep that grace inside the budget.
+    try {return await colonies.relay(current.colony,packet,Math.max(1500,timeout-2500));} catch {return null;}
   }
-  async function rpc(p, data, timeout = 10_000) {
+  async function rpc(p, data, timeout = 15_000) {
     if(!colonies?.identity() || config.blocked.includes(p.id))fail('peer_unauthorized',401);
     // Re-read the book before every request: removed/replaced identities lose access immediately.
     const current=(await colonies.contacts()).find(entry=>entry.id===p.id);
@@ -262,9 +265,14 @@ export function createCallPeers({ call, controls = null, phones = null, canRing 
     const packet=await colonies.wrap(sealPeer(secret,colonies.ownId(),{...data,caller:data.caller??config.caller,label:config.label,nonce,at:now()}),current);
     // Direct LAN HTTP first while it works; the pont-p2p channel (Hyperswarm) otherwise.
     const order=routes.get(p.id)==='p2p'?['p2p','http']:['http','p2p'];
+    // `timeout` bounds the whole request: an offline peer used to cost one full timeout per address
+    // plus the relay's (> 22 s), past the app's 18 s and shown as « La passerelle Wake ne répond pas ».
+    // The first route gets half the budget so the fallback still has time to answer; 15 s total stays under 18 s.
+    const deadline=Date.now()+timeout;
     let response=null;
-    for(const route of order) {
-      const answer=await (route==='http'?viaHttp:viaP2P)(current,packet,timeout);
+    for(const [index,route] of order.entries()) {
+      const left=deadline-Date.now();if(left<=0)break;
+      const answer=await (route==='http'?viaHttp:viaP2P)(current,packet,index<order.length-1?Math.ceil(left/2):left);
       if(!answer)continue;
       response=answer;
       // A non-sealed refusal on one route (e.g. an unrelated host at the same private address) tries the other.

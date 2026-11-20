@@ -58,12 +58,12 @@ export class P2PNode extends EventEmitter {
    *   agents: Record<string,{role:string, public?:boolean, fixer?:boolean}>, defaultAgent?:string,
    *   displayName?:string, summary?:string, rooms?:Array,
    *   bootstrap?:Array<{host:string,port:number}>, annuaire?:boolean,
-   *   retryMs?:number, detailMs?:number, ttlMs?:number, now?:()=>number }} cfg
+   *   retryMs?:number, discoveryMs?:number, detailMs?:number, ttlMs?:number, now?:()=>number }} cfg
    */
   constructor(cfg) {
     super();
     if (!NAME_RE.test(cfg.name)) throw new Error("nom de colonie invalide : " + cfg.name);
-    this.cfg = { annuaire: true, retryMs: 15 * 60_000, detailMs: 3_000, ttlMs: 7 * 24 * 3600_000, ...cfg };
+    this.cfg = { annuaire: true, retryMs: 15 * 60_000, discoveryMs: 30_000, detailMs: 3_000, ttlMs: 7 * 24 * 3600_000, ...cfg };
     this.name = cfg.name;
     this.now = cfg.now ?? (() => Date.now());
     fs.mkdirSync(cfg.stateDir, { recursive: true });
@@ -83,6 +83,9 @@ export class P2PNode extends EventEmitter {
     this.peers = new Map();   // nom de colonie -> { conn, send, remoteHex }
     this.joined = new Map();  // nom de colonie -> discovery (client) tant que des messages attendent
     this.rpcPending = new Map(); // id -> { peer, resolve, reject, timer } : appels sortants en vol
+    this.discoveryAttempts = new Map();
+    this.discoveryInFlight = new Set();
+    this.stopping = false;
     this.log = [];
   }
 
@@ -105,12 +108,16 @@ export class P2PNode extends EventEmitter {
     for (const colony of new Set([...this.pendingColonies(), ...Object.keys(this.carnet).filter(n=>this.carnet[n].source==="manuel")])) this.seek(colony);
     this.retryTimer = setInterval(() => this.retryTick(), this.cfg.retryMs);
     this.retryTimer.unref?.();
+    this.discoveryTimer = setInterval(() => this.discoverOffline(), this.cfg.discoveryMs);
+    this.discoveryTimer.unref?.();
     this.detailTimer = setInterval(() => this.refreshDetails(), this.cfg.detailMs);
     this.detailTimer.unref?.();
     return this;
   }
 
   async stop() {
+    this.stopping = true;
+    clearInterval(this.discoveryTimer);
     clearInterval(this.retryTimer);
     clearInterval(this.detailTimer);
     for (const p of this.peers.values()) try { p.conn.destroy(); } catch {}
@@ -255,6 +262,7 @@ export class P2PNode extends EventEmitter {
         // Un message envoyé sans accusé redevient « en attente ».
         for (const m of this.outbox) if (m.colony === peer.colony && m.status === STATUS.PENDING && m.detail === DETAIL.SENT) this.setStatus(m, STATUS.PENDING, DETAIL.NOT_FOUND);
         this.emit("peer-offline", peer.colony);
+        this.seek(peer.colony);
       }
     });
     conn.on("data", (chunk) => {
@@ -405,8 +413,28 @@ export class P2PNode extends EventEmitter {
   /** Rejoint (côté client) le topic d'une colonie pour la trouver ; la recherche démarre aussitôt. */
   seek(colony) {
     const e = this.carnet[colony];
-    if (!e || this.joined.has(colony) || !this.swarm) return;
-    this.joined.set(colony, this.swarm.join(colonyTopic(e.publicKey), { server: false, client: true }));
+    if (!e || !this.swarm || this.stopping || this.peers.has(colony)) return;
+    const discovery = this.joined.get(colony);
+    const last = this.discoveryAttempts.get(colony);
+    if (discovery && (this.discoveryInFlight.has(colony) || (last !== undefined && this.now() - last < this.cfg.discoveryMs))) return;
+    this.discoveryAttempts.set(colony, this.now());
+    if (!discovery) {
+      this.joined.set(colony, this.swarm.join(colonyTopic(e.publicKey), { server: false, client: true }));
+      return;
+    }
+    this.discoveryInFlight.add(colony);
+    Promise.resolve().then(() => {
+      if (!this.stopping && this.joined.get(colony) === discovery)
+        return discovery.refresh({ server: false, client: true });
+    }).catch(() => {}).finally(() => this.discoveryInFlight.delete(colony));
+  }
+
+  // Rediscover disconnected contacts independently of the 15-minute message retry.
+  // This never retransmits a message or wakes an agent by itself.
+  discoverOffline() {
+    if (this.stopping) return;
+    for (const colony of new Set([...this.pendingColonies(), ...Object.keys(this.carnet).filter(n => this.carnet[n].source === "manuel")]))
+      this.seek(colony);
   }
 
   /** Nouvel essai (toutes les 15 minutes par défaut) : expiration, puis nouvelle recherche DHT. */
@@ -416,9 +444,9 @@ export class P2PNode extends EventEmitter {
       if (m.status === STATUS.PENDING && t - Date.parse(m.createdAt) > this.cfg.ttlMs) this.fail(m, "expiré : pair resté hors ligne au-delà du délai");
     }
     const waiting = new Set([...this.pendingColonies(), ...Object.keys(this.carnet).filter(n=>this.carnet[n].source==="manuel")]);
-    for (const [colony, d] of this.joined) {
+    for (const [colony] of this.joined) {
       if (!waiting.has(colony)) { this.joined.delete(colony); const k = this.carnet[colony]?.publicKey; if (k) this.swarm.leave(colonyTopic(k)).catch(() => {}); }
-      else if (!this.peers.has(colony)) d.refresh({ server: false, client: true }).catch(() => {});
+      else if (!this.peers.has(colony)) this.seek(colony);
     }
     for (const colony of waiting) {
       this.seek(colony);

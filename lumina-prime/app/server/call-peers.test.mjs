@@ -407,3 +407,22 @@ test('declining the local human invitation leaves the shared agent call active',
   await a.call.mirrorTick();assert.ok(a.notices.some(n=>n.text.includes('Toujours ensemble')));
  });
 });
+
+test('an unreachable colony costs one shared budget, not a full timeout per address plus the relay',async t=>{
+  const {a}=await fixture(t);
+  const relays=[],fetches=[];
+  // Black-hole LAN addresses and a relay that runs to its service deadline: a peer gone offline mid-call.
+  const colonies={...a.colonies,
+    contacts:async()=>(await a.colonies.contacts()).map(c=>({...c,p2p:true,addresses:[...c.addresses,'http://192.168.77.2:8790']})),
+    relay:async(colony,packet,timeoutMs)=>{relays.push(timeoutMs);await new Promise(r=>setTimeout(r,timeoutMs));throw Error('p2p_timeout');}};
+  const fetchImpl=(url,{signal})=>{fetches.push(url);return new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(signal.reason),{once:true}));};
+  const c=createCallPeers({call:a.call,controls:a.controls,dataDir:a.data,colonies,port:0,host:'127.0.0.1',fetchImpl});
+  t.after(()=>c.close());
+  const started=Date.now();
+  await c.refresh(); // directory rpc, budget 1500 ms
+  const elapsed=Date.now()-started;
+  assert.ok(fetches.length>=1&&relays.length===1,JSON.stringify({fetches,relays}));
+  assert.equal(c.status().peers[0].online,false);
+  // Before: 1500 ms per address (2) + 1500 ms relay = 4500 ms.
+  assert.ok(elapsed<3000,`refresh took ${elapsed} ms`);
+});
