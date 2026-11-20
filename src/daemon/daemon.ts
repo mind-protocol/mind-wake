@@ -7,6 +7,7 @@ import { PatternHolderService } from "../communication/pattern-holders.js";
 import { KeyboardContextCollector } from "./keyboard-context.js";
 import { withWakeManager } from "./wake-manager.js";
 import { writeRuntimeReceipt } from "../communication/runtime-receipt.js";
+import { PRINCIPAL_PHASE_ROOM, roomPhaseWakeLine } from "../communication/room-phase.js";
 import { collectAgentScreenshot } from "./agent-screenshot-policy.js";
 import {
   captureWakeScreenshot,
@@ -1150,6 +1151,8 @@ export class WakeDaemon implements SessionLauncher {
         ...events,
         ...[ownerPresenceEvent(this.#idleWatcher?.latest() ?? null)].filter((e) => e !== null),
         ...(rotation ? [rotation.event] : []),
+        // Phrases de phase de la salle 1 (le fil principal), posées par ses holders (room-phase.ts).
+        ...[roomPhaseWakeLine(this.#o.dataDir, PRINCIPAL_PHASE_ROOM, wakeNumber)].filter((e) => e !== null),
         ...(this.#backgroundJobs?.store.events(true) ?? []),
         // With rotation, the selected reservation supersedes the legacy free-form note.
         ...[currentContextEvent(artifactsDirFor(this.#o.dataDir), rotation?.context ?? null)].filter((e) => e !== null),

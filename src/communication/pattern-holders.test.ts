@@ -19,6 +19,7 @@ import {
   topicIn,
   withoutOwnPrefix,
   parsePatternHolder,
+  parseRouterSelection,
   PATTERN_HOLDER_NOTE,
   PatternHolderService,
   previewPatternHolder,
@@ -514,6 +515,111 @@ it.each(['[]', '["inconnu"]'])("keeps the fil silent for a router result %s", as
   expect(results).toEqual(selection === "[]" ? [] : [expect.objectContaining({slug:"reveilleur", state:"failed"})]);
   expect(readOwnerMessages(dataDir) ?? []).toEqual([]);
   expect(await tick(replying(""))).toEqual([]);
+});
+
+// NLR, 20 nov. 2026 : Narration parle à chaque tour, sans dépendre du réveilleur.
+const NARRATION = '```json pattern-holder\n{"name":"Narration","emoji":"📖","alwaysOnFil":true}\n```\n';
+
+it("parses alwaysOnFil from the holder header", () => {
+  const on = parsePatternHolder("x/narration.md", NARRATION);
+  expect("holder" in on && on.holder.alwaysOnFil).toBe(true);
+  const off = parsePatternHolder("x/viz.md", '```json pattern-holder\n{"name":"Viz","alwaysOnFil":"oui"}\n```');
+  expect("holder" in off && off.holder.alwaysOnFil).toBeUndefined();
+});
+
+it("parses a router selection wrapped in code fences or surrounded by text", () => {
+  expect(parseRouterSelection('["crypto"]')).toEqual(["crypto"]);
+  expect(parseRouterSelection("```json\n[]\n```")).toEqual([]);
+  expect(parseRouterSelection('```\n["crypto", "viz"]\n```')).toEqual(["crypto", "viz"]);
+  expect(parseRouterSelection('Je réveille :\n```json\n["crypto"]\n```\nC\'est tout.')).toEqual(["crypto"]);
+  expect(parseRouterSelection('Sélection : ["viz"] (une seule).')).toEqual(["viz"]);
+  expect(() => parseRouterSelection('["a"] puis ["b"]')).toThrow();
+  expect(() => parseRouterSelection("personne")).toThrow();
+});
+
+it("accepts a fenced router answer instead of silencing the fil", async () => {
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  await tick(replying(""));
+  human("new", "Du nouveau ?", iso(-30_000));
+  const calls: string[] = [];
+  const call: typeof CallClaude = async (_, _args, _input, dir) => {
+    calls.push(path.basename(dir));
+    return { text: path.basename(dir) === "reveilleur" ? '```json\n["orga-agents"]\n```' : "SILENCE" };
+  };
+  const outcomes = await tickPatternHolders({ dataDir, claude, call, now });
+  expect(calls).toEqual(["reveilleur", "orga-agents"]);
+  expect(outcomes).toEqual([expect.objectContaining({ slug: "orga-agents", state: "silent", reason: "fil" })]);
+});
+
+it("wakes an alwaysOnFil holder on the fil without the router choosing it", async () => {
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  fs.writeFileSync(path.join(holdersDir(), "narration.md"), NARRATION);
+  await tick(replying(""));
+  human("new", "Du nouveau ?", iso(-30_000));
+  const calls: string[] = [];
+  const catalogues: string[] = [];
+  const call: typeof CallClaude = async (_, _args, input, dir) => {
+    const slug = path.basename(dir);
+    calls.push(slug);
+    if (slug === "reveilleur") {
+      catalogues.push(input);
+      return { text: "```json\n[]\n```" };
+    }
+    return { text: "La scène avance." };
+  };
+  const outcomes = await tickPatternHolders({ dataDir, claude, call, now });
+  // Le réveilleur ne choisit que parmi les autres : Narration n'est pas dans son catalogue.
+  expect(catalogues).toHaveLength(1);
+  expect(catalogues[0]).toContain("orga-agents");
+  expect(catalogues[0]).not.toContain("narration");
+  expect(calls).toEqual(["reveilleur", "narration"]);
+  expect(outcomes).toEqual([expect.objectContaining({ slug: "narration", state: "spoke", reason: "fil" })]);
+  // Seul candidat « fil » : le réveilleur n'est même pas appelé ; quietMinutes absent = 0.
+  fs.rmSync(path.join(holdersDir(), "orga-agents.md"));
+  clock += 60_000;
+  human("next", "Et maintenant ?", iso(-30_000));
+  calls.length = 0;
+  await tickPatternHolders({ dataDir, claude, call, now });
+  expect(calls).toEqual(["narration"]);
+});
+
+it("still wakes an alwaysOnFil holder when the router fails", async () => {
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  fs.writeFileSync(path.join(holdersDir(), "narration.md"), NARRATION);
+  await tick(replying(""));
+  human("new", "Du nouveau ?", iso(-30_000));
+  const calls: string[] = [];
+  const call: typeof CallClaude = async (_, _args, _input, dir) => {
+    const slug = path.basename(dir);
+    calls.push(slug);
+    return { text: slug === "reveilleur" ? "Je ne sais pas qui réveiller." : "La scène avance." };
+  };
+  const outcomes = await tickPatternHolders({ dataDir, claude, call, now });
+  expect(calls).toContain("narration");
+  expect(calls).not.toContain("orga-agents");
+  expect(outcomes).toEqual(expect.arrayContaining([
+    expect.objectContaining({ slug: "reveilleur", state: "failed" }),
+    expect.objectContaining({ slug: "narration", state: "spoke", reason: "fil" }),
+  ]));
+});
+
+it("keeps quietMinutes for an alwaysOnFil holder", async () => {
+  fs.writeFileSync(path.join(holdersDir(), "narration.md"),
+    '```json pattern-holder\n{"name":"Narration","alwaysOnFil":true,"quietMinutes":10}\n```\n');
+  fs.rmSync(path.join(holdersDir(), "orga-agents.md"));
+  fs.writeFileSync(path.join(holdersDir(), "reveilleur.md"), HOLDER);
+  await tick(replying(""));
+  human("a", "Premier tour", iso(-30_000));
+  const calls: string[] = [];
+  await tick(replying("La scène avance.", calls));
+  expect(calls).toHaveLength(2); // `replying` note le prompt et les arguments : un appel.
+  clock += 60_000;
+  // Un tour du principal s'intercale : « Deuxième tour » n'est pas une réponse à Narration.
+  agent("Le principal continue.", "principal-1", iso(-40_000));
+  human("b", "Deuxième tour", iso(-30_000));
+  const outcomes = await tick(replying("Encore.", calls));
+  expect(calls).toHaveLength(2);
+  expect(outcomes).toEqual([expect.objectContaining({ slug: "narration", state: "quiet" })]);
 });
 
 it("sends a holder's reply to a Telegram @mention back to NLR once, prefixed, and ignores other messages", async () => {

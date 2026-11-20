@@ -52,7 +52,7 @@ import {
   readAlarms,
   takeAlarms,
 } from "./holder-alarms.js";
-import { extractPhase, HOLDER_PHASE_NOTE, phasePublicNote, phaseStatusNote, setRoomPhase } from "./room-phase.js";
+import { extractPhase, HOLDER_PHASE_NOTE, phasePublicNote, PRINCIPAL_PHASE_ROOM, phaseStatusNote, setRoomPhase } from "./room-phase.js";
 import { signatureHandle } from "./telegram-handle-route.js";
 import { routeHandleWakesToRooms } from "./room-handle-wake.js";
 import { routeMentionWakes } from "./mention-wake.js";
@@ -134,6 +134,18 @@ export interface PatternHolder {
   readonly cadence?: HolderCadence;
   /** Salle de rattachement du réveil cadencé (champ `room`, 2 à 8) : compteur, registre, fil. */
   readonly room?: number;
+  /**
+   * Gardien des phases de sa salle (champ `phaseKeeper: true`, NLR 20 nov. 2026 : Narration pour
+   * la salle 1) : quand la salle n'a aucune phrase active, sa note de réveil lui rappelle d'en poser
+   * une (`room-phase.ts`, `phaseKeeperReminder`).
+   */
+  readonly phaseKeeper?: boolean;
+  /**
+   * Toujours réveillé sur le fil (champ `alwaysOnFil: true`, NLR 20 nov. 2026 : Narration parle à
+   * chaque tour) : candidat « fil », il est réveillé sans passer par le réveilleur, même si celui-ci
+   * échoue. `quietMinutes` s'applique toujours.
+   */
+  readonly alwaysOnFil?: boolean;
   /** Conversation-semence complète (fichier entier ou sections bout à bout), mémoire du holder. */
   readonly seed: string;
   /** `<slug>.md`, ou le dossier `<slug>/` pour un holder en sections. */
@@ -180,6 +192,8 @@ export function parsePatternHolder(file: string, text: string): HolderParse {
           ? Math.min(quiet, 24 * 60) * 60_000
           : 0,
       ...(wakeMode === "mention" ? { wake: "mention" as const } : {}),
+      ...(header["phaseKeeper"] === true ? { phaseKeeper: true } : {}),
+      ...(header["alwaysOnFil"] === true ? { alwaysOnFil: true } : {}),
       seed: text.slice(0, SEED_CHARS),
       file,
     },
@@ -907,6 +921,27 @@ interface PendingWake {
   key?: string;
 }
 
+/**
+ * Sélection du réveilleur : un tableau JSON, éventuellement dans des balises de code
+ * (```json … ``` ou ``` … ```) ou entouré de texte, pourvu qu'il n'y ait qu'un seul tableau.
+ */
+export function parseRouterSelection(text: string): unknown {
+  const raw = text.trim();
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    const fenced = /^```[\w-]*\s*([\s\S]*?)\s*```$/.exec(raw);
+    if (fenced) {
+      try {
+        return JSON.parse(fenced[1]!.trim());
+      } catch { /* tableau seul cherché plus bas */ }
+    }
+    const arrays = raw.match(/\[[^[\]]*\]/g) ?? [];
+    if (arrays.length === 1) return JSON.parse(arrays[0]!);
+    throw error;
+  }
+}
+
 async function routeHolders(
   options: PatternHolderTickOptions, router: PatternHolder | undefined,
   candidates: PendingWake[], fil: FilMessage[], fresh: FilMessage[],
@@ -924,7 +959,7 @@ async function routeHolders(
   const result = await agentTextCall(options.dataDir, options.call)(claude, fastReplyArgs(claude.model, file),
     JSON.stringify({ candidats: catalogue, contexte: context, nouveaux: fresh }), dir);
   if ("error" in result) throw Error(result.error);
-  const selected: unknown = JSON.parse(result.text.trim());
+  const selected = parseRouterSelection(result.text);
   if (!Array.isArray(selected) || !selected.every(id => typeof id === "string" && catalogue.some(h => h.slug === id))) {
     throw Error("sélection du réveilleur invalide");
   }
@@ -1080,6 +1115,9 @@ export async function tickPatternHolders(
   for (const [thread, batch] of pending) {
     const fil = filOf(thread);
     const candidates = batch.filter(p => p.wake.reason === "fil");
+    // `alwaysOnFil` : réveillés sans le réveilleur, qui ne choisit plus que parmi les autres.
+    const always = candidates.filter(p => p.holder.alwaysOnFil === true).map(p => p.holder.slug);
+    const routable = candidates.filter(p => p.holder.alwaysOnFil !== true);
     const directed = new Set(batch.filter(p => p.wake.reason !== "fil").flatMap(p =>
       p.fresh.filter(m => {
         const reason = wakeReason(p.holder, fil, [m], true, p.handleHit);
@@ -1090,16 +1128,16 @@ export async function tickPatternHolders(
     let selected = candidates.map(p => p.holder.slug);
     const routed = router !== undefined || holders.length > 1;
     if (routed && candidates.length) {
-      selected = [];
-      if (ordinary.length && options.dryRun) {
+      selected = [...always];
+      if (ordinary.length && routable.length && options.dryRun) {
         outcomes.push({ slug: ROUTER, state: "planned", reason: "fil" });
-      } else if (ordinary.length) {
+      } else if (ordinary.length && routable.length) {
         try {
-          selected = await routeHolders(options, router, candidates, fil, ordinary);
+          selected.push(...await routeHolders(options, router, routable, fil, ordinary));
           log(`réveilleur (${thread}) : ${selected.join(", ") || "aucun"}`);
         } catch (error) {
           outcomes.push({ slug: ROUTER, state: "failed", detail: String(error) });
-          log(`réveilleur (${thread}) : échec — ${String(error)}`);
+          log(`réveilleur (${thread}) : échec — ${String(error)}${always.length ? ` ; réveillés quand même (alwaysOnFil) : ${always.join(", ")}` : ""}`);
         }
       }
     }
@@ -1194,11 +1232,12 @@ async function wakeHolder(
   const promptFile = path.join(dir, "system-prompt.md");
   fs.writeFileSync(promptFile, patternHolderSystemPrompt(holder, dataDir));
   const started = Date.now();
-  const phaseRoom = holder.room ?? (thread === "principal" ? undefined : forkIdOf(thread));
+  // Salle de phase : celle du holder, sinon celle du fil où il parle ; le fil principal est la salle 1.
+  const phaseRoom = holder.room ?? (thread === "principal" ? PRINCIPAL_PHASE_ROOM : forkIdOf(thread));
   let phaseNote: string | undefined;
   if (phaseRoom !== undefined) {
     try {
-      phaseNote = phaseStatusNote(dataDir, phaseRoom, (options.now ?? Date.now)());
+      phaseNote = phaseStatusNote(dataDir, phaseRoom, (options.now ?? Date.now)(), holder.name, { keeper: holder.phaseKeeper === true });
     } catch (error) {
       log(`pattern holder ${holder.slug} : phase illisible — ${String(error)}`);
     }

@@ -15,6 +15,9 @@ import { SecondThreadStore } from "../daemon/second-thread.js";
 import { tickPatternHolders } from "./pattern-holders.js";
 import {
   activePhase,
+  activePhases,
+  PRINCIPAL_PHASE_ROOM,
+  ROOM_PHASE_FILE,
   extractPhase,
   parsePhaseLine,
   phasePublicNote,
@@ -108,6 +111,108 @@ it("expire seule en réveils : un cran par tour de salle, même reste pour les a
   expect(phaseStatusNote(dataDir, 6, t0)).toContain("Aucune phrase de phase active");
   expect(roomPhaseWakeLine(dataDir, 6, 13, t0)).toBeNull();
   expect(readRoomPhases(dataDir)["6"]).toBeUndefined();
+});
+
+it("lit les durées longues : jours et semaines (arc d'une Narration), six semaines au plus", () => {
+  expect(parsePhaseLine("3 jours : Arc de la rentrée")).toEqual({ text: "Arc de la rentrée", minutes: 3 * 24 * 60 });
+  expect(parsePhaseLine("2 semaines : Arc du lancement")).toEqual({ text: "Arc du lancement", minutes: 14 * 24 * 60 });
+  expect(parsePhaseLine("1 j : Journée de tri")).toEqual({ text: "Journée de tri", minutes: 24 * 60 });
+  expect(parsePhaseLine("7 semaines : trop long")).toHaveProperty("error");
+  expect(parsePhaseLine("1 j (la journée) : Journée de tri")).toEqual({ text: "Journée de tri", minutes: 24 * 60, scale: "la journée" });
+  expect(parsePhaseLine("3 réveils (l'heure) — Envoi")).toEqual({ text: "Envoi", wakes: 3, scale: "l'heure" });
+});
+
+it("plusieurs phrases à la fois : une par auteur, injectées ensemble (la plus ancienne d'abord), sans s'écraser", () => {
+  const t0 = Date.parse("2026-11-20T09:00:00Z");
+  setRoomPhase(dataDir, 6, "Narration", ["2 semaines (l'arc) : Arc du lancement : on passe de l'atelier au public"], t0);
+  const [chef] = setRoomPhase(dataDir, 6, "Chef de projet", [`1 h (l'heure) : ${TRI}`], t0 + MIN);
+  expect(chef!.state).toBe("posée"); // pas « remplacée » : la phrase de Narration n'est pas la sienne
+  expect(activePhases(readRoomPhases(dataDir), 6, t0 + MIN).map((p) => p.author)).toEqual(["Narration", "Chef de projet"]);
+  expect(roomPhaseWakeLine(dataDir, 6, 1, t0 + 2 * MIN)).toBe(
+    [
+      "Phase de la salle 6 (posée par Narration, l'arc) : Arc du lancement : on passe de l'atelier au public — budget restant 14 jours.",
+      `Phase de la salle 6 (posée par Chef de projet, l'heure) : ${TRI} — budget restant 59 minutes.`,
+    ].join("\n"),
+  );
+
+  // Le chef remplace sa phrase : celle de Narration reste.
+  expect(setRoomPhase(dataDir, 6, "Chef de projet", ["3 réveils : Phase d'envoi"], t0 + 3 * MIN)[0]!.state).toBe("remplacée");
+  expect(activePhase(readRoomPhases(dataDir), 6, t0, "Narration")?.text).toMatch(/^Arc du lancement/u);
+  expect(activePhase(readRoomPhases(dataDir), 6, t0, "chef de projet")?.text).toBe("Phase d'envoi");
+  expect(activePhases(readRoomPhases(dataDir), 6, t0 + 3 * MIN)).toHaveLength(2);
+
+  // Note de réveil du holder : sa phrase, puis celles des autres.
+  const note = phaseStatusNote(dataDir, 6, t0 + 3 * MIN, "Narration");
+  expect(note).toContain("Ta phrase de phase active dans la salle 6, posée par Narration, l'arc");
+  expect(note).toContain("Autres phrases de phase actives dans la salle 6 : posée par Chef de projet");
+  expect(phaseStatusNote(dataDir, 6, t0 + 3 * MIN, "Inconnu")).toContain("Tu n'as pas de phrase de phase active dans la salle 6.");
+
+  // Décompte en réveils propre à chaque phrase ; l'expiration de l'une ne retire pas l'autre.
+  for (const turn of [2, 3, 4]) roomPhaseWakeLine(dataDir, 6, turn, t0 + 4 * MIN);
+  expect(roomPhaseWakeLine(dataDir, 6, 5, t0 + 4 * MIN)).toBe(
+    "Phase de la salle 6 (posée par Narration, l'arc) : Arc du lancement : on passe de l'atelier au public — budget restant 14 jours.",
+  );
+  expect(Object.keys(readRoomPhases(dataDir)["6"]!)).toEqual(["narration"]);
+
+  // « fin » d'un auteur ne retire que sa phrase.
+  setRoomPhase(dataDir, 6, "Chef de projet", ["10 min : Relecture"], t0 + 5 * MIN);
+  expect(setRoomPhase(dataDir, 6, "Chef de projet", ["fin"], t0 + 6 * MIN)[0]!.state).toBe("retirée");
+  expect(activePhases(readRoomPhases(dataDir), 6, t0 + 6 * MIN).map((p) => p.author)).toEqual(["Narration"]);
+  expect(setRoomPhase(dataDir, 6, "Chef de projet", ["fin"], t0 + 6 * MIN)[0]!.state).toBe("aucune");
+  expect(setRoomPhase(dataDir, 6, "Narration", ["fin"], t0 + 7 * MIN)[0]!.state).toBe("retirée");
+  expect(readRoomPhases(dataDir)["6"]).toBeUndefined();
+});
+
+it("salle 1 : le fil principal, nommé comme tel au réveil et dans la note du holder", () => {
+  const t0 = Date.parse("2026-11-20T09:00:00Z");
+  setRoomPhase(dataDir, PRINCIPAL_PHASE_ROOM, "Narration", ["1 j (la journée) : Journée des candidatures"], t0);
+  setRoomPhase(dataDir, PRINCIPAL_PHASE_ROOM, "Chef de projet", ["2 réveils (l'heure) : Envoi de l'offre Soda"], t0 + MIN);
+  expect(roomPhaseWakeLine(dataDir, PRINCIPAL_PHASE_ROOM, 41, t0 + 2 * MIN)).toBe(
+    [
+      "Phase de la salle 1 (fil principal) (posée par Narration, la journée) : Journée des candidatures — budget restant 24 heures.",
+      "Phase de la salle 1 (fil principal) (posée par Chef de projet, l'heure) : Envoi de l'offre Soda — budget restant 2 réveils.",
+    ].join("\n"),
+  );
+  expect(phaseStatusNote(dataDir, PRINCIPAL_PHASE_ROOM, t0 + 2 * MIN, "Chef de projet")).toContain(
+    "Ta phrase de phase active dans la salle 1 (fil principal), posée par Chef de projet, l'heure",
+  );
+  // Les salles des forks ne sont pas touchées.
+  expect(roomPhaseWakeLine(dataDir, 6, 41, t0)).toBeNull();
+});
+
+it("gardien des phases : salle sans phrase active (vide ou échue) → rappel d'en poser une, avec le format", () => {
+  const t0 = Date.parse("2026-11-20T09:00:00Z");
+  const keeper = { keeper: true };
+  const vide = phaseStatusNote(dataDir, PRINCIPAL_PHASE_ROOM, t0, "Narration", keeper);
+  expect(vide).toContain("Rappel : tu tiens les phases de la salle 1 (fil principal)");
+  expect(vide).toContain("aucune phrase de phase active");
+  expect(vide).toContain("« 1 j (la journée) : … »");
+  // Sans le champ, la note reste neutre.
+  expect(phaseStatusNote(dataDir, PRINCIPAL_PHASE_ROOM, t0, "Chef de projet")).not.toContain("Rappel");
+
+  // Une phrase active (même d'un autre holder) : pas de rappel, la note habituelle.
+  setRoomPhase(dataDir, PRINCIPAL_PHASE_ROOM, "Chef de projet", ["10 min (l'heure) : Tri"], t0);
+  const active = phaseStatusNote(dataDir, PRINCIPAL_PHASE_ROOM, t0 + MIN, "Narration", keeper);
+  expect(active).not.toContain("Rappel");
+  expect(active).toContain("Autres phrases de phase actives dans la salle 1 (fil principal) : posée par Chef de projet, l'heure");
+
+  // Toutes échues : le rappel revient.
+  expect(phaseStatusNote(dataDir, PRINCIPAL_PHASE_ROOM, t0 + 11 * MIN, "Narration", keeper)).toContain("Rappel : tu tiens les phases");
+});
+
+it("relit l'ancien format (une phrase par salle) comme la phrase de son auteur", () => {
+  const t0 = Date.parse("2026-11-18T16:30:00Z");
+  fs.writeFileSync(
+    path.join(dataDir, ROOM_PHASE_FILE),
+    JSON.stringify({ "6": { text: TRI, author: "Chef de projet", setAt: new Date(t0).toISOString(), until: new Date(t0 + 15 * MIN).toISOString() } }),
+  );
+  expect(roomPhaseWakeLine(dataDir, 6, 1, t0 + 9 * MIN)).toBe(
+    `Phase de la salle 6 (posée par Chef de projet) : ${TRI} — budget restant 6 minutes.`,
+  );
+  // Le même auteur la remplace ; un autre s'y ajoute.
+  expect(setRoomPhase(dataDir, 6, "Chef de projet", ["5 min : Relecture"], t0 + 10 * MIN)[0]!.state).toBe("remplacée");
+  setRoomPhase(dataDir, 6, "Narration", ["3 jours : Arc"], t0 + 10 * MIN);
+  expect(Object.keys(readRoomPhases(dataDir)["6"]!).sort()).toEqual(["chef de projet", "narration"]);
 });
 
 it("s'ajoute au réveil de chaque agent d'une salle à plusieurs agents", async () => {
@@ -212,7 +317,7 @@ it("le holder chef pose la phrase par un bloc ```phase``` ; le fil annonce l'éc
   expect(posted[0]).toMatch(new RegExp(`^🧭 Chef · Découpage : tri d'abord, puis rédaction\\.\\n\\(phase posée : ${TRI} jusqu'à \\d\\d:\\d\\d\\)`, "u"));
   expect(posted[0]).not.toContain("```");
   expect(notices.some((t) => t.includes("Découpage : tri d'abord"))).toBe(true);
-  expect(readRoomPhases(dataDir)["6"]).toMatchObject({ text: TRI, author: "Chef" });
+  expect(readRoomPhases(dataDir)["6"]?.["chef"]).toMatchObject({ text: TRI, author: "Chef" });
 
   answer = "SILENCE";
   clock += 30 * MIN; // phase échue (15 min), nouvelle revue
@@ -221,6 +326,6 @@ it("le holder chef pose la phrase par un bloc ```phase``` ; le fil annonce l'éc
   setRoomPhase(dataDir, 6, "Chef", ["3 réveils : Phase d'envoi"], clock);
   clock += 30 * MIN;
   await tick();
-  expect(seen[2]).toContain("Phrase de phase active dans la salle 6, posée par Chef");
+  expect(seen[2]).toMatch(/dans la salle 6(, | : )posée par Chef/u); // « Ta phrase… » avec le nom du holder, sinon « Phrases… »
   expect(seen[2]).toContain("encore 3 réveils de la salle sur 3");
 });
