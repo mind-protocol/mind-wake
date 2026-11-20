@@ -154,3 +154,19 @@ it("rejects STT-only activation without an API key", () => {
   const service = new ElevenLabs(dir, vi.fn<typeof fetch>(), () => true);
   expect(() => service.configure({ enabled: false, voiceId: "", autoplay: false, transcriptionEnabled: true })).toThrow("Clé API requise");
 });
+it("preserves call audio MIME and rejects cancellation before sending audio", async () => {
+  const http = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ token: "batch" }))
+    .mockResolvedValueOnce(Response.json({ text: "Bonjour", language_code: "fra" }));
+  const f = setup(http);
+  f.service.configure({ enabled: false, voiceId: "", autoplay: false, transcriptionEnabled: true });
+  await f.service.transcribeDesktop({ ...input, mime: "audio/wav" });
+  const form = http.mock.calls[1]?.[1]?.body as FormData;
+  const audio = form.get("file") as File;
+  expect(audio.type).toBe("audio/wav");
+  expect(audio.name).toBe("current-slice.wav");
+  const abort = new AbortController();
+  abort.abort();
+  await expect(f.service.transcribeDesktop(input, abort.signal)).rejects.toThrow();
+  expect(http).toHaveBeenCalledTimes(2);
+});

@@ -9,7 +9,7 @@ import path from 'node:path';
 import { createChatServer } from './chat-server.mjs';
 import { createFileReader, sharedFileRoots } from './chat-files.mjs';
 import { createWakeChatBridge } from './chat-wake.mjs';
-import { createLocalTranscriber } from './chat-voice.mjs';
+import { createCallTranscriber } from './call-transcriber.mjs';
 import { createChatSessionStore } from './chat-session-store.mjs';
 import { createChatReportStore } from './chat-reports.mjs';
 import { pathToFileURL } from 'node:url';
@@ -107,7 +107,7 @@ export async function startWakeChat({ wakeRoot, dataDir, outputDir, host = '127.
   const allowedHosts = [...new Set([...(anyHost ? [] : [host]), ...hostnames,
     ...(anyHost || ip[0] === 127 ? ['127.0.0.1', 'localhost'] : [])])];
   const bridge = await createWakeChatBridge({ wakeRoot, dataDir });
-  const transcribe = createLocalTranscriber({ dataDir });
+  const transcribe = createCallTranscriber({ dataDir, wakeRoot });
   const reportStore = createChatReportStore(path.join(dataDir, 'mobile-chat-reports.sqlite'));
   const call = await createCall({ wakeRoot, dataDir, bridge });
   // Erreurs affichées dans l'app mobile → message pair `app-error` au principal (src/communication/app-error-relay.ts).

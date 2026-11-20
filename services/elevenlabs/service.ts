@@ -544,9 +544,10 @@ export class ElevenLabs {
     });
   }
   /** One current recorded slice, no silent fallback, no archive upload or text rewriting. */
-  async transcribeDesktop(input: unknown) {
+  async transcribeDesktop(input: unknown, signal?: AbortSignal) {
     const args = z
       .strictObject({
+        mime: z.enum(["audio/webm", "audio/mp4", "audio/m4a", "audio/aac", "audio/ogg", "audio/wav"]).default("audio/webm"),
         audio: z
           .string()
           .min(4)
@@ -556,6 +557,7 @@ export class ElevenLabs {
         request_id: z.string().min(1).max(200),
       })
       .parse(input);
+    signal?.throwIfAborted();
     this.transcriptionAllowed();
     const bytes = Buffer.from(args.audio, "base64");
     if (bytes.length > 4_125_000 || bytes.toString("base64") !== args.audio)
@@ -581,6 +583,9 @@ export class ElevenLabs {
       throw Error("ElevenLabs STT : transcription déjà en cours.");
     }
     const controller = new AbortController();
+    const cancel = () => controller.abort();
+    signal?.addEventListener("abort", cancel, { once: true });
+    if (signal?.aborted) cancel();
     const timer = setTimeout(() => controller.abort(), 45_000);
     const cancelMarker = path.join(
       folder,
@@ -616,8 +621,8 @@ export class ElevenLabs {
       const form = new FormData();
       form.set(
         "file",
-        new Blob([bytes], { type: "audio/webm" }),
-        "current-slice.webm",
+        new Blob([bytes], { type: args.mime }),
+        `current-slice.${args.mime.split("/")[1]}`,
       );
       form.set("model_id", "scribe_v2");
       form.set("language_code", "fr");
@@ -683,6 +688,7 @@ export class ElevenLabs {
       });
       return output;
     } finally {
+      signal?.removeEventListener("abort", cancel);
       clearInterval(guard);
       clearTimeout(timer);
       fs.rmdirSync(lock);
