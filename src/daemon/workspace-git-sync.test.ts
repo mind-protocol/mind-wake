@@ -201,11 +201,15 @@ it("retries a failed repair relay after restart without retrying Git", async () 
   expect(repairIncidents()[0]?.occurrences).toBe(1);
 });
 it("retains a rejected push as a local commit and sends it after manual resolution", async () => {
-  fs.writeFileSync(path.join(remote, "hooks", "pre-receive"), "#!/bin/sh\nexit 1\n");
+  fs.writeFileSync(path.join(remote, "hooks", "pre-receive"), "#!/bin/sh\necho 'quota-hook says no' >&2\nexit 1\n");
   fs.writeFileSync(path.join(work, "new.txt"), "retained");
   requestWorkspaceSync(dir);
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("blocked");
+  // Wake gauges: Git's own words and the commits still waiting are kept in the state.
+  expect(workspaceSyncStatus(dir).state.gitDetail).toContain("pre-receive hook declined");
+  expect(workspaceSyncStatus(dir).state.pendingCommits).toBe(1);
+  expect(workspaceSyncStatus(dir).state.lastSuccessAt).toBeNull();
   expect(repairIncidents()).toHaveLength(1);
   const head = await git(work, ["rev-parse", "HEAD"]);
   expect(await git(remote, ["rev-parse", "main"])).not.toBe(head);
@@ -215,6 +219,9 @@ it("retains a rejected push as a local commit and sends it after manual resoluti
   requestWorkspaceSync(dir);
   await sync.tick();
   expect(workspaceSyncStatus(dir).state.status).toBe("ok");
+  expect(workspaceSyncStatus(dir).state.gitDetail).toBeNull();
+  expect(workspaceSyncStatus(dir).state.pendingCommits).toBe(0);
+  expect(workspaceSyncStatus(dir).state.lastSuccessAt).not.toBeNull();
   expect(await git(remote, ["rev-parse", "main"])).toBe(head);
 });
 it("respects Pause, disabled settings, mismatched remote and missing upstream", async () => {

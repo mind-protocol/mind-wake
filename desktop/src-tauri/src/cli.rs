@@ -202,7 +202,9 @@ pub fn wake_messages(limit: Option<u32>) -> Result<CliRun, String> {
     if let Some(limit) = limit {
         args.extend(["--limit".into(), limit.clamp(1, 10_000).to_string().into()]);
     }
-    run(args, None)
+    // 30 s : la lecture prend ~0,1 s, mais le démarrage de node (≈300 modules ouverts un à un)
+    // dépasse 15 s quand la machine est saturée. Le panneau sérialise ses relectures (`busy`).
+    run_with_timeout(args, None, Duration::from_secs(30))
 }
 
 pub fn wake(verb: Verb) -> Result<CliRun, String> {
@@ -767,7 +769,8 @@ fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Optio
         .args(&args)
         .stdin(if stdin.is_some() { Stdio::piped() } else { Stdio::null() })
         .stdout(Stdio::piped())
-        .stderr(Stdio::null());
+        // stderr est lu pour le diagnostic : sans lui, un abort de node (code 134) ne dit rien.
+        .stderr(Stdio::piped());
     // MIND_WAKE_DATA_DIR, MIND_MCP_HUB_PIPE et MIND_MCP_LINK_KEY sont hérités tels quels.
     #[cfg(windows)]
     {
@@ -784,6 +787,12 @@ fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Optio
     let reader = std::thread::spawn(move || {
         let mut out = String::new();
         stdout.read_to_string(&mut out).map(|_| out)
+    });
+    let mut stderr = child.stderr.take().ok_or("erreurs de la CLI indisponibles")?;
+    let errors = std::thread::spawn(move || {
+        let mut raw = Vec::new();
+        let _ = stderr.read_to_end(&mut raw);
+        raw
     });
 
     let started = Instant::now();
@@ -802,15 +811,41 @@ fn run_with_options(mut args: Vec<OsString>, stdin: Option<String>, point: Optio
         .join()
         .map_err(|_| "lecture de la sortie interrompue".to_string())?
         .map_err(|e| format!("sortie illisible : {e}"))?;
+    let errors = errors.join().unwrap_or_default();
     if stdout.trim().is_empty() {
-        return Err(format!("la CLI n'a rien renvoyé (code {:?})", status.code()));
+        let tail = stderr_tail(&errors);
+        let detail = if tail.is_empty() { String::new() } else { format!(" : {tail}") };
+        return Err(format!("la CLI n'a rien renvoyé (code {:?}){detail}", status.code()));
     }
     Ok(CliRun { exit_code: status.code().unwrap_or(-1), stdout })
+}
+
+/// Dernières lignes utiles de stderr (sans avertissements expérimentaux), bornées à 400 caractères.
+fn stderr_tail(raw: &[u8]) -> String {
+    let text = String::from_utf8_lossy(raw);
+    let lines: Vec<&str> = text.lines().map(str::trim)
+        .filter(|l| !l.is_empty() && !l.contains("ExperimentalWarning") && !l.starts_with("(Use `node --trace-warnings"))
+        .collect();
+    let joined = lines[lines.len().saturating_sub(4)..].join(" | ");
+    let chars: Vec<char> = joined.chars().collect();
+    if chars.len() > 400 { format!("…{}", chars[chars.len() - 400..].iter().collect::<String>()) } else { joined }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stderr_tail_keeps_the_fatal_lines() {
+        let raw = b"(node:1) ExperimentalWarning: SQLite
+
+<--- Last few GCs --->
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+";
+        assert_eq!(stderr_tail(raw), "<--- Last few GCs ---> | FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory");
+        assert_eq!(stderr_tail(b""), "");
+        assert!(stderr_tail("é".repeat(1000).as_bytes()).chars().count() <= 401);
+    }
 
     fn cache() -> StatusCache { StatusCache::new() }
     fn status(stdout: &str) -> Result<CliRun, String> { Ok(CliRun { exit_code: 0, stdout: stdout.into() }) }

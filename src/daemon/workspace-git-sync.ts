@@ -30,6 +30,10 @@ const stateSchema = z.strictObject({
   error: z.string().nullable(),
   fingerprint: z.string(),
   repairNotified: z.boolean().default(false),
+  /** Redacted excerpt of Git's own output for the last failed command (wake gauges). */
+  gitDetail: z.string().nullable().optional(),
+  /** Local commits not yet on the remote, as last measured by a sync cycle. */
+  pendingCommits: z.int().nonnegative().nullable().optional(),
 });
 type SyncState = z.infer<typeof stateSchema>;
 const stateFile = (dir: string) => path.join(dir, "workspace-sync-state.json");
@@ -280,6 +284,7 @@ export class WorkspaceGitSync {
       state.status = "running";
       state.lastAttemptAt = stamp();
       state.error = null;
+      state.gitDetail = null;
       save();
       // Fetch first: never commit dirty work into a history that already diverges.
       await run(["fetch", "--no-tags", "origin", repo.merge]);
@@ -295,6 +300,7 @@ export class WorkspaceGitSync {
         !Number.isFinite(behind)
       )
         throw Error("Cannot compare local and remote history");
+      state.pendingCommits = ahead;
       const dirty = Boolean(await run(["status", "--porcelain"]));
       if (ahead > 0 && behind > 0)
         throw Error("Local and remote branches diverged; resolve locally, then Sync now");
@@ -306,8 +312,10 @@ export class WorkspaceGitSync {
       if (dirty) {
         await run(["add", "--all"]);
         // git diff exits 1 for changes; a nonempty name list avoids treating that as failure.
-        if (await run(["diff", "--cached", "--name-only"]))
+        if (await run(["diff", "--cached", "--name-only"])) {
           await run(["commit", "-m", "Wake workspace: automatic synchronisation"]);
+          state.pendingCommits = ahead + 1;
+        }
       }
       // Push the explicit upstream branch without force; a concurrent remote change is a block.
       // Use the reviewed URL explicitly: remote.origin.pushurl cannot redirect it.
@@ -327,6 +335,8 @@ export class WorkspaceGitSync {
       state.lastSuccessAt = stamp();
       state.nextRunAt = new Date(this.now() + WORKSPACE_SYNC_INTERVAL).toISOString();
       state.error = null;
+      state.gitDetail = null;
+      state.pendingCommits = 0;
       save();
     } catch (e) {
       state.status = !this.#isAllowed()
@@ -339,6 +349,7 @@ export class WorkspaceGitSync {
           ? new Date(this.now() + WORKSPACE_SYNC_INTERVAL).toISOString()
           : null;
       state.error = e instanceof Error ? e.message : "Workspace Git sync failed";
+      state.gitDetail = e instanceof GitCommandError ? e.detail : null;
       save();
       // Persist the block first: a failed relay is retried on the next poll,
       // without running Git again. The durable queue also deduplicates retries.

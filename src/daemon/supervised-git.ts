@@ -5,22 +5,64 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { ProcessTreeSupervisor } from "../runner/process-tree.js";
 import type { ProfileId, SessionId } from "../contracts/index.js";
+import { redactPrivatePaths, redactString } from "../journal/redact.js";
 export class GitCommandError extends Error {
   constructor(
     operation: string,
     readonly transient: boolean,
     reason: "network" | "file-changed" = "network",
+    readonly failureReason: GitFailureReason | null = null,
+    /** Redacted excerpt of Git's own error lines (see gitErrorDetail); never part of `message`. */
+    readonly detail: string | null = null,
   ) {
     super(
       `Git ${operation} failed${
         !transient
-          ? "; inspect the repository locally"
+          ? `${failureReason ? ` (${failureReason})` : ""}; inspect the repository locally`
           : reason === "file-changed"
             ? " (a file changed while Git was reading it; retry in one minute)"
             : " (temporary network failure; retry in one minute)"
       }.`,
     );
   }
+}
+/** Fixed labels for non-network failures: enough to diagnose, without raw output, URLs or tokens. */
+export type GitFailureReason =
+  | "push-protection"
+  | "file-too-large"
+  | "pack-too-large"
+  | "server-disconnect"
+  | "rejected"
+  | "auth";
+const FAILURE_REASONS: readonly [GitFailureReason, RegExp][] = [
+  ["push-protection", /GH013|push protection|secret scanning/i],
+  ["file-too-large", /GH001|exceeds GitHub's file size limit/i],
+  ["pack-too-large", /pack exceeds maximum allowed size|HTTP 413|request entity too large/i],
+  [
+    "server-disconnect",
+    /RPC failed|hung up unexpectedly|unexpected disconnect|curl 92|early EOF|HTTP\/2 stream \d+ was not closed cleanly/i,
+  ],
+  ["auth", /authentication failed|could not read username|HTTP 40[13]|permission to .* denied/i],
+  ["rejected", /\[(remote )?rejected\]|pre-receive hook declined|non-fast-forward/i],
+];
+export function gitFailureReason(stderr: string): GitFailureReason | null {
+  return FAILURE_REASONS.find(([, pattern]) => pattern.test(stderr))?.[0] ?? null;
+}
+/**
+ * Short excerpt of Git's error output for the operator: secrets, credentials in URLs and
+ * private profile paths are masked, URLs are reduced to their host, and only the last
+ * error-looking lines are kept (at most `max` characters).
+ */
+export function gitErrorDetail(stderr: string, max = 300): string | null {
+  const lines = redactPrivatePaths(redactString(stderr))
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\/(?:[^\s/@]*@)?([^\s/:'"]+)[^\s'"]*/gi, "<$1>")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  const errors = lines.filter((line) => /error|fatal|rejected|denied|declined|failed|^!/i.test(line));
+  const text = (errors.length ? errors : lines).slice(-3).join(" | ");
+  if (!text) return null;
+  return text.length > max ? `…${text.slice(-(max - 1))}` : text;
 }
 /** Git reads a live workspace: a file rewritten mid-add is a race, not a broken repository. */
 export const FILE_CHANGED_WHILE_INDEXING = /short read while indexing|file changed as we read it/i;
@@ -121,6 +163,9 @@ export async function git(
         /could not resolve host|could not resolve hostname|failed to connect|connection timed out|connection reset|network is unreachable|unable to access.*(timeout|couldn.t connect)/i.test(
           result.stderr,
         ),
+        "network",
+        gitFailureReason(result.stderr),
+        gitErrorDetail(result.stderr),
       );
     return result.stdout.trim();
   } finally {
