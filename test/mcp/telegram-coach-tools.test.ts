@@ -100,12 +100,21 @@ it("accès complet : un nom de contacts.json est résolu ; tout autre destinatai
   expect(found["data"]).toMatchObject({ query: "Spark", messages: [{ dialog: { name: "Kebra" } }] });
   await client.callTool({ name: "telegram_user_search", arguments: { query: "lien", in: "Léo", limit: 5 } });
   expect(calls[6]).toEqual(["search", "lien", "@leo", "5"]);
+  // Dialogues et document reçu : mêmes outils que le principal ; un nom de contacts.json est résolu.
+  nextResult = () => ({ ok: true, dialogs: [] });
+  await client.callTool({ name: "telegram_user_dialogs", arguments: { limit: 10 } });
+  expect(calls[7]).toEqual(["dialogs", "10"]);
+  nextResult = () => ({ ok: true, path: "x", name: "x", size: 1, mime: null, date: null, message_id: 2, direction: "in", dialog: { id: 42, name: "Léo" } });
+  const media = payload(await client.callTool({ name: "telegram_user_media", arguments: { to: "Léo" } }));
+  expect(media["data"]).toMatchObject({ message_id: 2, dialog: { name: "Léo" } });
+  expect(calls[8]?.slice(0, 2)).toEqual(["media", "--dest"]);
+  expect(calls[8]?.slice(-2)).toEqual(["--to", "@leo"]);
 });
 
 it("sans contacts.json : outils exposés, `to` passé tel quel", async () => {
   const client = await connect();
   const names = (await client.listTools()).tools.map((t) => t.name).sort();
-  expect(names).toEqual(["telegram_user_recent", "telegram_user_search", "telegram_user_send"]);
+  expect(names).toEqual(["telegram_user_dialogs", "telegram_user_media", "telegram_user_recent", "telegram_user_search", "telegram_user_send"]);
   const out = await client.callTool({ name: "telegram_user_send", arguments: { to: "@leo", text: "x", idempotency_key: "k" } });
   expect(out.isError).toBeFalsy();
   expect(calls[0]).toEqual(["send", "@leo", "-"]);
@@ -153,7 +162,7 @@ it("serveur d'un agent : un coach Telegram reçoit les deux outils ; sans régla
     return tools;
   };
   expect(names(env())).toEqual([
-    "list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, "list_active_calls", "invite_to_call", "hangup_call", "call", "call_human", "telegram_user_send", "telegram_user_recent", "telegram_user_search",
+    "list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, "list_active_calls", "invite_to_call", "hangup_call", "call", "call_human", "telegram_user_send", "telegram_user_recent", "telegram_user_search", "telegram_user_dialogs", "telegram_user_media",
   ]);
   expect(names({})).toEqual(["list_owner_messages", "message", "generate_image", "computer_use", ...DESKTOP_TOOLS, "list_active_calls", "invite_to_call", "hangup_call", "call", "call_human"]);
 });

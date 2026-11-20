@@ -12,16 +12,25 @@ Sous-commandes (sortie JSON sur stdout, une ligne) :
   resolve <cible>          @username, id numérique ou nom exact d'une conversation privée
   send <cible> [texte|-]   texte en argument, ou lu sur stdin si absent ou « - »
   recent <cible> [n]       n derniers messages (auteur moi/lui, date, texte)
+  dialogs [n]              n dialogues recents : id, nom, type, date du dernier message, media, sens
+  media --dest DIR [--to C] [--message-id N] [--scan N] [--max-bytes B]
+                           telecharge (lecture seule) le document d'un message, ou le dernier
+                           document ENTRANT (de --to, ou des N dialogues recents) ; jamais execute
+                           ni decompresse ; refus au-dela de --max-bytes
 
 Le dossier de données vient de --data-dir ou de MIND_WAKE_DATA_DIR. Aucun secret
 (api_hash, téléphone, code, mot de passe, session) n'est écrit sur stdout ni stderr.
 Erreurs : {"ok": false, "error": <code>, "message": ..., "definite": true|false}.
+Session verrouillee par un autre processus (relais inbound) : erreur « session_locked » ; l'appelant
+reessaie apres un court delai.
 « definite » vaut true quand rien n'a pu partir (refus net), false quand l'issue est incertaine.
 """
 import argparse
 import asyncio
 import json
 import os
+import re
+import sqlite3
 import sys
 
 TEXT_MAX = 4000
@@ -39,7 +48,7 @@ def fail(error, message, definite=True, code=1, **extra):
 
 try:
     from telethon import TelegramClient, errors, utils  # type: ignore
-    from telethon.tl.types import User  # type: ignore
+    from telethon.tl.types import InputMessagesFilterDocument, User  # type: ignore
 except ImportError:
     fail(
         "telethon_missing",
@@ -399,6 +408,135 @@ async def cmd_search(client, query, target, limit):
     return {"ok": True, "query": query, "dialog": describe(peer) if peer is not None else None, "messages": items}
 
 
+def dialog_type(dialog):
+    if dialog.is_user:
+        return "private"
+    if dialog.is_channel and not dialog.is_group:
+        return "channel"
+    return "group"
+
+
+async def cmd_dialogs(client, limit):
+    """Dialogues recents dans l'ordre de Telegram (epingles d'abord) ; aucun texte de message rendu."""
+    limit = max(1, min(int(limit), 100))
+    await require_login(client)
+    items = []
+    async for dialog in client.iter_dialogs(limit=limit):
+        last = dialog.message
+        items.append(
+            {
+                "id": int(dialog.id),
+                "name": dialog.name or "",
+                "type": dialog_type(dialog),
+                "date": dialog.date.isoformat() if dialog.date else None,
+                "last_media": bool(last is not None and last.media),
+                "last_direction": None if last is None else ("out" if last.out else "in"),
+                "unread": int(getattr(dialog, "unread_count", 0) or 0),
+            }
+        )
+    return {"ok": True, "dialogs": items}
+
+
+SAFE_NAME = re.compile(r"[^\w.\- ()\[\]+,=@]+", re.UNICODE)
+
+
+def safe_file_name(name, message_id, ext):
+    """Nom de fichier sans chemin ni caractere reserve, prefixe par l'id du message."""
+    base = os.path.basename((name or "").replace("\\", "/")).strip().strip(".")
+    base = SAFE_NAME.sub("_", base)[:120].strip()
+    if not base:
+        base = "document" + (ext or "")
+    return str(int(message_id)) + "-" + base
+
+
+def is_document(message):
+    return message is not None and message.file is not None and (message.document is not None or message.photo is not None)
+
+
+async def latest_incoming_document(client, peer):
+    found = await client.get_messages(peer, limit=20, filter=InputMessagesFilterDocument)
+    for message in found:
+        if not message.out and message.document is not None:
+            return message
+    return None
+
+
+async def cmd_media(client, dest, target, message_id, scan, max_bytes):
+    """
+    Telecharge un document recu (lecture seule). Avec message_id : ce message de `target`.
+    Sinon : dernier document ENTRANT de `target`, ou des `scan` dialogues les plus recents.
+    Le fichier est ecrit dans `dest` (cree au besoin), jamais ouvert, execute ni decompresse.
+    """
+    if not dest or not os.path.isabs(dest):
+        fail("invalid_dest", "Dossier de destination absolu attendu.")
+    scan = max(1, min(int(scan), 100))
+    await require_login(client)
+    message = None
+    peer = None
+    if message_id is not None:
+        if not target:
+            fail("invalid_target", "message_id demande aussi le dialogue (to).")
+        peer = await resolve(client, target)
+        message = await client.get_messages(peer, ids=int(message_id))
+        if not is_document(message):
+            fail("no_document", "Ce message ne porte aucun document.")
+    elif target:
+        peer = await resolve(client, target)
+        message = await latest_incoming_document(client, peer)
+    else:
+        async for dialog in client.iter_dialogs(limit=scan):
+            # Dernier message du dialogue plus ancien que le meilleur document : rien de plus recent ici.
+            # (Pas d'arret : les dialogues epingles viennent en tete, quelle que soit leur date.)
+            if message is not None and dialog.date is not None and dialog.date <= message.date:
+                continue
+            candidate = await latest_incoming_document(client, dialog.entity)
+            if candidate is not None and (message is None or candidate.date > message.date):
+                message = candidate
+                peer = dialog.entity
+    if message is None:
+        fail("no_document", "Aucun document recu dans les dialogues parcourus.", scanned=1 if target else scan)
+    size = message.file.size
+    if size is not None and int(size) > int(max_bytes):
+        fail(
+            "too_large",
+            "Document trop gros (" + str(int(size)) + " octets ; plafond " + str(int(max_bytes)) + ") : non telecharge.",
+            size=int(size),
+        )
+    os.makedirs(dest, exist_ok=True)
+    name = safe_file_name(message.file.name, message.id, message.file.ext)
+    final = os.path.join(dest, name)
+    partial = final + ".part"
+    try:
+        written = await client.download_media(message, file=partial)
+    except Exception:
+        try:
+            os.remove(partial)
+        except OSError:
+            pass
+        raise
+    if not written or not os.path.isfile(partial):
+        fail("download_failed", "Telechargement sans fichier.")
+    if os.path.getsize(partial) > int(max_bytes):
+        os.remove(partial)
+        fail("too_large", "Document plus gros que le plafond une fois telecharge : supprime.")
+    os.replace(partial, final)
+    return {
+        "ok": True,
+        "path": final,
+        "name": message.file.name or name,
+        "size": os.path.getsize(final),
+        "mime": message.file.mime_type,
+        "date": message.date.isoformat() if message.date else None,
+        "message_id": int(message.id),
+        "direction": "out" if message.out else "in",
+        "dialog": {"id": int(utils.get_peer_id(peer)), "name": display_name(peer)},
+    }
+
+
+def is_locked(error):
+    return isinstance(error, sqlite3.OperationalError) and "locked" in str(error).lower()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Compte Telegram personnel (Telethon)")
     parser.add_argument("--data-dir", default=os.environ.get("MIND_WAKE_DATA_DIR"))
@@ -420,6 +558,14 @@ def main():
     p_search.add_argument("query")
     p_search.add_argument("target", nargs="?", default="")
     p_search.add_argument("limit", nargs="?", type=int, default=20)
+    p_dialogs = sub.add_parser("dialogs")
+    p_dialogs.add_argument("limit", nargs="?", type=int, default=20)
+    p_media = sub.add_parser("media")
+    p_media.add_argument("--dest", required=True)
+    p_media.add_argument("--to", default="")
+    p_media.add_argument("--message-id", type=int, default=None)
+    p_media.add_argument("--scan", type=int, default=20)
+    p_media.add_argument("--max-bytes", type=int, default=50 * 1024 * 1024)
     p_recent = sub.add_parser("recent")
     p_recent.add_argument("target")
     p_recent.add_argument("limit", nargs="?", type=int, default=10)
@@ -441,7 +587,12 @@ def main():
             if getattr(args, name) is not None and not getattr(args, name):
                 fail("invalid_" + name, "Valeur vide.")
 
-    client, phone = make_client(args.data_dir)
+    try:
+        client, phone = make_client(args.data_dir)
+    except sqlite3.OperationalError as error:
+        if is_locked(error):
+            fail("session_locked", "Session Telegram tenue par un autre processus ; reessayer.", definite=True)
+        raise
 
     async def run():
         try:
@@ -463,6 +614,10 @@ def main():
                 return await cmd_inbound(client, inbound_request)
             if args.command == "search":
                 return await cmd_search(client, args.query, args.target, args.limit)
+            if args.command == "dialogs":
+                return await cmd_dialogs(client, args.limit)
+            if args.command == "media":
+                return await cmd_media(client, args.dest, args.to.strip(), args.message_id, args.scan, args.max_bytes)
             return await cmd_recent(client, args.target, args.limit)
         finally:
             try:
@@ -480,6 +635,9 @@ def main():
         # Hors de l'envoi lui-même (résolution, lecture) : rien n'est parti.
         fail("flood_wait", "Telegram impose une attente de " + str(error.seconds) + " s.", seconds=int(error.seconds))
     except Exception as error:
+        if is_locked(error):
+            # Lecture : rien n'est parti. Envoi : issue incertaine.
+            fail("session_locked", "Session Telegram tenue par un autre processus ; reessayer.", definite=args.command != "send")
         fail("telegram_error", "Erreur Telegram : " + type(error).__name__ + ".", definite=args.command != "send")
     emit(result)
 

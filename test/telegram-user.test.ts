@@ -238,3 +238,82 @@ describe("outils MCP du compte personnel", () => {
     expect(payload(out)).toMatchObject({ error: "flood_wait", retry_after_seconds: 120 });
   });
 });
+
+describe("lecture des dialogues et des documents reçus", () => {
+  const workspace = () => path.join(dataDir, "ws");
+  const connect = async () => {
+    const server = new McpServer({ name: "t", version: "0" });
+    registerTelegramUserTools(server, { MIND_WAKE_DATA_DIR: dataDir, MIND_WAKE_TELEGRAM_USER_MEDIA_MAX_MB: "2" }, fake, {
+      now: () => clock,
+      sleep,
+      workspace,
+    });
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    const client = new Client({ name: "c", version: "0" });
+    await Promise.all([server.connect(a), client.connect(b)]);
+    return client;
+  };
+  const payload = (result: unknown) =>
+    JSON.parse((result as { content: { text: string }[] }).content[0]!.text) as Record<string, unknown>;
+
+  it("dialogs : sidecar `dialogs <n>`, borne 100 par défaut 20", async () => {
+    setup();
+    const client = await connect();
+    nextResult = () => ({ ok: true, dialogs: [{ id: 1, name: "A", type: "private", last_media: true, last_direction: "in" }] });
+    const out = payload(await client.callTool({ name: "telegram_user_dialogs", arguments: {} }));
+    expect(out["data"]).toEqual({ dialogs: [{ id: 1, name: "A", type: "private", last_media: true, last_direction: "in" }] });
+    await client.callTool({ name: "telegram_user_dialogs", arguments: { limit: 10 } });
+    expect(calls.map((c) => c.args)).toEqual([["dialogs", "20"], ["dialogs", "10"]]);
+  });
+
+  it("media sans cible : dossier .local/inbox-telegram/<jour Paris>, plafond et délai long transmis", async () => {
+    setup();
+    // 23:30 UTC le 19 = 00:30 le 20 à Paris.
+    clock = Date.parse("2026-11-19T23:30:00.000Z");
+    const timeouts: (number | undefined)[] = [];
+    const sidecar: UserSidecar = async (args, stdin, timeoutMs) => {
+      timeouts.push(timeoutMs);
+      return fake(args, stdin);
+    };
+    const file = path.join(workspace(), ".local", "inbox-telegram", "2026-11-20", "7-cv.pdf");
+    nextResult = () => ({
+      ok: true, path: file, name: "cv.pdf", size: 1234, mime: "application/pdf", date: "2026-11-19T22:00:00+00:00",
+      message_id: 7, direction: "in", dialog: { id: 9, name: "Marco" },
+    });
+    const result = await new TelegramUserAccount(dataDir, sidecar, { now: () => clock, sleep, workspace }).media({});
+    expect(calls[0]?.args).toEqual([
+      "media", "--dest", path.join(workspace(), ".local", "inbox-telegram", "2026-11-20"), "--scan", "20", "--max-bytes", String(50 * 1024 * 1024),
+    ]);
+    expect(timeouts).toEqual([300_000]);
+    expect(result).toMatchObject({ path: file, workspace_path: ".local/inbox-telegram/2026-11-20/7-cv.pdf", name: "cv.pdf", size: 1234, dialog: { name: "Marco" } });
+    expect(result).not.toHaveProperty("session_lock_retries");
+  });
+
+  it("media via MCP : to + message_id transmis ; message_id sans to refusé sans appel", async () => {
+    setup();
+    const client = await connect();
+    nextResult = () => ({ ok: true, path: path.join(workspace(), "x"), name: "x", size: 1, mime: null, date: null, message_id: 3, direction: "in", dialog: { id: 1, name: "A" } });
+    await client.callTool({ name: "telegram_user_media", arguments: { to: "@leo", message_id: 3, scan: 5 } });
+    expect(calls[0]?.args.slice(3)).toEqual(["--scan", "5", "--max-bytes", String(2 * 1024 * 1024), "--to", "@leo", "--message-id", "3"]);
+    const bad = await client.callTool({ name: "telegram_user_media", arguments: { message_id: 3 } });
+    expect(bad.isError).toBe(true);
+    expect(payload(bad)).toMatchObject({ error: "invalid_target" });
+    expect(calls).toHaveLength(1);
+    nextResult = () => ({ ok: false, error: "too_large", message: "trop gros", definite: true });
+    const big = await client.callTool({ name: "telegram_user_media", arguments: {} });
+    expect(payload(big)).toMatchObject({ error: "too_large" });
+  });
+
+  it("session tenue par le relais inbound : courts nouveaux essais, signalés ; puis erreur claire", async () => {
+    setup();
+    let locked = 2;
+    nextResult = () => (locked-- > 0 ? { ok: false, error: "session_locked", message: "locked", definite: true } : { ok: true, dialogs: [] });
+    const out = await account().dialogs({ limit: 3 });
+    expect(out).toEqual({ dialogs: [], session_lock_retries: 2 });
+    expect(slept).toEqual([1_000, 2_000]);
+    nextResult = () => ({ ok: false, error: "session_locked", message: "locked", definite: true });
+    calls = [];
+    await expect(account().dialogs()).rejects.toMatchObject({ code: "session_locked" });
+    expect(calls).toHaveLength(4);
+  });
+});

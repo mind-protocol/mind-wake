@@ -46,8 +46,24 @@ export type UserSidecarResult = { ok: true; [key: string]: unknown } | {
   /** FloodWait : secondes imposées par Telegram. */
   seconds?: number;
 };
-/** Lance le sidecar avec ces arguments ; `stdin` porte le texte d'un envoi. */
-export type UserSidecar = (args: string[], stdin?: string) => Promise<UserSidecarResult>;
+/** Lance le sidecar avec ces arguments ; `stdin` porte le texte d'un envoi ; `timeoutMs` remplace le délai par défaut. */
+export type UserSidecar = (args: string[], stdin?: string, timeoutMs?: number) => Promise<UserSidecarResult>;
+
+/** Plafond par défaut d'un document reçu téléchargé (telegram_user_media), en Mo. */
+export const USER_MEDIA_DEFAULT_MAX_MB = 50;
+/** Délai d'un téléchargement de document (plus long qu'une lecture). */
+export const USER_MEDIA_TIMEOUT_MS = 300_000;
+/** Session Telethon tenue par un autre processus (relais inbound) : attentes avant chaque nouvel essai. */
+export const USER_SESSION_LOCK_RETRY_MS = [1_000, 2_000, 4_000] as const;
+/** Dossier des documents reçus, relatif au workspace (`.local/` est ignoré par Git). */
+export const USER_MEDIA_INBOX = ".local/inbox-telegram";
+
+/** Date du jour à Paris, AAAA-MM-JJ : sous-dossier de la boîte de réception. */
+export function parisDay(ms: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    new Date(ms),
+  );
+}
 
 /** Python du sidecar : variable, puis celui de la transcription (telegram.json), puis `python`. */
 export function userPythonFor(dataDir: string, env: Readonly<Record<string, string | undefined>>): string {
@@ -70,7 +86,7 @@ export function pythonUserSidecar(
   env: Readonly<Record<string, string | undefined>>,
   timeoutMs = 90_000,
 ): UserSidecar {
-  return (args, stdin) =>
+  return (args, stdin, callTimeoutMs) =>
     new Promise((resolve) => {
       let child;
       try {
@@ -94,7 +110,7 @@ export function pythonUserSidecar(
       const timer = setTimeout(() => {
         child.kill();
         finish({ ok: false, error: "timeout", message: "Sidecar Telegram trop long ; issue incertaine.", definite: false });
-      }, timeoutMs);
+      }, callTimeoutMs ?? timeoutMs);
       child.stdout.setEncoding("utf8");
       child.stdout.on("data", (part: string) => {
         out += part;
@@ -131,25 +147,28 @@ export class TelegramUserAccount {
       now?: (() => number) | undefined;
       sleep?: ((ms: number) => Promise<void>) | undefined;
       workspace?: (() => string) | undefined;
+      mediaMaxMb?: number | undefined;
     } = {},
   ) {
     this.minIntervalMs = 1000 * (options.minIntervalSeconds ?? USER_DEFAULT_MIN_INTERVAL_S);
+    this.mediaMaxBytes = Math.round((options.mediaMaxMb ?? USER_MEDIA_DEFAULT_MAX_MB) * 1024 * 1024);
     this.now = options.now ?? Date.now;
     this.sleep = options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     this.workspace = options.workspace ?? (() => workspaceDirFor(dataDir));
   }
   private readonly workspace: () => string;
+  private readonly mediaMaxBytes: number;
 
   /**
    * Appel avec le FloodWait de Telegram : attente imposée (≤ 60 s) puis un seul nouvel essai ;
    * au-delà, refus net qui rend le délai. Un FloodWait signifie que rien n'est parti.
    */
-  private async callFlood(args: string[], stdin?: string): Promise<UserSidecarResult> {
-    let result = await this.call(args, stdin);
+  private async callFlood(args: string[], stdin?: string, timeoutMs?: number): Promise<UserSidecarResult> {
+    let result = await this.call(args, stdin, timeoutMs);
     const wait = TelegramUserAccount.floodSeconds(result);
     if (wait !== null && wait <= USER_FLOOD_WAIT_RETRY_MAX_S) {
       await this.sleep(wait * 1000 + 500);
-      result = await this.call(args, stdin);
+      result = await this.call(args, stdin, timeoutMs);
     }
     const again = TelegramUserAccount.floodSeconds(result);
     if (again !== null)
@@ -170,10 +189,35 @@ export class TelegramUserAccount {
   }
 
   /** Un appel au sidecar à la fois : la session Telethon est un fichier SQLite partagé. */
-  private call(args: string[], stdin?: string): Promise<UserSidecarResult> {
-    const next = this.queue.then(() => this.sidecar(args, stdin));
+  private call(args: string[], stdin?: string, timeoutMs?: number): Promise<UserSidecarResult> {
+    const next = this.queue.then(() => (timeoutMs === undefined ? this.sidecar(args, stdin) : this.sidecar(args, stdin, timeoutMs)));
     this.queue = next.catch(() => undefined);
     return next;
+  }
+
+  /**
+   * Lecture seule : comme callFlood, et si la session est tenue par un autre processus (relais
+   * inbound des coachs, autre serveur MCP), courts nouveaux essais. `lockRetries` le signale.
+   */
+  private async callRead(args: string[], timeoutMs?: number): Promise<{ result: UserSidecarResult; lockRetries: number }> {
+    let result = await this.callFlood(args, undefined, timeoutMs);
+    let lockRetries = 0;
+    for (const delay of USER_SESSION_LOCK_RETRY_MS) {
+      if (result.ok || result.error !== "session_locked") break;
+      await this.sleep(delay);
+      lockRetries += 1;
+      result = await this.callFlood(args, undefined, timeoutMs);
+    }
+    if (!result.ok && result.error === "session_locked")
+      result = {
+        ...result,
+        message: `Session Telegram tenue par un autre processus (relais inbound ?) après ${String(lockRetries)} nouveaux essais : réessaie dans quelques secondes.`,
+      };
+    return { result, lockRetries };
+  }
+
+  private static lockNote(lockRetries: number): { session_lock_retries?: number } {
+    return lockRetries > 0 ? { session_lock_retries: lockRetries } : {};
   }
 
   private open(): Database.Database {
@@ -244,8 +288,52 @@ export class TelegramUserAccount {
   async recent(input: { to: string; limit?: number | undefined }): Promise<Record<string, unknown>> {
     this.requireSetup();
     const limit = Math.max(1, Math.min(50, Math.trunc(input.limit ?? 10)));
-    const result = TelegramUserAccount.check(await this.callFlood(["recent", input.to.trim(), String(limit)]));
-    return { peer: result["peer"], messages: result["messages"] };
+    const { result, lockRetries } = await this.callRead(["recent", input.to.trim(), String(limit)]);
+    const ok = TelegramUserAccount.check(result);
+    return { peer: ok["peer"], messages: ok["messages"], ...TelegramUserAccount.lockNote(lockRetries) };
+  }
+
+  /** Dialogues récents du compte, dans l'ordre de Telegram (épinglés d'abord), sans texte de message. */
+  async dialogs(input: { limit?: number | undefined } = {}): Promise<Record<string, unknown>> {
+    this.requireSetup();
+    const limit = Math.max(1, Math.min(100, Math.trunc(input.limit ?? 20)));
+    const { result, lockRetries } = await this.callRead(["dialogs", String(limit)]);
+    return { dialogs: TelegramUserAccount.check(result)["dialogs"], ...TelegramUserAccount.lockNote(lockRetries) };
+  }
+
+  /**
+   * Télécharge (lecture seule) un document reçu vers `<workspace>/.local/inbox-telegram/<jour Paris>/` :
+   * le document d'un message (`to` + `message_id`), sinon le dernier document ENTRANT de `to`, ou
+   * des `scan` dialogues les plus récents. Refus au-delà du plafond ; jamais ouvert ni décompressé.
+   */
+  async media(input: { to?: string | undefined; message_id?: number | undefined; scan?: number | undefined }): Promise<Record<string, unknown>> {
+    const to = (input.to ?? "").trim();
+    if (input.message_id !== undefined && to === "")
+      throw new TelegramContactError("invalid_target", "message_id demande aussi le dialogue (to).");
+    this.requireSetup();
+    const workspace = this.workspace();
+    const dest = path.join(workspace, USER_MEDIA_INBOX, parisDay(this.now()));
+    const scan = Math.max(1, Math.min(100, Math.trunc(input.scan ?? 20)));
+    const args = ["media", "--dest", dest, "--scan", String(scan), "--max-bytes", String(this.mediaMaxBytes)];
+    if (to !== "") args.push("--to", to);
+    if (input.message_id !== undefined) args.push("--message-id", String(Math.trunc(input.message_id)));
+    const { result, lockRetries } = await this.callRead(args, USER_MEDIA_TIMEOUT_MS);
+    const ok = TelegramUserAccount.check(result);
+    const file = typeof ok["path"] === "string" ? ok["path"] : null;
+    const relative = file === null ? null : path.relative(workspace, file);
+    return {
+      path: file,
+      workspace_path: relative === null || relative.startsWith("..") || path.isAbsolute(relative) ? null : relative.split(path.sep).join("/"),
+      name: ok["name"] ?? null,
+      size: ok["size"] ?? null,
+      mime: ok["mime"] ?? null,
+      date: ok["date"] ?? null,
+      message_id: ok["message_id"] ?? null,
+      direction: ok["direction"] ?? null,
+      dialog: ok["dialog"] ?? null,
+      max_bytes: this.mediaMaxBytes,
+      ...TelegramUserAccount.lockNote(lockRetries),
+    };
   }
 
   /**
@@ -258,10 +346,9 @@ export class TelegramUserAccount {
     const query = input.query.trim();
     if (query === "") throw new TelegramContactError("invalid_query", "Recherche vide.");
     const limit = Math.max(1, Math.min(100, Math.trunc(input.limit ?? 20)));
-    const result = TelegramUserAccount.check(
-      await this.callFlood(["search", query, (input.in ?? "").trim(), String(limit)]),
-    );
-    return { query, dialog: result["dialog"] ?? null, messages: result["messages"] };
+    const { result: raw, lockRetries } = await this.callRead(["search", query, (input.in ?? "").trim(), String(limit)]);
+    const result = TelegramUserAccount.check(raw);
+    return { query, dialog: result["dialog"] ?? null, messages: result["messages"], ...TelegramUserAccount.lockNote(lockRetries) };
   }
 
   async send(
@@ -362,11 +449,62 @@ function retryAfter(error: unknown): { retry_after_seconds?: number } {
   return typeof seconds === "number" ? { retry_after_seconds: seconds } : {};
 }
 
+export type TelegramUserToolOptions = {
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+  /** Workspace (tests) ; défaut : workspace actif du dossier de données. */
+  workspace?: () => string;
+};
+
+type ToolReply = (
+  name: string,
+  work: () => unknown,
+) => Promise<{ content: { type: "text"; text: string }[]; isError?: boolean }>;
+
+/**
+ * Lecture des dialogues et des documents reçus, mêmes outils pour le principal et les coachs
+ * Telegram d'une room ; `target` traduit un `to` (contacts.json d'un coach) avant l'appel.
+ */
+function registerTelegramUserReadTools(
+  server: McpServer,
+  account: TelegramUserAccount,
+  reply: ToolReply,
+  target: (to: string) => string = (to) => to.trim(),
+): void {
+  server.registerTool(
+    "telegram_user_dialogs",
+    {
+      description:
+        "List the most recent dialogs of NLR's personal Telegram account (default 20, at most 100), in Telegram's order (pinned dialogs first, then newest first): id, name, type (private, group, channel), date of the last message, whether that last message carries a media, its direction (\"in\" received, \"out\" sent by NLR) and the unread count. No message text. Read-only.",
+      inputSchema: z.strictObject({ limit: z.number().int().min(1).max(100).optional() }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async (input) => reply("telegram_user_dialogs", () => account.dialogs(input)),
+  );
+  server.registerTool(
+    "telegram_user_media",
+    {
+      description:
+        "Download (read-only) a document RECEIVED on NLR's personal Telegram account into the workspace, under .local/inbox-telegram/<YYYY-MM-DD>/ (ignored by Git). Without arguments: the most recent INCOMING document across his recent dialogs (`scan`, default 20). With `to` (@username, numeric id or exact dialog name): the latest incoming document of that dialog; with `to` + `message_id`: the file of that message. Files above the size cap (default 50 MB) are refused. The file is never opened, run or unpacked: read it yourself afterwards. Returns path, workspace_path, name, size, mime, date, message_id and the dialog (name, id).",
+      inputSchema: z.strictObject({
+        to: z.string().min(1).max(128).optional(),
+        message_id: z.number().int().positive().optional(),
+        scan: z.number().int().min(1).max(100).optional(),
+      }),
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async (input) =>
+      reply("telegram_user_media", () =>
+        account.media({ ...input, to: input.to === undefined ? undefined : target(input.to) }),
+      ),
+  );
+}
+
 export function registerTelegramUserTools(
   server: McpServer,
   env: Readonly<Record<string, string | undefined>>,
   sidecar?: UserSidecar,
-  options: { now?: () => number; sleep?: (ms: number) => Promise<void> } = {},
+  options: TelegramUserToolOptions = {},
 ): void {
   const dataDir = env["MIND_WAKE_DATA_DIR"];
   if (!dataDir) return;
@@ -376,8 +514,10 @@ export function registerTelegramUserTools(
   };
   const account = new TelegramUserAccount(dataDir, sidecar ?? pythonUserSidecar(dataDir, env), {
     minIntervalSeconds: envInt("MIND_WAKE_TELEGRAM_USER_MIN_INTERVAL_S"),
+    mediaMaxMb: envInt("MIND_WAKE_TELEGRAM_USER_MEDIA_MAX_MB"),
     now: options.now,
     sleep: options.sleep,
+    workspace: options.workspace,
   });
   const reply = async (name: string, work: () => unknown) => {
     try {
@@ -450,6 +590,7 @@ export function registerTelegramUserTools(
     },
     async (input) => reply("telegram_user_recent", () => account.recent(input)),
   );
+  registerTelegramUserReadTools(server, account, reply);
 }
 
 // ------------------------------------------------------------ coachs Telegram d'une room
@@ -458,7 +599,8 @@ export { readCoachContacts, findCoachContact, type CoachContact } from "../../sr
 
 /**
  * Outils d'un coach Telegram d'une room (`coach-telegram*`, détecté par `agentsFrom`) :
- * `telegram_user_send`, `telegram_user_recent` et `telegram_user_search`, mêmes noms et même
+ * `telegram_user_send`, `telegram_user_recent`, `telegram_user_search`, `telegram_user_dialogs` et
+ * `telegram_user_media`, mêmes noms et même
  * sidecar que ceux du principal. Accès complet (NLR, 16 nov. 2026 13:17 : « full access plz ») :
  * tout dialogue du compte ; son `contacts.json` (relu à chaque appel) est sa liste par défaut, qui
  * résout un nom en @username ou id, pas une liste blanche. Même table, donc même espacement entre
@@ -471,7 +613,7 @@ export function registerTelegramCoachTools(
   server: McpServer,
   env: Readonly<Record<string, string | undefined>>,
   sidecar?: UserSidecar,
-  options: { now?: () => number; sleep?: (ms: number) => Promise<void> } = {},
+  options: TelegramUserToolOptions = {},
 ): boolean {
   const dataDir = env["MIND_WAKE_DATA_DIR"];
   const coach = env["MIND_WAKE_OWNER_TELEGRAM_COACH"]?.trim();
@@ -485,8 +627,10 @@ export function registerTelegramCoachTools(
   const minInterval = envInt("MIND_WAKE_TELEGRAM_USER_MIN_INTERVAL_S") ?? USER_DEFAULT_MIN_INTERVAL_S;
   const account = new TelegramUserAccount(dataDir, sidecar ?? pythonUserSidecar(dataDir, env), {
     minIntervalSeconds: minInterval,
+    mediaMaxMb: envInt("MIND_WAKE_TELEGRAM_USER_MEDIA_MAX_MB"),
     now: options.now,
     sleep: options.sleep,
+    workspace: options.workspace,
   });
   /** Cible : la personne de contacts.json si `to` la désigne, sinon `to` tel quel. */
   const resolveTo = (to: string): { target: string; contact: CoachContact | null } => {
@@ -584,5 +728,6 @@ export function registerTelegramCoachTools(
         account.search({ query: input.query, in: input.in === undefined ? undefined : resolveTo(input.in).target, limit: input.limit }),
       ),
   );
+  registerTelegramUserReadTools(server, account, reply, (to) => resolveTo(to).target);
   return true;
 }
