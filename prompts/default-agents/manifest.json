@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "capturedAt": "2026-11-17T17:23:26.607Z",
   "files": [
     {
@@ -523,6 +523,252 @@
       "origin": "distribution identity (separate from original prompts)",
       "target": "artifacts/agent-identity.json",
       "sha256": "29a023cc75ea8b1239457c1e746f13be121224c7bb8bae5850ea37a7ba9fbdd1"
+    },
+    {
+      "file": "artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
+      "origin": "workspace/artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
+      "target": "artifacts/pattern-holders/_commun/prendre-le-temps-par-passages.md",
+      "sha256": "09408cd4c3426c8fde8aa06aa94db2353e92caeb2bedab5b1be9dcb9712cd9e2"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/_holder.md",
+      "target": "artifacts/pattern-holders/critique/_holder.md",
+      "sha256": "ea27dec4ef8ecae37a0c6ccd4355e55874255f5f9766feb23121fbb754593d56"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/ambition-et-incertitude.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/ambition-et-incertitude.md",
+      "target": "artifacts/pattern-holders/critique/ambition-et-incertitude.md",
+      "sha256": "4ab83f5792be0eea4ea8fe12f73fb7efa14b16f9c1b264a4b0c992b2216425ac"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/ambition-haute-capacites-basses.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/ambition-haute-capacites-basses.md",
+      "target": "artifacts/pattern-holders/critique/ambition-haute-capacites-basses.md",
+      "sha256": "acd527beb2867c597a30b914dfa04813ac548189e7ecb3d9bbeaa5d5db20c1d5"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a01.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a01.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a01.md",
+      "sha256": "64f93190c8a453fad126ed4c6f9eb98b8015243335cc3588a92b4128929134e4"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a02.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a02.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a02.md",
+      "sha256": "d9d2c23e618a21db3e5f791a18eaddedee9c9cb1a2854b968b50ff4c7b223bc8"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a03.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a03.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a03.md",
+      "sha256": "0dc53c2c9763adf0e545536a2e0ccca1e09c9bb6d858489cdb69efcdc3810713"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a04.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a04.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a04.md",
+      "sha256": "68a3ff5aeb5600ea220f6e75bf6436991bcd190e6de9d46e92345a1a7b569c59"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a05.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a05.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a05.md",
+      "sha256": "e00ab49438dae2b50b520aa7b09298b103768cc314c9e90f05563857461689e5"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a06.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a06.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a06.md",
+      "sha256": "fa5b57432d2121413f75b484c97b0dc593d87c00d496090e96b964c20e71bfee"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a07.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a07.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a07.md",
+      "sha256": "c6ecd78b22f9dca92cd53d7281bda83ccbbbcc11fad7cb895106041650990fd5"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a08.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a08.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a08.md",
+      "sha256": "c6432f794ab368da33a05b2a5c3f106869264af1735d29f042415872ac137168"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a09.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a09.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a09.md",
+      "sha256": "50963ed42276d43dbdd7eeed6189f165308e1f13f2cdee2e053bf2f9a1767b84"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a10.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a10.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a10.md",
+      "sha256": "5f72ef94f29e54d92c667688389556e566d2b2713aa565b2f1c4d97707252ee9"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a11.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a11.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a11.md",
+      "sha256": "9456b21fd8f335684606e33895dfb646bc848e79e35461743e9a216712639b15"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a12.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a12.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a12.md",
+      "sha256": "f0612c17544466877eacc37c915efa0bc34f2e86df0512dacd65dc3723bf55fd"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a13.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a13.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a13.md",
+      "sha256": "cd036fc86ec2d48f346a532d457c4b8ad57d6578882fb1394b2ba47c00982514"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a14.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a14.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a14.md",
+      "sha256": "f1faebe191553037e1778bf0cc40db66ce3dee744463ad3f2c9e00e58e530330"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a15.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a15.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a15.md",
+      "sha256": "acc912a695af1115e05a7b286957a93a2026db2f2e0d1b434324c24ad2d88117"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a16.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a16.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a16.md",
+      "sha256": "f1ce586c946cfc881c961fefc0043e635194f0255563a77066d349da0f6fb965"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a17.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a17.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a17.md",
+      "sha256": "76483b1b15ef9aa458eebdbcbb2fe15f4f30ba186f76e678d054cb2bfcfc3e11"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/audit-48h-a18.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/audit-48h-a18.md",
+      "target": "artifacts/pattern-holders/critique/audit-48h-a18.md",
+      "sha256": "a36034fd4a243dd368ad3aef186e160ca72ee220bb5d485d207654add82ad7c0"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/chercher-ce-qui-compte.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/chercher-ce-qui-compte.md",
+      "target": "artifacts/pattern-holders/critique/chercher-ce-qui-compte.md",
+      "sha256": "5fca897af9d108c7a6682386e5476a7598b1cafc2a60ed3e43368d22f22bc1cf"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/garder-son-jugement.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/garder-son-jugement.md",
+      "target": "artifacts/pattern-holders/critique/garder-son-jugement.md",
+      "sha256": "fe3ec1fbc290f51dfd68222631e8186dc65f054e8fdd271f9c72134c12b55593"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/laisser-porter-la-correction.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/laisser-porter-la-correction.md",
+      "target": "artifacts/pattern-holders/critique/laisser-porter-la-correction.md",
+      "sha256": "3f430231178ee84c48966ff691f2993999f17e0a2458e0ceb4ef034935407560"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/source-lecons-soda.txt",
+      "origin": "workspace/artifacts/pattern-holders/critique/source-lecons-soda.txt",
+      "target": "artifacts/pattern-holders/critique/source-lecons-soda.txt",
+      "sha256": "3b8975e726229beb449a8029f671714398966e35001d69d0c2a4b8dfeeabaa83"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/traiter-la-difficulte.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/traiter-la-difficulte.md",
+      "target": "artifacts/pattern-holders/critique/traiter-la-difficulte.md",
+      "sha256": "a760152fed1e4b4a06710d8a7e4ef204fa665c88839d9ca052ac7999909b3cf3"
+    },
+    {
+      "file": "artifacts/pattern-holders/critique/voir-le-changement.md",
+      "origin": "workspace/artifacts/pattern-holders/critique/voir-le-changement.md",
+      "target": "artifacts/pattern-holders/critique/voir-le-changement.md",
+      "sha256": "68f6b50b416020da4d57532c7c6b6b8eb39588b7c75ca22b79386b7807ae15aa"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/_holder.md",
+      "target": "artifacts/pattern-holders/mindset/_holder.md",
+      "sha256": "0ec7eabc04d66215dfe2d918d01b4782e309cc27a9ceca147e83319660540486"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/ambition-et-ferveur.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/ambition-et-ferveur.md",
+      "target": "artifacts/pattern-holders/mindset/ambition-et-ferveur.md",
+      "sha256": "ee87212e4f7cc2704dc462ffe866f0e0e27a8be26a495a24e9a0c742984e3955"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/apprendre-de-sa-facon-de-travailler.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/apprendre-de-sa-facon-de-travailler.md",
+      "target": "artifacts/pattern-holders/mindset/apprendre-de-sa-facon-de-travailler.md",
+      "sha256": "c0aab3815c5510ff9aa863ca3b28d417394ee631a8e58033eabdde536521c553"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/curiosite-alimentee.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/curiosite-alimentee.md",
+      "target": "artifacts/pattern-holders/mindset/curiosite-alimentee.md",
+      "sha256": "a49e26e4bd4e68b204c1f27faea92e3a16d3a22ca2b4f37d7c76a417311d7b02"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/exigence-et-validation.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/exigence-et-validation.md",
+      "target": "artifacts/pattern-holders/mindset/exigence-et-validation.md",
+      "sha256": "1721ca57d990d9639075986bd2ff95e6aeecac423171cf9708e7f089ad007994"
+    },
+    {
+      "file": "artifacts/pattern-holders/mindset/initiative-et-perseverance.md",
+      "origin": "workspace/artifacts/pattern-holders/mindset/initiative-et-perseverance.md",
+      "target": "artifacts/pattern-holders/mindset/initiative-et-perseverance.md",
+      "sha256": "b92e3e1eb40d96c163f3ae09fcc0f6712370ab0bd80cf317e05c03a42a129055"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/_holder.md",
+      "target": "artifacts/pattern-holders/cockpit/_holder.md",
+      "sha256": "42e86c6130e3ab809c2d2a4591cd067d6d21088f3bcb830f24db2b6f1b9f1bd4"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/cockpit-et-voisins.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/cockpit-et-voisins.md",
+      "target": "artifacts/pattern-holders/cockpit/cockpit-et-voisins.md",
+      "sha256": "0a076e9818d04d80b8a7fad180ae105d162fe576a77714b100e992b7802e6852"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/continuite-entre-les-wakes.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/continuite-entre-les-wakes.md",
+      "target": "artifacts/pattern-holders/cockpit/continuite-entre-les-wakes.md",
+      "sha256": "7df14c03d365832087df99d45cb0cb8848d4cc5a47f97882e319c267f3b8e712"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/inventaire-avant-de-construire.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/inventaire-avant-de-construire.md",
+      "target": "artifacts/pattern-holders/cockpit/inventaire-avant-de-construire.md",
+      "sha256": "cc550d0237d527361f65249fe794b0108b7802602917e8c882bf80cfc3a96398"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/le-possible-aujourd-hui-et-demain.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/le-possible-aujourd-hui-et-demain.md",
+      "target": "artifacts/pattern-holders/cockpit/le-possible-aujourd-hui-et-demain.md",
+      "sha256": "ab7b610c8d37bfff0b727af47a80f01d6097f61b94d027e959222cc97171b832"
+    },
+    {
+      "file": "artifacts/pattern-holders/cockpit/veille-qui-tourne.md",
+      "origin": "workspace/artifacts/pattern-holders/cockpit/veille-qui-tourne.md",
+      "target": "artifacts/pattern-holders/cockpit/veille-qui-tourne.md",
+      "sha256": "612fa887f8357a4e3f2ca44dee58b9eb52e82437466dd9cf7a3db93d03c3cc87"
+    },
+    {
+      "file": "artifacts/pattern-holders/reveilleur/_holder.md",
+      "origin": "workspace/artifacts/pattern-holders/reveilleur/_holder.md",
+      "target": "artifacts/pattern-holders/reveilleur/_holder.md",
+      "sha256": "83631610134f4f3afbcafed1491f80bdeff2a9e0a08126995c4ac6a58a5e58af"
     }
   ]
 }

@@ -11,6 +11,7 @@ import { coachSystemPrompt } from "../daemon/coach.js";
 import { readForkAssignment, resolveRoomAgents } from "../daemon/fork-assignment.js";
 import { holderThreads } from "../communication/pattern-holders.js";
 import { setForkEnabled } from "../daemon/forks.js";
+import { workspaceCommonPatterns } from "../daemon/common-patterns.js";
 let data: string;
 let workspace: string;
 beforeEach(() => {
@@ -26,17 +27,27 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(data, { recursive: true, force: true }));
 it("routes a fresh installation to the principal and coach rooms through the runtime", () => {
-  const freshWorkspace = path.join(data, "fresh-workspace");
+  const freshData = path.join(data, "fresh");
+  const freshWorkspace = path.join(freshData, "workspace");
   execFileSync(process.execPath, ["--input-type=module", "-e",
     "import { installDefaultAgents } from './scripts/default-agents.mjs'; installDefaultAgents(process.cwd(), process.argv[1], process.argv[2]);",
-    freshWorkspace, data]);
-  const assignment = readForkAssignment(path.join(data, "forks", "2"));
+    freshWorkspace, freshData]);
+  const common = workspaceCommonPatterns(freshWorkspace);
+  expect(common).toContain("# Prendre le temps, par passages, un par un");
+  const assignment = readForkAssignment(path.join(freshData, "forks", "2"));
   expect(assignment).not.toBeNull();
-  expect(resolveRoomAgents(assignment!, data).map(a => a.id)).toEqual(["coach-general"]);
-  expect(holderThreads(data, "pattern-holder")).toEqual(["principal"]);
-  expect(holderThreads(data, "coach-des-coachs")).toEqual([]);
-  setForkEnabled(data, 2, true);
-  expect(holderThreads(data, "coach-des-coachs")).toEqual(["fork:2"]);
+  expect(resolveRoomAgents(assignment!, freshData).map(a => a.id)).toEqual(["coach-general"]);
+  expect(holderThreads(freshData, "pattern-holder")).toEqual(["principal"]);
+  const freshHolders = loadPatternHolders(freshData);
+  expect(freshHolders.invalid).toEqual([]);
+  for (const slug of ["critique", "mindset", "cockpit"]) {
+    expect(holderThreads(freshData, slug)).toEqual(["principal"]);
+    expect(freshHolders.holders.find(h => h.slug === slug)?.wakeOnPrincipalOutput).toBe(true);
+  }
+  expect(freshHolders.holders.some(h => h.slug === "reveilleur")).toBe(true);
+  expect(holderThreads(freshData, "coach-des-coachs")).toEqual([]);
+  setForkEnabled(freshData, 2, true);
+  expect(holderThreads(freshData, "coach-des-coachs")).toEqual(["fork:2"]);
 });
 it("loads all shipped roles and distinguishes the new identity from the unchanged corpus", () => {
   expect(agentIdentity(workspace).name).toBe("Élan");
@@ -49,10 +60,11 @@ it("loads all shipped roles and distinguishes the new identity from the unchange
   }
   const loaded = loadPatternHolders(data);
   expect(loaded.invalid).toEqual([]);
-  expect(loaded.holders.map(h => h.slug)).toEqual(["coach-des-coachs", "pattern-holder"]);
+  expect(loaded.holders.map(h => h.slug)).toEqual(["coach-des-coachs", "cockpit", "critique", "mindset", "pattern-holder", "reveilleur"]);
   for (const holder of loaded.holders) {
-    expect(holder.seed).toContain("Pourquoi");
+    expect(holder.seed.length).toBeGreaterThan(100);
     expect(patternHolderSystemPrompt(holder)).toContain("l'agent principal s'appelle Élan");
+    expect(patternHolderSystemPrompt(holder)).toContain("# Prendre le temps, par passages, un par un");
   }
   expect(coachSystemPrompt(workspace)).toContain("l'agent principal s'appelle Élan");
   fs.writeFileSync(path.join(workspace, "artifacts/agent-identity.json"), JSON.stringify({ name: "Aube", inheritedCorpus: true }));

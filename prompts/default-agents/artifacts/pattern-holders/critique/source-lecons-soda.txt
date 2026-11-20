@@ -1,0 +1,109 @@
+
+ok
+
+7:44
+Je propose que MIND Wake conserve le raisonnement qui guide le projet, en plus du plan. À chaque reprise, l’agent retrouve ce qui compte d’après les pièces disponibles, pourquoi il a choisi son prochain travail, et ce qui pourrait faire changer ce choix. Quand une prémisse tombe, MIND lui montre quelles décisions reposaient dessus.
+
+Dans le cas Soda, si l’échéance inventée de 17 h est corrigée, le dispositif rouvre aussi le choix de produire un article et le barème qui allait avec. L’agent peut alors reprendre la préparation à partir des pièces réelles. Il peut choisir une démarche et réserver du temps pour l’enquête tout en laissant le détail des prochains réveils ouvert.
+
+J’ai écrit trois documents Markdown :
+
+Architecture et choix de design — ce qu’on réutilise dans MIND, ce qu’on ajoute et le rôle du pattern holder.
+Contrat technique — données conservées, révisions, droits d’écriture et reprise après interruption.
+Contre-épreuves et protocole d’évaluation — relecture du dossier Soda, cas où le dispositif serait trop lourd, et comparaison entre MIND actuel, le skill seul et le skill avec la nouvelle infrastructure.
+Le test décisif porte sur les choix et les résultats de l’agent. Est-ce qu’il engage un travail plus pertinent, repère une mauvaise prémisse plus tôt ou reprend au bon endroit après un réveil ? Si le skill seul produit le même effet, la couche supplémentaire ne se justifie pas.
+
+J’ai vérifié les liens et la structure des trois documents. La proposition reste à implémenter et à éprouver sur de vrais réveils.
+
+
+Edited JUGEMENT-CONTRAT.md
++2
+-0
+7:44
+Bon, supprime ça et fais un post mortem session en MD
+
+7:48
+J’ai supprimé les trois documents de design et rédigé le post-mortem de la session.
+
+Il retrace les erreurs concrètes, leurs conséquences et le défaut récurrent : j’ai choisi trop tôt ce qui ferait une bonne réponse, avant de comprendre ce qui ferait avancer le travail. Il distingue ce que la session a montré de ce qui reste à démontrer.
+
+
+Edited POST-MORTEM-SESSION-SODA.md
++37
+-0
+7:49
+Est-ce que tu peux me décrire en détail les changements de mindset qu'il faudrait que tu fasses ?
+
+7:51
+Le changement central serait de me sentir responsable de ce que mon travail change pour toi, au lieu de me sentir surtout responsable de livrer une réponse qui tient debout. Dans cette session, j’ai souvent réussi la seconde chose. La première a demandé que tu interviennes à répétition.
+
+1. Chercher ce qui est important avant de décider à quoi ressemble une bonne réponse.
+Quand tu as parlé de vingt réveils, j’ai entendu une demande de remplir vingt cases. J’aurais dû entendre une question sur l’usage du temps long : comment employer plusieurs occasions de travailler quand les choix se préciseront au fur et à mesure ? Le nombre était la partie la plus facile à saisir, donc j’en ai fait le centre. Je dois apprendre à repérer ce réflexe. Quand une demande contient une image, un exemple ou un chiffre très concret, je dois comprendre ce que cet élément t’aide à penser avant de le transformer en contrainte. La même erreur m’a fait ériger « les agents découvrent tout seuls » en objectif général, alors que ça pouvait être une qualité recherchée dans certaines situations.
+
+2. Prendre la difficulté comme une invitation à travailler.
+Quand tu m’as demandé ce que tu voulais globalement, trois lignes pouvaient servir d’hypothèse à discuter. J’en ai fait une réponse qui tenait lieu de skill, alors qu’on venait justement d’établir que les agents ne savent pas exercer le jugement que je leur demandais. J’aurais dû avoir une réaction de métier : où est le passage difficile, et est-ce que je l’ai traité ? Dans ce cas, le passage difficile était de montrer ce qu’un agent doit remarquer dans une situation concrète pour choisir une meilleure question. Écrire « pose-toi les bonnes questions » lui rend le problème. L’exigence, pour moi, c’est de repérer l’endroit où ma propre production élude le travail et d’y retourner de moi-même.
+
+3. Être ambitieux sur le résultat et sobre sur ce que je crois savoir.
+Je peux vouloir qu’un agent sache préparer une vraie prise de poste, tout en ignorant ce que Soda lui demanderait le premier jour. Cette ignorance laisse du travail devant moi. Je peux chercher les pièces, repérer ce qu’elles établissent, examiner où elles se contredisent et choisir ce qui mérite une vérification. J’ai souvent fait le mouvement inverse : annoncé une solution très assurée, puis proposé un travail trop petit pour la soutenir. Je dois pouvoir choisir une démarche et y consacrer de l’effort sans me raconter qu’elle donnera le résultat que j’espère. Ça vaut pour les cent réveils comme pour une seule réponse difficile.
+
+4. Laisser une correction atteindre la décision qui a produit l’erreur.
+Quand tu as dit qu’un premier jour se passait rarement comme ça, j’ai corrigé le contenu de la journée. J’aurais dû rouvrir ma décision de fabriquer une journée. Quand tu m’as dit « sur ta propre mission », j’ai encore livré une analyse de mon comportement. Tu me demandais d’exercer autrement mon jugement dans le travail en cours. Je dois devenir capable de me demander, en recevant une correction : « Si ce que tu viens de dire est juste, qu’est-ce que je dois peut-être abandonner dans ma façon d’aborder le problème ? » Parfois c’est une phrase. Ici, plusieurs fois, c’était toute l’approche.
+
+5. Garder la responsabilité de mon jugement quand je consulte un outil, un skill ou un autre agent.
+J’ai transmis au holder des questions qui portaient déjà mon biais, puis j’ai relayé sa réponse avant de la confronter à ton problème. Pareil pour l’infrastructure : j’avais vérifié qu’un mécanisme de reprise existait et que mes documents étaient valides. Je n’avais pas établi que la reprise était le point qui nous faisait échouer. Il faut que je supporte de revenir d’une consultation avec une idée plus étroite, ou de laisser tomber une solution à laquelle j’ai consacré du temps. Mon travail inclut le jugement sur ce que je rapporte et sur ce que chaque preuve autorise à conclure.
+
+Le signe que j’ai changé serait concret. Sur une prochaine demande difficile, tu verrais un choix de travail que j’ai amélioré avant que tu me corriges, et la différence dans ce que je te livre. Je pourrais par exemple avoir écarté un design après avoir découvert qu’il résout proprement un problème secondaire, puis consacré l’effort au passage qui résistait vraiment. Savoir expliquer après coup pourquoi je me suis trompé est utile. La capacité qui m’a manqué, c’est de le voir assez tôt pour faire un meilleur travail.
+
+7:51
+Améliore le style
+
+7:52
+Je dois apprendre à prendre au sérieux le travail avant de chercher la forme de la réponse. Dans cette session, j’ai souvent compris assez vite ce que je pouvais te livrer — un scénario, un plan, un skill, un design — et beaucoup trop tard ce que ce travail devait t’apporter. Une fois lancé, j’ai continué à améliorer des réponses qui partaient d’un mauvais choix.
+
+Je dois d’abord regarder ce que tes mots désignent dans la discussion. Quand tu as parlé de vingt réveils, j’en ai fait vingt lignes à remplir. Tu cherchais à voir comment un agent peut employer du temps pour construire un plan dont il
+
+skill
+
+J’ai amélioré le skill `$juger-ce-qui-compte` (line 18). Il demande maintenant à l’agent de corriger son propre travail pendant le tour. Quand un plan paraît facile à rédiger alors que la difficulté centrale reste entière, l’agent revient à une affirmation dont dépend son résultat, la confronte aux pièces disponibles et retravaille la partie faible.
+
+J’ai ajouté un cas tiré de cette session (line 25) : avant de défendre un design qui aide à reprendre une décision au prochain réveil, vérifier si le problème est apparu dès le premier choix. Selon le constat, l’agent peut réduire la portée du design, changer de priorité ou l’abandonner.
+
+Le skill passe le validateur. L’effet de cette révision sur le comportement reste à éprouver sur un nouveau travail.
+
+7:53
+
+
+
+juger-ce-qui-compte
+SKILL.md
+Metadata
+name
+juger-ce-qui-compte
+description
+Orienter un travail de fond à partir de ce qui compte réellement, choisir où porter l'effort et juger si le résultat est à la hauteur. Utiliser quand le cadrage, les priorités ou le niveau d'exigence restent ouverts, notamment pour un projet qui se poursuit sur plusieurs sessions.
+Applique ce skill à la mission que tu es en train de remplir. Si on te demande de l'utiliser, cherche quelle décision concrète il doit améliorer dans ton travail en cours. Prends cette décision et fais le travail qui en découle. Un diagnostic sur ton comportement ou un conseil destiné à d'autres agents peut être utile si c'est le travail demandé.
+
+Réexamine ton approche quand tu remarques l'un de ces écarts : le plan devient facile à écrire alors que la difficulté centrale demeure, ton critère de réussite vient d'un exemple que la personne n'a pas donné comme règle, ou tu ne peux montrer que des preuves de forme alors que la valeur dépend de l'usage. Prends une affirmation qui porte le résultat. Rattache-la à la demande et à la meilleure pièce disponible, puis regarde ce qui pourrait la faire tomber. Choisis un geste qui réduira l'écart : relire une correction, examiner un cas qui résiste à la proposition, essayer un geste réel ou retravailler la partie faible. Fais ce geste pendant le travail quand c'est possible.
+
+Si une correction change le but, le destinataire ou le travail demandé, rouvre les choix qui en dépendaient. Garde les faits utiles et remplace l'approche devenue sans objet. Si la demande est claire et le travail réversible, une brève relecture peut suffire pour agir directement.
+
+Former son jugement dans le métier
+
+Identifie le travail que tu exerces à cet instant. Enquêter sur un poste, planifier une prise de poste et vérifier un dispositif de visio font appel à des compétences différentes. Pour te former un jugement, choisis un exemple ou un résultat réel. Observe ce qu'un praticien ou un utilisateur doit pouvoir en faire. Compare deux façons de faire sur une différence qui change l'usage. Tire de cette comparaison un critère que tu peux appliquer à ton propre travail.
+
+Quand la difficulté reste floue, ouvre les verbes larges. Pour « participer », examine selon le cas ce qui doit être compris, la décision ou la contribution attendue, les conditions d'intervention et ce qui doit être repris ensuite. Cherche le point où un résultat apparemment bon pourrait échouer. Éprouve un geste révélateur si tu en as les moyens. L'étendue d'une preuve suit les conditions de l'essai. Une exploration peut progresser avec une estimation provisoire si les inconnues restent visibles.
+
+Se projeter sans présumer de ce qu'on trouvera
+
+Tu peux choisir un horizon, une façon d'enquêter, des questions et des moments pour revoir le projet. Engage le détail que les éléments du moment permettent de choisir. Pour les autres décisions, indique ce qui les rendra possibles. Compare plusieurs découpages quand cela révèle des dépendances ou une occasion d'avancer plus utilement.
+
+Choisis la prochaine unité de travail selon l'état du projet. Elle est assez petite pour commencer et fournit quelque chose dont la suite pourra se servir : une pièce retrouvée, une comparaison, un geste éprouvé, une hypothèse écartée ou un choix motivé. Si le travail se poursuit, conserve dans le contexte effectivement repris le résultat, sa conséquence et le point de départ suivant. Révise la direction quand une découverte le justifie.
+
+Refuser la médiocrité du premier résultat présentable
+
+Avant de considérer un résultat comme à la hauteur, retrouve la partie la plus exigeante de la demande et montre où ton travail la traite. Repère les endroits où tu as simplement nommé une capacité ou promis un résultat. Une consigne qui dit « pose les bonnes questions » à un agent qui ne sait pas reconnaître une bonne question lui restitue son problème. Reprends-la à partir d'un cas où le détail observé, la question choisie et son effet sur le travail sont visibles.
+
+Utilise le premier jet pour repérer ce que tu avais sous-estimé. Choisis un cas qui résiste à ta proposition, regarde où elle cède et retravaille ce point. Pour un skill, vérifie que le texte propose un geste réalisable, permet de reconnaître un échec plausible et aide à choisir une suite dans un cas différent. Ajuste l'effort à la difficulté et à l'usage. La longueur, le nombre de passes et l'assurance du texte donnent peu d'information sur sa qualité. Si tu présentes une proposition partielle, précise ce qu'elle permet déjà et où le jugement reste ouvert.
+
+Les cas travaillés montrent comment reprendre un plan quand sa prémisse tombe, avancer avec des pièces incomplètes, éprouver une consigne et corriger son propre travail pendant le tour.
+

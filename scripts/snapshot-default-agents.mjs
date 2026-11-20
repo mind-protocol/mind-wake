@@ -22,14 +22,14 @@ function save(file, bytes, origin, target) {
 function copy(relative, file = relative, target = relative) {
   save(file, fs.readFileSync(path.join(source, relative)), "workspace/" + relative, target);
 }
-for (const slug of ["pattern-holder", "coach-des-coachs"]) {
+for (const slug of ["pattern-holder", "coach-des-coachs", "critique", "mindset", "cockpit", "reveilleur", "_commun"]) {
   const relative = "artifacts/pattern-holders/" + slug;
   function walk(dir) {
     for (const entry of fs.readdirSync(path.join(source, dir), { withFileTypes: true })) {
       if (entry.isSymbolicLink()) throw Error("Unexpected linked prompt source");
       const rel = dir + "/" + entry.name;
       if (entry.isDirectory()) walk(rel);
-      else if (entry.isFile()) copy(rel);
+      else if (entry.isFile() && (entry.name.endsWith(".md") || entry.name === "source-lecons-soda.txt")) copy(rel);
     }
   }
   walk(relative);
@@ -55,5 +55,5 @@ for (const router of [false, true]) {
   else save(rel, Buffer.from(holderRole(path.join(source, "artifacts/pattern-holders"), router)), "repository/src/communication/pattern-holders.ts#holderRole", rel);
 }
 save("identity.json", Buffer.from(JSON.stringify({ name: "Élan", inheritedCorpus: true }, null, 2) + "\n"), "distribution identity (separate from original prompts)", "artifacts/agent-identity.json");
-fs.writeFileSync(path.join(bundle, "manifest.json"), JSON.stringify({ version: 1, capturedAt: new Date().toISOString(), files }, null, 2) + "\n");
+fs.writeFileSync(path.join(bundle, "manifest.json"), JSON.stringify({ version: 2, capturedAt: new Date().toISOString(), files }, null, 2) + "\n");
 console.log(JSON.stringify({ files: files.length, bytes: files.reduce((sum, f) => sum + fs.statSync(path.join(bundle, f.file)).size, 0) }));
