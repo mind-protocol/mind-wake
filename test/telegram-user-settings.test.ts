@@ -110,3 +110,28 @@ it("rejects unknown actions", async () => {
   expect(exitCode).toBe(1);
   expect(body.error?.code).toBe("invalid_request");
 });
+
+it("retries status briefly while the session is locked by another process, then reports the lock", async () => {
+  configure();
+  fs.writeFileSync(file("telegram-user.session"), "");
+  const sleeps: number[] = [];
+  const settings = (sidecar: UserSidecar) => new TelegramUserSettings(dataDir, sidecar, async (ms) => void sleeps.push(ms));
+  const locked: UserSidecarResult = { ok: false, error: "session_locked", message: "locked", definite: true };
+  let left = 2;
+  reply = () => (left-- > 0 ? locked : { ok: true, logged_in: false, account: null });
+  const ok = await runTelegramUserSettings(JSON.stringify({ action: "status" }), settings(fake));
+  expect(JSON.parse(ok.stdout).data).toMatchObject({ loggedIn: false, step: "phone" });
+  expect(calls).toHaveLength(3);
+  reply = () => locked;
+  const ko = await runTelegramUserSettings(JSON.stringify({ action: "status" }), settings(fake));
+  expect(JSON.parse(ko.stdout).error.code).toBe("session_locked");
+  expect(sleeps).toEqual([1_000, 2_000, 1_000, 2_000, 4_000]);
+});
+
+it("does not retry a login step on a locked session", async () => {
+  configure();
+  reply = () => ({ ok: false, error: "session_locked", message: "locked", definite: true });
+  const { body } = await run("login_code", { code: "12345" });
+  expect(body.error?.code).toBe("session_locked");
+  expect(calls).toHaveLength(1);
+});

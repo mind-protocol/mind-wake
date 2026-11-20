@@ -126,11 +126,22 @@ async def resolve(client, target):
     return matches[0]
 
 
-async def require_login(client):
+async def connect_or_fail(client):
+    """
+    Telethon ecrit la session SQLite pendant connect() (save apres la connexion reseau) : un verrou
+    tenu par un autre processus y leve sqlite3.OperationalError. Ce n'est pas une panne reseau.
+    Le message ne donne que le type de l'exception (aucun detail : chemins, adresses).
+    """
     try:
         await client.connect()
-    except Exception:
-        fail("network", "Connexion a Telegram impossible.")
+    except Exception as error:
+        if is_locked(error):
+            fail("session_locked", "Session Telegram tenue par un autre processus ; reessayer.")
+        fail("network", "Connexion a Telegram impossible (" + type(error).__name__ + ").")
+
+
+async def require_login(client):
+    await connect_or_fail(client)
     if not await client.is_user_authorized():
         fail("not_logged_in", "Compte non connecte : lancer la sous-commande login une fois.")
 
@@ -173,10 +184,7 @@ def clear_login_state(data_dir):
 
 
 async def connect_for_login(client):
-    try:
-        await client.connect()
-    except Exception:
-        fail("network", "Connexion a Telegram impossible.")
+    await connect_or_fail(client)
 
 
 async def logged_in_result(client, data_dir):
@@ -231,10 +239,7 @@ async def cmd_login_password(client, data_dir, password):
 
 
 async def cmd_status(client):
-    try:
-        await client.connect()
-    except Exception:
-        fail("network", "Connexion a Telegram impossible.")
+    await connect_or_fail(client)
     if not await client.is_user_authorized():
         return {"ok": True, "logged_in": False, "account": None}
     me = await client.get_me()

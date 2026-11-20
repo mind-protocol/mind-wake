@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as z from "zod";
-import type { UserSidecar, UserSidecarResult } from "../mcp/telegram-user-tools.js";
+import { USER_SESSION_LOCK_RETRY_MS, type UserSidecar, type UserSidecarResult } from "../mcp/telegram-user-tools.js";
 
 export const TELEGRAM_USER_ACTIONS = ["status", "configure", "login_phone", "login_code", "login_password", "logout"] as const;
 export type TelegramUserAction = (typeof TELEGRAM_USER_ACTIONS)[number];
@@ -70,6 +70,7 @@ export class TelegramUserSettings {
   constructor(
     private readonly dataDir: string,
     private readonly sidecar: UserSidecar,
+    private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {}
 
   private file(name: string): string {
@@ -86,6 +87,21 @@ export class TelegramUserSettings {
 
   private async run(args: string[], stdin?: string): Promise<UserSidecarResult & { ok: true }> {
     const result = await this.sidecar(args, stdin);
+    if (!result.ok) throw new TelegramUserSettingsError(result.error, result.message);
+    return result;
+  }
+
+  /**
+   * Lecture seule : si la session SQLite est tenue par un autre processus (relais inbound, serveur
+   * MCP), courts nouveaux essais avant d'afficher l'erreur. Les étapes de connexion ne réessaient pas.
+   */
+  private async runStatus(): Promise<UserSidecarResult & { ok: true }> {
+    let result = await this.sidecar(["status"]);
+    for (const delay of USER_SESSION_LOCK_RETRY_MS) {
+      if (result.ok || result.error !== "session_locked") break;
+      await this.sleep(delay);
+      result = await this.sidecar(["status"]);
+    }
     if (!result.ok) throw new TelegramUserSettingsError(result.error, result.message);
     return result;
   }
@@ -137,7 +153,7 @@ export class TelegramUserSettings {
     // Sans session, inutile de lancer Telethon : le compte n'est pas connecté.
     if (!fs.existsSync(this.file("telegram-user.session")))
       return { configured: true, loggedIn: false, account: null, step: this.pending() ? "code" : "phone" };
-    const result = await this.run(["status"]);
+    const result = await this.runStatus();
     const loggedIn = result["logged_in"] === true;
     return {
       configured: true,
